@@ -20,7 +20,6 @@
             min-height: 100vh; box-sizing: border-box; overflow-x: hidden;
         }
         
-        /* Блюр эффект как на iPhone */
         .glass {
             background: rgba(30, 30, 30, 0.65);
             backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
@@ -30,7 +29,7 @@
 
         .screen { display: none; width: 100%; max-width: 400px; text-align: center; padding-top: 60px; }
         .screen.active { display: block; }
-        #screen-games, #screen-players, #screen-setup { padding-top: 20px; } /* Для меню отступ меньше */
+        #screen-games, #screen-players, #screen-setup { padding-top: 20px; }
         
         h1, h2 { margin: 10px 0 20px 0; }
         .btn {
@@ -71,7 +70,6 @@
             z-index: 100; cursor: pointer;
         }
 
-        /* Оверлеи (Результаты, Лидерборд, Пауза) */
         .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -194,7 +192,6 @@
         function hideIsland() { document.getElementById('dynamic-island').style.display = 'none'; }
         function setPauseBtn(visible) { document.getElementById('pause-btn').style.display = visible ? 'flex' : 'none'; }
 
-        // --- ГЛОБАЛЬНАЯ НАВИГАЦИЯ И ПАУЗА ---
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -229,7 +226,6 @@
         }
         function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); showScreen('screen-games'); }
 
-        // Лобби логика
         function selectGame(game) {
             appState.game = game;
             ['p1','p2','p3','p4'].forEach(id => document.getElementById(`btn-${id}`).style.display = 'block');
@@ -307,6 +303,8 @@
             clickTimeSetting += delta;
             if (clickTimeSetting < 5) clickTimeSetting = 5;
             if (clickTimeSetting > 100) clickTimeSetting = 100;
+            // ИСПРАВЛЕНИЕ: Теперь время сразу синхронизируется!
+            clickTimeCurrent = clickTimeSetting; 
             document.getElementById('click-time-val').innerText = `${clickTimeSetting} сек`;
         }
         function initClicker() {
@@ -337,42 +335,38 @@
             }
         }
 
-        // --- МЕТКОСТЬ (КОМПЛЕКСНАЯ) ---
+        // --- МЕТКОСТЬ ---
         const canvas = document.getElementById('archery-canvas'); const ctx = canvas.getContext('2d');
         let archReqId;
         
         let archState = {
             level: 1, currentPlayerIdx: 0,
-            aaConfig: { 1: 12, 2: 6, 3: 4, 4: 3 }, // 12 пуль в сумме для 1 уровня
+            aaConfig: { 1: 12, 2: 6, 3: 4, 4: 3 }, 
             shotsMade: 0, aaAngle: 0, aaArrows: [], activeArrow: null,
             gameOver: false,
-            // Переменные для Лягушки (Уровни 2-5)
             charging: false, power: 0, powerDir: 1, frogY: 450, targetY: 100, targetSpeed: 0, targetX: 200
         };
 
-        // Обработка касаний (Универсальная для AA и Лягушки)
         const tz = document.getElementById('archery-touch-zone');
         tz.addEventListener('mousedown', handlePress); tz.addEventListener('touchstart', (e)=>{ e.preventDefault(); handlePress(); });
         tz.addEventListener('mouseup', handleRelease); tz.addEventListener('touchend', (e)=>{ e.preventDefault(); handleRelease(); });
 
         function handlePress() {
-            if (appState.isPaused || archState.gameOver) return;
+            if (appState.isPaused || archState.gameOver || !archState.activeArrow) return;
             if (archState.level === 1) {
-                // В уровне 1 (AA) бросок по клику
-                if (archState.activeArrow && !archState.activeArrow.moving) {
+                if (!archState.activeArrow.moving) {
                     tg.HapticFeedback.impactOccurred('light');
                     archState.activeArrow.moving = true;
                 }
             } else {
-                // В уровне лягушки зажимаем для силы
                 if (!archState.activeArrow.moving) archState.charging = true;
             }
         }
         function handleRelease() {
-            if (appState.isPaused || archState.gameOver) return;
+            if (appState.isPaused || archState.gameOver || !archState.activeArrow) return;
             if (archState.level > 1 && archState.charging) {
                 archState.charging = false;
-                archState.activeArrow.moving = true; // Запускаем лягушку в полет
+                archState.activeArrow.moving = true; 
                 tg.HapticFeedback.impactOccurred('medium');
             }
         }
@@ -389,10 +383,8 @@
                 archState.aaAngle = 0; archState.aaArrows = []; spawnArcheryEntity();
             } else {
                 document.getElementById('archery-hint').innerText = "ЗАЖМИ чтобы накопить силу, ОТПУСТИ чтобы прыгнуть!";
-                archState.charging = false; archState.power = 0;
-                // Настройки уровней Лягушки
-                archState.targetY = 100 + Math.random() * 150; // Случайная высота мишени
-                archState.targetSpeed = archState.level > 3 ? (Math.random() > 0.5 ? 2 : -2) : 0; // Движение на 4-5 уровнях
+                archState.targetY = 100 + Math.random() * 150; 
+                archState.targetSpeed = archState.level > 3 ? (Math.random() > 0.5 ? 2 : -2) : 0; 
                 archState.targetX = 200;
                 spawnArcheryEntity();
             }
@@ -403,6 +395,10 @@
             if(archState.gameOver) return;
             const p = appState.players[archState.currentPlayerIdx];
             archState.activeArrow = { y: 450, x: 200, color: p.color, moving: false };
+            // ИСПРАВЛЕНИЕ: строго обнуляем силу лягушки для каждого выстрела!
+            archState.charging = false;
+            archState.power = 0;
+            archState.powerDir = 1;
         }
 
         function updateArchIsland() {
@@ -418,15 +414,18 @@
         function nextPlayerOrLevel() {
             archState.currentPlayerIdx++;
             if (archState.currentPlayerIdx >= appState.playerCount) {
-                // Все отстрелялись, следующий уровень
                 archState.level++;
                 if (archState.level > 5) {
                     showLeaderboard();
                     archState.gameOver = true; return;
                 }
                 archState.currentPlayerIdx = 0;
-                tg.showAlert(`Переходим на Уровень ${archState.level}!`);
-                startArcheryLevel();
+                // Блокируем игру, пока открыт Alert
+                archState.gameOver = true;
+                tg.showAlert(`Переходим на Уровень ${archState.level}!`, () => {
+                    archState.gameOver = false;
+                    startArcheryLevel();
+                });
             } else {
                 spawnArcheryEntity(); updateArchIsland();
             }
@@ -448,7 +447,6 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // ================= РЕЖИМ 1: КОЛЕСО (AA) =================
             if (archState.level === 1) {
                 archState.aaAngle += 0.025; const cx = 200, cy = 150, r = 40;
                 
@@ -474,15 +472,19 @@
 
                         if (crashed) {
                             tg.HapticFeedback.notificationOccurred('error');
-                            tg.showAlert('Бам! Уровень сначала!');
-                            startArcheryLevel(); return;
+                            archState.gameOver = true; // Замораживаем процесс
+                            tg.showAlert('Бам! Уровень сначала!', () => {
+                                archState.gameOver = false;
+                                startArcheryLevel();
+                            });
+                            return;
                         } else {
                             tg.HapticFeedback.impactOccurred('heavy');
                             archState.aaArrows.push({ angle: hitAngle, color: archState.activeArrow.color });
                             archState.shotsMade++;
                             
                             if (archState.shotsMade >= archState.aaConfig[appState.playerCount]) {
-                                appState.players[archState.currentPlayerIdx].score += 1; // 1 очко за прохождение 1 ур.
+                                appState.players[archState.currentPlayerIdx].score += 1;
                                 archState.shotsMade = 0; nextPlayerOrLevel();
                             } else { spawnArcheryEntity(); updateArchIsland(); }
                         }
@@ -495,24 +497,19 @@
                     ctx.beginPath(); ctx.arc(cx, archState.activeArrow.y - 80, 6, 0, Math.PI*2); ctx.fillStyle = archState.activeArrow.color; ctx.fill();
                 }
             } 
-            // ================= РЕЖИМ 2-5: ЛЯГУШКА =================
             else {
-                // Движение мишени
                 archState.targetX += archState.targetSpeed;
                 if (archState.targetX < 50 || archState.targetX > 350) archState.targetSpeed *= -1;
 
-                // Рисуем мишень
                 ctx.fillStyle = '#ff453a'; ctx.fillRect(archState.targetX - 40, archState.targetY, 80, 10);
                 ctx.fillStyle = '#fff'; ctx.fillRect(archState.targetX - 20, archState.targetY, 40, 10);
 
-                // Зарядка силы
                 if (archState.charging) {
                     archState.power += 3 * archState.powerDir;
                     if (archState.power >= 100) { archState.power = 100; archState.powerDir = -1; }
                     if (archState.power <= 0) { archState.power = 0; archState.powerDir = 1; }
                 }
 
-                // Рисуем шкалу силы слева
                 ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(20, 200, 20, 200);
                 ctx.fillStyle = archState.activeArrow ? archState.activeArrow.color : 'white';
                 ctx.fillRect(20, 400, 20, -(archState.power * 2));
@@ -520,42 +517,43 @@
 
                 if (archState.activeArrow) {
                     if (archState.activeArrow.moving) {
-                        // Лягушка летит вверх. Макс высота полета = 400 пикселей (при 100%)
                         let targetYJump = 450 - (archState.power * 3.5);
                         archState.activeArrow.y -= 10;
                         
-                        // Если достигли пика прыжка
                         if (archState.activeArrow.y <= targetYJump) {
                             archState.activeArrow.moving = false;
+                            archState.gameOver = true; // Замораживаем на время ответа
                             
-                            // Проверка попадания (по Y должно быть близко, и по X тоже)
                             let hitY = Math.abs(archState.activeArrow.y - archState.targetY) < 30;
-                            // Так как лягушка летит ровно по центру (X=200), мишень должна быть рядом
                             let hitX = Math.abs(archState.activeArrow.x - archState.targetX) < 50;
 
                             if (hitY && hitX) {
                                 tg.HapticFeedback.notificationOccurred('success');
                                 appState.players[archState.currentPlayerIdx].score += 1;
-                                tg.showAlert('ТОЧНО В ЦЕЛЬ! +1 Очко! 🎯');
+                                tg.showAlert('ТОЧНО В ЦЕЛЬ! +1 Очко! 🎯', () => {
+                                    archState.gameOver = false;
+                                    nextPlayerOrLevel();
+                                });
                             } else {
                                 tg.HapticFeedback.notificationOccurred('error');
-                                tg.showAlert('Промах! 😢');
+                                tg.showAlert('Промах! 😢', () => {
+                                    archState.gameOver = false;
+                                    nextPlayerOrLevel();
+                                });
                             }
-                            setTimeout(nextPlayerOrLevel, 100);
                         }
                     }
                     
-                    // Рисуем Лягушку
-                    ctx.font = '40px Arial'; ctx.textAlign = 'center';
-                    ctx.fillText('🐸', archState.activeArrow.x, archState.activeArrow.y);
-                    // Ободок цвета игрока
-                    ctx.beginPath(); ctx.arc(archState.activeArrow.x, archState.activeArrow.y - 15, 25, 0, Math.PI*2);
-                    ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
+                    if(!archState.gameOver) {
+                        ctx.font = '40px Arial'; ctx.textAlign = 'center';
+                        ctx.fillText('🐸', archState.activeArrow.x, archState.activeArrow.y);
+                        ctx.beginPath(); ctx.arc(archState.activeArrow.x, archState.activeArrow.y - 15, 25, 0, Math.PI*2);
+                        ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
+                    }
                 }
             }
         }
 
-        // Показ Лидерборда в конце Меткости
         function showLeaderboard() {
             hideIsland(); setPauseBtn(false);
             let sorted = [...appState.players].sort((a, b) => b.score - a.score);
