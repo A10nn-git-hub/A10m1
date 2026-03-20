@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Игровой Центр</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        /* Адаптируем цвета под текущую тему Telegram (светлую/темную) */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            text-align: center;
+            width: 100%;
+            max-width: 400px; /* Ограничиваем ширину для ПК-версии */
+        }
+        h1 {
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 18px;
+            margin: 12px 0;
+            font-size: 18px;
+            font-weight: bold;
+            background-color: var(--tg-theme-button-color, #3390ec);
+            color: var(--tg-theme-button-text-color, #ffffff);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.96);
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="menu">
+        <h1>Сколько будет игроков? 🎮</h1>
+        <button class="btn" onclick="selectPlayers(1)">1 Игрок (Соло)</button>
+        <button class="btn" onclick="selectPlayers(2)">2 Игрока</button>
+        <button class="btn" onclick="selectPlayers(3)">3 Игрока</button>
+        <button class="btn" onclick="selectPlayers(4)">4 Игрока</button>
+    </div>
+
+    <script>
+        // Инициализируем Telegram Web App
+        const tg = window.Telegram.WebApp;
+        
+        // Даем команду открыть приложение на весь экран (на весь экран тгшки)
+        tg.expand(); 
+        
+        // Сообщаем Telegram, что приложение готово
+        tg.ready();
+
+        // Функция, которая срабатывает при нажатии на кнопку
+        function selectPlayers(count) {
+            // Пока выводим просто всплывающее окно (alert) от Telegram
+            tg.showAlert(`Выбрано игроков: ${count}. Загружаем список игр...`);
+            
+            // Здесь мы позже добавим код, который скроет это меню 
+            // и покажет список доступных игр для данного числа игроков.
+        }
+    </script>
+</body>
+</html>
