@@ -6,7 +6,6 @@
     <title>Игровой Центр</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        /* Адаптируем цвета под текущую тему Telegram (светлую/темную) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--tg-theme-bg-color, #ffffff);
@@ -14,8 +13,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            justify-content: flex-start;
+            min-height: 100vh;
             margin: 0;
             padding: 20px;
             box-sizing: border-box;
@@ -23,17 +22,15 @@
         .container {
             text-align: center;
             width: 100%;
-            max-width: 400px; /* Ограничиваем ширину для ПК-версии */
+            max-width: 400px;
+            margin-top: 50px;
         }
-        h1 {
-            margin-bottom: 30px;
-            font-size: 24px;
-        }
+        h1, h2 { margin-bottom: 20px; }
         .btn {
             display: block;
             width: 100%;
-            padding: 18px;
-            margin: 12px 0;
+            padding: 15px;
+            margin: 10px 0;
             font-size: 18px;
             font-weight: bold;
             background-color: var(--tg-theme-button-color, #3390ec);
@@ -41,40 +38,184 @@
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            transition: transform 0.1s;
         }
-        .btn:active {
-            transform: scale(0.96);
-            opacity: 0.9;
+        .btn:active { transform: scale(0.96); opacity: 0.9; }
+        .btn-back { background-color: #ff595a; margin-top: 30px; }
+        
+        /* Скрываем элементы */
+        .hidden { display: none !important; }
+
+        /* Стили для Крестиков-Ноликов */
+        .tic-tac-toe-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+            max-width: 300px;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            font-weight: bold;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="container" id="menu">
         <h1>Сколько будет игроков? 🎮</h1>
-        <button class="btn" onclick="selectPlayers(1)">1 Игрок (Соло)</button>
-        <button class="btn" onclick="selectPlayers(2)">2 Игрока</button>
-        <button class="btn" onclick="selectPlayers(3)">3 Игрока</button>
-        <button class="btn" onclick="selectPlayers(4)">4 Игрока</button>
+        <button class="btn" onclick="openGame('solo')">1 Игрок (Кликер)</button>
+        <button class="btn" onclick="openGame('duo')">2 Игрока (Крестики-нолики)</button>
+        <button class="btn" onclick="openGame('trio')">3 Игрока (В разработке)</button>
+        <button class="btn" onclick="openGame('squad')">4 Игрока (В разработке)</button>
+    </div>
+
+    <div class="container hidden" id="game-solo">
+        <h2>Тайм-Кликер ⏱️</h2>
+        <p>Успей нажать как можно больше раз за 10 секунд!</p>
+        <h1 id="click-score">0</h1>
+        <p id="click-timer">Время: 10</p>
+        <button class="btn" id="click-btn" onclick="doClick()">КЛИК!</button>
+        <button class="btn btn-back" onclick="goBack()">🔙 Назад в меню</button>
+    </div>
+
+    <div class="container hidden" id="game-duo">
+        <h2>Крестики-нолики ❌⭕</h2>
+        <p id="tictactoe-status">Ход: ❌</p>
+        <div class="tic-tac-toe-board" id="board">
+            </div>
+        <button class="btn" onclick="resetTicTacToe()">🔄 Начать заново</button>
+        <button class="btn btn-back" onclick="goBack()">🔙 Назад в меню</button>
+    </div>
+
+    <div class="container hidden" id="game-wip">
+        <h2>Скоро добавим! 🚧</h2>
+        <p>Эта игра еще в разработке.</p>
+        <button class="btn btn-back" onclick="goBack()">🔙 Назад в меню</button>
     </div>
 
     <script>
-        // Инициализируем Telegram Web App
         const tg = window.Telegram.WebApp;
-        
-        // Даем команду открыть приложение на весь экран (на весь экран тгшки)
-        tg.expand(); 
-        
-        // Сообщаем Telegram, что приложение готово
+        tg.expand();
         tg.ready();
 
-        // Функция, которая срабатывает при нажатии на кнопку
-        function selectPlayers(count) {
-            // Пока выводим просто всплывающее окно (alert) от Telegram
-            tg.showAlert(`Выбрано игроков: ${count}. Загружаем список игр...`);
+        // Навигация
+        function openGame(gameType) {
+            document.getElementById('menu').classList.add('hidden');
+            if (gameType === 'solo') {
+                document.getElementById('game-solo').classList.remove('hidden');
+                resetClicker();
+            } else if (gameType === 'duo') {
+                document.getElementById('game-duo').classList.remove('hidden');
+                initTicTacToe();
+            } else {
+                document.getElementById('game-wip').classList.remove('hidden');
+            }
+        }
+
+        function goBack() {
+            document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
+            document.getElementById('menu').classList.remove('hidden');
+        }
+
+        // Логика Кликера
+        let clicks = 0;
+        let timeLeft = 10;
+        let clickerInterval;
+        let gameActive = false;
+
+        function resetClicker() {
+            clicks = 0;
+            timeLeft = 10;
+            gameActive = false;
+            clearInterval(clickerInterval);
+            document.getElementById('click-score').innerText = clicks;
+            document.getElementById('click-timer').innerText = `Время: ${timeLeft}`;
+            document.getElementById('click-btn').disabled = false;
+        }
+
+        function doClick() {
+            if (!gameActive && timeLeft === 10) {
+                gameActive = true;
+                clickerInterval = setInterval(() => {
+                    timeLeft--;
+                    document.getElementById('click-timer').innerText = `Время: ${timeLeft}`;
+                    if (timeLeft <= 0) {
+                        clearInterval(clickerInterval);
+                        gameActive = false;
+                        document.getElementById('click-btn').disabled = true;
+                        tg.showAlert(`Твой результат: ${clicks} кликов!`);
+                    }
+                }, 1000);
+            }
+            if (gameActive) {
+                clicks++;
+                document.getElementById('click-score').innerText = clicks;
+                tg.HapticFeedback.impactOccurred('light'); // Вибрация при клике
+            }
+        }
+
+        // Логика Крестиков-ноликов
+        let boardState = ['', '', '', '', '', '', '', '', ''];
+        let currentPlayer = '❌';
+
+        function initTicTacToe() {
+            resetTicTacToe();
+        }
+
+        function resetTicTacToe() {
+            boardState = ['', '', '', '', '', '', '', '', ''];
+            currentPlayer = '❌';
+            document.getElementById('tictactoe-status').innerText = `Ход: ${currentPlayer}`;
+            renderBoard();
+        }
+
+        function renderBoard() {
+            const board = document.getElementById('board');
+            board.innerHTML = '';
+            boardState.forEach((cell, index) => {
+                const div = document.createElement('div');
+                div.className = 'cell';
+                div.innerText = cell;
+                div.onclick = () => makeMove(index);
+                board.appendChild(div);
+            });
+        }
+
+        function makeMove(index) {
+            if (boardState[index] !== '' || checkWin()) return;
             
-            // Здесь мы позже добавим код, который скроет это меню 
-            // и покажет список доступных игр для данного числа игроков.
+            boardState[index] = currentPlayer;
+            tg.HapticFeedback.impactOccurred('medium');
+            renderBoard();
+            
+            if (checkWin()) {
+                document.getElementById('tictactoe-status').innerText = `Победил: ${currentPlayer}! 🎉`;
+                tg.showAlert(`Победил: ${currentPlayer}!`);
+            } else if (!boardState.includes('')) {
+                document.getElementById('tictactoe-status').innerText = `Ничья! 🤝`;
+            } else {
+                currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
+                document.getElementById('tictactoe-status').innerText = `Ход: ${currentPlayer}`;
+            }
+        }
+
+        function checkWin() {
+            const wins = [
+                [0,1,2], [3,4,5], [6,7,8], // горизонтали
+                [0,3,6], [1,4,7], [2,5,8], // вертикали
+                [0,4,8], [2,4,6]           // диагонали
+            ];
+            return wins.some(combo => {
+                return boardState[combo[0]] !== '' && 
+                       boardState[combo[0]] === boardState[combo[1]] && 
+                       boardState[combo[1]] === boardState[combo[2]];
+            });
         }
     </script>
 </body>
