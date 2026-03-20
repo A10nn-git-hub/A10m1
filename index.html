@@ -15,12 +15,22 @@
         body {
             font-family: 'Segoe UI', Tahoma, sans-serif;
             background-color: var(--bg); color: var(--text);
-            margin: 0; padding: 15px;
+            margin: 0; padding: 15px; padding-top: 30px;
             display: flex; flex-direction: column; align-items: center;
             min-height: 100vh; box-sizing: border-box; overflow-x: hidden;
         }
-        .screen { display: none; width: 100%; max-width: 400px; text-align: center; }
+        
+        /* Блюр эффект как на iPhone */
+        .glass {
+            background: rgba(30, 30, 30, 0.65);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .screen { display: none; width: 100%; max-width: 400px; text-align: center; padding-top: 60px; }
         .screen.active { display: block; }
+        #screen-games, #screen-players, #screen-setup { padding-top: 20px; } /* Для меню отступ меньше */
         
         h1, h2 { margin: 10px 0 20px 0; }
         .btn {
@@ -30,7 +40,8 @@
             cursor: pointer; transition: 0.1s;
         }
         .btn:active { transform: scale(0.95); opacity: 0.8; }
-        .btn-back { background-color: #ff453a; margin-top: 20px; }
+        .btn-red { background-color: #ff453a; color: white; }
+        .btn-green { background-color: #34c759; color: white; }
 
         .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
         .game-card { background: #2c2c2e; border-radius: 15px; padding: 15px; cursor: pointer; transition: transform 0.1s; }
@@ -41,52 +52,74 @@
         .player-setup-row input { flex-grow: 1; padding: 10px; border: none; border-radius: 8px; margin-right: 10px; background: #1c1c1e; color: white; }
         .color-box { width: 35px; height: 35px; border-radius: 8px; cursor: pointer; border: 2px solid white; }
 
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: 40px auto 20px auto; }
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: 0 auto; }
         .cell { aspect-ratio: 1; background: #2c2c2e; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); }
         .cell.x { color: #ff453a; text-shadow: 0 4px 0 #8b0000, 0 5px 10px rgba(0,0,0,0.5); }
         .cell.o { color: #32ade6; text-shadow: 0 4px 0 #005f8b, 0 5px 10px rgba(0,0,0,0.5); }
 
         #dynamic-island {
-            background: #000; color: white; padding: 10px 20px; border-radius: 30px;
+            color: white; padding: 10px 20px; border-radius: 30px;
             font-weight: bold; font-size: 14px; position: fixed; top: 15px; left: 50%;
             transform: translateX(-50%); z-index: 100; display: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s; white-space: nowrap;
+            transition: 0.2s; white-space: nowrap;
         }
 
-        /* Экран победы / результатов */
-        #result-overlay {
+        #pause-btn {
+            position: fixed; top: 15px; right: 15px; width: 45px; height: 45px;
+            border-radius: 25px; border: 2px solid white; font-size: 20px;
+            color: white; display: none; align-items: center; justify-content: center;
+            z-index: 100; cursor: pointer;
+        }
+
+        /* Оверлеи (Результаты, Лидерборд, Пауза) */
+        .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             z-index: 1000; text-align: center; color: white; transition: 0.3s;
         }
-        #result-overlay.hidden { display: none !important; }
+        .overlay.hidden { display: none !important; }
         #result-emoji { font-size: 120px; margin-bottom: 20px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); }
         #result-text { font-size: 32px; font-weight: bold; margin-bottom: 40px; text-shadow: 0 4px 8px rgba(0,0,0,0.3); }
-        #result-overlay .btn { width: 80%; background: rgba(0,0,0,0.3); color: white; font-size: 20px; padding: 20px; border: 2px solid white; }
         
-        #archery-canvas { background: #1c1c1e; border-radius: 15px; width: 100%; max-width: 400px; margin-top: 40px; }
+        #leaderboard-list { width: 90%; background: rgba(0,0,0,0.5); border-radius: 20px; padding: 20px; margin-bottom: 30px; }
+        .lb-item { margin: 10px 0; font-weight: bold; }
+        .lb-first { font-size: 32px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px solid rgba(255,255,255,0.2); }
+        .lb-score { font-size: 45px; display: block; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); }
+
+        #archery-canvas { background: #1c1c1e; border-radius: 15px; width: 100%; max-width: 400px; margin-top: 10px; }
         #game-archery-ui { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        .shoot-area { position: absolute; bottom: 0; width: 100%; height: 50%; z-index: 10; }
+        .shoot-area { position: absolute; bottom: 0; width: 100%; height: 60%; z-index: 10; }
         
-        /* Стили для обновленного кликера */
-        #screen-game-clicker { display: none; flex-direction: column; height: 90vh; }
-        #screen-game-clicker.active { display: flex; }
-        .clicker-setup { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 20px 0; }
+        .clicker-setup { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 0 0 20px 0; }
         .round-btn { width: 50px; height: 50px; border-radius: 25px; border: none; font-size: 20px; font-weight: bold; background: var(--btn); color: white; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
-        .round-btn:active { transform: translateY(4px); box-shadow: none; }
         .clicker-time-display { font-size: 24px; font-weight: bold; width: 80px; }
-        .giant-click-btn { flex-grow: 1; width: 100%; border-radius: 20px; font-size: 40px; font-weight: 900; background: #ff9f0a; color: white; border: none; box-shadow: inset 0 -8px 0 rgba(0,0,0,0.2); cursor: pointer; transition: 0.05s; }
-        .giant-click-btn:active { transform: scale(0.98); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2); background: #e08e09; }
+        .giant-click-btn { width: 100%; height: 350px; border-radius: 20px; font-size: 50px; font-weight: 900; background: #ff9f0a; color: white; border: none; box-shadow: inset 0 -8px 0 rgba(0,0,0,0.2); cursor: pointer; transition: 0.05s; }
+        .giant-click-btn:active { transform: scale(0.98); background: #e08e09; }
     </style>
 </head>
 <body>
 
-    <div id="dynamic-island"><span id="island-text">...</span></div>
+    <div id="dynamic-island" class="glass"><span id="island-text">...</span></div>
+    <div id="pause-btn" class="glass" onclick="togglePause(true)">⏸</div>
 
-    <div id="result-overlay" class="hidden">
+    <div id="pause-overlay" class="overlay glass hidden">
+        <h2 style="font-size: 40px;">ПАУЗА ⏸️</h2>
+        <div style="width: 80%; max-width: 300px; margin-top: 30px;">
+            <button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ ✔️</button>
+            <button class="btn btn-red" onclick="exitToMenu()">ВЫЙТИ В МЕНЮ 🚪</button>
+        </div>
+    </div>
+
+    <div id="result-overlay" class="overlay hidden">
         <div id="result-emoji">🏆</div>
         <div id="result-text">Победа!</div>
-        <button class="btn" onclick="closeResult()">В Главное Меню</button>
+        <button class="btn" style="width: 80%; background: rgba(0,0,0,0.3); border: 2px solid white;" onclick="closeResult()">В Главное Меню</button>
+    </div>
+
+    <div id="leaderboard-overlay" class="overlay hidden glass">
+        <h2 style="font-size: 35px; color: gold;">Итоги Игры 🏆</h2>
+        <div id="leaderboard-list"></div>
+        <button class="btn" style="width: 80%;" onclick="closeLeaderboard()">Завершить 🚪</button>
     </div>
 
     <div class="screen active" id="screen-games">
@@ -94,7 +127,7 @@
         <div class="games-grid">
             <div class="game-card" onclick="selectGame('archery')">
                 <div class="game-img">🎯</div>
-                <div>Меткость</div>
+                <div>Меткость (5 Ур.)</div>
             </div>
             <div class="game-card" onclick="selectGame('tictactoe')">
                 <div class="game-img">❌⭕</div>
@@ -113,28 +146,26 @@
         <button class="btn" onclick="selectPlayers(2)" id="btn-p2">2 Игрока</button>
         <button class="btn" onclick="selectPlayers(3)" id="btn-p3">3 Игрока</button>
         <button class="btn" onclick="selectPlayers(4)" id="btn-p4">4 Игрока</button>
-        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 Назад</button>
+        <button class="btn btn-red" style="margin-top:20px" onclick="showScreen('screen-games')">🔙 Назад</button>
     </div>
 
     <div class="screen" id="screen-setup">
-        <h2>Настройка Лобби ⚙️</h2>
+        <h2>ЛОББИ</h2>
         <div id="setup-rows"></div>
-        <button class="btn" style="background: #34c759; margin-top: 20px;" onclick="startGame()">▶️ СТАРТ!</button>
-        <button class="btn btn-back" onclick="showScreen('screen-players')">🔙 Назад</button>
+        <button class="btn btn-green" style="margin-top: 20px;" onclick="startGame()">▶️ СТАРТ!</button>
+        <button class="btn btn-red" onclick="showScreen('screen-players')">🔙 Назад</button>
     </div>
 
     <div class="screen" id="screen-game-tictactoe">
         <div class="board" id="ttt-board"></div>
-        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 Сдаться и выйти</button>
     </div>
 
     <div class="screen" id="screen-game-archery">
         <div id="game-archery-ui">
-            <div class="shoot-area" onclick="shootArrow()"></div>
+            <div class="shoot-area" id="archery-touch-zone"></div>
             <canvas id="archery-canvas" width="400" height="500"></canvas>
         </div>
-        <p style="font-size: 12px; color: gray; margin-top:10px;">Тапай по нижней части экрана, чтобы метнуть!</p>
-        <button class="btn btn-back" onclick="endArcheryGame()">🔙 Выйти</button>
+        <p id="archery-hint" style="font-size: 14px; color: gray; margin-top:10px;">Тапай, чтобы метнуть!</p>
     </div>
 
     <div class="screen" id="screen-game-clicker">
@@ -145,16 +176,14 @@
         </div>
         <h1 id="click-score" style="font-size: 60px; margin: 10px 0;">0</h1>
         <button class="giant-click-btn" id="click-btn" onclick="doClick()">ЖМИ!</button>
-        <button class="btn btn-back" onclick="endClicker()" style="margin-top: 20px;">🔙 Выйти</button>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
+        tg.expand(); tg.ready();
 
         const COLORS = ['#ff453a', '#32ade6', '#34c759', '#ffd60a', '#bf5af2', '#ff9f0a'];
-        let appState = { game: null, playerCount: 1, players: [] };
+        let appState = { game: null, playerCount: 1, players: [], isPaused: false };
 
         function setIsland(text, borderColor = '#fff') {
             const island = document.getElementById('dynamic-island');
@@ -163,10 +192,34 @@
             island.style.border = `2px solid ${borderColor}`;
         }
         function hideIsland() { document.getElementById('dynamic-island').style.display = 'none'; }
+        function setPauseBtn(visible) { document.getElementById('pause-btn').style.display = visible ? 'flex' : 'none'; }
 
-        // Показ результатов (на весь экран)
+        // --- ГЛОБАЛЬНАЯ НАВИГАЦИЯ И ПАУЗА ---
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            hideIsland(); setPauseBtn(false); appState.isPaused = false;
+        }
+
+        function togglePause(pause) {
+            appState.isPaused = pause;
+            if (pause) {
+                document.getElementById('pause-overlay').classList.remove('hidden');
+                tg.HapticFeedback.impactOccurred('light');
+            } else {
+                document.getElementById('pause-overlay').classList.add('hidden');
+            }
+        }
+
+        function exitToMenu() {
+            togglePause(false);
+            if(appState.game === 'clicker') clearInterval(clickInterval);
+            if(appState.game === 'archery') cancelAnimationFrame(archReqId);
+            showScreen('screen-games');
+        }
+
         function showResult(text, bgColor, emoji) {
-            hideIsland();
+            hideIsland(); setPauseBtn(false);
             const overlay = document.getElementById('result-overlay');
             overlay.style.backgroundColor = bgColor;
             document.getElementById('result-text').innerText = text;
@@ -174,18 +227,9 @@
             overlay.classList.remove('hidden');
             tg.HapticFeedback.notificationOccurred(emoji === '🤝' ? 'warning' : 'success');
         }
+        function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); showScreen('screen-games'); }
 
-        function closeResult() {
-            document.getElementById('result-overlay').classList.add('hidden');
-            showScreen('screen-games');
-        }
-
-        function showScreen(id) {
-            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
-            document.getElementById(id).classList.add('active');
-            hideIsland();
-        }
-
+        // Лобби логика
         function selectGame(game) {
             appState.game = game;
             ['p1','p2','p3','p4'].forEach(id => document.getElementById(`btn-${id}`).style.display = 'block');
@@ -198,15 +242,12 @@
 
         function buildSetup() {
             const container = document.getElementById('setup-rows');
-            container.innerHTML = '';
-            appState.players = [];
-
+            container.innerHTML = ''; appState.players = [];
             if (appState.game === 'clicker' || appState.game === 'tictactoe') { startGame(); return; }
 
             for (let i = 0; i < appState.playerCount; i++) {
-                appState.players.push({ name: `Игрок ${i+1}`, color: COLORS[i % COLORS.length], colorIdx: i % COLORS.length });
-                const row = document.createElement('div');
-                row.className = 'player-setup-row';
+                appState.players.push({ name: `Игрок ${i+1}`, color: COLORS[i % COLORS.length], colorIdx: i % COLORS.length, score: 0 });
+                const row = document.createElement('div'); row.className = 'player-setup-row';
                 row.innerHTML = `<input type="text" value="Игрок ${i+1}" onchange="appState.players[${i}].name=this.value">
                                  <div class="color-box" id="p-color-${i}" style="background-color: ${COLORS[i % COLORS.length]}" onclick="cycleColor(${i})"></div>`;
                 container.appendChild(row);
@@ -214,25 +255,19 @@
             showScreen('screen-setup');
         }
 
-        // Логика уникальных цветов
         function cycleColor(idx) {
-            let p = appState.players[idx];
-            let nextIdx = p.colorIdx;
-            let inUse = true;
-            
-            // Ищем следующий свободный цвет
+            let p = appState.players[idx]; let nextIdx = p.colorIdx; let inUse = true;
             while (inUse) {
                 nextIdx = (nextIdx + 1) % COLORS.length;
-                inUse = appState.players.some((otherPlayer, otherIdx) => otherIdx !== idx && otherPlayer.colorIdx === nextIdx);
+                inUse = appState.players.some((other, oIdx) => oIdx !== idx && other.colorIdx === nextIdx);
             }
-
-            p.colorIdx = nextIdx;
-            p.color = COLORS[p.colorIdx];
+            p.colorIdx = nextIdx; p.color = COLORS[p.colorIdx];
             document.getElementById(`p-color-${idx}`).style.backgroundColor = p.color;
             tg.HapticFeedback.impactOccurred('light');
         }
 
         function startGame() {
+            setPauseBtn(true);
             if (appState.game === 'tictactoe') { showScreen('screen-game-tictactoe'); initTicTacToe(); }
             else if (appState.game === 'archery') { showScreen('screen-game-archery'); initArchery(); }
             else if (appState.game === 'clicker') { showScreen('screen-game-clicker'); initClicker(); }
@@ -241,190 +276,312 @@
         // --- КРЕСТИКИ НОЛИКИ ---
         let tttBoard = [], tttTurn = 'x';
         function initTicTacToe() {
-            tttBoard = ['', '', '', '', '', '', '', '', ''];
-            tttTurn = 'x';
-            setIsland('Ход: ❌', '#ff453a');
-            renderTicTacToe();
+            tttBoard = ['', '', '', '', '', '', '', '', '']; tttTurn = 'x';
+            setIsland('Ход: ❌', '#ff453a'); renderTicTacToe();
         }
-
         function renderTicTacToe() {
-            const board = document.getElementById('ttt-board');
-            board.innerHTML = '';
+            const board = document.getElementById('ttt-board'); board.innerHTML = '';
             tttBoard.forEach((cell, i) => {
-                const div = document.createElement('div');
-                div.className = `cell ${cell}`;
+                const div = document.createElement('div'); div.className = `cell ${cell}`;
                 div.innerText = cell === 'x' ? '❌' : (cell === 'o' ? '⭕' : '');
-                div.onclick = () => moveTicTacToe(i);
-                board.appendChild(div);
+                div.onclick = () => moveTicTacToe(i); board.appendChild(div);
             });
         }
-
-        function checkWin() {
-            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-            return wins.some(c => tttBoard[c[0]] !== '' && tttBoard[c[0]] === tttBoard[c[1]] && tttBoard[c[1]] === tttBoard[c[2]]);
-        }
-
         function moveTicTacToe(i) {
-            if (tttBoard[i] !== '') return;
-            tg.HapticFeedback.impactOccurred('medium');
-            tttBoard[i] = tttTurn;
-            renderTicTacToe();
-
-            // Проверка на победу
-            if (checkWin()) {
+            if (tttBoard[i] !== '' || appState.isPaused) return;
+            tg.HapticFeedback.impactOccurred('medium'); tttBoard[i] = tttTurn; renderTicTacToe();
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            if (wins.some(c => tttBoard[c[0]] !== '' && tttBoard[c[0]] === tttBoard[c[1]] && tttBoard[c[1]] === tttBoard[c[2]])) {
                 const color = tttTurn === 'x' ? '#ff453a' : '#32ade6';
-                setIsland(`Победил ${tttTurn === 'x' ? '❌' : '⭕'}!`, color);
                 setTimeout(() => showResult(`ПОБЕДИЛ ${tttTurn === 'x' ? 'КРЕСТИК' : 'НОЛИК'}!`, color, tttTurn === 'x' ? '❌' : '⭕'), 300);
                 return;
             }
-            // Проверка на ничью
-            if (!tttBoard.includes('')) {
-                setIsland('Ничья!', '#ffd60a');
-                setTimeout(() => showResult('Ничья!', '#ffd60a', '🤝'), 300);
-                return;
-            }
-
-            tttTurn = tttTurn === 'x' ? 'o' : 'x';
-            setIsland(`Ход: ${tttTurn === 'x' ? '❌' : '⭕'}`, tttTurn === 'x' ? '#ff453a' : '#32ade6');
+            if (!tttBoard.includes('')) { setTimeout(() => showResult('Ничья!', '#ffd60a', '🤝'), 300); return; }
+            tttTurn = tttTurn === 'x' ? 'o' : 'x'; setIsland(`Ход: ${tttTurn === 'x' ? '❌' : '⭕'}`, tttTurn === 'x' ? '#ff453a' : '#32ade6');
         }
 
         // --- КЛИКЕР ---
         let clicks=0, clickTimeSetting=15, clickTimeCurrent=0, clickInterval, clickActive=false;
-        
         function changeClickTime(delta) {
-            if (clickActive) return;
+            if (clickActive || appState.isPaused) return;
             clickTimeSetting += delta;
             if (clickTimeSetting < 5) clickTimeSetting = 5;
             if (clickTimeSetting > 100) clickTimeSetting = 100;
             document.getElementById('click-time-val').innerText = `${clickTimeSetting} сек`;
-            tg.HapticFeedback.impactOccurred('light');
         }
-
         function initClicker() {
-            clicks = 0; clickTimeCurrent = clickTimeSetting; clickActive = false;
-            clearInterval(clickInterval);
+            clicks = 0; clickTimeCurrent = clickTimeSetting; clickActive = false; clearInterval(clickInterval);
             document.getElementById('click-score').innerText = 0;
             document.getElementById('click-time-val').innerText = `${clickTimeSetting} сек`;
-            document.getElementById('clicker-controls').style.display = 'flex'; // Показываем стрелочки
+            document.getElementById('clicker-controls').style.display = 'flex';
             setIsland(`Настрой время и ЖМИ!`, '#ffd60a');
         }
-
         function doClick() {
+            if(appState.isPaused) return;
             if(!clickActive && clickTimeCurrent > 0) {
                 clickActive = true;
-                document.getElementById('clicker-controls').style.display = 'none'; // Прячем стрелочки после старта
+                document.getElementById('clicker-controls').style.display = 'none';
                 setIsland(`Время: ${clickTimeCurrent} сек`, '#ffd60a');
-                
                 clickInterval = setInterval(() => {
-                    clickTimeCurrent--;
-                    setIsland(`Время: ${clickTimeCurrent} сек`, '#ffd60a');
+                    if(appState.isPaused) return;
+                    clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`, '#ffd60a');
                     if(clickTimeCurrent <= 0) {
-                        clearInterval(clickInterval);
-                        clickActive = false;
-                        showResult(`Твой счет: ${clicks}`, '#ff9f0a', '⏱️');
+                        clearInterval(clickInterval); clickActive = false;
+                        showResult(`Счет: ${clicks}`, '#ff9f0a', '⏱️');
                     }
                 }, 1000);
             }
             if(clickActive) {
-                clicks++;
-                document.getElementById('click-score').innerText = clicks;
+                clicks++; document.getElementById('click-score').innerText = clicks;
                 tg.HapticFeedback.impactOccurred('light');
             }
         }
-        function endClicker() { clearInterval(clickInterval); showScreen('screen-games'); }
 
-        // --- МЕТКОСТЬ ---
-        const canvas = document.getElementById('archery-canvas');
-        const ctx = canvas.getContext('2d');
+        // --- МЕТКОСТЬ (КОМПЛЕКСНАЯ) ---
+        const canvas = document.getElementById('archery-canvas'); const ctx = canvas.getContext('2d');
         let archReqId;
-        const archLevels = [
-            { speed: 0.025, startArrows: 0 },
-            { speed: -0.035, startArrows: 2 },
-            { speed: 0.045, startArrows: 4 },
-            { speed: -0.055, startArrows: 6 }
-        ];
-        let archState = { angle: 0, arrows: [], activeArrow: null, currentPlayerIdx: 0, currentLevelIdx: 0, shotsConfig: { 1: 20, 2: 7, 3: 3, 4: 2 }, shotsMade: 0, gameOver: false };
+        
+        let archState = {
+            level: 1, currentPlayerIdx: 0,
+            aaConfig: { 1: 12, 2: 6, 3: 4, 4: 3 }, // 12 пуль в сумме для 1 уровня
+            shotsMade: 0, aaAngle: 0, aaArrows: [], activeArrow: null,
+            gameOver: false,
+            // Переменные для Лягушки (Уровни 2-5)
+            charging: false, power: 0, powerDir: 1, frogY: 450, targetY: 100, targetSpeed: 0, targetX: 200
+        };
+
+        // Обработка касаний (Универсальная для AA и Лягушки)
+        const tz = document.getElementById('archery-touch-zone');
+        tz.addEventListener('mousedown', handlePress); tz.addEventListener('touchstart', (e)=>{ e.preventDefault(); handlePress(); });
+        tz.addEventListener('mouseup', handleRelease); tz.addEventListener('touchend', (e)=>{ e.preventDefault(); handleRelease(); });
+
+        function handlePress() {
+            if (appState.isPaused || archState.gameOver) return;
+            if (archState.level === 1) {
+                // В уровне 1 (AA) бросок по клику
+                if (archState.activeArrow && !archState.activeArrow.moving) {
+                    tg.HapticFeedback.impactOccurred('light');
+                    archState.activeArrow.moving = true;
+                }
+            } else {
+                // В уровне лягушки зажимаем для силы
+                if (!archState.activeArrow.moving) archState.charging = true;
+            }
+        }
+        function handleRelease() {
+            if (appState.isPaused || archState.gameOver) return;
+            if (archState.level > 1 && archState.charging) {
+                archState.charging = false;
+                archState.activeArrow.moving = true; // Запускаем лягушку в полет
+                tg.HapticFeedback.impactOccurred('medium');
+            }
+        }
+
+        function initArchery() {
+            appState.players.forEach(p => p.score = 0);
+            archState.level = 1; archState.currentPlayerIdx = 0; startArcheryLevel(); archLoop();
+        }
+
+        function startArcheryLevel() {
+            archState.gameOver = false; archState.shotsMade = 0;
+            if (archState.level === 1) {
+                document.getElementById('archery-hint').innerText = "Тапай, чтобы воткнуть стрелу!";
+                archState.aaAngle = 0; archState.aaArrows = []; spawnArcheryEntity();
+            } else {
+                document.getElementById('archery-hint').innerText = "ЗАЖМИ чтобы накопить силу, ОТПУСТИ чтобы прыгнуть!";
+                archState.charging = false; archState.power = 0;
+                // Настройки уровней Лягушки
+                archState.targetY = 100 + Math.random() * 150; // Случайная высота мишени
+                archState.targetSpeed = archState.level > 3 ? (Math.random() > 0.5 ? 2 : -2) : 0; // Движение на 4-5 уровнях
+                archState.targetX = 200;
+                spawnArcheryEntity();
+            }
+            updateArchIsland();
+        }
+
+        function spawnArcheryEntity() {
+            if(archState.gameOver) return;
+            const p = appState.players[archState.currentPlayerIdx];
+            archState.activeArrow = { y: 450, x: 200, color: p.color, moving: false };
+        }
 
         function updateArchIsland() {
             const p = appState.players[archState.currentPlayerIdx];
-            const max = archState.shotsConfig[appState.playerCount];
-            setIsland(`Ур. ${archState.currentLevelIdx + 1} | ${p.name} | ${archState.shotsMade}/${max}`, p.color);
+            if (archState.level === 1) {
+                const max = archState.aaConfig[appState.playerCount];
+                setIsland(`Ур. 1 | ${p.name} | ${archState.shotsMade}/${max}`, p.color);
+            } else {
+                setIsland(`Ур. ${archState.level} (Лягушка) | ${p.name} | Очки: ${p.score}`, p.color);
+            }
         }
 
-        function startLevel() {
-            archState.angle = 0; archState.arrows = []; archState.activeArrow = null; archState.gameOver = false;
-            const lvl = archLevels[archState.currentLevelIdx];
-            for(let i=0; i < lvl.startArrows; i++) { archState.arrows.push({ angle: (Math.PI*2 / lvl.startArrows) * i, color: '#666' }); }
-            spawnArrow(); updateArchIsland();
+        function nextPlayerOrLevel() {
+            archState.currentPlayerIdx++;
+            if (archState.currentPlayerIdx >= appState.playerCount) {
+                // Все отстрелялись, следующий уровень
+                archState.level++;
+                if (archState.level > 5) {
+                    showLeaderboard();
+                    archState.gameOver = true; return;
+                }
+                archState.currentPlayerIdx = 0;
+                tg.showAlert(`Переходим на Уровень ${archState.level}!`);
+                startArcheryLevel();
+            } else {
+                spawnArcheryEntity(); updateArchIsland();
+            }
         }
 
-        function initArchery() { archState.currentPlayerIdx = 0; archState.currentLevelIdx = 0; archState.shotsMade = 0; startLevel(); archLoop(); }
-        function spawnArrow() { if(!archState.gameOver) { archState.activeArrow = { y: 450, color: appState.players[archState.currentPlayerIdx].color, moving: false }; } }
-        function shootArrow() { if (!archState.gameOver && archState.activeArrow && !archState.activeArrow.moving) { tg.HapticFeedback.impactOccurred('light'); archState.activeArrow.moving = true; } }
+        function drawAATarget(cx, cy, r) {
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+            ctx.fillStyle = '#fff'; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = '#ff453a'; ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, r*0.6, 0, Math.PI*2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, r*0.2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(cx-r, cy); ctx.lineTo(cx+r, cy); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx, cy-r); ctx.lineTo(cx, cy+r); ctx.stroke();
+        }
 
         function archLoop() {
             if (!document.getElementById('screen-game-archery').classList.contains('active')) return;
+            archReqId = requestAnimationFrame(archLoop);
+            if (appState.isPaused) return;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            const lvl = archLevels[archState.currentLevelIdx]; archState.angle += lvl.speed; const cx = 200, cy = 150, r = 40;
 
-            archState.arrows.forEach(arr => {
-                const drawAngle = archState.angle + arr.angle; const endX = cx + Math.cos(drawAngle) * 120; const endY = cy + Math.sin(drawAngle) * 120;
-                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(endX, endY); ctx.strokeStyle = arr.color; ctx.lineWidth = 3; ctx.stroke();
-                ctx.beginPath(); ctx.arc(endX, endY, 6, 0, Math.PI*2); ctx.fillStyle = arr.color; ctx.fill();
-            });
+            // ================= РЕЖИМ 1: КОЛЕСО (AA) =================
+            if (archState.level === 1) {
+                archState.aaAngle += 0.025; const cx = 200, cy = 150, r = 40;
+                
+                archState.aaArrows.forEach(arr => {
+                    const drawAngle = archState.aaAngle + arr.angle;
+                    const endX = cx + Math.cos(drawAngle) * 120; const endY = cy + Math.sin(drawAngle) * 120;
+                    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(endX, endY);
+                    ctx.strokeStyle = arr.color; ctx.lineWidth = 3; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(endX, endY, 6, 0, Math.PI*2); ctx.fillStyle = arr.color; ctx.fill();
+                });
 
-            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
+                drawAATarget(cx, cy, r);
 
-            if (archState.activeArrow) {
-                if (archState.activeArrow.moving) {
+                if (archState.activeArrow && archState.activeArrow.moving) {
                     archState.activeArrow.y -= 15;
                     if (archState.activeArrow.y <= cy + r + 80) { 
-                        const hitAngle = (-archState.angle + Math.PI/2) % (Math.PI*2);
+                        const hitAngle = (-archState.aaAngle + Math.PI/2) % (Math.PI*2);
                         let normHit = hitAngle < 0 ? hitAngle + Math.PI*2 : hitAngle;
-                        let crashed = archState.arrows.some(arr => {
+                        let crashed = archState.aaArrows.some(arr => {
                             let normArr = arr.angle < 0 ? arr.angle + Math.PI*2 : arr.angle;
                             return Math.abs(normHit - normArr) < 0.2 || Math.abs(normHit - normArr) > (Math.PI*2 - 0.2);
                         });
 
                         if (crashed) {
                             tg.HapticFeedback.notificationOccurred('error');
-                            tg.showAlert('Бам! Ты попал в стрелу. Начни уровень заново!');
-                            archState.shotsMade = 0; startLevel();
+                            tg.showAlert('Бам! Уровень сначала!');
+                            startArcheryLevel(); return;
                         } else {
                             tg.HapticFeedback.impactOccurred('heavy');
-                            archState.arrows.push({ angle: hitAngle, color: archState.activeArrow.color });
+                            archState.aaArrows.push({ angle: hitAngle, color: archState.activeArrow.color });
                             archState.shotsMade++;
                             
-                            const maxShots = archState.shotsConfig[appState.playerCount];
-                            if (archState.shotsMade >= maxShots) {
-                                archState.currentPlayerIdx++; archState.shotsMade = 0;
-                                if (archState.currentPlayerIdx >= appState.playerCount) {
-                                    archState.currentLevelIdx++;
-                                    if (archState.currentLevelIdx >= archLevels.length) {
-                                        archState.gameOver = true;
-                                        setTimeout(() => showResult('Все уровни пройдены!', '#34c759', '🏆'), 300);
-                                        return;
-                                    } else {
-                                        tg.showAlert(`Супер! Переходим на Уровень ${archState.currentLevelIdx + 1}`);
-                                        archState.currentPlayerIdx = 0; startLevel(); return;
-                                    }
-                                }
-                            }
-                            if (!archState.gameOver) { updateArchIsland(); spawnArrow(); }
+                            if (archState.shotsMade >= archState.aaConfig[appState.playerCount]) {
+                                appState.players[archState.currentPlayerIdx].score += 1; // 1 очко за прохождение 1 ур.
+                                archState.shotsMade = 0; nextPlayerOrLevel();
+                            } else { spawnArcheryEntity(); updateArchIsland(); }
                         }
                     }
                 }
+                
                 if(!archState.gameOver && archState.activeArrow) {
                     ctx.beginPath(); ctx.moveTo(cx, archState.activeArrow.y); ctx.lineTo(cx, archState.activeArrow.y - 80);
                     ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
                     ctx.beginPath(); ctx.arc(cx, archState.activeArrow.y - 80, 6, 0, Math.PI*2); ctx.fillStyle = archState.activeArrow.color; ctx.fill();
                 }
+            } 
+            // ================= РЕЖИМ 2-5: ЛЯГУШКА =================
+            else {
+                // Движение мишени
+                archState.targetX += archState.targetSpeed;
+                if (archState.targetX < 50 || archState.targetX > 350) archState.targetSpeed *= -1;
+
+                // Рисуем мишень
+                ctx.fillStyle = '#ff453a'; ctx.fillRect(archState.targetX - 40, archState.targetY, 80, 10);
+                ctx.fillStyle = '#fff'; ctx.fillRect(archState.targetX - 20, archState.targetY, 40, 10);
+
+                // Зарядка силы
+                if (archState.charging) {
+                    archState.power += 3 * archState.powerDir;
+                    if (archState.power >= 100) { archState.power = 100; archState.powerDir = -1; }
+                    if (archState.power <= 0) { archState.power = 0; archState.powerDir = 1; }
+                }
+
+                // Рисуем шкалу силы слева
+                ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(20, 200, 20, 200);
+                ctx.fillStyle = archState.activeArrow ? archState.activeArrow.color : 'white';
+                ctx.fillRect(20, 400, 20, -(archState.power * 2));
+                ctx.fillStyle = '#fff'; ctx.font = '16px Arial'; ctx.fillText(`${Math.floor(archState.power)}%`, 10, 420);
+
+                if (archState.activeArrow) {
+                    if (archState.activeArrow.moving) {
+                        // Лягушка летит вверх. Макс высота полета = 400 пикселей (при 100%)
+                        let targetYJump = 450 - (archState.power * 3.5);
+                        archState.activeArrow.y -= 10;
+                        
+                        // Если достигли пика прыжка
+                        if (archState.activeArrow.y <= targetYJump) {
+                            archState.activeArrow.moving = false;
+                            
+                            // Проверка попадания (по Y должно быть близко, и по X тоже)
+                            let hitY = Math.abs(archState.activeArrow.y - archState.targetY) < 30;
+                            // Так как лягушка летит ровно по центру (X=200), мишень должна быть рядом
+                            let hitX = Math.abs(archState.activeArrow.x - archState.targetX) < 50;
+
+                            if (hitY && hitX) {
+                                tg.HapticFeedback.notificationOccurred('success');
+                                appState.players[archState.currentPlayerIdx].score += 1;
+                                tg.showAlert('ТОЧНО В ЦЕЛЬ! +1 Очко! 🎯');
+                            } else {
+                                tg.HapticFeedback.notificationOccurred('error');
+                                tg.showAlert('Промах! 😢');
+                            }
+                            setTimeout(nextPlayerOrLevel, 100);
+                        }
+                    }
+                    
+                    // Рисуем Лягушку
+                    ctx.font = '40px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('🐸', archState.activeArrow.x, archState.activeArrow.y);
+                    // Ободок цвета игрока
+                    ctx.beginPath(); ctx.arc(archState.activeArrow.x, archState.activeArrow.y - 15, 25, 0, Math.PI*2);
+                    ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
+                }
             }
-            archReqId = requestAnimationFrame(archLoop);
         }
-        function endArcheryGame() { cancelAnimationFrame(archReqId); showScreen('screen-games'); }
+
+        // Показ Лидерборда в конце Меткости
+        function showLeaderboard() {
+            hideIsland(); setPauseBtn(false);
+            let sorted = [...appState.players].sort((a, b) => b.score - a.score);
+            let listHTML = '';
+            sorted.forEach((p, i) => {
+                if (i === 0) {
+                    listHTML += `<div class="lb-first" style="color: ${p.color};">
+                        <span class="lb-score">${p.score} ОЧКОВ</span>
+                        1. ${p.name.toUpperCase()} 🏆
+                    </div>`;
+                } else {
+                    listHTML += `<div class="lb-item" style="color: ${p.color};">
+                        ${i+1}. ${p.name} — ${p.score} очков
+                    </div>`;
+                }
+            });
+            document.getElementById('leaderboard-list').innerHTML = listHTML;
+            document.getElementById('leaderboard-overlay').classList.remove('hidden');
+            tg.HapticFeedback.notificationOccurred('success');
+        }
+
+        function closeLeaderboard() {
+            document.getElementById('leaderboard-overlay').classList.add('hidden');
+            showScreen('screen-games');
+        }
+
     </script>
-</body>
-</html>
 </body>
 </html>
