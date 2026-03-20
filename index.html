@@ -303,7 +303,8 @@
             clickTimeSetting += delta;
             if (clickTimeSetting < 5) clickTimeSetting = 5;
             if (clickTimeSetting > 100) clickTimeSetting = 100;
-            // ИСПРАВЛЕНИЕ: Теперь время сразу синхронизируется!
+            
+            // ЖЕСТКАЯ СИНХРОНИЗАЦИЯ: обновляем сразу же!
             clickTimeCurrent = clickTimeSetting; 
             document.getElementById('click-time-val').innerText = `${clickTimeSetting} сек`;
         }
@@ -341,10 +342,10 @@
         
         let archState = {
             level: 1, currentPlayerIdx: 0,
-            aaConfig: { 1: 12, 2: 6, 3: 4, 4: 3 }, 
+            aaConfig: { 1: 12, 2: 12, 3: 12, 4: 12 }, // Всего 12 стрел
             shotsMade: 0, aaAngle: 0, aaArrows: [], activeArrow: null,
             gameOver: false,
-            charging: false, power: 0, powerDir: 1, frogY: 450, targetY: 100, targetSpeed: 0, targetX: 200
+            charging: false, power: 0, powerDir: 1, targetY: 100, targetSpeed: 0, targetX: 200
         };
 
         const tz = document.getElementById('archery-touch-zone');
@@ -379,7 +380,7 @@
         function startArcheryLevel() {
             archState.gameOver = false; archState.shotsMade = 0;
             if (archState.level === 1) {
-                document.getElementById('archery-hint').innerText = "Тапай, чтобы воткнуть стрелу!";
+                document.getElementById('archery-hint').innerText = "Тапайте по очереди, чтобы воткнуть стрелу!";
                 archState.aaAngle = 0; archState.aaArrows = []; spawnArcheryEntity();
             } else {
                 document.getElementById('archery-hint').innerText = "ЗАЖМИ чтобы накопить силу, ОТПУСТИ чтобы прыгнуть!";
@@ -395,7 +396,6 @@
             if(archState.gameOver) return;
             const p = appState.players[archState.currentPlayerIdx];
             archState.activeArrow = { y: 450, x: 200, color: p.color, moving: false };
-            // ИСПРАВЛЕНИЕ: строго обнуляем силу лягушки для каждого выстрела!
             archState.charging = false;
             archState.power = 0;
             archState.powerDir = 1;
@@ -404,30 +404,9 @@
         function updateArchIsland() {
             const p = appState.players[archState.currentPlayerIdx];
             if (archState.level === 1) {
-                const max = archState.aaConfig[appState.playerCount];
-                setIsland(`Ур. 1 | ${p.name} | ${archState.shotsMade}/${max}`, p.color);
+                setIsland(`Ур. 1 | Ход: ${p.name} | ${archState.shotsMade}/12`, p.color);
             } else {
-                setIsland(`Ур. ${archState.level} (Лягушка) | ${p.name} | Очки: ${p.score}`, p.color);
-            }
-        }
-
-        function nextPlayerOrLevel() {
-            archState.currentPlayerIdx++;
-            if (archState.currentPlayerIdx >= appState.playerCount) {
-                archState.level++;
-                if (archState.level > 5) {
-                    showLeaderboard();
-                    archState.gameOver = true; return;
-                }
-                archState.currentPlayerIdx = 0;
-                // Блокируем игру, пока открыт Alert
-                archState.gameOver = true;
-                tg.showAlert(`Переходим на Уровень ${archState.level}!`, () => {
-                    archState.gameOver = false;
-                    startArcheryLevel();
-                });
-            } else {
-                spawnArcheryEntity(); updateArchIsland();
+                setIsland(`Ур. ${archState.level} (Лягушка) | Ход: ${p.name} | Очки: ${p.score}`, p.color);
             }
         }
 
@@ -440,6 +419,33 @@
             ctx.beginPath(); ctx.moveTo(cx, cy-r); ctx.lineTo(cx, cy+r); ctx.stroke();
         }
 
+        // ОБЪЕДИНЕННАЯ ФУНКЦИЯ ДЛЯ УРОВНЕЙ С ЛЯГУШКОЙ
+        function processFrogResult(hit) {
+            let msg = hit ? 'ТОЧНО В ЦЕЛЬ! +1 Очко! 🎯' : 'Промах! 😢';
+            if (hit) appState.players[archState.currentPlayerIdx].score += 1;
+            
+            archState.currentPlayerIdx++;
+            if (archState.currentPlayerIdx >= appState.playerCount) {
+                archState.level++;
+                if (archState.level > 5) {
+                    tg.showAlert(msg, () => showLeaderboard());
+                    return;
+                }
+                archState.currentPlayerIdx = 0;
+                tg.showAlert(`${msg}\n\nВсе отпрыгали!\nПереходим на Уровень ${archState.level}!`, () => {
+                    archState.gameOver = false;
+                    startArcheryLevel();
+                });
+            } else {
+                let nextName = appState.players[archState.currentPlayerIdx].name;
+                tg.showAlert(`${msg}\n\nОчередь: ${nextName}`, () => {
+                    archState.gameOver = false;
+                    spawnArcheryEntity();
+                    updateArchIsland();
+                });
+            }
+        }
+
         function archLoop() {
             if (!document.getElementById('screen-game-archery').classList.contains('active')) return;
             archReqId = requestAnimationFrame(archLoop);
@@ -447,6 +453,7 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+            // ================= РЕЖИМ 1 =================
             if (archState.level === 1) {
                 archState.aaAngle += 0.025; const cx = 200, cy = 150, r = 40;
                 
@@ -472,9 +479,11 @@
 
                         if (crashed) {
                             tg.HapticFeedback.notificationOccurred('error');
-                            archState.gameOver = true; // Замораживаем процесс
-                            tg.showAlert('Бам! Уровень сначала!', () => {
+                            archState.gameOver = true;
+                            // Если кто-то ошибся - уровень сбрасывается для всех!
+                            tg.showAlert(`Бам! ${appState.players[archState.currentPlayerIdx].name} промахнулся!\nНачнем Уровень 1 заново!`, () => {
                                 archState.gameOver = false;
+                                archState.currentPlayerIdx = 0;
                                 startArcheryLevel();
                             });
                             return;
@@ -483,10 +492,22 @@
                             archState.aaArrows.push({ angle: hitAngle, color: archState.activeArrow.color });
                             archState.shotsMade++;
                             
-                            if (archState.shotsMade >= archState.aaConfig[appState.playerCount]) {
-                                appState.players[archState.currentPlayerIdx].score += 1;
-                                archState.shotsMade = 0; nextPlayerOrLevel();
-                            } else { spawnArcheryEntity(); updateArchIsland(); }
+                            if (archState.shotsMade >= 12) {
+                                // Уровень пройден - всем по +1 баллу
+                                appState.players.forEach(p => p.score += 1);
+                                archState.gameOver = true;
+                                archState.level++;
+                                archState.currentPlayerIdx = 0;
+                                tg.showAlert(`Уровень 1 пройден!\nКаждый получает +1 очко!\n\nПереходим на Уровень 2!`, () => {
+                                    archState.gameOver = false;
+                                    startArcheryLevel();
+                                });
+                            } else {
+                                // Очередь следующего
+                                archState.currentPlayerIdx = (archState.currentPlayerIdx + 1) % appState.playerCount;
+                                spawnArcheryEntity(); 
+                                updateArchIsland(); 
+                            }
                         }
                     }
                 }
@@ -497,6 +518,7 @@
                     ctx.beginPath(); ctx.arc(cx, archState.activeArrow.y - 80, 6, 0, Math.PI*2); ctx.fillStyle = archState.activeArrow.color; ctx.fill();
                 }
             } 
+            // ================= РЕЖИМ 2-5 =================
             else {
                 archState.targetX += archState.targetSpeed;
                 if (archState.targetX < 50 || archState.targetX > 350) archState.targetSpeed *= -1;
@@ -513,7 +535,10 @@
                 ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(20, 200, 20, 200);
                 ctx.fillStyle = archState.activeArrow ? archState.activeArrow.color : 'white';
                 ctx.fillRect(20, 400, 20, -(archState.power * 2));
-                ctx.fillStyle = '#fff'; ctx.font = '16px Arial'; ctx.fillText(`${Math.floor(archState.power)}%`, 10, 420);
+                
+                // ИСПРАВЛЕНИЕ: Выравнивание текста, чтобы 99% не обрезалось
+                ctx.fillStyle = '#fff'; ctx.font = '16px Arial'; ctx.textAlign = 'left';
+                ctx.fillText(`${Math.floor(archState.power)}%`, 10, 420);
 
                 if (archState.activeArrow) {
                     if (archState.activeArrow.moving) {
@@ -522,29 +547,23 @@
                         
                         if (archState.activeArrow.y <= targetYJump) {
                             archState.activeArrow.moving = false;
-                            archState.gameOver = true; // Замораживаем на время ответа
+                            archState.gameOver = true;
                             
                             let hitY = Math.abs(archState.activeArrow.y - archState.targetY) < 30;
                             let hitX = Math.abs(archState.activeArrow.x - archState.targetX) < 50;
 
                             if (hitY && hitX) {
                                 tg.HapticFeedback.notificationOccurred('success');
-                                appState.players[archState.currentPlayerIdx].score += 1;
-                                tg.showAlert('ТОЧНО В ЦЕЛЬ! +1 Очко! 🎯', () => {
-                                    archState.gameOver = false;
-                                    nextPlayerOrLevel();
-                                });
+                                processFrogResult(true);
                             } else {
                                 tg.HapticFeedback.notificationOccurred('error');
-                                tg.showAlert('Промах! 😢', () => {
-                                    archState.gameOver = false;
-                                    nextPlayerOrLevel();
-                                });
+                                processFrogResult(false);
                             }
                         }
                     }
                     
                     if(!archState.gameOver) {
+                        // ИСПРАВЛЕНИЕ: Возвращаем центрирование только для лягушки
                         ctx.font = '40px Arial'; ctx.textAlign = 'center';
                         ctx.fillText('🐸', archState.activeArrow.x, archState.activeArrow.y);
                         ctx.beginPath(); ctx.arc(archState.activeArrow.x, archState.activeArrow.y - 15, 25, 0, Math.PI*2);
@@ -579,7 +598,6 @@
             document.getElementById('leaderboard-overlay').classList.add('hidden');
             showScreen('screen-games');
         }
-
     </script>
 </body>
 </html>
