@@ -14,12 +14,10 @@
         }
         body {
             font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
+            background-color: var(--bg); color: var(--text);
             margin: 0; padding: 15px;
             display: flex; flex-direction: column; align-items: center;
-            min-height: 100vh; box-sizing: border-box;
-            overflow-x: hidden;
+            min-height: 100vh; box-sizing: border-box; overflow-x: hidden;
         }
         .screen { display: none; width: 100%; max-width: 400px; text-align: center; }
         .screen.active { display: block; }
@@ -34,59 +32,37 @@
         .btn:active { transform: scale(0.95); opacity: 0.8; }
         .btn-back { background-color: #ff453a; margin-top: 20px; }
 
-        /* Сетка игр */
         .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .game-card {
-            background: #2c2c2e; border-radius: 15px; padding: 15px;
-            cursor: pointer; transition: transform 0.1s;
-        }
+        .game-card { background: #2c2c2e; border-radius: 15px; padding: 15px; cursor: pointer; transition: transform 0.1s; }
         .game-card:active { transform: scale(0.95); }
-        .game-img {
-            width: 100%; aspect-ratio: 1; border-radius: 10px;
-            background: #444; display: flex; align-items: center; justify-content: center;
-            font-size: 40px; margin-bottom: 10px;
-        }
+        .game-img { width: 100%; aspect-ratio: 1; border-radius: 10px; background: #444; display: flex; align-items: center; justify-content: center; font-size: 40px; margin-bottom: 10px; }
 
-        /* Настройка игроков */
-        .player-setup-row {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 10px; background: #2c2c2e; padding: 10px; border-radius: 10px;
-        }
-        .player-setup-row input {
-            flex-grow: 1; padding: 10px; border: none; border-radius: 8px;
-            margin-right: 10px; background: #1c1c1e; color: white;
-        }
-        .color-box {
-            width: 35px; height: 35px; border-radius: 8px; cursor: pointer;
-            border: 2px solid white;
-        }
+        .player-setup-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; background: #2c2c2e; padding: 10px; border-radius: 10px; }
+        .player-setup-row input { flex-grow: 1; padding: 10px; border: none; border-radius: 8px; margin-right: 10px; background: #1c1c1e; color: white; }
+        .color-box { width: 35px; height: 35px; border-radius: 8px; cursor: pointer; border: 2px solid white; }
 
-        /* 3D Крестики Нолики */
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: auto; }
-        .cell {
-            aspect-ratio: 1; background: #2c2c2e; border-radius: 15px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 50px; font-weight: bold; cursor: pointer;
-            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); /* Эффект вдавленности кнопки */
-        }
-        .cell.x { color: #ff453a; text-shadow: 0 4px 0 #8b0000, 0 5px 10px rgba(0,0,0,0.5); } /* 3D эффект крестика */
-        .cell.o { color: #32ade6; text-shadow: 0 4px 0 #005f8b, 0 5px 10px rgba(0,0,0,0.5); } /* 3D эффект нолика */
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: 40px auto 20px auto; }
+        .cell { aspect-ratio: 1; background: #2c2c2e; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 50px; font-weight: bold; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); }
+        .cell.x { color: #ff453a; text-shadow: 0 4px 0 #8b0000, 0 5px 10px rgba(0,0,0,0.5); }
+        .cell.o { color: #32ade6; text-shadow: 0 4px 0 #005f8b, 0 5px 10px rgba(0,0,0,0.5); }
 
-        /* Островок и Меткость */
         #dynamic-island {
             background: #000; color: white; padding: 10px 20px; border-radius: 30px;
-            font-weight: bold; font-size: 14px; position: absolute; top: 15px; left: 50%;
+            font-weight: bold; font-size: 14px; position: fixed; top: 15px; left: 50%;
             transform: translateX(-50%); z-index: 100; display: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s; white-space: nowrap;
         }
-        #archery-canvas { background: #1c1c1e; border-radius: 15px; width: 100%; max-width: 400px; }
+        
+        #archery-canvas { background: #1c1c1e; border-radius: 15px; width: 100%; max-width: 400px; margin-top: 40px; }
         #game-archery-ui { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; }
         .shoot-area { position: absolute; bottom: 0; width: 100%; height: 50%; z-index: 10; }
+        
+        .click-area { margin-top: 50px; }
     </style>
 </head>
 <body>
 
-    <div id="dynamic-island"><span id="island-text">Ход: Игрок 1 | 0/20</span></div>
+    <div id="dynamic-island"><span id="island-text">...</span></div>
 
     <div class="screen active" id="screen-games">
         <h1>Во что играем? 🎮</h1>
@@ -98,10 +74,6 @@
             <div class="game-card" onclick="selectGame('tictactoe')">
                 <div class="game-img">❌⭕</div>
                 <div>Крестики-нолики</div>
-            </div>
-            <div class="game-card" onclick="selectGame('tanks')">
-                <div class="game-img">🚜</div>
-                <div>Танчики</div>
             </div>
             <div class="game-card" onclick="selectGame('clicker')">
                 <div class="game-img">⏱️</div>
@@ -127,9 +99,8 @@
     </div>
 
     <div class="screen" id="screen-game-tictactoe">
-        <h2 id="ttt-status">Ход: ❌</h2>
         <div class="board" id="ttt-board"></div>
-        <button class="btn" onclick="initTicTacToe()">🔄 Заново</button>
+        <button class="btn" onclick="initTicTacToe()">🔄 Очистить поле</button>
         <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 В меню</button>
     </div>
 
@@ -138,22 +109,16 @@
             <div class="shoot-area" onclick="shootArrow()"></div>
             <canvas id="archery-canvas" width="400" height="500"></canvas>
         </div>
-        <p style="font-size: 12px; color: gray;">Тапай по нижней части экрана, чтобы бросить стрелу!</p>
+        <p style="font-size: 12px; color: gray; margin-top:10px;">Тапай по нижней части экрана, чтобы метнуть!</p>
         <button class="btn btn-back" onclick="endArcheryGame()">🔙 Выйти</button>
     </div>
 
-    <div class="screen" id="screen-game-tanks">
-        <h2>Танчики 🚜</h2>
-        <p>Для танков нужно нарисовать 4 джойстика и сложную физику передвижения. Это огромный кусок кода!</p>
-        <p>Добавим в следующем обновлении 😉</p>
-        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 В меню</button>
-    </div>
-
     <div class="screen" id="screen-game-clicker">
-        <h2>Тайм-Кликер</h2>
-        <h1 id="click-score" style="font-size: 60px;">0</h1>
-        <button class="btn" id="click-btn" onclick="doClick()" style="height: 100px; font-size: 24px;">ЖМИ!</button>
-        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 Выйти</button>
+        <div class="click-area">
+            <h1 id="click-score" style="font-size: 80px; margin: 20px 0;">0</h1>
+            <button class="btn" id="click-btn" onclick="doClick()" style="height: 120px; font-size: 30px; background: #ff9f0a;">ЖМИ!</button>
+        </div>
+        <button class="btn btn-back" onclick="endClicker()">🔙 Выйти</button>
     </div>
 
     <script>
@@ -161,75 +126,54 @@
         tg.expand();
         tg.ready();
 
-        // Доступные цвета для игроков
         const COLORS = ['#ff453a', '#32ade6', '#34c759', '#ffd60a', '#bf5af2', '#ff9f0a'];
-        
-        // Глобальный стейт приложения
-        let appState = {
-            game: null,
-            playerCount: 1,
-            players: []
-        };
+        let appState = { game: null, playerCount: 1, players: [] };
 
-        // НАВИГАЦИЯ
+        // Управление островком
+        function setIsland(text, borderColor = '#fff') {
+            const island = document.getElementById('dynamic-island');
+            document.getElementById('island-text').innerText = text;
+            island.style.display = 'block';
+            island.style.border = `2px solid ${borderColor}`;
+        }
+        function hideIsland() { document.getElementById('dynamic-island').style.display = 'none'; }
+
+        // Навигация
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
-            document.getElementById('dynamic-island').style.display = 'none'; // Прячем островок вне игры
+            hideIsland();
         }
 
         function selectGame(game) {
             appState.game = game;
+            ['p1','p2','p3','p4'].forEach(id => document.getElementById(`btn-${id}`).style.display = 'block');
             
-            // Настройка кнопок выбора игроков в зависимости от игры
-            document.getElementById('btn-p1').style.display = 'block';
-            document.getElementById('btn-p2').style.display = 'block';
-            document.getElementById('btn-p3').style.display = 'block';
-            document.getElementById('btn-p4').style.display = 'block';
-
-            if (game === 'tictactoe') {
-                appState.playerCount = 2; // Крестики нолики только на двоих
-                buildSetup();
-            } else if (game === 'clicker') {
-                appState.playerCount = 1;
-                buildSetup();
-            } else {
-                showScreen('screen-players');
-            }
+            if (game === 'tictactoe') { appState.playerCount = 2; buildSetup(); }
+            else if (game === 'clicker') { appState.playerCount = 1; buildSetup(); }
+            else { showScreen('screen-players'); }
         }
 
-        function selectPlayers(count) {
-            appState.playerCount = count;
-            buildSetup();
-        }
+        function selectPlayers(count) { appState.playerCount = count; buildSetup(); }
 
         function buildSetup() {
             const container = document.getElementById('setup-rows');
             container.innerHTML = '';
             appState.players = [];
 
-            // Если игра не требует настройки имен (например, кликер)
-            if (appState.game === 'clicker' || appState.game === 'tictactoe') {
-                startGame();
-                return;
-            }
+            if (appState.game === 'clicker' || appState.game === 'tictactoe') { startGame(); return; }
 
             for (let i = 0; i < appState.playerCount; i++) {
                 appState.players.push({ name: `Игрок ${i+1}`, color: COLORS[i % COLORS.length], colorIdx: i % COLORS.length });
-                
                 const row = document.createElement('div');
                 row.className = 'player-setup-row';
-                row.innerHTML = `
-                    <input type="text" id="p-name-${i}" value="Игрок ${i+1}" onchange="updateName(${i}, this.value)">
-                    <div class="color-box" id="p-color-${i}" style="background-color: ${COLORS[i % COLORS.length]}" onclick="cycleColor(${i})"></div>
-                `;
+                row.innerHTML = `<input type="text" value="Игрок ${i+1}" onchange="appState.players[${i}].name=this.value">
+                                 <div class="color-box" id="p-color-${i}" style="background-color: ${COLORS[i % COLORS.length]}" onclick="cycleColor(${i})"></div>`;
                 container.appendChild(row);
             }
             showScreen('screen-setup');
         }
 
-        function updateName(idx, val) { appState.players[idx].name = val; }
-        
         function cycleColor(idx) {
             let p = appState.players[idx];
             p.colorIdx = (p.colorIdx + 1) % COLORS.length;
@@ -239,30 +183,17 @@
         }
 
         function startGame() {
-            if (appState.game === 'tictactoe') {
-                showScreen('screen-game-tictactoe');
-                initTicTacToe();
-            } else if (appState.game === 'archery') {
-                showScreen('screen-game-archery');
-                initArchery();
-            } else if (appState.game === 'tanks') {
-                showScreen('screen-game-tanks');
-            } else if (appState.game === 'clicker') {
-                showScreen('screen-game-clicker');
-                resetClicker();
-            }
+            if (appState.game === 'tictactoe') { showScreen('screen-game-tictactoe'); initTicTacToe(); }
+            else if (appState.game === 'archery') { showScreen('screen-game-archery'); initArchery(); }
+            else if (appState.game === 'clicker') { showScreen('screen-game-clicker'); initClicker(); }
         }
 
-        // ==========================================
-        // ИГРА: 3D КРЕСТИКИ НОЛИКИ
-        // ==========================================
-        let tttBoard = ['', '', '', '', '', '', '', '', ''];
-        let tttTurn = 'x';
-
+        // --- КРЕСТИКИ НОЛИКИ ---
+        let tttBoard = [], tttTurn = 'x';
         function initTicTacToe() {
             tttBoard = ['', '', '', '', '', '', '', '', ''];
             tttTurn = 'x';
-            document.getElementById('ttt-status').innerText = `Ход: ❌`;
+            setIsland('Ход: ❌', '#ff453a');
             renderTicTacToe();
         }
 
@@ -282,54 +213,93 @@
             if (tttBoard[i] !== '') return;
             tg.HapticFeedback.impactOccurred('medium');
             tttBoard[i] = tttTurn;
-            renderTicTacToe();
-            // Проверка победы опущена для краткости (можешь добавить из старой версии)
             tttTurn = tttTurn === 'x' ? 'o' : 'x';
-            document.getElementById('ttt-status').innerText = `Ход: ${tttTurn === 'x' ? '❌' : '⭕'}`;
+            setIsland(`Ход: ${tttTurn === 'x' ? '❌' : '⭕'}`, tttTurn === 'x' ? '#ff453a' : '#32ade6');
+            renderTicTacToe();
+            // Игра идет до бесконечности без побед/поражений
         }
 
-        // ==========================================
-        // ИГРА: МЕТКОСТЬ (AA CLONE)
-        // ==========================================
+        // --- КЛИКЕР ---
+        let clicks=0, clickTime=10, clickInterval, clickActive=false;
+        function initClicker() {
+            clicks = 0; clickTime = 10; clickActive = false;
+            clearInterval(clickInterval);
+            document.getElementById('click-score').innerText = 0;
+            setIsland(`Время: ${clickTime} сек`, '#ffd60a');
+        }
+
+        function doClick() {
+            if(!clickActive && clickTime === 10) {
+                clickActive = true;
+                clickInterval = setInterval(() => {
+                    clickTime--;
+                    setIsland(`Время: ${clickTime} сек`, '#ffd60a');
+                    if(clickTime <= 0) {
+                        clearInterval(clickInterval);
+                        clickActive = false;
+                        hideIsland();
+                        tg.showAlert(`Твой результат: ${clicks} кликов!`);
+                    }
+                }, 1000);
+            }
+            if(clickActive) {
+                clicks++;
+                document.getElementById('click-score').innerText = clicks;
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+        function endClicker() { clearInterval(clickInterval); showScreen('screen-games'); }
+
+
+        // --- МЕТКОСТЬ ---
         const canvas = document.getElementById('archery-canvas');
         const ctx = canvas.getContext('2d');
         let archReqId;
         
+        // Настройки уровней
+        const archLevels = [
+            { speed: 0.025, startArrows: 0 },
+            { speed: -0.035, startArrows: 2 },
+            { speed: 0.045, startArrows: 4 },
+            { speed: -0.055, startArrows: 6 }
+        ];
+
         let archState = {
-            angle: 0, speed: 0.02,
-            arrows: [], // {angle, color}
-            activeArrow: null, // {y, color}
-            currentPlayerIdx: 0,
-            shotsConfig: { 1: 20, 2: 7, 3: 3, 4: 2 }, // Выстрелов на каждого
-            shotsMadeByCurrent: 0,
-            gameOver: false
+            angle: 0, 
+            arrows: [], activeArrow: null,
+            currentPlayerIdx: 0, currentLevelIdx: 0,
+            shotsConfig: { 1: 20, 2: 7, 3: 3, 4: 2 },
+            shotsMade: 0, gameOver: false
         };
 
-        function updateIsland() {
+        function updateArchIsland() {
             const p = appState.players[archState.currentPlayerIdx];
             const max = archState.shotsConfig[appState.playerCount];
-            const island = document.getElementById('dynamic-island');
-            const text = document.getElementById('island-text');
-            island.style.display = 'block';
-            island.style.border = `2px solid ${p.color}`;
-            text.innerText = `${p.name} | ${archState.shotsMadeByCurrent}/${max}`;
+            setIsland(`Ур. ${archState.currentLevelIdx + 1} | ${p.name} | ${archState.shotsMade}/${max}`, p.color);
+        }
+
+        function startLevel() {
+            archState.angle = 0;
+            archState.arrows = [];
+            archState.activeArrow = null;
+            archState.gameOver = false;
+            
+            // Расставляем стартовые препятствия (серые стрелы)
+            const lvl = archLevels[archState.currentLevelIdx];
+            for(let i=0; i < lvl.startArrows; i++) {
+                archState.arrows.push({ angle: (Math.PI*2 / lvl.startArrows) * i, color: '#666' });
+            }
+            
+            spawnArrow();
+            updateArchIsland();
         }
 
         function initArchery() {
-            archState.angle = 0;
-            archState.arrows = []; // Начальные стрелы можно добавить сюда
             archState.currentPlayerIdx = 0;
-            archState.shotsMadeByCurrent = 0;
-            archState.gameOver = false;
-            archState.activeArrow = null;
-            spawnArrow();
-            updateIsland();
+            archState.currentLevelIdx = 0;
+            archState.shotsMade = 0;
+            startLevel();
             archLoop();
-        }
-
-        function endArcheryGame() {
-            cancelAnimationFrame(archReqId);
-            showScreen('screen-games');
         }
 
         function spawnArrow() {
@@ -346,41 +316,32 @@
 
         function archLoop() {
             if (!document.getElementById('screen-game-archery').classList.contains('active')) return;
-
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            archState.angle += archState.speed;
-
-            // Центр
+            
+            const lvl = archLevels[archState.currentLevelIdx];
+            archState.angle += lvl.speed;
             const cx = 200, cy = 150, r = 40;
 
-            // Отрисовка воткнутых стрел
+            // Воткнутые стрелы
             archState.arrows.forEach(arr => {
                 const drawAngle = archState.angle + arr.angle;
                 const endX = cx + Math.cos(drawAngle) * 120;
                 const endY = cy + Math.sin(drawAngle) * 120;
-                
-                ctx.beginPath();
-                ctx.moveTo(cx, cy);
-                ctx.lineTo(endX, endY);
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(endX, endY);
                 ctx.strokeStyle = arr.color; ctx.lineWidth = 3; ctx.stroke();
-                
-                ctx.beginPath();
-                ctx.arc(endX, endY, 6, 0, Math.PI*2);
+                ctx.beginPath(); ctx.arc(endX, endY, 6, 0, Math.PI*2);
                 ctx.fillStyle = arr.color; ctx.fill();
             });
 
-            // Отрисовка центрального круга
+            // Мишень
             ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
             ctx.fillStyle = '#fff'; ctx.fill();
 
-            // Полет активной стрелы
+            // Активная стрела
             if (archState.activeArrow) {
                 if (archState.activeArrow.moving) {
-                    archState.activeArrow.y -= 15; // Скорость полета
-                    
-                    // Проверка попадания
-                    if (archState.activeArrow.y <= cy + r + 80) { // 80 - длина стрелы
-                        // Проверяем коллизию с другими стрелами (простая логика угла)
+                    archState.activeArrow.y -= 15;
+                    if (archState.activeArrow.y <= cy + r + 80) { 
                         const hitAngle = (-archState.angle + Math.PI/2) % (Math.PI*2);
                         let normHit = hitAngle < 0 ? hitAngle + Math.PI*2 : hitAngle;
                         
@@ -391,37 +352,40 @@
 
                         if (crashed) {
                             tg.HapticFeedback.notificationOccurred('error');
-                            tg.showAlert('Бам! Ты попал в стрелу. Конец игры!');
-                            archState.gameOver = true;
+                            tg.showAlert('Бам! Ты попал в стрелу. Начни уровень заново!');
+                            archState.shotsMade = 0; // Сброс выстрелов
+                            startLevel();
                         } else {
-                            // Успешное попадание
                             tg.HapticFeedback.impactOccurred('heavy');
                             archState.arrows.push({ angle: hitAngle, color: archState.activeArrow.color });
-                            archState.shotsMadeByCurrent++;
+                            archState.shotsMade++;
                             
                             const maxShots = archState.shotsConfig[appState.playerCount];
-                            if (archState.shotsMadeByCurrent >= maxShots) {
-                                // Смена хода
+                            if (archState.shotsMade >= maxShots) {
                                 archState.currentPlayerIdx++;
-                                archState.shotsMadeByCurrent = 0;
+                                archState.shotsMade = 0;
+                                
                                 if (archState.currentPlayerIdx >= appState.playerCount) {
-                                    tg.showAlert('Все отстрелялись! Уровень пройден! 🎯');
-                                    archState.gameOver = true;
+                                    archState.currentLevelIdx++;
+                                    if (archState.currentLevelIdx >= archLevels.length) {
+                                        tg.showAlert('🎉 ПОБЕДА! Вы прошли все уровни!');
+                                        endArcheryGame();
+                                        return;
+                                    } else {
+                                        tg.showAlert(`Супер! Переходим на Уровень ${archState.currentLevelIdx + 1}`);
+                                        archState.currentPlayerIdx = 0;
+                                        startLevel();
+                                        return; // Ждем закрытия алерта
+                                    }
                                 }
                             }
-                            if (!archState.gameOver) {
-                                updateIsland();
-                                spawnArrow();
-                            }
+                            if (!archState.gameOver) { updateArchIsland(); spawnArrow(); }
                         }
                     }
                 }
                 
-                // Рисуем летящую/готовую стрелу
                 if(!archState.gameOver && archState.activeArrow) {
-                    ctx.beginPath();
-                    ctx.moveTo(cx, archState.activeArrow.y);
-                    ctx.lineTo(cx, archState.activeArrow.y - 80);
+                    ctx.beginPath(); ctx.moveTo(cx, archState.activeArrow.y); ctx.lineTo(cx, archState.activeArrow.y - 80);
                     ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
                     ctx.beginPath(); ctx.arc(cx, archState.activeArrow.y - 80, 6, 0, Math.PI*2);
                     ctx.fillStyle = archState.activeArrow.color; ctx.fill();
@@ -429,13 +393,7 @@
             }
             archReqId = requestAnimationFrame(archLoop);
         }
-
-        // ==========================================
-        // ПРОСТОЙ КЛИКЕР
-        // ==========================================
-        let clicks=0;
-        function resetClicker(){ clicks=0; document.getElementById('click-score').innerText=0; }
-        function doClick(){ clicks++; document.getElementById('click-score').innerText=clicks; tg.HapticFeedback.impactOccurred('light'); }
+        function endArcheryGame() { cancelAnimationFrame(archReqId); showScreen('screen-games'); }
 
     </script>
 </body>
