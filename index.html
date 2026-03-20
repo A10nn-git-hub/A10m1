@@ -52,17 +52,42 @@
             transform: translateX(-50%); z-index: 100; display: none;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5); transition: 0.2s; white-space: nowrap;
         }
+
+        /* Экран победы / результатов */
+        #result-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 1000; text-align: center; color: white; transition: 0.3s;
+        }
+        #result-overlay.hidden { display: none !important; }
+        #result-emoji { font-size: 120px; margin-bottom: 20px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.3)); }
+        #result-text { font-size: 32px; font-weight: bold; margin-bottom: 40px; text-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        #result-overlay .btn { width: 80%; background: rgba(0,0,0,0.3); color: white; font-size: 20px; padding: 20px; border: 2px solid white; }
         
         #archery-canvas { background: #1c1c1e; border-radius: 15px; width: 100%; max-width: 400px; margin-top: 40px; }
         #game-archery-ui { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; }
         .shoot-area { position: absolute; bottom: 0; width: 100%; height: 50%; z-index: 10; }
         
-        .click-area { margin-top: 50px; }
+        /* Стили для обновленного кликера */
+        #screen-game-clicker { display: none; flex-direction: column; height: 90vh; }
+        #screen-game-clicker.active { display: flex; }
+        .clicker-setup { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 20px 0; }
+        .round-btn { width: 50px; height: 50px; border-radius: 25px; border: none; font-size: 20px; font-weight: bold; background: var(--btn); color: white; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
+        .round-btn:active { transform: translateY(4px); box-shadow: none; }
+        .clicker-time-display { font-size: 24px; font-weight: bold; width: 80px; }
+        .giant-click-btn { flex-grow: 1; width: 100%; border-radius: 20px; font-size: 40px; font-weight: 900; background: #ff9f0a; color: white; border: none; box-shadow: inset 0 -8px 0 rgba(0,0,0,0.2); cursor: pointer; transition: 0.05s; }
+        .giant-click-btn:active { transform: scale(0.98); box-shadow: inset 0 -2px 0 rgba(0,0,0,0.2); background: #e08e09; }
     </style>
 </head>
 <body>
 
     <div id="dynamic-island"><span id="island-text">...</span></div>
+
+    <div id="result-overlay" class="hidden">
+        <div id="result-emoji">🏆</div>
+        <div id="result-text">Победа!</div>
+        <button class="btn" onclick="closeResult()">В Главное Меню</button>
+    </div>
 
     <div class="screen active" id="screen-games">
         <h1>Во что играем? 🎮</h1>
@@ -100,8 +125,7 @@
 
     <div class="screen" id="screen-game-tictactoe">
         <div class="board" id="ttt-board"></div>
-        <button class="btn" onclick="initTicTacToe()">🔄 Очистить поле</button>
-        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 В меню</button>
+        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 Сдаться и выйти</button>
     </div>
 
     <div class="screen" id="screen-game-archery">
@@ -114,11 +138,14 @@
     </div>
 
     <div class="screen" id="screen-game-clicker">
-        <div class="click-area">
-            <h1 id="click-score" style="font-size: 80px; margin: 20px 0;">0</h1>
-            <button class="btn" id="click-btn" onclick="doClick()" style="height: 120px; font-size: 30px; background: #ff9f0a;">ЖМИ!</button>
+        <div class="clicker-setup" id="clicker-controls">
+            <button class="round-btn" onclick="changeClickTime(-5)">◀</button>
+            <div class="clicker-time-display" id="click-time-val">15 сек</div>
+            <button class="round-btn" onclick="changeClickTime(5)">▶</button>
         </div>
-        <button class="btn btn-back" onclick="endClicker()">🔙 Выйти</button>
+        <h1 id="click-score" style="font-size: 60px; margin: 10px 0;">0</h1>
+        <button class="giant-click-btn" id="click-btn" onclick="doClick()">ЖМИ!</button>
+        <button class="btn btn-back" onclick="endClicker()" style="margin-top: 20px;">🔙 Выйти</button>
     </div>
 
     <script>
@@ -129,7 +156,6 @@
         const COLORS = ['#ff453a', '#32ade6', '#34c759', '#ffd60a', '#bf5af2', '#ff9f0a'];
         let appState = { game: null, playerCount: 1, players: [] };
 
-        // Управление островком
         function setIsland(text, borderColor = '#fff') {
             const island = document.getElementById('dynamic-island');
             document.getElementById('island-text').innerText = text;
@@ -138,7 +164,22 @@
         }
         function hideIsland() { document.getElementById('dynamic-island').style.display = 'none'; }
 
-        // Навигация
+        // Показ результатов (на весь экран)
+        function showResult(text, bgColor, emoji) {
+            hideIsland();
+            const overlay = document.getElementById('result-overlay');
+            overlay.style.backgroundColor = bgColor;
+            document.getElementById('result-text').innerText = text;
+            document.getElementById('result-emoji').innerText = emoji;
+            overlay.classList.remove('hidden');
+            tg.HapticFeedback.notificationOccurred(emoji === '🤝' ? 'warning' : 'success');
+        }
+
+        function closeResult() {
+            document.getElementById('result-overlay').classList.add('hidden');
+            showScreen('screen-games');
+        }
+
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
             document.getElementById(id).classList.add('active');
@@ -148,7 +189,6 @@
         function selectGame(game) {
             appState.game = game;
             ['p1','p2','p3','p4'].forEach(id => document.getElementById(`btn-${id}`).style.display = 'block');
-            
             if (game === 'tictactoe') { appState.playerCount = 2; buildSetup(); }
             else if (game === 'clicker') { appState.playerCount = 1; buildSetup(); }
             else { showScreen('screen-players'); }
@@ -174,9 +214,19 @@
             showScreen('screen-setup');
         }
 
+        // Логика уникальных цветов
         function cycleColor(idx) {
             let p = appState.players[idx];
-            p.colorIdx = (p.colorIdx + 1) % COLORS.length;
+            let nextIdx = p.colorIdx;
+            let inUse = true;
+            
+            // Ищем следующий свободный цвет
+            while (inUse) {
+                nextIdx = (nextIdx + 1) % COLORS.length;
+                inUse = appState.players.some((otherPlayer, otherIdx) => otherIdx !== idx && otherPlayer.colorIdx === nextIdx);
+            }
+
+            p.colorIdx = nextIdx;
             p.color = COLORS[p.colorIdx];
             document.getElementById(`p-color-${idx}`).style.backgroundColor = p.color;
             tg.HapticFeedback.impactOccurred('light');
@@ -209,36 +259,69 @@
             });
         }
 
+        function checkWin() {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+            return wins.some(c => tttBoard[c[0]] !== '' && tttBoard[c[0]] === tttBoard[c[1]] && tttBoard[c[1]] === tttBoard[c[2]]);
+        }
+
         function moveTicTacToe(i) {
             if (tttBoard[i] !== '') return;
             tg.HapticFeedback.impactOccurred('medium');
             tttBoard[i] = tttTurn;
+            renderTicTacToe();
+
+            // Проверка на победу
+            if (checkWin()) {
+                const color = tttTurn === 'x' ? '#ff453a' : '#32ade6';
+                setIsland(`Победил ${tttTurn === 'x' ? '❌' : '⭕'}!`, color);
+                setTimeout(() => showResult(`ПОБЕДИЛ ${tttTurn === 'x' ? 'КРЕСТИК' : 'НОЛИК'}!`, color, tttTurn === 'x' ? '❌' : '⭕'), 300);
+                return;
+            }
+            // Проверка на ничью
+            if (!tttBoard.includes('')) {
+                setIsland('Ничья!', '#ffd60a');
+                setTimeout(() => showResult('Ничья!', '#ffd60a', '🤝'), 300);
+                return;
+            }
+
             tttTurn = tttTurn === 'x' ? 'o' : 'x';
             setIsland(`Ход: ${tttTurn === 'x' ? '❌' : '⭕'}`, tttTurn === 'x' ? '#ff453a' : '#32ade6');
-            renderTicTacToe();
-            // Игра идет до бесконечности без побед/поражений
         }
 
         // --- КЛИКЕР ---
-        let clicks=0, clickTime=10, clickInterval, clickActive=false;
+        let clicks=0, clickTimeSetting=15, clickTimeCurrent=0, clickInterval, clickActive=false;
+        
+        function changeClickTime(delta) {
+            if (clickActive) return;
+            clickTimeSetting += delta;
+            if (clickTimeSetting < 5) clickTimeSetting = 5;
+            if (clickTimeSetting > 100) clickTimeSetting = 100;
+            document.getElementById('click-time-val').innerText = `${clickTimeSetting} сек`;
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
         function initClicker() {
-            clicks = 0; clickTime = 10; clickActive = false;
+            clicks = 0; clickTimeCurrent = clickTimeSetting; clickActive = false;
             clearInterval(clickInterval);
             document.getElementById('click-score').innerText = 0;
-            setIsland(`Время: ${clickTime} сек`, '#ffd60a');
+            document.getElementById('click-time-val').innerText = `${clickTimeSetting} сек`;
+            document.getElementById('clicker-controls').style.display = 'flex'; // Показываем стрелочки
+            setIsland(`Настрой время и ЖМИ!`, '#ffd60a');
         }
 
         function doClick() {
-            if(!clickActive && clickTime === 10) {
+            if(!clickActive && clickTimeCurrent > 0) {
                 clickActive = true;
+                document.getElementById('clicker-controls').style.display = 'none'; // Прячем стрелочки после старта
+                setIsland(`Время: ${clickTimeCurrent} сек`, '#ffd60a');
+                
                 clickInterval = setInterval(() => {
-                    clickTime--;
-                    setIsland(`Время: ${clickTime} сек`, '#ffd60a');
-                    if(clickTime <= 0) {
+                    clickTimeCurrent--;
+                    setIsland(`Время: ${clickTimeCurrent} сек`, '#ffd60a');
+                    if(clickTimeCurrent <= 0) {
                         clearInterval(clickInterval);
                         clickActive = false;
-                        hideIsland();
-                        tg.showAlert(`Твой результат: ${clicks} кликов!`);
+                        showResult(`Твой счет: ${clicks}`, '#ff9f0a', '⏱️');
                     }
                 }, 1000);
             }
@@ -250,27 +333,17 @@
         }
         function endClicker() { clearInterval(clickInterval); showScreen('screen-games'); }
 
-
         // --- МЕТКОСТЬ ---
         const canvas = document.getElementById('archery-canvas');
         const ctx = canvas.getContext('2d');
         let archReqId;
-        
-        // Настройки уровней
         const archLevels = [
             { speed: 0.025, startArrows: 0 },
             { speed: -0.035, startArrows: 2 },
             { speed: 0.045, startArrows: 4 },
             { speed: -0.055, startArrows: 6 }
         ];
-
-        let archState = {
-            angle: 0, 
-            arrows: [], activeArrow: null,
-            currentPlayerIdx: 0, currentLevelIdx: 0,
-            shotsConfig: { 1: 20, 2: 7, 3: 3, 4: 2 },
-            shotsMade: 0, gameOver: false
-        };
+        let archState = { angle: 0, arrows: [], activeArrow: null, currentPlayerIdx: 0, currentLevelIdx: 0, shotsConfig: { 1: 20, 2: 7, 3: 3, 4: 2 }, shotsMade: 0, gameOver: false };
 
         function updateArchIsland() {
             const p = appState.players[archState.currentPlayerIdx];
@@ -279,72 +352,35 @@
         }
 
         function startLevel() {
-            archState.angle = 0;
-            archState.arrows = [];
-            archState.activeArrow = null;
-            archState.gameOver = false;
-            
-            // Расставляем стартовые препятствия (серые стрелы)
+            archState.angle = 0; archState.arrows = []; archState.activeArrow = null; archState.gameOver = false;
             const lvl = archLevels[archState.currentLevelIdx];
-            for(let i=0; i < lvl.startArrows; i++) {
-                archState.arrows.push({ angle: (Math.PI*2 / lvl.startArrows) * i, color: '#666' });
-            }
-            
-            spawnArrow();
-            updateArchIsland();
+            for(let i=0; i < lvl.startArrows; i++) { archState.arrows.push({ angle: (Math.PI*2 / lvl.startArrows) * i, color: '#666' }); }
+            spawnArrow(); updateArchIsland();
         }
 
-        function initArchery() {
-            archState.currentPlayerIdx = 0;
-            archState.currentLevelIdx = 0;
-            archState.shotsMade = 0;
-            startLevel();
-            archLoop();
-        }
-
-        function spawnArrow() {
-            if(archState.gameOver) return;
-            const p = appState.players[archState.currentPlayerIdx];
-            archState.activeArrow = { y: 450, color: p.color, moving: false };
-        }
-
-        function shootArrow() {
-            if (archState.gameOver || !archState.activeArrow || archState.activeArrow.moving) return;
-            tg.HapticFeedback.impactOccurred('light');
-            archState.activeArrow.moving = true;
-        }
+        function initArchery() { archState.currentPlayerIdx = 0; archState.currentLevelIdx = 0; archState.shotsMade = 0; startLevel(); archLoop(); }
+        function spawnArrow() { if(!archState.gameOver) { archState.activeArrow = { y: 450, color: appState.players[archState.currentPlayerIdx].color, moving: false }; } }
+        function shootArrow() { if (!archState.gameOver && archState.activeArrow && !archState.activeArrow.moving) { tg.HapticFeedback.impactOccurred('light'); archState.activeArrow.moving = true; } }
 
         function archLoop() {
             if (!document.getElementById('screen-game-archery').classList.contains('active')) return;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            const lvl = archLevels[archState.currentLevelIdx];
-            archState.angle += lvl.speed;
-            const cx = 200, cy = 150, r = 40;
+            const lvl = archLevels[archState.currentLevelIdx]; archState.angle += lvl.speed; const cx = 200, cy = 150, r = 40;
 
-            // Воткнутые стрелы
             archState.arrows.forEach(arr => {
-                const drawAngle = archState.angle + arr.angle;
-                const endX = cx + Math.cos(drawAngle) * 120;
-                const endY = cy + Math.sin(drawAngle) * 120;
-                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(endX, endY);
-                ctx.strokeStyle = arr.color; ctx.lineWidth = 3; ctx.stroke();
-                ctx.beginPath(); ctx.arc(endX, endY, 6, 0, Math.PI*2);
-                ctx.fillStyle = arr.color; ctx.fill();
+                const drawAngle = archState.angle + arr.angle; const endX = cx + Math.cos(drawAngle) * 120; const endY = cy + Math.sin(drawAngle) * 120;
+                ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(endX, endY); ctx.strokeStyle = arr.color; ctx.lineWidth = 3; ctx.stroke();
+                ctx.beginPath(); ctx.arc(endX, endY, 6, 0, Math.PI*2); ctx.fillStyle = arr.color; ctx.fill();
             });
 
-            // Мишень
-            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
-            ctx.fillStyle = '#fff'; ctx.fill();
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fillStyle = '#fff'; ctx.fill();
 
-            // Активная стрела
             if (archState.activeArrow) {
                 if (archState.activeArrow.moving) {
                     archState.activeArrow.y -= 15;
                     if (archState.activeArrow.y <= cy + r + 80) { 
                         const hitAngle = (-archState.angle + Math.PI/2) % (Math.PI*2);
                         let normHit = hitAngle < 0 ? hitAngle + Math.PI*2 : hitAngle;
-                        
                         let crashed = archState.arrows.some(arr => {
                             let normArr = arr.angle < 0 ? arr.angle + Math.PI*2 : arr.angle;
                             return Math.abs(normHit - normArr) < 0.2 || Math.abs(normHit - normArr) > (Math.PI*2 - 0.2);
@@ -353,8 +389,7 @@
                         if (crashed) {
                             tg.HapticFeedback.notificationOccurred('error');
                             tg.showAlert('Бам! Ты попал в стрелу. Начни уровень заново!');
-                            archState.shotsMade = 0; // Сброс выстрелов
-                            startLevel();
+                            archState.shotsMade = 0; startLevel();
                         } else {
                             tg.HapticFeedback.impactOccurred('heavy');
                             archState.arrows.push({ angle: hitAngle, color: archState.activeArrow.color });
@@ -362,20 +397,16 @@
                             
                             const maxShots = archState.shotsConfig[appState.playerCount];
                             if (archState.shotsMade >= maxShots) {
-                                archState.currentPlayerIdx++;
-                                archState.shotsMade = 0;
-                                
+                                archState.currentPlayerIdx++; archState.shotsMade = 0;
                                 if (archState.currentPlayerIdx >= appState.playerCount) {
                                     archState.currentLevelIdx++;
                                     if (archState.currentLevelIdx >= archLevels.length) {
-                                        tg.showAlert('🎉 ПОБЕДА! Вы прошли все уровни!');
-                                        endArcheryGame();
+                                        archState.gameOver = true;
+                                        setTimeout(() => showResult('Все уровни пройдены!', '#34c759', '🏆'), 300);
                                         return;
                                     } else {
                                         tg.showAlert(`Супер! Переходим на Уровень ${archState.currentLevelIdx + 1}`);
-                                        archState.currentPlayerIdx = 0;
-                                        startLevel();
-                                        return; // Ждем закрытия алерта
+                                        archState.currentPlayerIdx = 0; startLevel(); return;
                                     }
                                 }
                             }
@@ -383,18 +414,15 @@
                         }
                     }
                 }
-                
                 if(!archState.gameOver && archState.activeArrow) {
                     ctx.beginPath(); ctx.moveTo(cx, archState.activeArrow.y); ctx.lineTo(cx, archState.activeArrow.y - 80);
                     ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
-                    ctx.beginPath(); ctx.arc(cx, archState.activeArrow.y - 80, 6, 0, Math.PI*2);
-                    ctx.fillStyle = archState.activeArrow.color; ctx.fill();
+                    ctx.beginPath(); ctx.arc(cx, archState.activeArrow.y - 80, 6, 0, Math.PI*2); ctx.fillStyle = archState.activeArrow.color; ctx.fill();
                 }
             }
             archReqId = requestAnimationFrame(archLoop);
         }
         function endArcheryGame() { cancelAnimationFrame(archReqId); showScreen('screen-games'); }
-
     </script>
 </body>
 </html>
