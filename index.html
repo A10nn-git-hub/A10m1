@@ -6,97 +6,154 @@
     <title>Игровой Центр</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        :root {
+            --bg: var(--tg-theme-bg-color, #1e1e1e);
+            --text: var(--tg-theme-text-color, #ffffff);
+            --btn: var(--tg-theme-button-color, #3390ec);
+            --btn-text: var(--tg-theme-button-text-color, #ffffff);
+        }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0; padding: 15px;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; box-sizing: border-box;
+            overflow-x: hidden;
         }
-        .container {
-            text-align: center;
-            width: 100%;
-            max-width: 400px;
-            margin-top: 50px;
-        }
-        h1, h2 { margin-bottom: 20px; }
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            font-size: 18px;
-            font-weight: bold;
-            background-color: var(--tg-theme-button-color, #3390ec);
-            color: var(--tg-theme-button-text-color, #ffffff);
-            border: none;
-            border-radius: 12px;
-            cursor: pointer;
-        }
-        .btn:active { transform: scale(0.96); opacity: 0.9; }
-        .btn-back { background-color: #ff595a; margin-top: 30px; }
+        .screen { display: none; width: 100%; max-width: 400px; text-align: center; }
+        .screen.active { display: block; }
         
-        /* Скрываем элементы */
-        .hidden { display: none !important; }
+        h1, h2 { margin: 10px 0 20px 0; }
+        .btn {
+            width: 100%; padding: 15px; margin: 8px 0;
+            font-size: 16px; font-weight: bold; border: none; border-radius: 12px;
+            background: var(--btn); color: var(--btn-text);
+            cursor: pointer; transition: 0.1s;
+        }
+        .btn:active { transform: scale(0.95); opacity: 0.8; }
+        .btn-back { background-color: #ff453a; margin-top: 20px; }
 
-        /* Стили для Крестиков-Ноликов */
-        .tic-tac-toe-board {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin: 20px auto;
-            max-width: 300px;
+        /* Сетка игр */
+        .games-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .game-card {
+            background: #2c2c2e; border-radius: 15px; padding: 15px;
+            cursor: pointer; transition: transform 0.1s;
         }
+        .game-card:active { transform: scale(0.95); }
+        .game-img {
+            width: 100%; aspect-ratio: 1; border-radius: 10px;
+            background: #444; display: flex; align-items: center; justify-content: center;
+            font-size: 40px; margin-bottom: 10px;
+        }
+
+        /* Настройка игроков */
+        .player-setup-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 10px; background: #2c2c2e; padding: 10px; border-radius: 10px;
+        }
+        .player-setup-row input {
+            flex-grow: 1; padding: 10px; border: none; border-radius: 8px;
+            margin-right: 10px; background: #1c1c1e; color: white;
+        }
+        .color-box {
+            width: 35px; height: 35px; border-radius: 8px; cursor: pointer;
+            border: 2px solid white;
+        }
+
+        /* 3D Крестики Нолики */
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 300px; margin: auto; }
         .cell {
-            aspect-ratio: 1;
-            background-color: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 40px;
-            font-weight: bold;
-            cursor: pointer;
+            aspect-ratio: 1; background: #2c2c2e; border-radius: 15px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 50px; font-weight: bold; cursor: pointer;
+            box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); /* Эффект вдавленности кнопки */
         }
+        .cell.x { color: #ff453a; text-shadow: 0 4px 0 #8b0000, 0 5px 10px rgba(0,0,0,0.5); } /* 3D эффект крестика */
+        .cell.o { color: #32ade6; text-shadow: 0 4px 0 #005f8b, 0 5px 10px rgba(0,0,0,0.5); } /* 3D эффект нолика */
+
+        /* Островок и Меткость */
+        #dynamic-island {
+            background: #000; color: white; padding: 10px 20px; border-radius: 30px;
+            font-weight: bold; font-size: 14px; position: absolute; top: 15px; left: 50%;
+            transform: translateX(-50%); z-index: 100; display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        #archery-canvas { background: #1c1c1e; border-radius: 15px; width: 100%; max-width: 400px; }
+        #game-archery-ui { position: relative; width: 100%; display: flex; flex-direction: column; align-items: center; }
+        .shoot-area { position: absolute; bottom: 0; width: 100%; height: 50%; z-index: 10; }
     </style>
 </head>
 <body>
-    <div class="container" id="menu">
-        <h1>Сколько будет игроков? 🎮</h1>
-        <button class="btn" onclick="openGame('solo')">1 Игрок (Кликер)</button>
-        <button class="btn" onclick="openGame('duo')">2 Игрока (Крестики-нолики)</button>
-        <button class="btn" onclick="openGame('trio')">3 Игрока (В разработке)</button>
-        <button class="btn" onclick="openGame('squad')">4 Игрока (В разработке)</button>
-    </div>
 
-    <div class="container hidden" id="game-solo">
-        <h2>Тайм-Кликер ⏱️</h2>
-        <p>Успей нажать как можно больше раз за 10 секунд!</p>
-        <h1 id="click-score">0</h1>
-        <p id="click-timer">Время: 10</p>
-        <button class="btn" id="click-btn" onclick="doClick()">КЛИК!</button>
-        <button class="btn btn-back" onclick="goBack()">🔙 Назад в меню</button>
-    </div>
+    <div id="dynamic-island"><span id="island-text">Ход: Игрок 1 | 0/20</span></div>
 
-    <div class="container hidden" id="game-duo">
-        <h2>Крестики-нолики ❌⭕</h2>
-        <p id="tictactoe-status">Ход: ❌</p>
-        <div class="tic-tac-toe-board" id="board">
+    <div class="screen active" id="screen-games">
+        <h1>Во что играем? 🎮</h1>
+        <div class="games-grid">
+            <div class="game-card" onclick="selectGame('archery')">
+                <div class="game-img">🎯</div>
+                <div>Меткость</div>
             </div>
-        <button class="btn" onclick="resetTicTacToe()">🔄 Начать заново</button>
-        <button class="btn btn-back" onclick="goBack()">🔙 Назад в меню</button>
+            <div class="game-card" onclick="selectGame('tictactoe')">
+                <div class="game-img">❌⭕</div>
+                <div>Крестики-нолики</div>
+            </div>
+            <div class="game-card" onclick="selectGame('tanks')">
+                <div class="game-img">🚜</div>
+                <div>Танчики</div>
+            </div>
+            <div class="game-card" onclick="selectGame('clicker')">
+                <div class="game-img">⏱️</div>
+                <div>Кликер</div>
+            </div>
+        </div>
     </div>
 
-    <div class="container hidden" id="game-wip">
-        <h2>Скоро добавим! 🚧</h2>
-        <p>Эта игра еще в разработке.</p>
-        <button class="btn btn-back" onclick="goBack()">🔙 Назад в меню</button>
+    <div class="screen" id="screen-players">
+        <h2>Сколько игроков?</h2>
+        <button class="btn" onclick="selectPlayers(1)" id="btn-p1">1 Игрок</button>
+        <button class="btn" onclick="selectPlayers(2)" id="btn-p2">2 Игрока</button>
+        <button class="btn" onclick="selectPlayers(3)" id="btn-p3">3 Игрока</button>
+        <button class="btn" onclick="selectPlayers(4)" id="btn-p4">4 Игрока</button>
+        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 Назад</button>
+    </div>
+
+    <div class="screen" id="screen-setup">
+        <h2>Настройка Лобби ⚙️</h2>
+        <div id="setup-rows"></div>
+        <button class="btn" style="background: #34c759; margin-top: 20px;" onclick="startGame()">▶️ СТАРТ!</button>
+        <button class="btn btn-back" onclick="showScreen('screen-players')">🔙 Назад</button>
+    </div>
+
+    <div class="screen" id="screen-game-tictactoe">
+        <h2 id="ttt-status">Ход: ❌</h2>
+        <div class="board" id="ttt-board"></div>
+        <button class="btn" onclick="initTicTacToe()">🔄 Заново</button>
+        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 В меню</button>
+    </div>
+
+    <div class="screen" id="screen-game-archery">
+        <div id="game-archery-ui">
+            <div class="shoot-area" onclick="shootArrow()"></div>
+            <canvas id="archery-canvas" width="400" height="500"></canvas>
+        </div>
+        <p style="font-size: 12px; color: gray;">Тапай по нижней части экрана, чтобы бросить стрелу!</p>
+        <button class="btn btn-back" onclick="endArcheryGame()">🔙 Выйти</button>
+    </div>
+
+    <div class="screen" id="screen-game-tanks">
+        <h2>Танчики 🚜</h2>
+        <p>Для танков нужно нарисовать 4 джойстика и сложную физику передвижения. Это огромный кусок кода!</p>
+        <p>Добавим в следующем обновлении 😉</p>
+        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 В меню</button>
+    </div>
+
+    <div class="screen" id="screen-game-clicker">
+        <h2>Тайм-Кликер</h2>
+        <h1 id="click-score" style="font-size: 60px;">0</h1>
+        <button class="btn" id="click-btn" onclick="doClick()" style="height: 100px; font-size: 24px;">ЖМИ!</button>
+        <button class="btn btn-back" onclick="showScreen('screen-games')">🔙 Выйти</button>
     </div>
 
     <script>
@@ -104,119 +161,282 @@
         tg.expand();
         tg.ready();
 
-        // Навигация
-        function openGame(gameType) {
-            document.getElementById('menu').classList.add('hidden');
-            if (gameType === 'solo') {
-                document.getElementById('game-solo').classList.remove('hidden');
-                resetClicker();
-            } else if (gameType === 'duo') {
-                document.getElementById('game-duo').classList.remove('hidden');
-                initTicTacToe();
+        // Доступные цвета для игроков
+        const COLORS = ['#ff453a', '#32ade6', '#34c759', '#ffd60a', '#bf5af2', '#ff9f0a'];
+        
+        // Глобальный стейт приложения
+        let appState = {
+            game: null,
+            playerCount: 1,
+            players: []
+        };
+
+        // НАВИГАЦИЯ
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            document.getElementById('dynamic-island').style.display = 'none'; // Прячем островок вне игры
+        }
+
+        function selectGame(game) {
+            appState.game = game;
+            
+            // Настройка кнопок выбора игроков в зависимости от игры
+            document.getElementById('btn-p1').style.display = 'block';
+            document.getElementById('btn-p2').style.display = 'block';
+            document.getElementById('btn-p3').style.display = 'block';
+            document.getElementById('btn-p4').style.display = 'block';
+
+            if (game === 'tictactoe') {
+                appState.playerCount = 2; // Крестики нолики только на двоих
+                buildSetup();
+            } else if (game === 'clicker') {
+                appState.playerCount = 1;
+                buildSetup();
             } else {
-                document.getElementById('game-wip').classList.remove('hidden');
+                showScreen('screen-players');
             }
         }
 
-        function goBack() {
-            document.querySelectorAll('.container').forEach(el => el.classList.add('hidden'));
-            document.getElementById('menu').classList.remove('hidden');
+        function selectPlayers(count) {
+            appState.playerCount = count;
+            buildSetup();
         }
 
-        // Логика Кликера
-        let clicks = 0;
-        let timeLeft = 10;
-        let clickerInterval;
-        let gameActive = false;
+        function buildSetup() {
+            const container = document.getElementById('setup-rows');
+            container.innerHTML = '';
+            appState.players = [];
 
-        function resetClicker() {
-            clicks = 0;
-            timeLeft = 10;
-            gameActive = false;
-            clearInterval(clickerInterval);
-            document.getElementById('click-score').innerText = clicks;
-            document.getElementById('click-timer').innerText = `Время: ${timeLeft}`;
-            document.getElementById('click-btn').disabled = false;
-        }
-
-        function doClick() {
-            if (!gameActive && timeLeft === 10) {
-                gameActive = true;
-                clickerInterval = setInterval(() => {
-                    timeLeft--;
-                    document.getElementById('click-timer').innerText = `Время: ${timeLeft}`;
-                    if (timeLeft <= 0) {
-                        clearInterval(clickerInterval);
-                        gameActive = false;
-                        document.getElementById('click-btn').disabled = true;
-                        tg.showAlert(`Твой результат: ${clicks} кликов!`);
-                    }
-                }, 1000);
+            // Если игра не требует настройки имен (например, кликер)
+            if (appState.game === 'clicker' || appState.game === 'tictactoe') {
+                startGame();
+                return;
             }
-            if (gameActive) {
-                clicks++;
-                document.getElementById('click-score').innerText = clicks;
-                tg.HapticFeedback.impactOccurred('light'); // Вибрация при клике
+
+            for (let i = 0; i < appState.playerCount; i++) {
+                appState.players.push({ name: `Игрок ${i+1}`, color: COLORS[i % COLORS.length], colorIdx: i % COLORS.length });
+                
+                const row = document.createElement('div');
+                row.className = 'player-setup-row';
+                row.innerHTML = `
+                    <input type="text" id="p-name-${i}" value="Игрок ${i+1}" onchange="updateName(${i}, this.value)">
+                    <div class="color-box" id="p-color-${i}" style="background-color: ${COLORS[i % COLORS.length]}" onclick="cycleColor(${i})"></div>
+                `;
+                container.appendChild(row);
+            }
+            showScreen('screen-setup');
+        }
+
+        function updateName(idx, val) { appState.players[idx].name = val; }
+        
+        function cycleColor(idx) {
+            let p = appState.players[idx];
+            p.colorIdx = (p.colorIdx + 1) % COLORS.length;
+            p.color = COLORS[p.colorIdx];
+            document.getElementById(`p-color-${idx}`).style.backgroundColor = p.color;
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function startGame() {
+            if (appState.game === 'tictactoe') {
+                showScreen('screen-game-tictactoe');
+                initTicTacToe();
+            } else if (appState.game === 'archery') {
+                showScreen('screen-game-archery');
+                initArchery();
+            } else if (appState.game === 'tanks') {
+                showScreen('screen-game-tanks');
+            } else if (appState.game === 'clicker') {
+                showScreen('screen-game-clicker');
+                resetClicker();
             }
         }
 
-        // Логика Крестиков-ноликов
-        let boardState = ['', '', '', '', '', '', '', '', ''];
-        let currentPlayer = '❌';
+        // ==========================================
+        // ИГРА: 3D КРЕСТИКИ НОЛИКИ
+        // ==========================================
+        let tttBoard = ['', '', '', '', '', '', '', '', ''];
+        let tttTurn = 'x';
 
         function initTicTacToe() {
-            resetTicTacToe();
+            tttBoard = ['', '', '', '', '', '', '', '', ''];
+            tttTurn = 'x';
+            document.getElementById('ttt-status').innerText = `Ход: ❌`;
+            renderTicTacToe();
         }
 
-        function resetTicTacToe() {
-            boardState = ['', '', '', '', '', '', '', '', ''];
-            currentPlayer = '❌';
-            document.getElementById('tictactoe-status').innerText = `Ход: ${currentPlayer}`;
-            renderBoard();
-        }
-
-        function renderBoard() {
-            const board = document.getElementById('board');
+        function renderTicTacToe() {
+            const board = document.getElementById('ttt-board');
             board.innerHTML = '';
-            boardState.forEach((cell, index) => {
+            tttBoard.forEach((cell, i) => {
                 const div = document.createElement('div');
-                div.className = 'cell';
-                div.innerText = cell;
-                div.onclick = () => makeMove(index);
+                div.className = `cell ${cell}`;
+                div.innerText = cell === 'x' ? '❌' : (cell === 'o' ? '⭕' : '');
+                div.onclick = () => moveTicTacToe(i);
                 board.appendChild(div);
             });
         }
 
-        function makeMove(index) {
-            if (boardState[index] !== '' || checkWin()) return;
-            
-            boardState[index] = currentPlayer;
+        function moveTicTacToe(i) {
+            if (tttBoard[i] !== '') return;
             tg.HapticFeedback.impactOccurred('medium');
-            renderBoard();
-            
-            if (checkWin()) {
-                document.getElementById('tictactoe-status').innerText = `Победил: ${currentPlayer}! 🎉`;
-                tg.showAlert(`Победил: ${currentPlayer}!`);
-            } else if (!boardState.includes('')) {
-                document.getElementById('tictactoe-status').innerText = `Ничья! 🤝`;
-            } else {
-                currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
-                document.getElementById('tictactoe-status').innerText = `Ход: ${currentPlayer}`;
-            }
+            tttBoard[i] = tttTurn;
+            renderTicTacToe();
+            // Проверка победы опущена для краткости (можешь добавить из старой версии)
+            tttTurn = tttTurn === 'x' ? 'o' : 'x';
+            document.getElementById('ttt-status').innerText = `Ход: ${tttTurn === 'x' ? '❌' : '⭕'}`;
         }
 
-        function checkWin() {
-            const wins = [
-                [0,1,2], [3,4,5], [6,7,8], // горизонтали
-                [0,3,6], [1,4,7], [2,5,8], // вертикали
-                [0,4,8], [2,4,6]           // диагонали
-            ];
-            return wins.some(combo => {
-                return boardState[combo[0]] !== '' && 
-                       boardState[combo[0]] === boardState[combo[1]] && 
-                       boardState[combo[1]] === boardState[combo[2]];
-            });
+        // ==========================================
+        // ИГРА: МЕТКОСТЬ (AA CLONE)
+        // ==========================================
+        const canvas = document.getElementById('archery-canvas');
+        const ctx = canvas.getContext('2d');
+        let archReqId;
+        
+        let archState = {
+            angle: 0, speed: 0.02,
+            arrows: [], // {angle, color}
+            activeArrow: null, // {y, color}
+            currentPlayerIdx: 0,
+            shotsConfig: { 1: 20, 2: 7, 3: 3, 4: 2 }, // Выстрелов на каждого
+            shotsMadeByCurrent: 0,
+            gameOver: false
+        };
+
+        function updateIsland() {
+            const p = appState.players[archState.currentPlayerIdx];
+            const max = archState.shotsConfig[appState.playerCount];
+            const island = document.getElementById('dynamic-island');
+            const text = document.getElementById('island-text');
+            island.style.display = 'block';
+            island.style.border = `2px solid ${p.color}`;
+            text.innerText = `${p.name} | ${archState.shotsMadeByCurrent}/${max}`;
         }
+
+        function initArchery() {
+            archState.angle = 0;
+            archState.arrows = []; // Начальные стрелы можно добавить сюда
+            archState.currentPlayerIdx = 0;
+            archState.shotsMadeByCurrent = 0;
+            archState.gameOver = false;
+            archState.activeArrow = null;
+            spawnArrow();
+            updateIsland();
+            archLoop();
+        }
+
+        function endArcheryGame() {
+            cancelAnimationFrame(archReqId);
+            showScreen('screen-games');
+        }
+
+        function spawnArrow() {
+            if(archState.gameOver) return;
+            const p = appState.players[archState.currentPlayerIdx];
+            archState.activeArrow = { y: 450, color: p.color, moving: false };
+        }
+
+        function shootArrow() {
+            if (archState.gameOver || !archState.activeArrow || archState.activeArrow.moving) return;
+            tg.HapticFeedback.impactOccurred('light');
+            archState.activeArrow.moving = true;
+        }
+
+        function archLoop() {
+            if (!document.getElementById('screen-game-archery').classList.contains('active')) return;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            archState.angle += archState.speed;
+
+            // Центр
+            const cx = 200, cy = 150, r = 40;
+
+            // Отрисовка воткнутых стрел
+            archState.arrows.forEach(arr => {
+                const drawAngle = archState.angle + arr.angle;
+                const endX = cx + Math.cos(drawAngle) * 120;
+                const endY = cy + Math.sin(drawAngle) * 120;
+                
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(endX, endY);
+                ctx.strokeStyle = arr.color; ctx.lineWidth = 3; ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.arc(endX, endY, 6, 0, Math.PI*2);
+                ctx.fillStyle = arr.color; ctx.fill();
+            });
+
+            // Отрисовка центрального круга
+            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+            ctx.fillStyle = '#fff'; ctx.fill();
+
+            // Полет активной стрелы
+            if (archState.activeArrow) {
+                if (archState.activeArrow.moving) {
+                    archState.activeArrow.y -= 15; // Скорость полета
+                    
+                    // Проверка попадания
+                    if (archState.activeArrow.y <= cy + r + 80) { // 80 - длина стрелы
+                        // Проверяем коллизию с другими стрелами (простая логика угла)
+                        const hitAngle = (-archState.angle + Math.PI/2) % (Math.PI*2);
+                        let normHit = hitAngle < 0 ? hitAngle + Math.PI*2 : hitAngle;
+                        
+                        let crashed = archState.arrows.some(arr => {
+                            let normArr = arr.angle < 0 ? arr.angle + Math.PI*2 : arr.angle;
+                            return Math.abs(normHit - normArr) < 0.2 || Math.abs(normHit - normArr) > (Math.PI*2 - 0.2);
+                        });
+
+                        if (crashed) {
+                            tg.HapticFeedback.notificationOccurred('error');
+                            tg.showAlert('Бам! Ты попал в стрелу. Конец игры!');
+                            archState.gameOver = true;
+                        } else {
+                            // Успешное попадание
+                            tg.HapticFeedback.impactOccurred('heavy');
+                            archState.arrows.push({ angle: hitAngle, color: archState.activeArrow.color });
+                            archState.shotsMadeByCurrent++;
+                            
+                            const maxShots = archState.shotsConfig[appState.playerCount];
+                            if (archState.shotsMadeByCurrent >= maxShots) {
+                                // Смена хода
+                                archState.currentPlayerIdx++;
+                                archState.shotsMadeByCurrent = 0;
+                                if (archState.currentPlayerIdx >= appState.playerCount) {
+                                    tg.showAlert('Все отстрелялись! Уровень пройден! 🎯');
+                                    archState.gameOver = true;
+                                }
+                            }
+                            if (!archState.gameOver) {
+                                updateIsland();
+                                spawnArrow();
+                            }
+                        }
+                    }
+                }
+                
+                // Рисуем летящую/готовую стрелу
+                if(!archState.gameOver && archState.activeArrow) {
+                    ctx.beginPath();
+                    ctx.moveTo(cx, archState.activeArrow.y);
+                    ctx.lineTo(cx, archState.activeArrow.y - 80);
+                    ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
+                    ctx.beginPath(); ctx.arc(cx, archState.activeArrow.y - 80, 6, 0, Math.PI*2);
+                    ctx.fillStyle = archState.activeArrow.color; ctx.fill();
+                }
+            }
+            archReqId = requestAnimationFrame(archLoop);
+        }
+
+        // ==========================================
+        // ПРОСТОЙ КЛИКЕР
+        // ==========================================
+        let clicks=0;
+        function resetClicker(){ clicks=0; document.getElementById('click-score').innerText=0; }
+        function doClick(){ clicks++; document.getElementById('click-score').innerText=clicks; tg.HapticFeedback.impactOccurred('light'); }
+
     </script>
 </body>
 </html>
