@@ -304,7 +304,6 @@
             if (clickTimeSetting < 5) clickTimeSetting = 5;
             if (clickTimeSetting > 100) clickTimeSetting = 100;
             
-            // ЖЕСТКАЯ СИНХРОНИЗАЦИЯ: обновляем сразу же!
             clickTimeCurrent = clickTimeSetting; 
             document.getElementById('click-time-val').innerText = `${clickTimeSetting} сек`;
         }
@@ -342,7 +341,7 @@
         
         let archState = {
             level: 1, currentPlayerIdx: 0,
-            aaConfig: { 1: 12, 2: 12, 3: 12, 4: 12 }, // Всего 12 стрел
+            aaConfig: { 1: 12, 2: 12, 3: 12, 4: 12 },
             shotsMade: 0, aaAngle: 0, aaArrows: [], activeArrow: null,
             gameOver: false,
             charging: false, power: 0, powerDir: 1, targetY: 100, targetSpeed: 0, targetX: 200
@@ -419,7 +418,6 @@
             ctx.beginPath(); ctx.moveTo(cx, cy-r); ctx.lineTo(cx, cy+r); ctx.stroke();
         }
 
-        // ОБЪЕДИНЕННАЯ ФУНКЦИЯ ДЛЯ УРОВНЕЙ С ЛЯГУШКОЙ
         function processFrogResult(hit) {
             let msg = hit ? 'ТОЧНО В ЦЕЛЬ! +1 Очко! 🎯' : 'Промах! 😢';
             if (hit) appState.players[archState.currentPlayerIdx].score += 1;
@@ -477,10 +475,13 @@
                             return Math.abs(normHit - normArr) < 0.2 || Math.abs(normHit - normArr) > (Math.PI*2 - 0.2);
                         });
 
+                        // ИСПРАВЛЕНИЕ: Уничтожаем активную стрелу, чтобы логика больше не срабатывала в след. кадрах
+                        let arrColor = archState.activeArrow.color;
+                        archState.activeArrow = null;
+
                         if (crashed) {
                             tg.HapticFeedback.notificationOccurred('error');
                             archState.gameOver = true;
-                            // Если кто-то ошибся - уровень сбрасывается для всех!
                             tg.showAlert(`Бам! ${appState.players[archState.currentPlayerIdx].name} промахнулся!\nНачнем Уровень 1 заново!`, () => {
                                 archState.gameOver = false;
                                 archState.currentPlayerIdx = 0;
@@ -489,11 +490,10 @@
                             return;
                         } else {
                             tg.HapticFeedback.impactOccurred('heavy');
-                            archState.aaArrows.push({ angle: hitAngle, color: archState.activeArrow.color });
+                            archState.aaArrows.push({ angle: hitAngle, color: arrColor });
                             archState.shotsMade++;
                             
                             if (archState.shotsMade >= 12) {
-                                // Уровень пройден - всем по +1 баллу
                                 appState.players.forEach(p => p.score += 1);
                                 archState.gameOver = true;
                                 archState.level++;
@@ -503,7 +503,6 @@
                                     startArcheryLevel();
                                 });
                             } else {
-                                // Очередь следующего
                                 archState.currentPlayerIdx = (archState.currentPlayerIdx + 1) % appState.playerCount;
                                 spawnArcheryEntity(); 
                                 updateArchIsland(); 
@@ -512,7 +511,7 @@
                     }
                 }
                 
-                if(!archState.gameOver && archState.activeArrow) {
+                if(archState.activeArrow) {
                     ctx.beginPath(); ctx.moveTo(cx, archState.activeArrow.y); ctx.lineTo(cx, archState.activeArrow.y - 80);
                     ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
                     ctx.beginPath(); ctx.arc(cx, archState.activeArrow.y - 80, 6, 0, Math.PI*2); ctx.fillStyle = archState.activeArrow.color; ctx.fill();
@@ -536,7 +535,6 @@
                 ctx.fillStyle = archState.activeArrow ? archState.activeArrow.color : 'white';
                 ctx.fillRect(20, 400, 20, -(archState.power * 2));
                 
-                // ИСПРАВЛЕНИЕ: Выравнивание текста, чтобы 99% не обрезалось
                 ctx.fillStyle = '#fff'; ctx.font = '16px Arial'; ctx.textAlign = 'left';
                 ctx.fillText(`${Math.floor(archState.power)}%`, 10, 420);
 
@@ -562,13 +560,11 @@
                         }
                     }
                     
-                    if(!archState.gameOver) {
-                        // ИСПРАВЛЕНИЕ: Возвращаем центрирование только для лягушки
-                        ctx.font = '40px Arial'; ctx.textAlign = 'center';
-                        ctx.fillText('🐸', archState.activeArrow.x, archState.activeArrow.y);
-                        ctx.beginPath(); ctx.arc(archState.activeArrow.x, archState.activeArrow.y - 15, 25, 0, Math.PI*2);
-                        ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
-                    }
+                    // ИСПРАВЛЕНИЕ: лягушка больше не исчезает во время пауз/уведомлений!
+                    ctx.font = '40px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText('🐸', archState.activeArrow.x, archState.activeArrow.y);
+                    ctx.beginPath(); ctx.arc(archState.activeArrow.x, archState.activeArrow.y - 15, 25, 0, Math.PI*2);
+                    ctx.strokeStyle = archState.activeArrow.color; ctx.lineWidth = 3; ctx.stroke();
                 }
             }
         }
