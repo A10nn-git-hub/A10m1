@@ -39,13 +39,16 @@
         .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px;cursor:pointer;}
         .profile-coins{font-size:24px;color:#ff9f0a;font-weight:bold;background:rgba(255,159,10,0.1);padding:10px 20px;border-radius:15px;border:1px solid #ff9f0a;display:inline-block;}
         .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;} .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:#ff9f0a;}
+        #tab-friends{flex-direction:row;gap:20px;padding:20px;}
+        .friends-list-panel{width:300px;background:var(--panel-bg);border-radius:20px;padding:15px;display:flex;flex-direction:column;}
+        .friend-item{display:flex;justify-content:space-between;align-items:center;background:#111;padding:12px;border-radius:12px;margin-bottom:10px;cursor:pointer;} .friend-item:active{background:#333;}
+        .lobby-buttons-panel{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
         .mega-btn{width:80%;max-width:400px;padding:30px;border-radius:20px;font-size:24px;font-weight:900;color:#fff;border:none;cursor:pointer;text-transform:uppercase;box-shadow:0 8px 0 rgba(0,0,0,0.3);}
         .mega-create{background:linear-gradient(45deg,#ff9f0a,#ff453a);} .mega-custom{background:linear-gradient(45deg,#32ade6,#3390ec);opacity:0.8;}
         #view-lobby{display:none;flex-direction:column;flex-grow:1;position:relative;align-items:center;justify-content:center;width:100%;height:100%;}
         .lobby-slots-container{display:flex;gap:20px;justify-content:center;align-items:center;width:100%;flex-wrap:wrap;}
         .square-slot{width:16vh;height:16vh;background:var(--panel-bg);border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #444;position:relative;transition:0.2s;}
         .square-slot.active-slot{border-color:#ff9f0a;} .slot-avatar{font-size:5vh;margin-bottom:1vh;} .slot-name{font-weight:bold;font-size:1.8vh;text-align:center;width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .slot-status{font-size:1.2vh;color:#34c759;position:absolute;bottom:-20px;font-weight:bold;}
-        .lobby-controls-bottom-right{position:absolute;bottom:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
         .play-btn{background:#34c759;color:#fff;border:none;border-radius:12px;padding:15px 50px;font-size:26px;font-weight:900;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 0 #248a3d;}
         #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:1000;}
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
@@ -59,6 +62,7 @@
         .math-sort-slots{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;} .math-slot{width:8vh;height:8vh;border:3px dashed #666;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;background:#222;} .math-sort-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;} .math-drag-item{width:8vh;height:8vh;background:#34c759;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;}
         .shake{animation:shake 0.4s;} @keyframes shake{0%{transform:translateX(0);} 25%{transform:translateX(-10px);} 50%{transform:translateX(10px);} 75%{transform:translateX(-10px);} 100%{transform:translateX(0);}}
         .board{display:grid;gap:5px;width:60vh;height:60vh;margin:0 auto;box-sizing:border-box;} .cell{background:#2c2c2e;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,0.3);box-sizing:border-box;overflow:hidden;line-height:1;}
+        .cell.x{color:#ff453a;} .cell.o{color:#32ade6;} .cell.triangle{color:#34c759;} .cell.square{color:#ff9f0a;} .cell.minus{color:#af52de;}
         .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom,#87CEEB 0%,#87CEEB 50%,#8FBC8F 50%,#8FBC8F 100%);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2);} .hidden-item{position:absolute;font-size:4vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));} .scene-decor{position:absolute;font-size:7vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;opacity:0.9;}
         .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,0.2);}
         .giant-click-btn{width:50vw;height:40vh;border-radius:20px;font-size:10vh;font-weight:900;background:#ff9f0a;color:#fff;border:none;}
@@ -112,7 +116,7 @@
                 <div id="clan-my" class="sub-tab-content active">
                     <div id="clan-create-view">
                         <h2>Создать Клан (1000 🪙)</h2>
-                        <input type="text" id="clan-tag-input" class="styled-input" placeholder="Тег (макс 5 букв/цифр)" maxlength="5">
+                        <input type="text" id="clan-tag-input" class="styled-input" placeholder="Тег (макс 5 символов)" maxlength="5">
                         <button class="btn btn-gold" onclick="createClan()">СОЗДАТЬ</button>
                     </div>
                     <div id="clan-info-view" style="display:none;width:100%;">
@@ -262,10 +266,9 @@
         let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
         let lobbyId = null; let lobbyPlayers = []; let lobbyRef = null; let isHost = false; let pendingInvite = null;
 
-        // БРОНЕБОЙНАЯ СИСТЕМА ЗАПУСКА (ФИКС "ЗАГРУЗКА...")
+        // БРОНЕБОЙНАЯ СИСТЕМА ЗАПУСКА
         function initApp() {
             let isInit = false;
-            
             function startData(vals) {
                 if(isInit) return; isInit = true;
                 
@@ -276,19 +279,37 @@
                 if (vals['dev_mode']) myId = '0000';
                 checkAdminAccess();
                 
-                if(vals['friendsIds']) { try { friendsIds = JSON.parse(vals['friendsIds']); } catch(e){} }
-                friendsIds = friendsIds.filter(f => f !== 'БОТ' && f !== 'ИИ');
-                friendsIds.unshift('ИИ'); 
-                try{tg.CloudStorage.setItem('friendsIds', JSON.stringify(friendsIds));}catch(e){}
+                // МИГРАЦИЯ ДРУЗЕЙ В FIREBASE ДЛЯ СИНХРОНИЗАЦИИ 2.0
+                db.ref(`users/${myId}/friends`).on('value', snap => {
+                    friendsIds = ['ИИ']; // ИИ ВСЕГДА В ДРУЗЬЯХ
+                    if (snap.exists()) {
+                        Object.keys(snap.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ') friendsIds.push(k); });
+                    }
+                    renderFriends();
+                });
+
+                // Если есть старые локальные друзья, переносим их в Firebase 1 раз и удаляем из локальной памяти
+                if(vals['friendsIds']) {
+                    try { 
+                        let localF = JSON.parse(vals['friendsIds']); 
+                        localF.forEach(fid => {
+                            if (fid !== 'ИИ' && fid !== 'БОТ') {
+                                db.ref(`users/${myId}/friends/${fid}`).set(true);
+                                db.ref(`users/${fid}/friends/${myId}`).set(true); // Сразу делаем взаимными
+                            }
+                        });
+                        tg.CloudStorage.removeItem('friendsIds'); 
+                    } catch(e){}
+                }
 
                 db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, coins: globalCoins });
                 db.ref('users/' + myId + '/coins').on('value', snap => { if(snap.exists() && snap.val() !== globalCoins) { globalCoins = snap.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } });
-                
                 db.ref('users/' + myId + '/clan').on('value', snap => { myClan = snap.val(); document.getElementById('my-clan-display').innerText = myClan ? `[${myClan}]` : ''; renderClanTab(); });
                 
+                // ЗАЯВКИ
                 db.ref(`users/${myId}/friend_reqs`).on('value', snap => { let c = snap.exists() ? Object.keys(snap.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(snap.val()); });
-                renderFriends();
-
+                
+                // УВЕДОМЛЕНИЯ ЛОББИ
                 db.ref(`users/${myId}/invite`).on('value', s => {
                     if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); }
                 });
@@ -297,17 +318,12 @@
             try {
                 tg.CloudStorage.getKeys((err, keys) => {
                     if (err || !keys || keys.length === 0) return startData({});
-                    tg.CloudStorage.getItems(keys, (err, vals) => {
-                        startData(vals || {});
-                    });
+                    tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); });
                 });
             } catch(e) { startData({}); }
-            
-            // Если Телеграм завис, принудительно стартуем через 1 секунду
             setTimeout(() => startData({}), 1000);
         }
         
-        // Запускаем систему
         initApp();
 
         function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[3]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
@@ -319,7 +335,7 @@
             db.ref('users/' + myId).update({ name: myName, avatar: myAvatar });
             
             if(myId === '0000') {
-                db.ref('users/0000/clan').set('DEVELOPERS');
+                db.ref('users/0000/clan').set('DEVELOPERS'); 
                 db.ref('promos').on('value', snap => {
                     const list = document.getElementById('promo-active'); list.innerHTML = '';
                     if(snap.exists()) { let data = snap.val(); Object.keys(data).forEach(k => { let div = document.createElement('div'); div.className = 'list-item'; div.innerHTML = `<div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">УДАЛИТЬ</button>`; list.appendChild(div); }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>';
@@ -343,11 +359,11 @@
         function adminCreatePromo() { let c = document.getElementById('adm-promo-code').value.toUpperCase(); let r = parseInt(document.getElementById('adm-promo-coins').value); let a = parseInt(document.getElementById('adm-promo-acts').value); if(!c||isNaN(r)||isNaN(a)) return; db.ref('promos/'+c).set({rew:r, acts:a}); tg.showAlert("Создан!"); }
         function redeemPromo() { let c = document.getElementById('promo-input').value.toUpperCase(); if(!c) return; db.ref(`users/${myId}/used_promos/${c}`).once('value').then(us => { if(us.exists()) return tg.showAlert("Уже юзал!"); db.ref(`promos/${c}`).once('value').then(ps => { if(!ps.exists()) return tg.showAlert("Нет кода!"); let d = ps.val(); if(d.acts<=0) return tg.showAlert("Лимит!"); db.ref(`promos/${c}/acts`).set(d.acts-1); db.ref(`users/${myId}/used_promos/${c}`).set(true); addCoins(d.rew); tg.showAlert(`+${d.rew} 🪙`); }); }); }
 
-        // --- ДРУЗЬЯ (ЖИВОЙ ПОИСК) ---
+        // --- ДРУЗЬЯ (ЖИВОЙ ПОИСК + ВЗАИМНЫЕ) ---
         function renderFriends() { 
             const list = document.getElementById('fr-list'); list.innerHTML='';
             friendsIds.forEach(id => {
-                if(id==='ИИ') { let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>🤖 ИИ</b><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div>`; d.onclick=()=>openFriendModal(SYSTEM_BOT); list.appendChild(d); return; }
+                if(id==='ИИ') { let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>🤖 ИИ</b> <span style="color:#ff9f0a;font-size:12px;">[BOT]</span><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div>`; d.onclick=()=>openFriendModal(SYSTEM_BOT); list.appendChild(d); return; }
                 db.ref('users/'+id).once('value').then(s => {
                     if(s.exists()){ let p = s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>${p.avatar||'👤'} ${p.name||'Игрок'}</b> ${p.clan?`<span style="color:#ff9f0a;font-size:12px;">[${p.clan}]</span>`:''}<br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>`; d.onclick=()=>openFriendModal({id:id, name:p.name||'Игрок', avatar:p.avatar||'👤'}); list.appendChild(d); }
                 });
@@ -355,9 +371,25 @@
         }
         function addFriendBtn() { let id=prompt("ID друга:"); if(id&&id!==myId){ if(friendsIds.includes(id)) return tg.showAlert("Уже в списке!"); db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ db.ref(`users/${id}/friend_reqs/${myId}`).set(true); tg.showAlert("Заявка отправлена!"); } else tg.showAlert("Не найден!"); }); } }
         function renderFrReqs(reqs) { const l = document.getElementById('fr-reqs'); l.innerHTML=''; if(!reqs) return l.innerHTML='<p style="color:gray;">Нет заявок</p>'; Object.keys(reqs).forEach(id => { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>${p.avatar||'👤'} ${p.name||'Игрок'}</b></div><div><button class="btn btn-green" style="padding:5px;" onclick="acceptReq('${id}')">➕</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('users/${myId}/friend_reqs/${id}').remove()">➖</button></div>`; l.appendChild(d); } }); }); }
-        function acceptReq(id) { db.ref(`users/${myId}/friend_reqs/${id}`).remove(); if(!friendsIds.includes(id)){ friendsIds.push(id); try{tg.CloudStorage.setItem('friendsIds', JSON.stringify(friendsIds));}catch(e){} db.ref(`users/${id}/friend_reqs/${myId}`).remove(); db.ref('users/'+id).once('value').then(s=>{ let f=s.val(); if(f.friends){ let fa=JSON.parse(f.friends); if(!fa.includes(myId)){ fa.push(myId); db.ref(`users/${id}`).update({friends: JSON.stringify(fa)}); } } }); renderFriends(); } }
-        function openFriendModal(f) { activeFriend=f; document.getElementById('fm-avatar').innerText=f.avatar; document.getElementById('fm-name').innerText=f.name; document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; if(appState.inLobby){ if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; } else { if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;">Сначала создай лобби</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if(f.id!=='ИИ') a.innerHTML+=`<button class="btn btn-red" onclick="friendsIds=friendsIds.filter(i=>i!=='${f.id}');try{tg.CloudStorage.setItem('friendsIds',JSON.stringify(friendsIds));}catch(e){}renderFriends();closeFriendModal();">Удалить 🗑️</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
+        
+        function acceptReq(id) { 
+            db.ref(`users/${myId}/friend_reqs/${id}`).remove(); 
+            // Добавляем взаимно в базу
+            db.ref(`users/${myId}/friends/${id}`).set(true);
+            db.ref(`users/${id}/friends/${myId}`).set(true);
+            tg.showAlert("Друг добавлен!");
+        }
+        
+        function openFriendModal(f) { activeFriend=f; document.getElementById('fm-avatar').innerText=f.avatar; document.getElementById('fm-name').innerText=f.name; document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; if(appState.inLobby){ if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; } else { if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;">Сначала создай лобби</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if(f.id!=='ИИ') a.innerHTML+=`<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
         function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
+        
+        function removeFriend() { 
+            if(confirm(`Удалить?`)) { 
+                db.ref(`users/${myId}/friends/${activeFriend.id}`).remove();
+                db.ref(`users/${activeFriend.id}/friends/${myId}`).remove();
+                closeFriendModal(); 
+            } 
+        }
 
         // --- КЛАНЫ ---
         function renderClanTab() {
@@ -413,6 +445,8 @@
         function togglePause(p) { appState.isPaused=p; document.getElementById('pause-overlay').classList.toggle('hidden', !p); }
         function exitToLobby() { togglePause(false); document.getElementById('game-container').style.display='none'; document.getElementById('game-top-coins').style.display='none'; if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); if(tttRef) tttRef.off(); }
         function setIsland(t, c='#fff') { let is = document.getElementById('dynamic-island'); document.getElementById('island-text').innerText=t; is.style.display='block'; is.style.border=`2px solid ${c}`; }
+        
+        // --- ПОБЕДА (КРАСНЫЙ, ЗЕЛЕНЫЙ, ЖЕЛТЫЙ ФОН) ---
         function showResult(t, bg, em, sub='') { document.getElementById('dynamic-island').style.display='none'; document.getElementById('pause-btn').style.display='none'; let ov=document.getElementById('result-overlay'); ov.style.backgroundColor=bg; document.getElementById('result-text').innerText=t; document.getElementById('result-emoji').innerText=em; document.getElementById('result-subtext').innerText=sub; ov.classList.remove('hidden'); }
         function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); exitToLobby(); }
 
@@ -421,15 +455,82 @@
         function changeClickTime(delta) { if(clickActive||appState.isPaused) return; if(!isHost) return tg.showAlert("Только Хост меняет время!"); let n = Math.max(5,Math.min(100,clickTimeSetting+delta)); db.ref(`lobbies/${lobbyId}/clickTime`).set(n); }
         function initClickerUI() { clicks=0; clickActive=false; clearInterval(clickInterval); document.getElementById('click-score').innerText=0; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; document.getElementById('clicker-controls').style.display='flex'; document.getElementById('click-btn').style.display='block'; document.getElementById('clk-btn-m').style.display = isHost?'block':'none'; document.getElementById('clk-btn-p').style.display = isHost?'block':'none'; document.getElementById('clk-msg').innerText = isHost?"Настрой время и ЖМИ!":"Жди запуска..."; setIsland(isHost?'Настраивай!':'Ожидание...'); }
         function doClickStart() { if(appState.isPaused) return; if(!clickActive) { if(isHost) db.ref(`lobbies/${lobbyId}/clickState`).set('playing'); else tg.showAlert("Жди хоста!"); } else { clicks++; document.getElementById('click-score').innerText=clicks; } }
-        function startClickerGame() { clickActive=true; clickTimeCurrent=clickTimeSetting; clicks=0; document.getElementById('click-score').innerText=0; document.getElementById('clicker-controls').style.display='none'; document.getElementById('clk-msg').innerText="ТАПАЙ!!!"; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; document.getElementById('click-btn').style.display='none'; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ db.ref(`lobbies/${lobbyId}/clickScores/${myId}`).set(clicks); setIsland("Ждем остальных..."); } else { let rew=Math.floor(clicks/10); addCoins(rew); showResult(`Счет: ${clicks}`,'#ff9f0a','⏱️',`+${rew} 🪙`); } } },1000); }
+        function startClickerGame() { clickActive=true; clickTimeCurrent=clickTimeSetting; clicks=0; document.getElementById('click-score').innerText=0; document.getElementById('clicker-controls').style.display='none'; document.getElementById('clk-msg').innerText="ТАПАЙ!!!"; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; document.getElementById('click-btn').style.display='none'; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ db.ref(`lobbies/${lobbyId}/clickScores/${myId}`).set(clicks); setIsland("Ждем остальных..."); } else { let rew=Math.floor(clicks/10); addCoins(rew); showResult(`Счет: ${clicks}`,'#34c759','⏱️',`+${rew} 🪙`); } } },1000); }
 
         // ================= МАСШТАБНЫЕ КРЕСТИКИ НОЛИКИ =================
         let tttBoard=[], tttTurnIdx=0, tttGameOver=false, tttSize=3, tttWinReq=3; const TTT_SYMBOLS=['x','o','triangle','square','minus']; const TTT_CHARS={'x':'❌','o':'⭕','triangle':'🔺','square':'🔲','minus':'➖'}; const TTT_COLORS={'x':'#ff453a','o':'#32ade6','triangle':'#34c759','square':'#ff9f0a','minus':'#af52de'};
         function initTicTacToe() { tttGameOver=false; tttTurnIdx=0; let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=4;} else{tttSize=9;tttWinReq=5;} document.getElementById('ttt-board').style.gridTemplateColumns=`repeat(${tttSize}, 1fr)`; document.getElementById('ttt-board').style.gridTemplateRows=`repeat(${tttSize}, 1fr)`; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ if(tttRef) tttRef.off(); tttRef=db.ref(`lobbies/${lobbyId}`); if(isHost) db.ref(`lobbies/${lobbyId}`).update({tttBoard:new Array(tttSize*tttSize).fill(''), tttTurn:0}); tttRef.on('value', snap=>{ if(!snap.exists()||snap.val().status!=='playing') return; let data=snap.val(); tttBoard=data.tttBoard||new Array(tttSize*tttSize).fill(''); tttTurnIdx=data.tttTurn||0; if(checkDynamicWin(true)) return; renderTicTacToe(); let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); setIsland(tttTurnIdx===myIdx?"ТВОЙ ХОД!":`ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); }); } else { tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe(); if(lobbyPlayers.length>1&&lobbyPlayers[1].id==='ИИ') setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a'); } }
         function renderTicTacToe() { const b=document.getElementById('ttt-board'); b.innerHTML=''; let fSize=Math.max(3, 12-tttSize)+'vh'; tttBoard.forEach((cell,i)=>{ let div=document.createElement('div'); div.className=`cell ${cell}`; div.innerText=cell?TTT_CHARS[cell]:''; div.style.fontSize=fSize; div.onclick=()=>moveTicTacToe(i); b.appendChild(div); }); }
-        function moveTicTacToe(i) { if(tttGameOver||tttBoard[i]||appState.isPaused) return; if(lobbyPlayers.length<=1){ tttBoard[i]=TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=(tttTurnIdx+1)%2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); } else if(lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ'){ if(tttTurnIdx!==0) return; tttBoard[i]='x'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=1; setIsland("ИИ ДУМАЕТ...",'#ff9f0a'); setTimeout(makeBotDynamicMove,800); } else { let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); if(tttTurnIdx!==myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`); tttBoard[i]=TTT_SYMBOLS[myIdx]; let next=(tttTurnIdx+1)%lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({tttBoard:tttBoard, tttTurn:next}); } }
-        function makeBotDynamicMove() { if(tttGameOver||appState.isPaused) return; let empty=[]; tttBoard.forEach((c,i)=>{if(!c)empty.push(i);}); if(empty.length>0){ tttBoard[empty[Math.floor(Math.random()*empty.length)]]='o'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=0; setIsland("ТВОЙ ХОД!",'#34c759'); } }
-        function checkDynamicWin(isOnline) { let s=tttSize, req=tttWinReq; let winner=null; for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } if(winner){ tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); let wName=lobbyPlayers.length<=1?`ПОБЕДИЛ ${TTT_CHARS[winner]}!`:(TTT_SYMBOLS.indexOf(winner)===lobbyPlayers.findIndex(p=>p.id===myId)?"ПОБЕДА!":"ПОРАЖЕНИЕ!"); if(lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ'&&winner==='o') wName="ИИ ВЫИГРАЛ!"; setTimeout(()=>showResult(wName, TTT_COLORS[winner], TTT_CHARS[winner]), 300); return true; } else if(!tttBoard.includes('')){ tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!",'#ffd60a','🤝'), 300); return true; } return false; }
+        
+        function moveTicTacToe(i) { 
+            if(tttGameOver||tttBoard[i]||appState.isPaused) return; 
+            
+            if(lobbyPlayers.length<=1){ 
+                tttBoard[i]=TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return; 
+                tttTurnIdx=(tttTurnIdx+1)%2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); 
+            } else if(lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ'){ 
+                if(tttTurnIdx!==0) return; 
+                tttBoard[i]='x'; renderTicTacToe(); if(checkDynamicWin(false)) return; 
+                tttTurnIdx=1; setIsland("ИИ ДУМАЕТ...",'#ff9f0a'); setTimeout(makeBotDynamicMoveFirebase,800); 
+            } else { 
+                let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); 
+                if(tttTurnIdx!==myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`); 
+                tttBoard[i]=TTT_SYMBOLS[myIdx]; 
+                let next=(tttTurnIdx+1)%lobbyPlayers.length; 
+                db.ref(`lobbies/${lobbyId}`).update({tttBoard:tttBoard, tttTurn:next}); 
+                if (isHost && lobbyPlayers[next].id === 'ИИ') { setTimeout(makeBotDynamicMoveFirebase, 800); }
+            } 
+        }
+        
+        // Синхронизация бота через хоста
+        function makeBotDynamicMoveFirebase() {
+            if (tttGameOver || appState.isPaused) return;
+            db.ref(`lobbies/${lobbyId}`).once('value').then(snap => {
+                let data = snap.val(); if(!data || data.status !== 'playing') return;
+                let b = data.tttBoard; let turn = data.tttTurn;
+                
+                // В локальной игре с ботом мы обновляем локально
+                if (lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && !b) {
+                    let empty=[]; tttBoard.forEach((c,i)=>{if(!c)empty.push(i);}); 
+                    if(empty.length>0){ tttBoard[empty[Math.floor(Math.random()*empty.length)]]='o'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=0; setIsland("ТВОЙ ХОД!",'#34c759'); }
+                    return;
+                }
+                
+                if (lobbyPlayers[turn].id !== 'ИИ') return; 
+                let empty = []; b.forEach((c, i) => { if(!c) empty.push(i); });
+                if (empty.length > 0) {
+                    b[empty[Math.floor(Math.random() * empty.length)]] = TTT_SYMBOLS[turn];
+                    let nextTurn = (turn + 1) % lobbyPlayers.length;
+                    db.ref(`lobbies/${lobbyId}`).update({ tttBoard: b, tttTurn: nextTurn });
+                    if (lobbyPlayers[nextTurn].id === 'ИИ') setTimeout(makeBotDynamicMoveFirebase, 800);
+                }
+            });
+        }
+
+        function checkDynamicWin(isOnline) { 
+            let s=tttSize, req=tttWinReq; let winner=null; 
+            for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } 
+            
+            if(winner){ 
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
+                
+                let isMyWin = false;
+                if (lobbyPlayers.length <= 1) isMyWin = true; 
+                else { let myIdx = lobbyPlayers.findIndex(p => p.id === myId); if (TTT_SYMBOLS.indexOf(winner) === myIdx) isMyWin = true; }
+
+                let wName = lobbyPlayers.length <= 1 ? `ПОБЕДИЛ ${TTT_CHARS[winner]}!` : (isMyWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ!"); 
+                if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === 'o') { wName = "ИИ ВЫИГРАЛ!"; isMyWin = false; }
+                
+                let bg = isMyWin ? '#34c759' : '#ff453a'; // Зеленый если ты, красный если нет
+                if (lobbyPlayers.length <= 1) bg = TTT_COLORS[winner];
+                
+                setTimeout(()=>showResult(wName, bg, TTT_CHARS[winner]), 300); return true; 
+            } else if(!tttBoard.includes('')){ 
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
+                setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true; // Желтый ничья
+            } 
+            return false; 
+        }
 
         // ================= ПОИСК ПРЕДМЕТОВ =================
         const ALL_ITEMS = ['🍎','🔑','💎','👑','🧸','🍔','🎸','⚽','📱','🕶️','🍉','🦴']; let hiddenFound=0, hiddenMisses=0;
@@ -446,7 +547,7 @@
         function nextMath1() { if(mathProgressCount>=10) return; drawMathProgress(1); document.getElementById('math1-q').innerText=generateSimpleMath(); document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a'; }
         function math1Input(n) { document.getElementById('math1-ans').innerText=n; if(n===mathAns){ document.getElementById('math1-ans').style.color='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath1,800); } else { document.getElementById('math1-ans').style.color='#ff453a'; setTimeout(()=>{document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a';},800); } }
         function nextMath2() { if(mathProgressCount>=10) return; drawMathProgress(2); document.getElementById('math2-q').innerText=generateSimpleMath()+"?"; let cards=[mathAns]; while(cards.length<4){ let r=Math.floor(Math.random()*10); if(!cards.includes(r)) cards.push(r); } cards.sort(()=>Math.random()-0.5); const grid=document.getElementById('math2-cards'); grid.innerHTML=''; cards.forEach(c=>{ let btn=document.createElement('button'); btn.className='math-ans-card'; btn.innerText=c; btn.onclick=()=>{ if(c===mathAns){ btn.style.background='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath2,800); } else { btn.style.background='#ff453a'; btn.classList.add('shake'); setTimeout(()=>{btn.style.background='#ff9f0a'; btn.classList.remove('shake');},800); } }; grid.appendChild(btn); }); }
-        function initMath3() { let start=Math.floor(Math.random()*80)+1; mathMode3State.seq=Array.from({length:10}, (_,i)=>start+i); mathMode3State.currentTarget=0; let shuf=[...mathMode3State.seq].sort(()=>Math.random()-0.5); const s=document.getElementById('math3-slots'); s.innerHTML=''; const items=document.getElementById('math3-items'); items.innerHTML=''; for(let i=0;i<10;i++){ let slot=document.createElement('div'); slot.className='math-slot'; slot.id=`m3-slot-${i}`; s.appendChild(slot); let item=document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.onclick=()=>{ if(parseInt(item.innerText)===mathMode3State.seq[mathMode3State.currentTarget]){ let cSlot=document.getElementById(`m3-slot-${mathMode3State.currentTarget}`); cSlot.innerText=item.innerText; cSlot.style.background='#3390ec'; cSlot.style.border='none'; item.style.visibility='hidden'; addCoins(1); mathMode3State.currentTarget++; if(mathMode3State.currentTarget>=10) setTimeout(()=>showResult('СУПЕР!','#34c759','🧩','Все собрано!'),500); } else { item.classList.add('shake'); setTimeout(()=>item.classList.remove('shake'),400); } }; items.appendChild(item); } }
+        function initMath3() { let start=Math.floor(Math.random()*80)+1; mathMode3State.seq=Array.from({length:10}, (_,i)=>start+i); mathMode3State.currentTarget=0; let shuf=[...mathMode3State.seq].sort(()=>Math.random()-0.5); const s=document.getElementById('math3-slots'); s.innerHTML=''; const items=document.getElementById('math3-items'); items.innerHTML=''; for(let i=0;i<10;i++){ let slot=document.createElement('div'); slot.className='math-slot'; slot.id=`m3-slot-${i}`; s.appendChild(slot); let item=document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.onclick=()=>{ if(parseInt(item.innerText)===mathMode3State.seq[mathMode3State.currentTarget]){ let cSlot=document.getElementById(`m3-slot-${mathMode3State.currentTarget}`); cSlot.innerText=item.innerText; cSlot.style.background='#3390ec'; cSlot.style.border='none'; item.style.visibility='hidden'; addCoins(1); mathMode3State.currentTarget++; if(mathMode3State.currentTarget>=10){ setTimeout(()=>showResult('СУПЕР!','#34c759','🧩','Все собрано!'),500); } } else { item.classList.add('shake'); setTimeout(()=>item.classList.remove('shake'),400); } }; items.appendChild(item); } }
 
     </script>
 </body>
