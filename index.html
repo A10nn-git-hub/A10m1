@@ -35,13 +35,12 @@
         #tab-profile{flex-direction:column;align-items:center;justify-content:center;}
         .profile-mega-box{background:var(--panel-bg);padding:40px;border-radius:20px;text-align:center;border:2px solid #444;width:400px;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
         .profile-avatar{font-size:80px;margin-bottom:10px;cursor:pointer;display:inline-block;padding:10px;background:rgba(255,255,255,0.05);border-radius:50%;}
-        .profile-name{font-size:32px;font-weight:900;margin-bottom:5px;cursor:pointer;border-bottom:2px dashed transparent;display:inline-block;}
+        .profile-name{font-size:32px;font-weight:900;margin-bottom:15px;cursor:pointer;border-bottom:2px dashed transparent;display:inline-block;}
         .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px;cursor:pointer;}
         .profile-coins{font-size:24px;color:#ff9f0a;font-weight:bold;background:rgba(255,159,10,0.1);padding:10px 20px;border-radius:15px;border:1px solid #ff9f0a;display:inline-block;}
         .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;} .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:#ff9f0a;}
         #tab-friends{flex-direction:row;gap:20px;padding:20px;}
         .friends-list-panel{width:300px;background:var(--panel-bg);border-radius:20px;padding:15px;display:flex;flex-direction:column;}
-        .friend-item{display:flex;justify-content:space-between;align-items:center;background:#111;padding:12px;border-radius:12px;margin-bottom:10px;cursor:pointer;} .friend-item:active{background:#333;}
         .lobby-buttons-panel{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
         .mega-btn{width:80%;max-width:400px;padding:30px;border-radius:20px;font-size:24px;font-weight:900;color:#fff;border:none;cursor:pointer;text-transform:uppercase;box-shadow:0 8px 0 rgba(0,0,0,0.3);}
         .mega-create{background:linear-gradient(45deg,#ff9f0a,#ff453a);} .mega-custom{background:linear-gradient(45deg,#32ade6,#3390ec);opacity:0.8;}
@@ -49,6 +48,7 @@
         .lobby-slots-container{display:flex;gap:20px;justify-content:center;align-items:center;width:100%;flex-wrap:wrap;}
         .square-slot{width:16vh;height:16vh;background:var(--panel-bg);border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #444;position:relative;transition:0.2s;}
         .square-slot.active-slot{border-color:#ff9f0a;} .slot-avatar{font-size:5vh;margin-bottom:1vh;} .slot-name{font-weight:bold;font-size:1.8vh;text-align:center;width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .slot-status{font-size:1.2vh;color:#34c759;position:absolute;bottom:-20px;font-weight:bold;}
+        .lobby-controls-bottom-right{position:absolute;bottom:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
         .play-btn{background:#34c759;color:#fff;border:none;border-radius:12px;padding:15px 50px;font-size:26px;font-weight:900;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 0 #248a3d;}
         #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:1000;}
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
@@ -80,10 +80,8 @@
         <div class="nav-bar" id="nav-bar">
             <div class="nav-item active" onclick="switchTab('profile', this)"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
             <div class="nav-item" onclick="switchTab('inv', this)"><div class="nav-icon">🎒</div><div class="nav-text">Инвентарь</div></div>
-            <div class="nav-item" onclick="switchTab('clan', this)"><div class="nav-icon">🛡️</div><div class="nav-text">Клан</div></div>
             <div class="nav-item" onclick="switchTab('friends', this)"><div class="nav-icon">👥</div><div class="nav-text">Друзья</div></div>
-            <div class="nav-item" onclick="switchTab('settings', this)"><div class="nav-icon">⚙️</div><div class="nav-text">Настройки</div></div>
-            <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this)"><div class="nav-icon">🛠️</div><div class="nav-text">Параметры</div></div>
+            <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this)"><div class="nav-icon">🛠️</div><div class="nav-text">Админ</div></div>
         </div>
 
         <div class="main-content">
@@ -92,7 +90,6 @@
                     <div class="profile-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
                     <div class="profile-name" id="my-name" onclick="changeName()">Игрок ✏️</div><br>
                     <div class="profile-id" id="my-id-display" onclick="tryAdminLogin()">ID: ...</div>
-                    <div style="color:gray;margin-bottom:15px;font-weight:bold;display:none;" id="my-clan-display"></div>
                     <div class="profile-coins">🪙 <span id="menu-coins">0</span></div>
                 </div>
             </div>
@@ -106,40 +103,6 @@
                 <div id="inv-bag" class="sub-tab-content active"><div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2></div>
                 <div id="inv-shop" class="sub-tab-content"><div style="font-size:60px;margin-top:50px;">🛒</div><h2 style="color:gray;">Скоро</h2></div>
                 <div id="inv-promo" class="sub-tab-content"><h2>Промокод</h2><input type="text" id="promo-input" class="styled-input"><button class="btn btn-green" onclick="redeemPromo()">ПРИМЕНИТЬ</button></div>
-            </div>
-
-            <div id="tab-clan" class="tab-view" style="flex-direction: column;">
-                <div class="sub-tabs-header">
-                    <button class="sub-tab-btn active" onclick="switchSubTab('clan','my',this)">Мой клан</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('clan','reqs',this)">Запросы <span id="clan-invite-badge" class="badge">0</span></button>
-                </div>
-                
-                <div id="clan-my" class="sub-tab-content active">
-                    <div id="clan-create-view" style="width:100%; text-align:center;">
-                        <h2>🛡️ Создать клан</h2>
-                        <input type="text" id="clan-tag-input" class="styled-input" placeholder="Тег (макс 5 символов)" maxlength="5">
-                        <button class="btn btn-gold" onclick="createClan()">СОЗДАТЬ (1000 🪙)</button>
-                        
-                        <hr style="border-color:#333; margin:30px 10%;">
-                        
-                        <h2>Вступить в клан</h2>
-                        <input type="text" id="clan-join-input" class="styled-input" placeholder="Введите тег клана" maxlength="5">
-                        <button class="btn btn-green" onclick="joinClanReq()">ОТПРАВИТЬ ЗАЯВКУ</button>
-                    </div>
-                    
-                    <div id="clan-info-view" style="display:none;width:100%;">
-                        <h1 id="clan-title-tag" style="color:#ff9f0a;text-align:center;">[TAG]</h1>
-                        <div class="mini-tabs-header">
-                            <button class="mini-tab-btn active" onclick="switchMiniTab('clan-members',this)">Участники</button>
-                            <button class="mini-tab-btn" onclick="switchMiniTab('clan-apps',this)">Кандидаты <span id="clan-badge" class="badge">0</span></button>
-                        </div>
-                        <div id="clan-members" class="mini-tab-content active" style="width:300px;margin:0 auto;max-height:40vh;"></div>
-                        <div id="clan-apps" class="mini-tab-content" style="width:300px;margin:0 auto;max-height:40vh;"></div>
-                        <button class="btn btn-red" style="margin-top:20px;" onclick="leaveClan()">ПОКИНУТЬ КЛАН</button>
-                    </div>
-                </div>
-                
-                <div id="clan-reqs" class="sub-tab-content" style="width:300px;max-height:50vh;"></div>
             </div>
 
             <div id="tab-friends" class="tab-view" style="flex-direction: row; gap:20px;">
@@ -169,8 +132,6 @@
                 </div>
             </div>
 
-            <div id="tab-settings" class="tab-view"><div style="margin:auto;text-align:center;"><div style="font-size:60px;">🚧</div><h2 style="color:gray;">Настройки в разработке</h2></div></div>
-            
             <div id="tab-admin" class="tab-view" style="flex-direction: column;">
                 <h3 style="color:#ff453a; margin-top:0; margin-bottom:10px;">Доступ: РАЗРАБОТЧИК</h3>
                 <div class="sub-tabs-header">
@@ -274,9 +235,9 @@
         }; firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
         const EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
-        const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', clan: 'BOT' }; 
-        let globalCoins = 0; let myName = tg.initDataUnsafe?.user?.first_name || "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myClan = null;
-        let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
+        const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖' }; 
+        let globalCoins = 0; let myName = tg.initDataUnsafe?.user?.first_name || "Игрок"; let myAvatar = "😎"; let myId = "0000";
+        let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
         let lobbyId = null; let lobbyPlayers = []; let lobbyRef = null; let isHost = false; let pendingInvite = null;
 
         // БРОНЕБОЙНАЯ СИСТЕМА ЗАПУСКА С ЗАЩИТОЙ ИМЕНИ
@@ -293,52 +254,30 @@
                 db.ref('users/' + myId).once('value').then(snap => {
                     if(snap.exists()) {
                         let d = snap.val();
-                        // Берем имя из базы. Если его вдруг там нет - из локалки
                         myName = d.name || vals['my_name'] || tg.initDataUnsafe?.user?.first_name || "Игрок";
                         myAvatar = d.avatar || vals['my_avatar'] || "😎";
                         globalCoins = d.coins !== undefined ? d.coins : (parseInt(vals['player_coins']) || 0);
-                        myClan = d.clan || null;
                     } else {
                         myName = vals['my_name'] || tg.initDataUnsafe?.user?.first_name || "Игрок";
                         myAvatar = vals['my_avatar'] || "😎";
                         globalCoins = parseInt(vals['player_coins']) || 0;
                     }
 
-                    // ЖЕСТКАЯ ЗАПИСЬ ДЛЯ 0000 ПРИ ПЕРВОМ ЗАХОДЕ ИЛИ ЕСЛИ СТЕРЛОСЬ
-                    if(myId === '0000') { myClan = 'DEVELOPERS'; db.ref('users/0000/clan').set('DEVELOPERS'); }
-                    
                     updateCoinsUI();
                     checkAdminAccess();
                     
                     // Обновляем базу 100% свежими данными
                     db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, coins: globalCoins });
-
                     db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } });
-                    db.ref('users/' + myId + '/clan').on('value', s => { myClan = s.val(); checkAdminAccess(); renderClanTab(); });
                     
+                    // ДРУЗЬЯ (ИИ ВСЕГДА ТУТ)
                     db.ref(`users/${myId}/friends`).on('value', s => {
                         friendsIds = ['ИИ']; 
                         if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ') friendsIds.push(k); }); }
                         renderFriends();
                     });
 
-                    // Загружаем инвайты кланов
-                    db.ref(`users/${myId}/clan_invites`).on('value', s => {
-                        let c = s.exists() ? Object.keys(s.val()).length : 0;
-                        let b = document.getElementById('clan-invite-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c;
-                        let cl = document.getElementById('clan-reqs'); cl.innerHTML='';
-                        if(!s.exists()) cl.innerHTML='<p style="color:gray;text-align:center;">Нет приглашений</p>';
-                        else {
-                            Object.keys(s.val()).forEach(tag => {
-                                let d = document.createElement('div'); d.className='list-item';
-                                d.innerHTML=`<div>🛡️ <b>[${tag}]</b> приглашает вас</div><div><button class="btn btn-green" style="padding:5px;" onclick="acceptClanInvite('${tag}')">✔️</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('users/${myId}/clan_invites/${tag}').remove()">❌</button></div>`;
-                                cl.appendChild(d);
-                            });
-                        }
-                    });
-
                     db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(s.val()); });
-                    
                     db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); } });
                 });
             }
@@ -354,14 +293,12 @@
         
         initApp();
 
-        function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar, clan: myClan||'' }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[3]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
+        function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
 
         function checkAdminAccess() {
             document.getElementById('my-id-display').innerText = myId === '0000' ? "ID: 0000" : `ID: ${myId}`;
             document.getElementById('nav-admin').style.display = myId === '0000' ? 'flex' : 'none';
-            
-            let clanStr = myClan ? `<span style="color:#ff9f0a;font-size:24px;">[${myClan}]</span>` : '';
-            document.getElementById('my-name').innerHTML = `${myName} ${clanStr} ✏️`; 
+            document.getElementById('my-name').innerHTML = `${myName} ✏️`; 
             document.getElementById('my-avatar').innerText = myAvatar;
             
             db.ref('users/' + myId).update({ name: myName, avatar: myAvatar });
@@ -384,7 +321,7 @@
         function addCoins(a) { globalCoins = Math.max(0, globalCoins+a); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} db.ref('users/'+myId+'/coins').set(globalCoins); }
 
         function switchTab(t, el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); }
-        function switchSubTab(p, s, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${p} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${p==='inv'?'inv':(p==='admin'?'adm':'clan')}-${s}`).classList.add('active'); }
+        function switchSubTab(p, s, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${p} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${p==='inv'?'inv':'adm'}-${s}`).classList.add('active'); }
         function switchMiniTab(id, el) { el.parentElement.querySelectorAll('.mini-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.mini-tab-content').forEach(c => { if(c.parentElement.contains(el)) c.classList.remove('active'); }); document.getElementById(id).classList.add('active'); }
 
         // --- АДМИНКА ПРОМО ---
@@ -398,7 +335,7 @@
             friendsIds.forEach(id => {
                 if(id==='ИИ') { let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>🤖 ИИ</b> <span style="color:#ff9f0a;font-size:12px;">[BOT]</span><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div>`; d.onclick=()=>openFriendModal(SYSTEM_BOT); list.appendChild(d); return; }
                 db.ref('users/'+id).once('value').then(s => {
-                    if(s.exists()){ let p = s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>${p.avatar||'👤'} ${p.name||'Игрок'}</b> ${p.clan?`<span style="color:#ff9f0a;font-size:12px;">[${p.clan}]</span>`:''}<br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>`; d.onclick=()=>openFriendModal({id:id, name:p.name||'Игрок', avatar:p.avatar||'👤', clan:p.clan}); list.appendChild(d); }
+                    if(s.exists()){ let p = s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>${p.avatar||'👤'} ${p.name||'Игрок'}</b><br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>`; d.onclick=()=>openFriendModal({id:id, name:p.name||'Игрок', avatar:p.avatar||'👤'}); list.appendChild(d); }
                 });
             });
         }
@@ -413,20 +350,14 @@
         }
         
         function openFriendModal(f) { 
-            activeFriend=f; document.getElementById('fm-avatar').innerText=f.avatar; document.getElementById('fm-name').innerText=f.name + (f.clan?` [${f.clan}]`:''); document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; 
+            activeFriend=f; document.getElementById('fm-avatar').innerText=f.avatar; document.getElementById('fm-name').innerText=f.name; document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; 
             if(appState.inLobby){ 
                 if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; 
             } else { 
                 if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;cursor:not-allowed;">Создай лобби для ИИ</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; 
             } 
             if(f.id!=='ИИ') {
-                // Если я владелец клана, а друг без клана - могу кинуть инвайт
-                db.ref('clans/'+myClan).once('value').then(cs => {
-                    if(cs.exists() && cs.val().owner === myId && !f.clan) {
-                        a.innerHTML+=`<button class="btn btn-gold" onclick="inviteToClan('${f.id}')">Пригласить в Клан 🛡️</button>`;
-                    }
-                    a.innerHTML+=`<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button><button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; 
-                });
+                a.innerHTML+=`<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button><button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; 
             } else {
                 a.innerHTML+=`<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; 
             }
@@ -442,44 +373,15 @@
             } 
         }
 
-        // --- КЛАНЫ ---
-        function renderClanTab() {
-            if(!myClan) { document.getElementById('clan-create-view').style.display='block'; document.getElementById('clan-info-view').style.display='none'; }
-            else { document.getElementById('clan-create-view').style.display='none'; document.getElementById('clan-info-view').style.display='block'; document.getElementById('clan-title-tag').innerText = `🛡️ [${myClan}]`; loadClanData(); }
-        }
-        function createClan() { let tag = document.getElementById('clan-tag-input').value.toUpperCase().trim(); if(!tag || tag.length>5 || tag==='BOT' || tag==='DEVELOPERS') return tg.showAlert("Неверный тег (макс 5) или занят системой!"); if(globalCoins<1000) return tg.showAlert("Нужно 1000 монет!"); db.ref('clans/'+tag).once('value').then(s => { if(s.exists()) return tg.showAlert("Занят!"); addCoins(-1000); db.ref('clans/'+tag).set({owner: myId, members: {[myId]:true}}); db.ref('users/'+myId).update({clan: tag}); }); }
-        
-        function joinClanReq() { let tag = document.getElementById('clan-join-input').value.toUpperCase().trim(); if(!tag) return; db.ref('clans/'+tag).once('value').then(s=>{ if(!s.exists()) return tg.showAlert("Клан не найден!"); db.ref('clans/'+tag+'/requests/'+myId).set(true); tg.showAlert("Заявка отправлена главе!"); }); }
-        function inviteToClan(id) { db.ref(`users/${id}/clan_invites/${myClan}`).set(true); tg.showAlert("Приглашение отправлено!"); closeFriendModal(); }
-        function acceptClanInvite(tag) { db.ref(`users/${myId}/clan_invites/${tag}`).remove(); db.ref(`clans/${tag}/members/${myId}`).set(true); db.ref(`users/${myId}`).update({clan: tag}); tg.showAlert(`Вы вступили в [${tag}]!`); }
-        
-        function loadClanData() { 
-            db.ref('clans/'+myClan).on('value', s=>{ 
-                if(!s.exists()) { myClan=null; db.ref('users/'+myId+'/clan').remove(); renderClanTab(); return; } 
-                let d=s.val(); let ml=document.getElementById('clan-members'); ml.innerHTML=''; let al=document.getElementById('clan-apps'); al.innerHTML='';
-                let reqC=0;
-                
-                Object.keys(d.members||{}).forEach(id => { db.ref('users/'+id).once('value').then(us=>{ if(us.exists()){ let p=us.val(); let md=document.createElement('div'); md.className='list-item'; md.innerHTML=`<div>${p.avatar||'👤'} ${p.name||'Игрок'} ${id===d.owner?'👑':''}</div>`+(id!==d.owner && d.owner===myId?`<button class="btn btn-red" style="padding:5px;" onclick="kickClan('${id}')">❌</button>`:''); ml.appendChild(md); } }); }); 
-                
-                Object.keys(d.requests||{}).forEach(id => { reqC++; db.ref('users/'+id).once('value').then(us=>{ if(us.exists()){ let p=us.val(); let md=document.createElement('div'); md.className='list-item'; md.innerHTML=`<div>${p.avatar||'👤'} ${p.name||'Игрок'}</div>`+(d.owner===myId?`<div><button class="btn btn-green" style="padding:5px;" onclick="acceptClanReq('${id}')">✔️</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('clans/${myClan}/requests/${id}').remove()">❌</button></div>`:`<span>Ожидание</span>`); al.appendChild(md); } }); });
-                
-                let b = document.getElementById('clan-badge'); b.style.display=reqC>0?'inline-block':'none'; b.innerText=reqC;
-            }); 
-        }
-
-        function acceptClanReq(id) { db.ref(`clans/${myClan}/requests/${id}`).remove(); db.ref(`clans/${myClan}/members/${id}`).set(true); db.ref(`users/${id}`).update({clan: myClan}); }
-        function kickClan(id) { db.ref(`clans/${myClan}/members/${id}`).remove(); db.ref(`users/${id}/clan`).remove(); }
-        function leaveClan() { if(myId==='0000') return tg.showAlert("Разрабу нельзя покинуть DEVELOPERS!"); db.ref('clans/'+myClan).once('value').then(s=>{ let d=s.val(); if(d.owner===myId) { tg.showAlert("Сначала передай лидерку или распусти!"); return; } db.ref(`clans/${myClan}/members/${myId}`).remove(); db.ref(`users/${myId}/clan`).remove(); }); }
-
         // --- ЛОББИ ---
-        function renderLobbySlots() { const c = document.getElementById('lobby-slots-container'); c.innerHTML=''; for(let i=0;i<5;i++){ if(i<lobbyPlayers.length){ let p=lobbyPlayers[i]; c.innerHTML+=`<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name} ${p.clan?`[${p.clan}]`:''}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`; } else c.innerHTML+=`<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`; } }
-        function openInviteModal() { if(!isHost) return tg.showAlert("Только Хост!"); if(lobbyPlayers.length>=5) return tg.showAlert("Полно!"); let l=document.getElementById('invite-friends-list'); l.innerHTML=''; let a = friendsIds.filter(id=> !lobbyPlayers.some(p=>p.id===id)); if(a.length===0) l.innerHTML='<p style="color:gray;text-align:center;">Нет доступных</p>'; else a.forEach(id=>{ if(id==='ИИ'){ let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>🤖 ИИ [BOT]</b><button class="btn btn-green" onclick="inviteBotLobby();closeInviteModal()">Выбрать</button>`; l.appendChild(d); } else { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>${p.avatar||'👤'} ${p.name||'Игрок'} ${p.clan?`[${p.clan}]`:''}</b><button class="btn btn-green" onclick="inviteRealFriend('${id}');closeInviteModal()">Выбрать</button>`; l.appendChild(d); } }); } }); document.getElementById('invite-modal').classList.remove('hidden'); }
+        function renderLobbySlots() { const c = document.getElementById('lobby-slots-container'); c.innerHTML=''; for(let i=0;i<5;i++){ if(i<lobbyPlayers.length){ let p=lobbyPlayers[i]; c.innerHTML+=`<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`; } else c.innerHTML+=`<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`; } }
+        function openInviteModal() { if(!isHost) return tg.showAlert("Только Хост!"); if(lobbyPlayers.length>=5) return tg.showAlert("Полно!"); let l=document.getElementById('invite-friends-list'); l.innerHTML=''; let a = friendsIds.filter(id=> !lobbyPlayers.some(p=>p.id===id)); if(a.length===0) l.innerHTML='<p style="color:gray;text-align:center;">Нет доступных</p>'; else a.forEach(id=>{ if(id==='ИИ'){ let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>🤖 ИИ [BOT]</b><button class="btn btn-green" onclick="inviteBotLobby();closeInviteModal()">Выбрать</button>`; l.appendChild(d); } else { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>${p.avatar||'👤'} ${p.name||'Игрок'}</b><button class="btn btn-green" onclick="inviteRealFriend('${id}');closeInviteModal()">Выбрать</button>`; l.appendChild(d); } }); } }); document.getElementById('invite-modal').classList.remove('hidden'); }
         function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
-        function openLobby() { appState.inLobby=true; lobbyId=myId; isHost=true; lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar, clan:myClan||''}]; db.ref('lobbies/'+lobbyId).set({host:myId, game:'', status:'waiting', clickTime:15, players:{[myId]:{name:myName,avatar:myAvatar,clan:myClan||''}}}); listenLobby(); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; }
+        function openLobby() { appState.inLobby=true; lobbyId=myId; isHost=true; lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar}]; db.ref('lobbies/'+lobbyId).set({host:myId, game:'', status:'waiting', clickTime:15, players:{[myId]:{name:myName,avatar:myAvatar}}}); listenLobby(); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; }
         function closeLobby() { appState.inLobby=false; if(lobbyRef) lobbyRef.off(); if(isHost) db.ref('lobbies/'+lobbyId).remove(); else db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); document.getElementById('main-buttons-view').style.display='flex'; document.getElementById('view-lobby').style.display='none'; }
-        function inviteBotLobby() { if(!isHost || lobbyPlayers.length>=5) return; closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({name:'ИИ', avatar:'🤖', clan:'BOT'}); }
+        function inviteBotLobby() { if(!isHost || lobbyPlayers.length>=5) return; closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({name:'ИИ', avatar:'🤖'}); }
         function inviteRealFriend(id) { if(lobbyPlayers.length>=5) return; db.ref(`users/${id}/invite`).set({lId: lobbyId, host: myName}); tg.showAlert("Уведомление отправлено!"); closeFriendModal(); }
-        function joinFriendLobby() { lobbyId=activeFriend.id; isHost=false; closeFriendModal(); db.ref('lobbies/'+lobbyId).once('value').then(s=>{ if(s.exists()){ db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name:myName, avatar:myAvatar, clan:myClan||''}); appState.inLobby=true; switchTab('friends', document.querySelectorAll('.nav-item')[3]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); } else tg.showAlert("Лобби нет!"); }); }
+        function joinFriendLobby() { lobbyId=activeFriend.id; isHost=false; closeFriendModal(); db.ref('lobbies/'+lobbyId).once('value').then(s=>{ if(s.exists()){ db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name:myName, avatar:myAvatar}); appState.inLobby=true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); } else tg.showAlert("Лобби нет!"); }); }
         
         function listenLobby() { 
             if(lobbyRef) lobbyRef.off(); lobbyRef = db.ref('lobbies/'+lobbyId); 
@@ -495,7 +397,7 @@
                     if(d.clickState === 'playing' && !clickActive) { startClickerGame(); }
                     if(d.clickScores && Object.keys(d.clickScores).length === lobbyPlayers.filter(p=>p.id!=='ИИ').length && d.clickState==='playing') {
                         let t="ОЧКИ:\n", mx=-1, w=[];
-                        Object.keys(d.clickScores).forEach(k=>{ let pf=lobbyPlayers.find(p=>p.id===k); let nm=pf?.name||'Игрок'; let cl=pf?.clan; t+=`${nm} ${cl?`[${cl}]`:''}: ${d.clickScores[k]}\n`; if(d.clickScores[k]>mx){mx=d.clickScores[k];w=[k];} else if(d.clickScores[k]===mx) w.push(k); });
+                        Object.keys(d.clickScores).forEach(k=>{ let pf=lobbyPlayers.find(p=>p.id===k); let nm=pf?.name||'Игрок'; t+=`${nm}: ${d.clickScores[k]}\n`; if(d.clickScores[k]>mx){mx=d.clickScores[k];w=[k];} else if(d.clickScores[k]===mx) w.push(k); });
                         let win = w.includes(myId); showResult(win?"ПОБЕДА!":"ПОРАЖЕНИЕ", win?'#34c759':'#ff453a','⏱️',t); db.ref(`lobbies/${lobbyId}/clickState`).set('ended');
                     }
                 }
@@ -530,9 +432,74 @@
         let tttBoard=[], tttTurnIdx=0, tttGameOver=false, tttSize=3, tttWinReq=3; const TTT_SYMBOLS=['x','o','triangle','square','minus']; const TTT_CHARS={'x':'❌','o':'⭕','triangle':'🔺','square':'🔲','minus':'➖'}; const TTT_COLORS={'x':'#ff453a','o':'#32ade6','triangle':'#34c759','square':'#ff9f0a','minus':'#af52de'};
         function initTicTacToe() { tttGameOver=false; tttTurnIdx=0; let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=4;} else{tttSize=9;tttWinReq=5;} document.getElementById('ttt-board').style.gridTemplateColumns=`repeat(${tttSize}, 1fr)`; document.getElementById('ttt-board').style.gridTemplateRows=`repeat(${tttSize}, 1fr)`; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ if(tttRef) tttRef.off(); tttRef=db.ref(`lobbies/${lobbyId}`); if(isHost) db.ref(`lobbies/${lobbyId}`).update({tttBoard:new Array(tttSize*tttSize).fill(''), tttTurn:0}); tttRef.on('value', snap=>{ if(!snap.exists()||snap.val().status!=='playing') return; let data=snap.val(); tttBoard=data.tttBoard||new Array(tttSize*tttSize).fill(''); tttTurnIdx=data.tttTurn||0; if(checkDynamicWin(true)) return; renderTicTacToe(); let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); setIsland(tttTurnIdx===myIdx?"ТВОЙ ХОД!":`ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); }); } else { tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe(); if(lobbyPlayers.length>1&&lobbyPlayers[1].id==='ИИ') setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a'); } }
         function renderTicTacToe() { const b=document.getElementById('ttt-board'); b.innerHTML=''; let fSize=Math.max(3, 12-tttSize)+'vh'; tttBoard.forEach((cell,i)=>{ let div=document.createElement('div'); div.className=`cell ${cell}`; div.innerText=cell?TTT_CHARS[cell]:''; div.style.fontSize=fSize; div.onclick=()=>moveTicTacToe(i); b.appendChild(div); }); }
-        function moveTicTacToe(i) { if(tttGameOver||tttBoard[i]||appState.isPaused) return; if(lobbyPlayers.length<=1){ tttBoard[i]=TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=(tttTurnIdx+1)%2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); } else if(lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ'){ if(tttTurnIdx!==0) return; tttBoard[i]='x'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=1; setIsland("ИИ ДУМАЕТ...",'#ff9f0a'); setTimeout(makeBotDynamicMoveFirebase,800); } else { let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); if(tttTurnIdx!==myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`); tttBoard[i]=TTT_SYMBOLS[myIdx]; let next=(tttTurnIdx+1)%lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({tttBoard:tttBoard, tttTurn:next}); if (isHost && lobbyPlayers[next].id === 'ИИ') { setTimeout(makeBotDynamicMoveFirebase, 800); } } }
-        function makeBotDynamicMoveFirebase() { if (tttGameOver || appState.isPaused) return; db.ref(`lobbies/${lobbyId}`).once('value').then(snap => { let data = snap.val(); if(!data || data.status !== 'playing') return; let b = data.tttBoard; let turn = data.tttTurn; if (lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && !b) { let empty=[]; tttBoard.forEach((c,i)=>{if(!c)empty.push(i);}); if(empty.length>0){ tttBoard[empty[Math.floor(Math.random()*empty.length)]]='o'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=0; setIsland("ТВОЙ ХОД!",'#34c759'); } return; } if (lobbyPlayers[turn].id !== 'ИИ') return; let empty = []; b.forEach((c, i) => { if(!c) empty.push(i); }); if (empty.length > 0) { b[empty[Math.floor(Math.random() * empty.length)]] = TTT_SYMBOLS[turn]; let nextTurn = (turn + 1) % lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({ tttBoard: b, tttTurn: nextTurn }); if (lobbyPlayers[nextTurn].id === 'ИИ') setTimeout(makeBotDynamicMoveFirebase, 800); } }); }
-        function checkDynamicWin(isOnline) { let s=tttSize, req=tttWinReq; let winner=null; for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } if(winner){ tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); let isMyWin = false; if (lobbyPlayers.length <= 1) isMyWin = true; else { let myIdx = lobbyPlayers.findIndex(p => p.id === myId); if (TTT_SYMBOLS.indexOf(winner) === myIdx) isMyWin = true; } let wName = lobbyPlayers.length <= 1 ? `ПОБЕДИЛ ${TTT_CHARS[winner]}!` : (isMyWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ!"); if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === 'o') { wName = "ИИ ВЫИГРАЛ!"; isMyWin = false; } let bg = isMyWin ? '#34c759' : '#ff453a'; if (lobbyPlayers.length <= 1) bg = TTT_COLORS[winner]; setTimeout(()=>showResult(wName, bg, TTT_CHARS[winner]), 300); return true; } else if(!tttBoard.includes('')){ tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true; } return false; }
+        
+        function moveTicTacToe(i) { 
+            if(tttGameOver||tttBoard[i]||appState.isPaused) return; 
+            
+            if(lobbyPlayers.length<=1){ 
+                tttBoard[i]=TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return; 
+                tttTurnIdx=(tttTurnIdx+1)%2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); 
+            } else if(lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ'){ 
+                if(tttTurnIdx!==0) return; 
+                tttBoard[i]='x'; renderTicTacToe(); if(checkDynamicWin(false)) return; 
+                tttTurnIdx=1; setIsland("ИИ ДУМАЕТ...",'#ff9f0a'); setTimeout(makeBotDynamicMoveFirebase,800); 
+            } else { 
+                let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); 
+                if(tttTurnIdx!==myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`); 
+                tttBoard[i]=TTT_SYMBOLS[myIdx]; 
+                let next=(tttTurnIdx+1)%lobbyPlayers.length; 
+                db.ref(`lobbies/${lobbyId}`).update({tttBoard:tttBoard, tttTurn:next}); 
+                if (isHost && lobbyPlayers[next].id === 'ИИ') { setTimeout(makeBotDynamicMoveFirebase, 800); }
+            } 
+        }
+        
+        function makeBotDynamicMoveFirebase() {
+            if (tttGameOver || appState.isPaused) return;
+            db.ref(`lobbies/${lobbyId}`).once('value').then(snap => {
+                let data = snap.val(); if(!data || data.status !== 'playing') return;
+                let b = data.tttBoard; let turn = data.tttTurn;
+                
+                if (lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && !b) {
+                    let empty=[]; tttBoard.forEach((c,i)=>{if(!c)empty.push(i);}); 
+                    if(empty.length>0){ tttBoard[empty[Math.floor(Math.random()*empty.length)]]='o'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=0; setIsland("ТВОЙ ХОД!",'#34c759'); }
+                    return;
+                }
+                
+                if (lobbyPlayers[turn].id !== 'ИИ') return; 
+                let empty = []; b.forEach((c, i) => { if(!c) empty.push(i); });
+                if (empty.length > 0) {
+                    b[empty[Math.floor(Math.random() * empty.length)]] = TTT_SYMBOLS[turn];
+                    let nextTurn = (turn + 1) % lobbyPlayers.length;
+                    db.ref(`lobbies/${lobbyId}`).update({ tttBoard: b, tttTurn: nextTurn });
+                    if (lobbyPlayers[nextTurn].id === 'ИИ') setTimeout(makeBotDynamicMoveFirebase, 800);
+                }
+            });
+        }
+
+        function checkDynamicWin(isOnline) { 
+            let s=tttSize, req=tttWinReq; let winner=null; 
+            for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } 
+            
+            if(winner){ 
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
+                
+                let isMyWin = false;
+                if (lobbyPlayers.length <= 1) isMyWin = true; 
+                else { let myIdx = lobbyPlayers.findIndex(p => p.id === myId); if (TTT_SYMBOLS.indexOf(winner) === myIdx) isMyWin = true; }
+
+                let wName = lobbyPlayers.length <= 1 ? `ПОБЕДИЛ ${TTT_CHARS[winner]}!` : (isMyWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ!"); 
+                if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === 'o') { wName = "ИИ ВЫИГРАЛ!"; isMyWin = false; }
+                
+                let bg = isMyWin ? '#34c759' : '#ff453a'; 
+                if (lobbyPlayers.length <= 1) bg = TTT_COLORS[winner];
+                
+                setTimeout(()=>showResult(wName, bg, TTT_CHARS[winner]), 300); return true; 
+            } else if(!tttBoard.includes('')){ 
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
+                setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true;
+            } 
+            return false; 
+        }
 
         // ================= ПОИСК ПРЕДМЕТОВ =================
         const ALL_ITEMS = ['🍎','🔑','💎','👑','🧸','🍔','🎸','⚽','📱','🕶️','🍉','🦴']; let hiddenFound=0, hiddenMisses=0;
