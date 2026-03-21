@@ -151,7 +151,7 @@
                     <button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОДЫ</button>
                 </div>
                 <div id="adm-add-admin" class="sub-tab-content active">
-                    <input type="text" id="adm-id-input" class="styled-input" placeholder="ID игрока (4 цифры)"><button class="btn btn-red" onclick="tg.showAlert('Игрок назначен админом!')">ВЫДАТЬ ПРАВА</button>
+                    <input type="text" id="adm-id-input" class="styled-input" placeholder="ID игрока"><button class="btn btn-red" onclick="tg.showAlert('Игрок назначен админом!')">ВЫДАТЬ ПРАВА</button>
                 </div>
                 <div id="adm-add-coins" class="sub-tab-content">
                     <input type="text" id="adm-coin-id" class="styled-input" placeholder="ID игрока"><input type="number" id="adm-coin-amount" class="styled-input" placeholder="Кол-во монет"><button class="btn btn-gold" onclick="adminAddCoinsReal()">ОТПРАВИТЬ</button>
@@ -315,7 +315,7 @@
         function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); tg.CloudStorage.setItem('my_name', myName); checkAdminAccess(); } }
         function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML = ''; EMOJIS.forEach(em => { let div = document.createElement('div'); div.className = 'emoji-item'; div.innerText = em; div.onclick = () => { myAvatar = em; tg.CloudStorage.setItem('my_avatar', myAvatar); checkAdminAccess(); closeAvatarModal(); if(appState.inLobby && lobbyPlayers.length>0){lobbyPlayers[0].avatar=myAvatar; renderLobbySlots();} }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
-        function updateCoinsUI() { document.getElementById('menu-coins').innerText = globalCoins; }
+        function updateCoinsUI() { document.getElementById('menu-coins').innerText = globalCoins; document.getElementById('hidden-coins').innerText = globalCoins; }
         function addCoins(amount) { globalCoins = Math.max(0, globalCoins + amount); updateCoinsUI(); tg.CloudStorage.setItem('player_coins', globalCoins.toString()); db.ref('users/' + myId + '/coins').set(globalCoins); }
 
         function switchTab(tabId, el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active')); document.getElementById('tab-' + tabId).classList.add('active'); }
@@ -323,14 +323,19 @@
         function switchMiniTab(tabId, el) { el.parentElement.querySelectorAll('.mini-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.mini-tab-content').forEach(c => c.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
 
         function adminAddCoinsReal() { let t = document.getElementById('adm-coin-id').value; let amt = parseInt(document.getElementById('adm-coin-amount').value); if(!t || isNaN(amt)) { tg.showAlert("Заполни поля!"); return; } db.ref('users/'+t+'/coins').once('value').then(s => { if(s.exists()) { db.ref('users/'+t+'/coins').set(s.val() + amt); tg.showAlert("Отправлено!"); } else tg.showAlert("Игрок не найден!"); }); }
-        function adminCreatePromo() { let c = document.getElementById('adm-promo-code').value.trim().toUpperCase(); let r = parseInt(document.getElementById('adm-promo-coins').value); let a = parseInt(document.getElementById('adm-promo-acts').value); if(!c || isNaN(r) || isNaN(a) || a <= 0) return tg.showAlert("Заполни все поля корректно!"); db.ref('promos/' + c).set({ reward: r, activations: a }); tg.showAlert(`Промокод ${c} создан!`); document.getElementById('adm-promo-code').value=''; document.getElementById('adm-promo-coins').value=''; document.getElementById('adm-promo-acts').value=''; }
+        function adminCreatePromo() { 
+            let c = document.getElementById('adm-promo-code').value.trim().toUpperCase(); let r = parseInt(document.getElementById('adm-promo-coins').value); let a = parseInt(document.getElementById('adm-promo-acts').value);
+            if(!c || isNaN(r) || isNaN(a) || a <= 0) return tg.showAlert("Заполни все поля корректно!");
+            db.ref('promos/' + c).set({ reward: r, activations: a }); tg.showAlert(`Промокод ${c} создан!`);
+            document.getElementById('adm-promo-code').value=''; document.getElementById('adm-promo-coins').value=''; document.getElementById('adm-promo-acts').value='';
+        }
         function redeemPromo() { 
             let c = document.getElementById('promo-input').value.trim().toUpperCase(); if(!c) return;
             db.ref(`users/${myId}/used_promos/${c}`).once('value').then(uSnap => {
                 if(uSnap.exists()) return tg.showAlert("Уже использован!");
                 db.ref(`promos/${c}`).once('value').then(pSnap => {
                     if(!pSnap.exists()) return tg.showAlert("Неверный код!");
-                    let pData = pSnap.val(); if(pData.activations <= 0) return tg.showAlert("Лимит исчерпан!");
+                    let pData = pSnap.val(); if(pData.activations <= 0) return tg.showAlert("Лимит активаций исчерпан!");
                     db.ref(`promos/${c}/activations`).set(pData.activations - 1); db.ref(`users/${myId}/used_promos/${c}`).set(true);
                     addCoins(pData.reward); tg.showAlert(`Успех! +${pData.reward} 🪙`); document.getElementById('promo-input').value=''; tg.HapticFeedback.notificationOccurred('success');
                 });
@@ -417,6 +422,7 @@
             else { tttSize = 9; tttWinReq = 5; }
             
             document.getElementById('ttt-board').style.gridTemplateColumns = `repeat(${tttSize}, 1fr)`;
+            document.getElementById('ttt-board').style.gridTemplateRows = `repeat(${tttSize}, 1fr)`;
             
             // Если онлайн
             if (lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'ИИ') {
