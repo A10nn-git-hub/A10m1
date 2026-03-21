@@ -43,7 +43,6 @@
         .btn-red { background-color: #ff453a; color: white; }
         .btn-green { background-color: #34c759; color: white; }
 
-        /* Верхняя панель с монетами */
         .header-coins {
             background: rgba(255, 159, 10, 0.2); border: 2px solid #ff9f0a;
             color: #ff9f0a; padding: 10px 20px; border-radius: 20px;
@@ -55,7 +54,6 @@
         .game-card:active { transform: scale(0.95); }
         .game-img { width: 100%; aspect-ratio: 1; border-radius: 10px; background: #444; display: flex; align-items: center; justify-content: center; font-size: 40px; margin-bottom: 10px; }
 
-        /* Овальная кнопка магазина */
         .shop-btn {
             width: 100%; padding: 20px; font-size: 20px; font-weight: 900;
             border-radius: 50px; border: none; color: white;
@@ -215,21 +213,40 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); tg.ready();
+        tg.expand(); 
+        tg.ready();
 
         const COLORS = ['#ff453a', '#32ade6', '#34c759', '#ffd60a', '#bf5af2', '#ff9f0a'];
         let appState = { game: null, playerCount: 1, players: [], isPaused: false };
         
-        // Глобальные монеты
         let globalCoins = 0;
+
+        // --- ЗАГРУЗКА И СОХРАНЕНИЕ МОНЕТОК ИЗ ОБЛАКА TELEGRAM ---
+        // Как только приложение запускается, пытаемся достать монетки
+        tg.CloudStorage.getItem('player_coins', (err, value) => {
+            if (!err && value) {
+                globalCoins = parseInt(value) || 0;
+            } else {
+                globalCoins = 0;
+            }
+            updateCoinUI();
+        });
 
         function addCoins(amount) {
             globalCoins += amount;
-            if (globalCoins < 0) globalCoins = 0; // Не уходим в минус
+            if (globalCoins < 0) globalCoins = 0; 
+            updateCoinUI();
+            
+            // Сохраняем новый баланс в облако ТГ
+            tg.CloudStorage.setItem('player_coins', globalCoins.toString());
+        }
+
+        function updateCoinUI() {
             document.getElementById('menu-coins').innerText = globalCoins;
             document.getElementById('shop-coins').innerText = globalCoins;
             document.getElementById('hidden-coins').innerText = globalCoins;
         }
+        // --------------------------------------------------------
 
         function setIsland(text, borderColor = '#fff') {
             const island = document.getElementById('dynamic-island');
@@ -279,7 +296,7 @@
             
             if (game === 'tictactoe') { appState.playerCount = 2; buildSetup(); }
             else if (game === 'clicker') { appState.playerCount = 1; buildSetup(); }
-            else if (game === 'hidden') { appState.playerCount = 1; startGame(); } // Скрытые предметы - соло без лобби
+            else if (game === 'hidden') { appState.playerCount = 1; startGame(); } 
             else { showScreen('screen-players'); }
         }
 
@@ -372,7 +389,10 @@
                     clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`, '#ffd60a');
                     if(clickTimeCurrent <= 0) {
                         clearInterval(clickInterval); clickActive = false;
-                        showResult(`Счет: ${clicks}`, '#ff9f0a', '⏱️');
+                        // Можно добавить выдачу монет за игру в кликер здесь!
+                        let reward = Math.floor(clicks / 10); // Например, 1 монета за 10 кликов
+                        addCoins(reward);
+                        showResult(`Счет: ${clicks}\n+${reward} 🪙`, '#ff9f0a', '⏱️');
                     }
                 }, 1000);
             }
@@ -386,7 +406,7 @@
         const ALL_ITEMS = ['🍎', '🔑', '💎', '👑', '🧸', '🍔', '🎸', '⚽', '📱', '🕶️', '🍉', '🦴'];
         const DECORS = ['🌲', '☁️', '🍄', '🌿', '🍂', '🌻', '🪵'];
         let hiddenFound = 0;
-        let isFlashing = false; // защита от дабл-клика по фону
+        let isFlashing = false;
 
         function initHiddenGame() {
             hiddenFound = 0;
@@ -395,29 +415,24 @@
             scene.innerHTML = '';
             scene.style.backgroundColor = '';
 
-            // 1. Создаем декорации (для отвлечения)
             for(let i=0; i<15; i++) {
                 let d = document.createElement('div');
                 d.className = 'scene-decor';
                 d.innerText = DECORS[Math.floor(Math.random() * DECORS.length)];
                 d.style.left = (10 + Math.random() * 80) + '%';
                 d.style.top = (10 + Math.random() * 80) + '%';
-                // Облака всегда в верхней половине
                 if (d.innerText === '☁️') d.style.top = (5 + Math.random() * 30) + '%';
                 scene.appendChild(d);
             }
 
-            // 2. Выбираем 5 случайных предметов для поиска
             let targets = [...ALL_ITEMS].sort(() => 0.5 - Math.random()).slice(0, 5);
             targets.forEach(emoji => {
                 let item = document.createElement('div');
                 item.className = 'hidden-item';
                 item.innerText = emoji;
-                // Задаем случайные координаты
                 item.style.left = (15 + Math.random() * 70) + '%';
                 item.style.top = (15 + Math.random() * 70) + '%';
                 
-                // Добавляем обработчик на предмет (и мышь, и тач)
                 item.onmousedown = (e) => hitHiddenItem(e, item);
                 item.ontouchstart = (e) => { e.preventDefault(); hitHiddenItem(e, item); };
                 
@@ -428,13 +443,13 @@
         }
 
         function hitHiddenItem(e, el) {
-            e.stopPropagation(); // Останавливаем событие, чтобы не сработал промах по фону
+            e.stopPropagation(); 
             if (appState.isPaused) return;
             
             tg.HapticFeedback.notificationOccurred('success');
-            el.remove(); // Убираем предмет
+            el.remove(); 
             hiddenFound++;
-            addCoins(5); // +5 монет
+            addCoins(5);
             
             document.getElementById('hidden-found').innerText = hiddenFound;
             setIsland(`Найдено! +5 🪙`, '#34c759');
@@ -448,14 +463,12 @@
             if (appState.isPaused || isFlashing) return;
             
             tg.HapticFeedback.notificationOccurred('error');
-            addCoins(-2); // Штраф -2 монеты
+            addCoins(-2);
             setIsland(`Мимо! -2 🪙`, '#ff453a');
             
-            // Мигаем красным фоном
             isFlashing = true;
             const scene = document.getElementById('hidden-scene');
             
-            // Делаем микс градиента с красным цветом для эффекта
             let oldBg = scene.style.background;
             scene.style.background = 'linear-gradient(to bottom, rgba(255,69,58,0.7) 0%, rgba(255,69,58,0.7) 100%), linear-gradient(to bottom, #87CEEB 0%, #87CEEB 50%, #8FBC8F 50%, #8FBC8F 100%)';
             
@@ -466,5 +479,7 @@
         }
 
     </script>
+</body>
+</html>
 </body>
 </html>
