@@ -419,7 +419,7 @@
         function changeClickTime(delta) { if(clickActive||appState.isPaused) return; clickTimeSetting=Math.max(5,Math.min(100,clickTimeSetting+delta)); clickTimeCurrent=clickTimeSetting; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; }
         function initClicker() { clicks=0; clickTimeCurrent=clickTimeSetting; clickActive=false; clearInterval(clickInterval); document.getElementById('click-score').innerText=0; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; document.getElementById('clicker-controls').style.display='flex'; setIsland('Настрой время и ЖМИ!','#ffd60a'); }
         function doClick() { if(appState.isPaused) return; if(!clickActive&&clickTimeCurrent>0){ clickActive=true; document.getElementById('clicker-controls').style.display='none'; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`,'#ffd60a'); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; if(lobbyPlayers.length>1){ let results = `Ты: ${clicks} кликов\n`; let isWin = true; lobbyPlayers.slice(1).forEach(p => { let oppClicks = clickTimeSetting * (p.id === 'БОТ' ? (4 + Math.floor(Math
-    <body>
+<body>
 
     <div id="rotate-overlay">
         <div style="font-size: 80px; margin-bottom: 20px;">🔄</div>
