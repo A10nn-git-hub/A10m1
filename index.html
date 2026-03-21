@@ -32,13 +32,12 @@
             #app-container { display: none !important; }
         }
         
-        /* ГЛАВНЫЙ КОНТЕЙНЕР ДЛЯ ВСЕХ ЭКРАНОВ */
         #app-container { width: 100%; height: 100%; position: relative; }
         .screen { display: none; width: 100%; height: 100%; }
-        .screen.active { display: flex; } /* Теперь экраны - это flex-контейнеры */
+        .screen.active { display: flex; }
 
         /* ЭФФЕКТЫ И ОВЕРЛЕИ */
-        .glass { background: rgba(30, 30, 30, 0.7); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        .glass { background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; text-align: center; color: white; transition: 0.3s; }
         .overlay.hidden { display: none !important; }
 
@@ -59,12 +58,11 @@
         .mega-create { background: linear-gradient(45deg, #ff9f0a, #ff453a); }
         .mega-custom { background: linear-gradient(45deg, #32ade6, #3390ec); opacity: 0.8; }
 
-        /* --- ЛЕЙАУТ: САЙДБАР (СЛЕВА) И ОСНОВНАЯ ЗОНА (СПРАВА) --- */
+        /* САЙДБАР (СЛЕВА) И ОСНОВНАЯ ЗОНА (СПРАВА) */
         .layout-horizontal { display: flex; width: 100%; height: 100%; }
-        .sidebar { width: 35%; max-width: 300px; background: var(--sidebar-bg); border-right: 2px solid #333; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; overflow-y: auto; }
-        .main-area { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: var(--bg); }
+        .sidebar { width: 35%; max-width: 300px; background: var(--sidebar-bg); border-right: 2px solid #333; display: flex; flex-direction: column; padding: 10px; box-sizing: border-box; overflow-y: auto; z-index: 10; }
+        .main-area { flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; background: var(--bg); overflow: hidden; }
 
-        /* САЙДБАР: ПРОФИЛЬ И ДРУЗЬЯ */
         .profile-box { background: var(--panel-bg); padding: 15px; border-radius: 15px; margin-bottom: 15px; text-align: left; position: relative; }
         .profile-name { font-size: 20px; font-weight: bold; }
         .profile-id { font-size: 14px; color: #888; font-family: monospace; }
@@ -77,14 +75,25 @@
         .friend-name { font-weight: bold; font-size: 14px; }
         .friend-id { font-size: 11px; color: gray; font-family: monospace; }
 
-        /* ЛОББИ И ИГРЫ */
-        .lobby-slot { background: var(--panel-bg); width: 80%; padding: 15px; border-radius: 15px; margin-bottom: 10px; display: flex; align-items: center; border-left: 5px solid #3390ec; }
-        .lobby-avatar { width: 50px; height: 50px; border-radius: 25px; background: #444; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-right: 15px; }
+        /* --- СТИЛИ НОВОГО ЛОББИ (STANDOFF STYLE) --- */
+        #main-buttons-view { display: flex; flex-direction: column; width: 100%; align-items: center; justify-content: center; height: 100%; }
+        #lobby-view { display: none; width: 100%; height: 100%; position: relative; }
         
-        .games-row { display: flex; gap: 15px; margin-top: 20px; }
-        .game-btn { background: var(--panel-bg); border: 2px solid #444; border-radius: 15px; padding: 15px; text-align: center; cursor: pointer; width: 140px; }
-        .game-btn:active { transform: scale(0.95); }
-        .game-btn .emoji { font-size: 40px; margin-bottom: 10px; }
+        .lobby-slots-container { display: flex; gap: 30px; justify-content: center; align-items: center; height: 100%; }
+        .square-slot {
+            width: 18vh; height: 18vh; background: var(--panel-bg); border-radius: 15px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            border: 2px solid #444; box-shadow: 0 10px 20px rgba(0,0,0,0.5); position: relative;
+        }
+        .square-slot.active-slot { border-color: #ff9f0a; }
+        .slot-avatar { font-size: 7vh; margin-bottom: 1vh; }
+        .slot-name { font-weight: bold; font-size: 2vh; text-align: center; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .slot-status { font-size: 1.5vh; color: #34c759; position: absolute; bottom: -25px; }
+
+        .lobby-controls-bottom-right { position: absolute; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+        .mode-text { font-size: 14px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: -5px; }
+        .play-btn { background: #34c759; color: white; border: none; border-radius: 12px; padding: 15px 40px; font-size: 24px; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: 0 6px 0 #248a3d; transition: 0.1s; }
+        .play-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #248a3d; }
 
         /* ИГРА: ПОИСК */
         .hidden-scene { position: relative; width: 90%; height: 75vh; background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 50%, #8FBC8F 50%, #8FBC8F 100%); border-radius: 15px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }
@@ -103,7 +112,6 @@
         .giant-click-btn { width: 50vw; height: 50vh; border-radius: 20px; font-size: 8vh; font-weight: 900; background: #ff9f0a; color: white; border: none; box-shadow: inset 0 -8px 0 rgba(0,0,0,0.2); cursor: pointer; }
         .giant-click-btn:active { transform: scale(0.98); background: #e08e09; }
 
-        /* УНИВЕРСАЛЬНЫЙ ОСТРОВОК И ПАУЗА */
         #dynamic-island { color: white; padding: 10px 20px; border-radius: 30px; font-weight: bold; font-size: 14px; position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 100; display: none; }
         #pause-btn { position: fixed; top: 10px; right: 10px; width: 40px; height: 40px; border-radius: 20px; border: 2px solid white; font-size: 18px; color: white; display: none; align-items: center; justify-content: center; z-index: 100; cursor: pointer; }
     </style>
@@ -135,17 +143,25 @@
             <button class="btn" style="width: 250px; background: rgba(0,0,0,0.5); border: 2px solid white;" onclick="closeResult()">В Лобби</button>
         </div>
 
+        <div id="mode-modal" class="overlay glass hidden" onclick="closeModeModal(event)">
+            <div style="background: var(--panel-bg); padding: 20px; border-radius: 20px; width: 400px; border: 2px solid #444;" onclick="event.stopPropagation()">
+                <h2>Выбор режима 🎮</h2>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <button class="btn btn-dark" style="text-align: left; padding: 15px;" onclick="setGameMode('hidden', '🔎 Поиск предметов')">🔎 Поиск предметов (На очки)</button>
+                    <button class="btn btn-dark" style="text-align: left; padding: 15px;" onclick="setGameMode('tictactoe', '❌⭕ Крестики-нолики')">❌⭕ Крестики-нолики</button>
+                    <button class="btn btn-dark" style="text-align: left; padding: 15px;" onclick="setGameMode('clicker', '⏱️ Кликер-дуэль')">⏱️ Кликер-дуэль</button>
+                </div>
+                <button class="btn btn-red" style="margin-top: 20px; width: 100%;" onclick="closeModeModal()">Отмена</button>
+            </div>
+        </div>
+
         <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)">
             <div style="background: #1c1c1e; padding: 20px; border-radius: 20px; width: 300px;" onclick="event.stopPropagation()">
                 <div style="font-size: 40px; margin-bottom: 5px;">👤</div>
                 <h2 id="fm-name" style="margin: 5px 0;">Имя</h2>
                 <p id="fm-id" style="color: gray; font-family: monospace; margin-top: 0; margin-bottom: 15px;">ID: 0000</p>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                    <button class="btn btn-green" onclick="inviteFriendToLobby()">Пригласить в Лобби 🎮</button>
-                    <button class="btn btn-dark" onclick="tg.showAlert('Сообщение отправлено! (Заглушка)')">Отправить сообщение 💬</button>
-                    <button class="btn btn-red" onclick="removeFriend()">Удалить из друзей 🗑️</button>
-                    <button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>
-                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;" id="friend-actions">
+                    </div>
             </div>
         </div>
 
@@ -162,49 +178,39 @@
                     <h3 style="margin: 0; font-size: 16px;">Друзья</h3>
                     <button class="btn btn-dark" style="margin: 0; padding: 5px 10px;" onclick="addFriendBtn()">+ Добавить</button>
                 </div>
-                <div id="friends-list" style="flex-grow: 1; overflow-y: auto;">
-                    </div>
+                <div id="friends-list" style="flex-grow: 1; overflow-y: auto;"></div>
             </div>
 
             <div class="main-area">
-                <button class="mega-btn mega-create" onclick="createLobby()">Создать Лобби</button>
-                <button class="mega-btn mega-custom" onclick="tg.showAlert('Кастомные лобби со своими правилами пока в разработке! 🚧')">Кастомное Лобби</button>
-            </div>
-        </div>
+                
+                <div id="main-buttons-view">
+                    <button class="mega-btn mega-create" onclick="openLobby()">Создать Лобби</button>
+                    <button class="mega-btn mega-custom" onclick="tg.showAlert('Кастомные лобби со своими правилами пока в разработке! 🚧')">Кастомное Лобби</button>
+                </div>
 
-        <div class="screen layout-horizontal" id="screen-lobby">
-            <div class="sidebar" style="justify-content: center; align-items: center; border-right: none;">
-                <h2 style="font-size: 30px; margin: 0 0 20px 0;">ЛОББИ</h2>
-                <button class="btn btn-red" style="width: 80%;" onclick="showScreen('screen-main')">🚪 Покинуть</button>
-            </div>
-            <div class="main-area">
-                <div class="lobby-slot">
-                    <div class="lobby-avatar" style="background: #3390ec;">😎</div>
-                    <div>
-                        <div style="color: gray; font-size: 12px;">Хост</div>
-                        <b id="lobby-my-name">Я</b>
+                <div id="lobby-view">
+                    <button class="btn btn-red" style="position: absolute; top: 10px; right: 10px; z-index: 5;" onclick="closeLobby()">Выйти 🚪</button>
+                    
+                    <div class="lobby-slots-container">
+                        <div class="square-slot active-slot">
+                            <div class="slot-avatar">😎</div>
+                            <div class="slot-name" id="lobby-my-name">Я</div>
+                            <div class="slot-status">Хост</div>
+                        </div>
+                        
+                        <div class="square-slot" id="lobby-guest-slot" onclick="tg.showAlert('Пригласи друга из списка слева!')">
+                            <div class="slot-avatar" style="opacity: 0.5;">➕</div>
+                            <div class="slot-name" style="color: gray;">Ждем...</div>
+                        </div>
+                    </div>
+
+                    <div class="lobby-controls-bottom-right">
+                        <div class="mode-text" id="selected-mode-text">Режим не выбран</div>
+                        <button class="btn btn-dark" onclick="openModeSelect()">Выбрать режим 📋</button>
+                        <button class="play-btn" onclick="startLobbyGame()">ИГРАТЬ!</button>
                     </div>
                 </div>
 
-                <div class="lobby-slot" id="lobby-guest-slot">
-                    <div class="lobby-avatar" style="background: #444;">⏳</div>
-                    <div>
-                        <div style="color: gray; font-size: 12px;">Слот 2</div>
-                        <span style="color: gray;">Ожидание... (Играть Соло)</span>
-                    </div>
-                </div>
-
-                <div class="games-row">
-                    <div class="game-btn" onclick="startSelectedGame('hidden')">
-                        <div class="emoji">🔎</div><div>Поиск</div>
-                    </div>
-                    <div class="game-btn" onclick="startSelectedGame('tictactoe')">
-                        <div class="emoji">❌⭕</div><div>Крестики</div>
-                    </div>
-                    <div class="game-btn" onclick="startSelectedGame('clicker')">
-                        <div class="emoji">⏱️</div><div>Кликер</div>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -237,7 +243,9 @@
             <button class="giant-click-btn" id="click-btn" onclick="doClick()">ЖМИ!</button>
         </div>
 
-    </div> <script>
+    </div>
+
+    <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); 
         tg.ready();
@@ -246,9 +254,17 @@
         let myName = tg.initDataUnsafe?.user?.first_name || "Игрок";
         let myId = "0000";
         let friends = [];
-        let activeFriend = null; // Для модалки
+        let activeFriend = null; 
         
-        let appState = { game: null, isPaused: false, lobbyMode: 'solo', opponent: null };
+        let appState = { 
+            game: null, 
+            isPaused: false, 
+            inLobby: false,
+            lobbyMode: 'solo', 
+            opponent: null,
+            selectedGameId: null,
+            selectedGameName: "Не выбран"
+        };
 
         // ИНИЦИАЛИЗАЦИЯ
         tg.CloudStorage.getKeys((err, keys) => {
@@ -294,7 +310,7 @@
         function renderFriends() {
             const list = document.getElementById('friends-list'); list.innerHTML = '';
             if(friends.length === 0) { list.innerHTML = '<p style="color:gray; font-size:12px; text-align:center;">Нет друзей</p>'; return; }
-            friends.forEach((f, idx) => {
+            friends.forEach((f) => {
                 let div = document.createElement('div'); div.className = 'friend-item';
                 div.innerHTML = `<div><div class="friend-name">${f.name}</div><div class="friend-id">ID: ${f.id}</div></div><div>⋮</div>`;
                 div.onclick = () => openFriendModal(f); list.appendChild(div);
@@ -315,6 +331,24 @@
             activeFriend = friend;
             document.getElementById('fm-name').innerText = friend.name;
             document.getElementById('fm-id').innerText = `ID: ${friend.id}`;
+            
+            const actions = document.getElementById('friend-actions');
+            actions.innerHTML = ''; // Очищаем старые кнопки
+            
+            // Если мы УЖЕ в лобби -> "Пригласить"
+            if (appState.inLobby) {
+                actions.innerHTML += `<button class="btn btn-green" onclick="inviteFriendToLobby()">Пригласить в Лобби 🎮</button>`;
+            } else {
+                // Если мы НЕ в лобби -> "Присоединиться" (Создает лобби с другом)
+                actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`;
+            }
+            
+            actions.innerHTML += `
+                <button class="btn btn-dark" onclick="tg.showAlert('Сообщение отправлено! (Заглушка)')">Отправить сообщение 💬</button>
+                <button class="btn btn-red" onclick="removeFriend()">Удалить из друзей 🗑️</button>
+                <button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>
+            `;
+            
             document.getElementById('friend-modal').classList.remove('hidden');
         }
         function closeFriendModal(e) { document.getElementById('friend-modal').classList.add('hidden'); }
@@ -326,31 +360,65 @@
             }
         }
 
-        // ЛОББИ
-        function createLobby() {
+        // --- ЛОББИ СИСТЕМА ---
+        function openLobby() {
+            appState.inLobby = true;
             appState.lobbyMode = 'solo'; appState.opponent = null;
+            document.getElementById('main-buttons-view').style.display = 'none';
+            document.getElementById('lobby-view').style.display = 'block';
+            
             document.getElementById('lobby-guest-slot').innerHTML = `
-                <div class="lobby-avatar" style="background: #444;">⏳</div>
-                <div><div style="color: gray; font-size: 12px;">Слот 2</div><span style="color: gray;">Ожидание... (Соло)</span></div>
+                <div class="slot-avatar" style="opacity: 0.5;">➕</div>
+                <div class="slot-name" style="color: gray;">Ждем...</div>
             `;
-            showScreen('screen-lobby');
+        }
+
+        function closeLobby() {
+            appState.inLobby = false;
+            document.getElementById('main-buttons-view').style.display = 'flex';
+            document.getElementById('lobby-view').style.display = 'none';
         }
 
         function inviteFriendToLobby() {
             closeFriendModal();
             appState.lobbyMode = 'duo'; appState.opponent = activeFriend;
             document.getElementById('lobby-guest-slot').innerHTML = `
-                <div class="lobby-avatar" style="background: #ff9f0a;">😈</div>
-                <div><div style="color: gray; font-size: 12px;">Слот 2</div><b style="color: white;">${activeFriend.name}</b> <span style="color: #34c759; font-size: 12px;">(Бот)</span></div>
+                <div class="slot-avatar">😈</div>
+                <div class="slot-name">${activeFriend.name}</div>
+                <div class="slot-status">Готов (Бот)</div>
             `;
-            showScreen('screen-lobby');
-            tg.showAlert(`Приглашение отправлено!\n(Симуляция: ${activeFriend.name} присоединился)`);
+            tg.showAlert(`Приглашение отправлено!\n(Симуляция: ${activeFriend.name} зашел в лобби)`);
         }
 
-        function startSelectedGame(game) {
-            appState.game = game;
+        function joinFriendLobby() {
+            closeFriendModal();
+            openLobby(); // Открываем визуал лобби
+            inviteFriendToLobby(); // Сразу кидаем туда друга
+        }
+
+        function openModeSelect() {
+            document.getElementById('mode-modal').classList.remove('hidden');
+        }
+        function closeModeModal(e) { document.getElementById('mode-modal').classList.add('hidden'); }
+
+        function setGameMode(id, name) {
+            appState.selectedGameId = id;
+            appState.selectedGameName = name;
+            document.getElementById('selected-mode-text').innerText = name;
+            document.getElementById('selected-mode-text').style.color = '#34c759'; // Зеленый текст
+            closeModeModal();
+        }
+
+        function startLobbyGame() {
+            if(!appState.selectedGameId) {
+                tg.showAlert("Сначала выбери режим игры!");
+                return;
+            }
+            
+            appState.game = appState.selectedGameId;
             document.getElementById('pause-btn').style.display = 'flex';
-            if (game === 'tictactoe') {
+            
+            if (appState.game === 'tictactoe') {
                 showScreen('screen-game-tictactoe');
                 if(appState.lobbyMode === 'duo') {
                     document.getElementById('ttt-choice').style.display = 'block';
@@ -358,10 +426,10 @@
                 } else {
                     document.getElementById('ttt-choice').style.display = 'none';
                     document.getElementById('ttt-board').style.display = 'grid';
-                    initTicTacToe(); // Соло крестики-нолики
+                    initTicTacToe(); 
                 }
-            } else if (game === 'hidden') { showScreen('screen-game-hidden'); initHiddenGame(); }
-            else if (game === 'clicker') { showScreen('screen-game-clicker'); initClicker(); }
+            } else if (appState.game === 'hidden') { showScreen('screen-game-hidden'); initHiddenGame(); }
+            else if (appState.game === 'clicker') { showScreen('screen-game-clicker'); initClicker(); }
         }
 
         // ОБЩИЕ ФУНКЦИИ ИГР
@@ -377,9 +445,16 @@
             document.getElementById('result-subtext').innerText = subtext; overlay.classList.remove('hidden');
             tg.HapticFeedback.notificationOccurred('success');
         }
-        function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); showScreen('screen-lobby'); }
+        function closeResult() { 
+            document.getElementById('result-overlay').classList.add('hidden'); 
+            showScreen('screen-main'); // Возвращаемся на главный экран (Лобби останется открытым, так как inLobby = true)
+        }
         function togglePause(pause) { appState.isPaused = pause; document.getElementById('pause-overlay').classList.toggle('hidden', !pause); }
-        function exitToMenu() { togglePause(false); if(appState.game === 'clicker') clearInterval(clickInterval); showScreen('screen-lobby'); }
+        function exitToMenu() { 
+            togglePause(false); 
+            if(appState.game === 'clicker') clearInterval(clickInterval); 
+            showScreen('screen-main'); 
+        }
 
         // --- КРЕСТИКИ НОЛИКИ ---
         let tttBoard = [], tttTurn = 'x', myTTTSymbol = 'x';
@@ -459,7 +534,7 @@
             document.getElementById('hidden-found').innerText = hiddenFound; setIsland(`Найдено!`, '#34c759');
             if (hiddenFound >= 5) {
                 if(appState.lobbyMode === 'duo') {
-                    let oppMisses = Math.floor(Math.random() * 4); // Бот делает 0-3 ошибки
+                    let oppMisses = Math.floor(Math.random() * 4);
                     let win = hiddenMisses <= oppMisses;
                     let txt = win ? "ТЫ ВЫИГРАЛ!" : "ТЫ ПРОИГРАЛ!";
                     let sub = `Ты: 5 предм., ${hiddenMisses} ошиб.\n${appState.opponent.name}: 5 предм., ${oppMisses} ошиб.`;
@@ -504,7 +579,6 @@
                     if(clickTimeCurrent <= 0) {
                         clearInterval(clickInterval); clickActive = false;
                         if(appState.lobbyMode === 'duo') {
-                            // Симуляция: Бот кликает примерно со скоростью 4-6 кликов в секунду
                             let oppClicks = clickTimeSetting * (4 + Math.floor(Math.random()*3)); 
                             let win = clicks >= oppClicks;
                             setTimeout(() => showResult(win?"ПОБЕДА!":"ПОРАЖЕНИЕ", win?'#34c759':'#ff453a', '⏱️', `Твой счет: ${clicks}\nСчет ${appState.opponent.name}: ${oppClicks}`), 300);
