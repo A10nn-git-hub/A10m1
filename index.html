@@ -244,6 +244,14 @@
     </div>
     
     <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)"><div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px;" onclick="event.stopPropagation()"><div style="font-size:50px;" id="fm-avatar">👤</div><h2 id="fm-name">Имя</h2><p id="fm-id" style="color:gray;">ID: 0000</p><div style="display:flex;flex-direction:column;gap:10px;" id="friend-actions"></div></div></div>
+    
+    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()">
+        <div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()">
+            <h2 style="margin-top:0;">Пригласить друга</h2>
+            <div id="invite-friends-list" style="max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;"></div>
+            <button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button>
+        </div>
+    </div>
 
     <script>
         const tg = window.Telegram.WebApp;
@@ -261,7 +269,6 @@
         };
         firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-        // 100 СМАЙЛИКОВ
         const EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
         const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖' }; 
         
@@ -280,7 +287,8 @@
                     checkAdminAccess();
                     
                     if(values['friends']) { try { friends = JSON.parse(values['friends']); } catch(e){} }
-                    friends = friends.filter(f => f.id !== 'БОТ' && f.id !== 'ИИ' && f.name !== undefined);
+                    // Убрана строгая проверка на undefined, чтобы друзья без имени не пропадали
+                    friends = friends.filter(f => f.id !== 'БОТ' && f.id !== 'ИИ');
                     friends.unshift(SYSTEM_BOT); saveFriends();
 
                     db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, coins: globalCoins });
@@ -344,8 +352,9 @@
 
         // --- ДРУЗЬЯ ---
         function renderFriends() { const list = document.getElementById('friends-list'); list.innerHTML = ''; friends.forEach(f => { let div = document.createElement('div'); div.className = 'friend-item'; let icon = f.avatar || '👤'; div.innerHTML = `<div><b>${icon} ${f.name}</b><br><span style="font-size:10px;color:gray;">ID: ${f.id}</span></div>`; div.onclick = () => openFriendModal(f); list.appendChild(div); }); }
-        function addFriendBtn() { let id = prompt("Введи 4-значный ID друга:"); if (id && id !== myId) { if(friends.some(f => f.id === id) || id === 'ИИ') { tg.showAlert("Уже в друзьях!"); return; } db.ref('users/' + id).once('value').then(snap => { if(snap.exists()) { let data = snap.val(); friends.push({ id: id, name: data.name, avatar: data.avatar }); saveFriends(); tg.showAlert("Друг добавлен!"); } else { tg.showAlert("Игрок с таким ID не найден!"); } }); } }
-        function openFriendModal(f) { activeFriend = f; document.getElementById('fm-avatar').innerText = f.avatar; document.getElementById('fm-name').innerText = f.name; document.getElementById('fm-id').innerText = `ID: ${f.id}`; let actions = document.getElementById('friend-actions'); actions.innerHTML = ''; if (appState.inLobby) { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить ИИ 🤖</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="inviteRealFriend()">Пригласить 🎮</button>`; } else { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn" style="background: #444; color: gray; cursor: not-allowed;">Создай лобби для ИИ</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if (f.id !== 'ИИ') { actions.innerHTML += `<button class="btn btn-dark" onclick="tg.showAlert('Чат скоро!')">Сообщение 💬</button><button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`; } actions.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
+        function saveFriends() { tg.CloudStorage.setItem('friends', JSON.stringify(friends)); renderFriends(); }
+        function addFriendBtn() { let id = prompt("Введи 4-значный ID друга:"); if (id && id !== myId) { if(friends.some(f => f.id === id) || id === 'ИИ') { tg.showAlert("Уже в друзьях!"); return; } db.ref('users/' + id).once('value').then(snap => { if(snap.exists()) { let data = snap.val(); friends.push({ id: id, name: data.name || "Игрок", avatar: data.avatar || "👤" }); saveFriends(); tg.showAlert("Друг добавлен!"); } else { tg.showAlert("Игрок с таким ID не найден!"); } }); } }
+        function openFriendModal(f) { activeFriend = f; document.getElementById('fm-avatar').innerText = f.avatar || '👤'; document.getElementById('fm-name').innerText = f.name; document.getElementById('fm-id').innerText = `ID: ${f.id}`; let actions = document.getElementById('friend-actions'); actions.innerHTML = ''; if (appState.inLobby) { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить ИИ 🤖</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="inviteRealFriend(${JSON.stringify(f).replace(/"/g, '&quot;')})">Пригласить 🎮</button>`; } else { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn" style="background: #444; color: gray; cursor: not-allowed;">Создай лобби для ИИ</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if (f.id !== 'ИИ') { actions.innerHTML += `<button class="btn btn-dark" onclick="tg.showAlert('Чат скоро!')">Сообщение 💬</button><button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`; } actions.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
         function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
         function removeFriend() { if(confirm(`Удалить?`)){ friends = friends.filter(f => f.id !== activeFriend.id); saveFriends(); closeFriendModal(); } }
 
@@ -357,14 +366,36 @@
                     let p = lobbyPlayers[i];
                     c.innerHTML += `<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`;
                 } else {
-                    c.innerHTML += `<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="tg.showAlert('Выбери друга слева!')"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пусто</div></div>`;
+                    // Кликабельный плюсик открывает меню приглашений
+                    c.innerHTML += `<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`;
                 }
             }
         }
+        
+        function openInviteModal() {
+            if(!isHost) return tg.showAlert("Приглашать может только Хост!");
+            if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби уже полное!");
+            
+            let list = document.getElementById('invite-friends-list'); list.innerHTML = '';
+            let available = friends.filter(f => !lobbyPlayers.some(p => p.id === f.id));
+            
+            if(available.length === 0) { list.innerHTML = '<p style="color:gray;text-align:center;">Нет доступных друзей</p>'; } 
+            else {
+                available.forEach(f => {
+                    let div = document.createElement('div'); div.className = 'friend-item';
+                    div.innerHTML = `<div><b>${f.avatar || '👤'} ${f.name}</b></div><button class="btn btn-green" style="padding:5px 10px;font-size:12px;">Выбрать</button>`;
+                    div.onclick = () => { if(f.id === 'ИИ') inviteBotLobby(); else inviteRealFriend(f); closeInviteModal(); };
+                    list.appendChild(div);
+                });
+            }
+            document.getElementById('invite-modal').classList.remove('hidden');
+        }
+        function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
+
         function openLobby() { appState.inLobby = true; lobbyId = myId; isHost = true; lobbyPlayers = [{id: myId, name: myName, avatar: myAvatar}]; db.ref('lobbies/' + lobbyId).set({ host: myId, game: '', status: 'waiting', players: { [myId]: {name: myName, avatar: myAvatar} } }); listenLobby(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex'; }
         function closeLobby() { appState.inLobby = false; if(lobbyRef) lobbyRef.off(); if(isHost) db.ref('lobbies/' + lobbyId).remove(); else db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); document.getElementById('main-buttons-view').style.display = 'flex'; document.getElementById('view-lobby').style.display = 'none'; }
-        function inviteBotLobby() { if(!isHost) return; if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({ name: 'ИИ', avatar: '🤖' }); }
-        function inviteRealFriend() { if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); tg.showAlert('Пусть друг нажмет Присоединиться к тебе!'); closeFriendModal(); }
+        function inviteBotLobby() { if(!isHost) return; if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); document.getElementById('friend-modal').classList.add('hidden'); document.getElementById('invite-modal').classList.add('hidden'); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({ name: 'ИИ', avatar: '🤖' }); }
+        function inviteRealFriend(f) { if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); tg.showAlert(`Скажи игроку ${f.name} зайти к тебе через кнопку Присоединиться!`); document.getElementById('friend-modal').classList.add('hidden'); document.getElementById('invite-modal').classList.add('hidden'); }
         function joinFriendLobby() { lobbyId = activeFriend.id; isHost = false; closeFriendModal(); db.ref('lobbies/' + lobbyId).once('value').then(snap => { if(snap.exists()) { db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; document.querySelectorAll('.nav-item')[2].click(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex'; listenLobby(); } else tg.showAlert("Друг еще не создал лобби!"); }); }
         
         function listenLobby() { 
@@ -414,7 +445,7 @@
 
         function initTicTacToe() {
             tttGameOver = false; tttTurnIdx = 0;
-            let pCount = lobbyPlayers.length; if(pCount < 2) pCount = 2; // для локальной игры с самим собой
+            let pCount = lobbyPlayers.length; if(pCount < 2) pCount = 2; 
             
             if(pCount <= 2) { tttSize = 3; tttWinReq = 3; }
             else if(pCount === 3) { tttSize = 5; tttWinReq = 4; }
@@ -424,7 +455,6 @@
             document.getElementById('ttt-board').style.gridTemplateColumns = `repeat(${tttSize}, 1fr)`;
             document.getElementById('ttt-board').style.gridTemplateRows = `repeat(${tttSize}, 1fr)`;
             
-            // Если онлайн
             if (lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'ИИ') {
                 if(tttRef) tttRef.off(); tttRef = db.ref(`lobbies/${lobbyId}`);
                 if(isHost) db.ref(`lobbies/${lobbyId}`).update({ tttBoard: new Array(tttSize*tttSize).fill(''), tttTurn: 0 });
@@ -437,8 +467,7 @@
                     setIsland(tttTurnIdx === myIdx ? "ТВОЙ ХОД!" : `ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]);
                 });
             } else {
-                tttBoard = new Array(tttSize*tttSize).fill('');
-                renderTicTacToe();
+                tttBoard = new Array(tttSize*tttSize).fill(''); renderTicTacToe();
                 if(lobbyPlayers.length > 1 && lobbyPlayers[1].id === 'ИИ') setIsland('Твой ход! (❌)', '#34c759');
                 else setIsland('Ход: ❌ (На 1 устройстве)', '#ff453a');
             }
@@ -456,15 +485,14 @@
 
         function moveTicTacToe(i) {
             if (tttGameOver || tttBoard[i] || appState.isPaused) return;
-
-            if (lobbyPlayers.length <= 1) { // Локально 1 устройство
+            if (lobbyPlayers.length <= 1) { 
                 tttBoard[i] = TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return;
                 tttTurnIdx = (tttTurnIdx + 1) % 2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]);
-            } else if (lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ') { // С Ботом
+            } else if (lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ') { 
                 if(tttTurnIdx !== 0) return;
                 tttBoard[i] = 'x'; renderTicTacToe(); if(checkDynamicWin(false)) return;
                 tttTurnIdx = 1; setIsland("ИИ ДУМАЕТ...", '#ff9f0a'); setTimeout(makeBotDynamicMove, 800);
-            } else { // Мультиплеер онлайн
+            } else { 
                 let myIdx = lobbyPlayers.findIndex(p => p.id === myId);
                 if (tttTurnIdx !== myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`);
                 tttBoard[i] = TTT_SYMBOLS[myIdx];
@@ -505,7 +533,7 @@
             return false;
         }
 
-        // ================= ПОИСК ПРЕДМЕТОВ (С ПРЯТКАМИ) =================
+        // ================= ПОИСК ПРЕДМЕТОВ =================
         const ALL_ITEMS = ['🍎','🔑','💎','👑','🧸','🍔','🎸','⚽','📱','🕶️','🍉','🦴']; let hiddenFound=0, hiddenMisses=0;
         function initHiddenGame() { 
             document.getElementById('hidden-found').innerText = '0'; const scene = document.getElementById('hidden-scene'); scene.innerHTML = ''; 
