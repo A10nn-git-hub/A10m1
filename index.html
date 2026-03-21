@@ -7,33 +7,14 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         :root {
-            --bg: #1e1e1e;
-            --text: #ffffff;
-            --btn: #3390ec;
-            --btn-text: #ffffff;
-            --sidebar-bg: #111111;
-            --panel-bg: #222224;
-            --nav-w: 80px;
+            --bg: #1e1e1e; --text: #ffffff; --btn: #3390ec; --btn-text: #ffffff;
+            --sidebar-bg: #111111; --panel-bg: #222224; --nav-w: 80px;
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: var(--bg); color: var(--text);
-            margin: 0; padding: 0; box-sizing: border-box; overflow: hidden;
-            user-select: none; width: 100vw; height: 100vh;
-        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 0; box-sizing: border-box; overflow: hidden; user-select: none; width: 100vw; height: 100vh; }
 
-        /* --- ЗАЩИТА ОРИЕНТАЦИИ --- */
-        #rotate-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: #000; color: white; z-index: 9999; flex-direction: column;
-            align-items: center; justify-content: center; text-align: center;
-        }
-        @media screen and (orientation: portrait) {
-            #rotate-overlay { display: flex; }
-            #app-container { display: none !important; }
-        }
+        #rotate-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: white; z-index: 9999; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        @media screen and (orientation: portrait) { #rotate-overlay { display: flex; } #app-container { display: none !important; } }
 
-        /* --- БАЗОВЫЕ КЛАССЫ --- */
         .glass { background: rgba(30, 30, 30, 0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; text-align: center; color: white; transition: 0.3s; }
         .overlay.hidden { display: none !important; }
@@ -44,22 +25,19 @@
         .btn-green { background-color: #34c759; color: white; }
         .btn-dark { background-color: #333; color: white; }
 
-        /* --- ЛЕЙАУТ: САЙДБАР И КОНТЕНТ --- */
+        /* НАВИГАЦИЯ И ЛЕЙАУТ */
         #app-container { display: flex; width: 100vw; height: 100vh; position: relative; }
-        
-        /* 1. БОКОВОЕ МЕНЮ НАВИГАЦИИ */
         .nav-bar { width: var(--nav-w); background: var(--sidebar-bg); border-right: 2px solid #2a2a2a; display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 30px; z-index: 50; }
         .nav-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.5; transition: 0.2s; }
         .nav-item.active { opacity: 1; transform: scale(1.1); filter: drop-shadow(0 0 8px #3390ec); color: #3390ec; }
         .nav-icon { font-size: 30px; margin-bottom: 5px; }
         .nav-text { font-size: 10px; font-weight: bold; text-transform: uppercase; }
 
-        /* 2. ОСНОВНАЯ ЗОНА КОНТЕНТА */
         .main-content { flex-grow: 1; position: relative; background: var(--bg); overflow: hidden; }
         .tab-view { display: none; width: 100%; height: 100%; padding: 20px; box-sizing: border-box; }
         .tab-view.active { display: flex; }
 
-        /* --- ВКЛАДКА: ПРОФИЛЬ --- */
+        /* ПРОФИЛЬ */
         #tab-profile { flex-direction: column; align-items: center; justify-content: center; }
         .profile-mega-box { background: var(--panel-bg); padding: 40px; border-radius: 20px; text-align: center; border: 2px solid #444; width: 400px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .profile-avatar { font-size: 80px; margin-bottom: 20px; filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5)); }
@@ -67,9 +45,9 @@
         .profile-id { font-size: 18px; color: #888; font-family: monospace; background: #111; padding: 5px 15px; border-radius: 10px; display: inline-block; margin-bottom: 20px; }
         .profile-coins { font-size: 24px; color: #ff9f0a; font-weight: bold; background: rgba(255,159,10,0.1); padding: 10px 20px; border-radius: 15px; border: 1px solid #ff9f0a; display: inline-block; }
 
-        /* --- ВКЛАДКА: ДРУЗЬЯ / ЛОББИ --- */
+        /* ДРУЗЬЯ И ЛОББИ */
         #tab-friends { flex-direction: row; gap: 20px; padding: 20px; }
-        .friends-list-panel { width: 300px; background: var(--panel-bg); border-radius: 20px; padding: 15px; display: flex; flex-direction: column; z-index: 10; }
+        .friends-list-panel { width: 300px; background: var(--panel-bg); border-radius: 20px; padding: 15px; display: flex; flex-direction: column; }
         .friend-item { display: flex; justify-content: space-between; align-items: center; background: #111; padding: 12px; border-radius: 12px; margin-bottom: 10px; cursor: pointer; border-left: 3px solid transparent; }
         .friend-item:active { background: #333; border-color: #3390ec; }
         .friend-name { font-weight: bold; font-size: 16px; }
@@ -81,21 +59,21 @@
         .mega-create { background: linear-gradient(45deg, #ff9f0a, #ff453a); }
         .mega-custom { background: linear-gradient(45deg, #32ade6, #3390ec); opacity: 0.8; }
 
-        /* --- ЛОББИ КОМНАТА (STANDOFF STYLE) --- */
-        #view-lobby { display: none; flex-direction: column; flex-grow: 1; position: relative; align-items: center; justify-content: center; }
-        .lobby-slots-container { display: flex; gap: 40px; justify-content: center; align-items: center; width: 100%; }
-        .square-slot { width: 22vh; height: 22vh; background: var(--panel-bg); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #444; box-shadow: 0 10px 20px rgba(0,0,0,0.5); position: relative; }
+        /* ЛОББИ (МНОГОПОЛЬЗОВАТЕЛЬСКОЕ) */
+        #view-lobby { display: none; flex-direction: column; flex-grow: 1; position: relative; align-items: center; justify-content: center; width: 100%; height: 100%; }
+        .lobby-slots-container { display: flex; gap: 20px; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap; padding: 20px; box-sizing: border-box; }
+        .square-slot { width: 18vh; height: 18vh; background: var(--panel-bg); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #444; box-shadow: 0 10px 20px rgba(0,0,0,0.5); position: relative; transition: 0.2s; }
         .square-slot.active-slot { border-color: #ff9f0a; }
-        .slot-avatar { font-size: 8vh; margin-bottom: 1vh; }
-        .slot-name { font-weight: bold; font-size: 2.2vh; text-align: center; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .slot-status { font-size: 1.6vh; color: #34c759; position: absolute; bottom: -28px; font-weight: bold; }
+        .slot-avatar { font-size: 6vh; margin-bottom: 1vh; }
+        .slot-name { font-weight: bold; font-size: 2vh; text-align: center; width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .slot-status { font-size: 1.4vh; color: #34c759; position: absolute; bottom: -24px; font-weight: bold; }
         
         .lobby-controls-bottom-right { position: absolute; bottom: 0; right: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
         .mode-text { font-size: 16px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-bottom: -5px; }
         .play-btn { background: #34c759; color: white; border: none; border-radius: 12px; padding: 15px 50px; font-size: 26px; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: 0 6px 0 #248a3d; transition: 0.1s; }
         .play-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #248a3d; }
 
-        /* --- ИГРОВОЙ КОНТЕЙНЕР --- */
+        /* ИГРОВОЙ КОНТЕЙНЕР */
         #game-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); z-index: 1000; }
         .game-screen { display: none; width: 100%; height: 100%; flex-direction: column; justify-content: center; align-items: center; position: relative; }
         .game-screen.active { display: flex; }
@@ -104,21 +82,18 @@
         #pause-btn { position: fixed; top: 10px; right: 10px; width: 45px; height: 45px; border-radius: 25px; border: 2px solid white; font-size: 20px; color: white; display: none; align-items: center; justify-content: center; z-index: 1100; cursor: pointer; background: rgba(0,0,0,0.5); }
 
         /* СТИЛИ ИГР */
-        /* Исправление скачущих полей: box-sizing, line-height, overflow */
-        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 45vh; height: 45vh; margin: 0 auto; align-content: center; justify-content: center; }
-        .cell { background: #2c2c2e; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 8vh; font-weight: bold; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); box-sizing: border-box; overflow: hidden; line-height: 1; }
+        /* Жесткая фиксация сетки крестиков-ноликов */
+        .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 45vh; height: 45vh; margin: 0 auto; box-sizing: border-box; }
+        .cell { background: #2c2c2e; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 10vh; font-weight: bold; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); box-sizing: border-box; overflow: hidden; line-height: 1; width: 100%; height: 100%; margin: 0; padding: 0; }
         .cell.x { color: #ff453a; text-shadow: 0 4px 0 #8b0000; }
         .cell.o { color: #32ade6; text-shadow: 0 4px 0 #005f8b; }
         
         .hidden-scene { position: relative; width: 90%; height: 75vh; background: linear-gradient(to bottom, #87CEEB 0%, #87CEEB 50%, #8FBC8F 50%, #8FBC8F 100%); border-radius: 15px; overflow: hidden; box-shadow: inset 0 0 20px rgba(0,0,0,0.2); }
         .hidden-item, .scene-decor { position: absolute; font-size: 5vh; transform: translate(-50%, -50%); }
         .hidden-item { cursor: pointer; z-index: 10; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); transition: transform 0.1s; }
-        .hidden-item:active { transform: translate(-50%, -50%) scale(0.8); }
-        .scene-decor { z-index: 5; opacity: 0.8; pointer-events: none; }
         
         .clicker-setup { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 0 0 20px 0; }
         .round-btn { width: 60px; height: 60px; border-radius: 30px; border: none; font-size: 24px; font-weight: bold; background: var(--btn); color: white; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
-        .clicker-time-display { font-size: 28px; font-weight: bold; width: 100px; text-align: center; }
         .giant-click-btn { width: 50vw; height: 50vh; border-radius: 20px; font-size: 10vh; font-weight: 900; background: #ff9f0a; color: white; border: none; box-shadow: inset 0 -8px 0 rgba(0,0,0,0.2); cursor: pointer; }
         .giant-click-btn:active { transform: scale(0.98); background: #e08e09; }
     </style>
@@ -167,24 +142,14 @@
                 
                 <div class="lobby-buttons-panel" id="main-buttons-view">
                     <button class="mega-btn mega-create" onclick="openLobby()">Создать Лобби</button>
-                    <button class="mega-btn mega-custom" onclick="tg.showAlert('Кастомные лобби со своими правилами пока в разработке! 🚧')">Кастомное Лобби</button>
+                    <button class="mega-btn mega-custom" onclick="tg.showAlert('Кастомные лобби пока в разработке! 🚧')">Кастомное Лобби</button>
                 </div>
 
                 <div id="view-lobby">
                     <button class="btn btn-dark" style="position: absolute; top: -10px; right: 0; z-index: 5;" onclick="closeLobby()">Выйти 🚪</button>
                     
-                    <div class="lobby-slots-container">
-                        <div class="square-slot active-slot">
-                            <div class="slot-avatar">😎</div>
-                            <div class="slot-name" id="lobby-my-name">Я</div>
-                            <div class="slot-status">Хост</div>
+                    <div class="lobby-slots-container" id="lobby-slots-container">
                         </div>
-                        
-                        <div class="square-slot" id="lobby-guest-slot" onclick="tg.showAlert('Пригласи друга из списка слева!')">
-                            <div class="slot-avatar" style="opacity: 0.5;">➕</div>
-                            <div class="slot-name" style="color: gray;">Ждем...</div>
-                        </div>
-                    </div>
 
                     <div class="lobby-controls-bottom-right">
                         <div class="mode-text" id="selected-mode-text">Режим не выбран</div>
@@ -200,9 +165,10 @@
                     <h2>Настройки в разработке</h2>
                 </div>
             </div>
-
         </div>
-    </div> <div id="game-container">
+    </div>
+
+    <div id="game-container">
         <div id="dynamic-island" class="glass"><span id="island-text">...</span></div>
         <div id="pause-btn" class="glass" onclick="togglePause(true)">⏸</div>
 
@@ -228,7 +194,7 @@
         <div class="game-screen" id="screen-game-clicker">
             <div class="clicker-setup" id="clicker-controls">
                 <button class="round-btn" onclick="changeClickTime(-5)">◀</button>
-                <div class="clicker-time-display" id="click-time-val">15 сек</div>
+                <div class="clicker-time-display" id="click-time-val" style="font-size: 28px; font-weight: bold; width: 100px; text-align: center;">15 сек</div>
                 <button class="round-btn" onclick="changeClickTime(5)">▶</button>
             </div>
             <h1 id="click-score" style="font-size: 10vh; margin: 10px 0;">0</h1>
@@ -255,7 +221,7 @@
         <div style="background: var(--panel-bg); padding: 30px; border-radius: 20px; width: 400px; border: 2px solid #444;" onclick="event.stopPropagation()">
             <h2 style="margin-top: 0;">Выбор режима 🎮</h2>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="btn btn-dark" style="text-align: left; padding: 20px; font-size: 18px;" onclick="setGameMode('hidden', '🔎 Поиск предметов')">🔎 Поиск предметов (На очки)</button>
+                <button class="btn btn-dark" style="text-align: left; padding: 20px; font-size: 18px;" onclick="setGameMode('hidden', '🔎 Поиск предметов')">🔎 Поиск предметов</button>
                 <button class="btn btn-dark" style="text-align: left; padding: 20px; font-size: 18px;" onclick="setGameMode('tictactoe', '❌⭕ Крестики-нолики')">❌⭕ Крестики-нолики</button>
                 <button class="btn btn-dark" style="text-align: left; padding: 20px; font-size: 18px;" onclick="setGameMode('clicker', '⏱️ Кликер-дуэль')">⏱️ Кликер-дуэль</button>
             </div>
@@ -265,7 +231,7 @@
 
     <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)">
         <div style="background: #1c1c1e; padding: 30px; border-radius: 20px; width: 300px;" onclick="event.stopPropagation()">
-            <div style="font-size: 50px; margin-bottom: 5px;">👤</div>
+            <div style="font-size: 50px; margin-bottom: 5px;" id="fm-avatar">👤</div>
             <h2 id="fm-name" style="margin: 5px 0;">Имя</h2>
             <p id="fm-id" style="color: gray; font-family: monospace; margin-top: 0; margin-bottom: 20px;">ID: 0000</p>
             <div style="display: flex; flex-direction: column; gap: 10px;" id="friend-actions"></div>
@@ -275,21 +241,25 @@
 
     <script>
         const tg = window.Telegram.WebApp;
-        
-        try { tg.expand(); if (tg.requestFullscreen) tg.requestFullscreen(); } catch(e) { console.log("Fullscreen API not supported"); }
+        try { tg.expand(); if (tg.requestFullscreen) tg.requestFullscreen(); } catch(e) {}
         tg.ready();
+
+        // СИМУЛЯЦИЯ БАЗЫ ДАННЫХ (Доступные для добавления ID)
+        const FAKE_DB_IDS = ['1111', '2222', '3333', '4444', '5555'];
 
         let globalCoins = 0;
         let myName = tg.initDataUnsafe?.user?.first_name || "Игрок";
         let myId = "0000";
+        const SYSTEM_BOT = { id: 'БОТ', name: 'ИИ' };
         let friends = [];
-        const SYSTEM_BOT = { id: 'БОТ', name: 'ИИ' }; // Системный бот
         let activeFriend = null; 
         
         let appState = { 
-            game: null, isPaused: false, inLobby: false,
-            lobbyMode: 'solo', opponent: null, selectedGameId: null, selectedGameName: "Не выбран"
+            game: null, isPaused: false, 
+            selectedGameId: null, selectedGameName: "Не выбран"
         };
+        
+        let lobbyPlayers = []; // Массив игроков в лобби (Макс 6)
 
         // ИНИЦИАЛИЗАЦИЯ
         tg.CloudStorage.getKeys((err, keys) => {
@@ -303,38 +273,24 @@
                     else { myId = Math.floor(1000 + Math.random() * 9000).toString(); tg.CloudStorage.setItem('my_id', myId); }
                     
                     document.getElementById('my-name').innerText = myName;
-                    document.getElementById('lobby-my-name').innerText = myName;
                     document.getElementById('my-id').innerText = myId;
 
                     if(values['friends']) { try { friends = JSON.parse(values['friends']); } catch(e){} }
                     
-                    // Гарантируем, что бот всегда в списке друзей
-                    if(!friends.some(f => f.id === 'БОТ')) {
-                        friends.unshift(SYSTEM_BOT);
-                        saveFriends();
-                    } else {
-                        renderFriends();
-                    }
+                    // Бот всегда в друзьях
+                    if(!friends.some(f => f.id === 'БОТ')) { friends.unshift(SYSTEM_BOT); saveFriends(); } 
+                    else { renderFriends(); }
                 }
             });
         });
 
         function saveFriends() { tg.CloudStorage.setItem('friends', JSON.stringify(friends)); renderFriends(); }
-        function updateCoinsUI() {
-            document.getElementById('menu-coins').innerText = globalCoins;
-            document.getElementById('hidden-coins').innerText = globalCoins;
-        }
-        function addCoins(amount) {
-            globalCoins = Math.max(0, globalCoins + amount);
-            updateCoinsUI();
-            tg.CloudStorage.setItem('player_coins', globalCoins.toString());
-        }
+        function updateCoinsUI() { document.getElementById('menu-coins').innerText = globalCoins; document.getElementById('hidden-coins').innerText = globalCoins; }
+        function addCoins(amount) { globalCoins = Math.max(0, globalCoins + amount); updateCoinsUI(); tg.CloudStorage.setItem('player_coins', globalCoins.toString()); }
 
         // --- САЙДБАР ---
         function switchTab(tabId, el) {
-            if(appState.inLobby) return; // Блокируем сайдбар, если открыто лобби
-            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
-            el.classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active')); el.classList.add('active');
             document.querySelectorAll('.tab-view').forEach(tab => tab.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
         }
@@ -344,7 +300,8 @@
             const list = document.getElementById('friends-list'); list.innerHTML = '';
             friends.forEach((f) => {
                 let div = document.createElement('div'); div.className = 'friend-item';
-                div.innerHTML = `<div><div class="friend-name">${f.name}</div><div class="friend-id">ID: ${f.id}</div></div><div>⋮</div>`;
+                let icon = f.id === 'БОТ' ? '🤖' : '👤';
+                div.innerHTML = `<div><div class="friend-name">${icon} ${f.name}</div><div class="friend-id">ID: ${f.id}</div></div><div>⋮</div>`;
                 div.onclick = () => openFriendModal(f); list.appendChild(div);
             });
         }
@@ -354,25 +311,36 @@
             if (idInput && idInput.length === 4) {
                 if (idInput === myId) { tg.showAlert("Это твой ID!"); return; }
                 if (friends.some(f => f.id === idInput)) { tg.showAlert("Друг уже в списке!"); return; }
+                
+                // Проверка по нашей "симуляции базы данных"
+                if (!FAKE_DB_IDS.includes(idInput)) {
+                    tg.showAlert(`Ошибка 404: Игрок с ID ${idInput} не найден в базе данных!\n\n(Временно доступны тестовые ID: 1111, 2222, 3333, 4444, 5555)`);
+                    return;
+                }
+                
                 friends.push({ id: idInput, name: `Боец ${idInput}` });
-                saveFriends(); tg.showAlert(`Добавлен!`);
+                saveFriends(); tg.showAlert(`Игрок успешно добавлен!`);
             } else if(idInput) tg.showAlert("ID должен быть из 4 цифр!");
         }
 
         function openFriendModal(friend) {
             activeFriend = friend;
+            document.getElementById('fm-avatar').innerText = friend.id === 'БОТ' ? '🤖' : '👤';
             document.getElementById('fm-name').innerText = friend.name;
             document.getElementById('fm-id').innerText = `ID: ${friend.id}`;
             const actions = document.getElementById('friend-actions');
             actions.innerHTML = '';
             
-            if (appState.inLobby) {
+            // Логика кнопок
+            if (lobbyPlayers.length > 0) {
+                // Если мы в лобби
                 if (friend.id === 'БОТ') {
                     actions.innerHTML += `<button class="btn" style="background: #444; color: gray; cursor: not-allowed;">ИИ нельзя пригласить</button>`;
                 } else {
                     actions.innerHTML += `<button class="btn btn-green" onclick="inviteFriendToLobby()">Пригласить в Лобби 🎮</button>`;
                 }
             } else {
+                // Если мы НЕ в лобби
                 actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`;
             }
             
@@ -382,7 +350,6 @@
                     <button class="btn btn-red" onclick="removeFriend()">Удалить из друзей 🗑️</button>
                 `;
             }
-            
             actions.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`;
             document.getElementById('friend-modal').classList.remove('hidden');
         }
@@ -395,31 +362,64 @@
             }
         }
 
-        // --- ЛОББИ СИСТЕМА ---
+        // --- УМНОЕ ЛОББИ (ДО 6 ИГРОКОВ) ---
+        function renderLobbySlots() {
+            const container = document.getElementById('lobby-slots-container');
+            container.innerHTML = '';
+            
+            lobbyPlayers.forEach((p, idx) => {
+                let isBot = p.id === 'БОТ';
+                container.innerHTML += `
+                    <div class="square-slot ${idx === 0 ? 'active-slot' : ''}">
+                        <div class="slot-avatar">${isBot ? '🤖' : '😎'}</div>
+                        <div class="slot-name">${p.name}</div>
+                        <div class="slot-status">${idx === 0 ? 'Хост' : (isBot ? 'Бот' : 'Игрок')}</div>
+                    </div>
+                `;
+            });
+            
+            // Проверка: Если есть бот, больше никого не добавляем. Максимум 6 мест.
+            let hasBot = lobbyPlayers.some(p => p.id === 'БОТ');
+            if (!hasBot && lobbyPlayers.length < 6) {
+                container.innerHTML += `
+                    <div class="square-slot" style="opacity: 0.5; cursor: pointer;" onclick="tg.showAlert('Выбери друга из списка слева!')">
+                        <div class="slot-avatar">➕</div>
+                        <div class="slot-name" style="color: gray;">Пригласить</div>
+                    </div>
+                `;
+            }
+        }
+
         function openLobby() {
-            appState.inLobby = true; appState.lobbyMode = 'solo'; appState.opponent = null;
+            lobbyPlayers = [{ id: myId, name: myName }]; // Только Хост
             document.getElementById('main-buttons-view').style.display = 'none';
             document.getElementById('view-lobby').style.display = 'flex';
-            document.getElementById('lobby-guest-slot').innerHTML = `<div class="slot-avatar" style="opacity: 0.5;">➕</div><div class="slot-name" style="color: gray;">Ждем...</div>`;
+            renderLobbySlots();
         }
+
         function closeLobby() { 
-            appState.inLobby = false; 
+            lobbyPlayers = [];
             document.getElementById('main-buttons-view').style.display = 'flex';
             document.getElementById('view-lobby').style.display = 'none'; 
         }
 
         function inviteFriendToLobby() {
-            closeFriendModal(); appState.lobbyMode = 'duo'; appState.opponent = activeFriend;
-            document.getElementById('lobby-guest-slot').innerHTML = `
-                <div class="slot-avatar">😈</div>
-                <div class="slot-name">${activeFriend.name}</div>
-                <div class="slot-status">Готов (Бот)</div>
-            `;
+            if (lobbyPlayers.length >= 6) { tg.showAlert('Лобби полностью заполнено!'); return; }
+            if (lobbyPlayers.some(p => p.id === 'БОТ')) { tg.showAlert('Нельзя приглашать друзей, если в лобби есть ИИ!'); return; }
+            if (lobbyPlayers.some(p => p.id === activeFriend.id)) { tg.showAlert('Игрок уже в лобби!'); return; }
+            
+            lobbyPlayers.push(activeFriend);
+            closeFriendModal();
+            renderLobbySlots();
+            tg.showAlert(`Приглашение отправлено!\n(Симуляция: ${activeFriend.name} зашел в лобби)`);
         }
+
         function joinFriendLobby() {
             closeFriendModal();
-            document.querySelectorAll('.nav-item')[1].click(); 
-            openLobby(); inviteFriendToLobby();
+            lobbyPlayers = [activeFriend, { id: myId, name: myName }]; // Друг - хост, я - гость
+            document.getElementById('main-buttons-view').style.display = 'none';
+            document.getElementById('view-lobby').style.display = 'flex';
+            renderLobbySlots();
         }
 
         function openModeSelect() { document.getElementById('mode-modal').classList.remove('hidden'); }
@@ -433,15 +433,19 @@
 
         function startLobbyGame() {
             if(!appState.selectedGameId) { tg.showAlert("Сначала выбери режим игры!"); return; }
-            appState.game = appState.selectedGameId;
             
+            if(appState.selectedGameId === 'tictactoe' && lobbyPlayers.length > 2) {
+                tg.showAlert("Крестики-нолики доступны только для 2 игроков (или с ИИ)!"); return;
+            }
+
+            appState.game = appState.selectedGameId;
             document.getElementById('game-container').style.display = 'block';
             document.getElementById('pause-btn').style.display = 'flex';
             document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active'));
             document.getElementById('screen-game-' + appState.game).classList.add('active');
             
             if (appState.game === 'tictactoe') {
-                if(appState.lobbyMode === 'duo') {
+                if(lobbyPlayers.length > 1) {
                     document.getElementById('ttt-choice').style.display = 'block';
                     document.getElementById('ttt-board').style.display = 'none';
                 } else {
@@ -453,7 +457,7 @@
             else if (appState.game === 'clicker') initClicker();
         }
 
-        // --- УПРАВЛЕНИЕ ИГРОВЫМ ПОТОКОМ ---
+        // --- УПРАВЛЕНИЕ ИГРОЙ И РЕЗУЛЬТАТЫ ---
         function setIsland(text, borderColor = '#fff') {
             const island = document.getElementById('dynamic-island');
             document.getElementById('island-text').innerText = text;
@@ -466,18 +470,11 @@
             document.getElementById('result-subtext').innerText = subtext; overlay.classList.remove('hidden');
             tg.HapticFeedback.notificationOccurred('success');
         }
-        function closeResult() { 
-            document.getElementById('result-overlay').classList.add('hidden'); 
-            document.getElementById('game-container').style.display = 'none'; 
-        }
+        function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); document.getElementById('game-container').style.display = 'none'; }
         function togglePause(pause) { appState.isPaused = pause; document.getElementById('pause-overlay').classList.toggle('hidden', !pause); }
-        function exitToLobby() { 
-            togglePause(false); 
-            if(appState.game === 'clicker') clearInterval(clickInterval); 
-            document.getElementById('game-container').style.display = 'none'; 
-        }
+        function exitToLobby() { togglePause(false); if(appState.game === 'clicker') clearInterval(clickInterval); document.getElementById('game-container').style.display = 'none'; }
 
-        // --- КРЕСТИКИ НОЛИКИ (С ИИ-БОТОМ) ---
+        // --- КРЕСТИКИ НОЛИКИ (С УМНЫМ БОТОМ) ---
         let tttBoard = [], tttTurn = 'x', myTTTSymbol = 'x';
         function setTTTSymbol(symbol) {
             myTTTSymbol = symbol;
@@ -487,9 +484,10 @@
         }
         function initTicTacToe() {
             tttBoard = ['', '', '', '', '', '', '', '', '']; tttTurn = 'x';
-            if(appState.lobbyMode === 'duo') {
+            if(lobbyPlayers.length > 1) {
                 setIsland(`Ход: ❌ (Ты: ${myTTTSymbol === 'x' ? '❌' : '⭕'})`, '#ff453a');
-                if(myTTTSymbol === 'o') setTimeout(makeBotTTTMove, 800);
+                // Бот ходит первым, если мы играем с ботом и он выбрал крестик
+                if(lobbyPlayers[1].id === 'БОТ' && myTTTSymbol === 'o') setTimeout(makeBotTTTMove, 800);
             } else setIsland('Ход: ❌ (Игра Соло)', '#ff453a');
             renderTicTacToe();
         }
@@ -501,7 +499,6 @@
                 div.onclick = () => moveTicTacToe(i); board.appendChild(div);
             });
         }
-        
         function makeBotTTTMove() {
             if(appState.isPaused || appState.game !== 'tictactoe') return;
             let empty = []; tttBoard.forEach((c, i) => { if (c === '') empty.push(i); });
@@ -510,49 +507,44 @@
                 processTTTMove(r);
             }
         }
-
         function moveTicTacToe(i) {
             if (tttBoard[i] !== '' || appState.isPaused) return;
-            if (appState.lobbyMode === 'duo' && tttTurn !== myTTTSymbol) return; 
+            if (lobbyPlayers.length > 1 && tttTurn !== myTTTSymbol) {
+                if(lobbyPlayers[1].id === 'БОТ') return; // Блокируем клик, пока думает бот
+                tg.HapticFeedback.notificationOccurred('warning');
+                tg.showAlert(`Сейчас ходит ${lobbyPlayers[1].name}!`);
+                setTimeout(() => { if(tttBoard[i] === '') processTTTMove(i); }, 1000);
+                return; 
+            }
             processTTTMove(i);
         }
-
         function processTTTMove(i) {
             tg.HapticFeedback.impactOccurred('medium'); tttBoard[i] = tttTurn; renderTicTacToe();
-            
             const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
             if (wins.some(c => tttBoard[c[0]] !== '' && tttBoard[c[0]] === tttBoard[c[1]] && tttBoard[c[1]] === tttBoard[c[2]])) {
                 let txt = "ПОБЕДА!";
-                if(appState.lobbyMode === 'duo') txt = (tttTurn === myTTTSymbol ? "ТЫ ВЫИГРАЛ!" : "ТЫ ПРОИГРАЛ!");
+                if(lobbyPlayers.length > 1) txt = (tttTurn === myTTTSymbol ? "ТЫ ВЫИГРАЛ!" : "ТЫ ПРОИГРАЛ!");
                 setTimeout(() => showResult(txt, tttTurn === 'x' ? '#ff453a' : '#32ade6', tttTurn === 'x' ? '❌' : '⭕'), 300);
                 return;
             }
             if (!tttBoard.includes('')) { setTimeout(() => showResult('Ничья!', '#ffd60a', '🤝'), 300); return; }
             
             tttTurn = tttTurn === 'x' ? 'o' : 'x'; 
-            
-            if(appState.lobbyMode === 'duo') {
+            if(lobbyPlayers.length > 1) {
                 setIsland(`Ход: ${tttTurn === 'x'?'❌':'⭕'} (Ты: ${myTTTSymbol === 'x'?'❌':'⭕'})`);
-                if (tttTurn !== myTTTSymbol) setTimeout(makeBotTTTMove, 1000);
-            } else {
-                setIsland(`Ход: ${tttTurn === 'x' ? '❌' : '⭕'} (Игра Соло)`);
-            }
+                if (tttTurn !== myTTTSymbol && lobbyPlayers[1].id === 'БОТ') setTimeout(makeBotTTTMove, 1000);
+            } else setIsland(`Ход: ${tttTurn === 'x' ? '❌' : '⭕'} (Игра Соло)`);
         }
 
         // --- ПОИСК ПРЕДМЕТОВ ---
         const ALL_ITEMS = ['🍎', '🔑', '💎', '👑', '🧸', '🍔', '🎸', '⚽', '📱', '🕶️', '🍉', '🦴'];
         let hiddenFound = 0, hiddenMisses = 0, isFlashing = false;
-
         function initHiddenGame() {
-            hiddenFound = 0; hiddenMisses = 0;
-            document.getElementById('hidden-found').innerText = '0';
+            hiddenFound = 0; hiddenMisses = 0; document.getElementById('hidden-found').innerText = '0';
             const scene = document.getElementById('hidden-scene'); scene.innerHTML = ''; scene.style.backgroundColor = '';
-
             for(let i=0; i<15; i++) {
-                let d = document.createElement('div'); d.className = 'scene-decor';
-                d.innerText = ['🌲', '☁️', '🍄', '🌿', '🍂'][Math.floor(Math.random() * 5)];
-                d.style.left = (10 + Math.random() * 80) + '%'; d.style.top = (10 + Math.random() * 80) + '%';
-                scene.appendChild(d);
+                let d = document.createElement('div'); d.className = 'scene-decor'; d.innerText = ['🌲', '☁️', '🍄', '🌿', '🍂'][Math.floor(Math.random() * 5)];
+                d.style.left = (10 + Math.random() * 80) + '%'; d.style.top = (10 + Math.random() * 80) + '%'; scene.appendChild(d);
             }
             let targets = [...ALL_ITEMS].sort(() => 0.5 - Math.random()).slice(0, 5);
             targets.forEach(emoji => {
@@ -563,29 +555,32 @@
             });
             setIsland(`Найди 5 предметов!`, '#34c759');
         }
-
         function hitHiddenItem(e, el) {
             e.stopPropagation(); if (appState.isPaused) return;
             tg.HapticFeedback.notificationOccurred('success'); el.remove(); hiddenFound++;
             document.getElementById('hidden-found').innerText = hiddenFound; setIsland(`Найдено!`, '#34c759');
             if (hiddenFound >= 5) {
-                if(appState.lobbyMode === 'duo') {
-                    let oppMisses = Math.floor(Math.random() * 4);
-                    let win = hiddenMisses <= oppMisses;
-                    let txt = win ? "ТЫ ВЫИГРАЛ!" : "ТЫ ПРОИГРАЛ!";
-                    let sub = `Ты: 5 предм., ${hiddenMisses} ошиб.\n${appState.opponent.name}: 5 предм., ${oppMisses} ошиб.`;
-                    setTimeout(() => showResult(txt, win?'#34c759':'#ff453a', '🕵️‍♂️', sub), 500);
+                if(lobbyPlayers.length > 1) {
+                    let results = `Ты: 5 предм., ${hiddenMisses} ошиб.\n`;
+                    let myScore = 5 - hiddenMisses;
+                    let isWin = true;
+                    
+                    lobbyPlayers.slice(1).forEach(p => {
+                        let oppMisses = p.id === 'БОТ' ? Math.floor(Math.random() * 3) : Math.floor(Math.random() * 5);
+                        results += `${p.name}: 5 предм., ${oppMisses} ошиб.\n`;
+                        if ((5 - oppMisses) > myScore) isWin = false;
+                    });
+                    
+                    setTimeout(() => showResult(isWin?"ТЫ ВЫИГРАЛ!":"ПОРАЖЕНИЕ", isWin?'#34c759':'#ff453a', '🕵️‍♂️', results), 500);
                 } else {
-                    addCoins(5);
-                    setTimeout(() => showResult(`Уровень пройден!`, '#34c759', '🕵️‍♂️', `Заработано монет: +5 🪙`), 500);
+                    addCoins(5); setTimeout(() => showResult(`Уровень пройден!`, '#34c759', '🕵️‍♂️', `Заработано монет: +5 🪙`), 500);
                 }
             }
         }
-
         function missHiddenClick(e) {
             if (appState.isPaused || isFlashing) return;
             tg.HapticFeedback.notificationOccurred('error'); hiddenMisses++;
-            if(appState.lobbyMode === 'solo') addCoins(-2);
+            if(lobbyPlayers.length === 1) addCoins(-2);
             setIsland(`Мимо!`, '#ff453a');
             isFlashing = true; const scene = document.getElementById('hidden-scene');
             let oldBg = scene.style.background;
@@ -614,10 +609,15 @@
                     clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`, '#ffd60a');
                     if(clickTimeCurrent <= 0) {
                         clearInterval(clickInterval); clickActive = false;
-                        if(appState.lobbyMode === 'duo') {
-                            let oppClicks = clickTimeSetting * (4 + Math.floor(Math.random()*3)); 
-                            let win = clicks >= oppClicks;
-                            setTimeout(() => showResult(win?"ПОБЕДА!":"ПОРАЖЕНИЕ", win?'#34c759':'#ff453a', '⏱️', `Твой счет: ${clicks}\nСчет ${appState.opponent.name}: ${oppClicks}`), 300);
+                        if(lobbyPlayers.length > 1) {
+                            let results = `Ты: ${clicks} кликов\n`;
+                            let isWin = true;
+                            lobbyPlayers.slice(1).forEach(p => {
+                                let oppClicks = clickTimeSetting * (p.id === 'БОТ' ? (4 + Math.floor(Math.random()*3)) : (3 + Math.floor(Math.random()*4)));
+                                results += `${p.name}: ${oppClicks} кликов\n`;
+                                if (oppClicks > clicks) isWin = false;
+                            });
+                            setTimeout(() => showResult(isWin?"ПОБЕДА!":"ПОРАЖЕНИЕ", isWin?'#34c759':'#ff453a', '⏱️', results), 300);
                         } else {
                             let reward = Math.floor(clicks / 10); addCoins(reward);
                             showResult(`Счет: ${clicks}`, '#ff9f0a', '⏱️', `Заработано монет: +${reward} 🪙`);
