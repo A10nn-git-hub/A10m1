@@ -10,7 +10,7 @@
     <style>
         :root{--bg:#1e1e1e;--text:#ffffff;--btn:#3390ec;--sidebar-bg:#111;--panel-bg:#222224;--nav-w:80px;}
         body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0;box-sizing:border-box;overflow:hidden;user-select:none;width:100vw;height:100vh;}
-        #rotate-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;color:#fff;z-index:9999;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+        #rotate-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;color:#fff;z-index:9999;flex-direction:column;align-items:center;justify-content:center;}
         @media screen and (orientation: portrait) { #rotate-overlay{display:flex;} #app-container{display:none!important;} }
         .glass{background:rgba(30,30,30,0.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 4px 15px rgba(0,0,0,0.5);}
         .overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;text-align:center;color:#fff;transition:0.3s;}
@@ -18,6 +18,7 @@
         .btn{padding:12px 20px;font-size:16px;font-weight:bold;border:none;border-radius:12px;background:var(--btn);color:#fff;cursor:pointer;transition:0.1s;margin:5px;}
         .btn:active{transform:scale(0.95);opacity:0.8;}
         .btn-red{background:#ff453a;} .btn-green{background:#34c759;} .btn-dark{background:#333;} .btn-gold{background:#ff9f0a;}
+        
         #app-container{display:flex;width:100vw;height:100vh;position:relative;}
         .nav-bar{width:var(--nav-w);background:var(--sidebar-bg);border-right:2px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;padding-top:20px;gap:20px;z-index:50;overflow-y:auto;}
         .nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.5;transition:0.2s;width:100%;padding:10px 0;}
@@ -26,12 +27,10 @@
         .main-content{flex-grow:1;position:relative;background:var(--bg);overflow:hidden;}
         .tab-view{display:none;width:100%;height:100%;padding:20px;box-sizing:border-box;} .tab-view.active{display:flex;}
         
-        /* ВКЛАДКИ */
         .sub-tabs-header{display:flex;justify-content:center;gap:10px;margin-bottom:20px;width:100%;}
         .sub-tab-btn{background:#333;color:gray;padding:10px 20px;border-radius:20px;font-weight:bold;cursor:pointer;border:none;font-size:14px;} .sub-tab-btn.active{background:#3390ec;color:#fff;}
         .sub-tab-content{display:none;flex-direction:column;align-items:center;width:100%;flex-grow:1;} .sub-tab-content.active{display:flex;}
         
-        /* МИНИ-ВКЛАДКИ ДЛЯ ПРОМО */
         .mini-tabs-header{display:flex;gap:10px;margin-bottom:15px;width:100%;justify-content:center;}
         .mini-tab-btn{background:#444;color:gray;padding:8px 15px;border-radius:15px;border:none;font-size:13px;font-weight:bold;cursor:pointer;} .mini-tab-btn.active{background:#ff9f0a;color:#fff;}
         .mini-tab-content{display:none;flex-direction:column;width:100%;align-items:center;} .mini-tab-content.active{display:flex;}
@@ -43,8 +42,8 @@
         .profile-name{font-size:32px;font-weight:900;margin-bottom:5px;cursor:pointer;border-bottom:2px dashed transparent;display:inline-block;}
         .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px;cursor:pointer;}
         .profile-coins{font-size:24px;color:#ff9f0a;font-weight:bold;background:rgba(255,159,10,0.1);padding:10px 20px;border-radius:15px;border:1px solid #ff9f0a;display:inline-block;}
-        .emoji-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;}
-        .emoji-item{font-size:40px;cursor:pointer;padding:5px;background:#333;border-radius:10px;} .emoji-item:active{background:#ff9f0a;}
+        .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;}
+        .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:#ff9f0a;}
         
         #tab-friends{flex-direction:row;gap:20px;padding:20px;}
         .friends-list-panel{width:300px;background:var(--panel-bg);border-radius:20px;padding:15px;display:flex;flex-direction:column;}
@@ -52,10 +51,11 @@
         .lobby-buttons-panel{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
         .mega-btn{width:80%;max-width:400px;padding:30px;border-radius:20px;font-size:24px;font-weight:900;color:#fff;border:none;cursor:pointer;text-transform:uppercase;box-shadow:0 8px 0 rgba(0,0,0,0.3);}
         .mega-create{background:linear-gradient(45deg,#ff9f0a,#ff453a);} .mega-custom{background:linear-gradient(45deg,#32ade6,#3390ec);opacity:0.8;}
+        
         #view-lobby{display:none;flex-direction:column;flex-grow:1;position:relative;align-items:center;justify-content:center;width:100%;height:100%;}
         .lobby-slots-container{display:flex;gap:20px;justify-content:center;align-items:center;width:100%;flex-wrap:wrap;}
-        .square-slot{width:18vh;height:18vh;background:var(--panel-bg);border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #444;position:relative;}
-        .square-slot.active-slot{border-color:#ff9f0a;} .slot-avatar{font-size:6vh;margin-bottom:1vh;} .slot-name{font-weight:bold;font-size:2vh;text-align:center;width:90%;overflow:hidden;} .slot-status{font-size:1.4vh;color:#34c759;position:absolute;bottom:-24px;font-weight:bold;}
+        .square-slot{width:16vh;height:16vh;background:var(--panel-bg);border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #444;position:relative;transition:0.2s;}
+        .square-slot.active-slot{border-color:#ff9f0a;} .slot-avatar{font-size:5vh;margin-bottom:1vh;} .slot-name{font-weight:bold;font-size:1.8vh;text-align:center;width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .slot-status{font-size:1.2vh;color:#34c759;position:absolute;bottom:-20px;font-weight:bold;}
         .lobby-controls-bottom-right{position:absolute;bottom:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
         .play-btn{background:#34c759;color:#fff;border:none;border-radius:12px;padding:15px 50px;font-size:26px;font-weight:900;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 0 #248a3d;}
         
@@ -64,25 +64,24 @@
         #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none;}
         #pause-btn{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:25px;border:2px solid #fff;font-size:20px;display:none;align-items:center;justify-content:center;z-index:1100;cursor:pointer;background:rgba(0,0,0,0.5);box-shadow:0 4px 10px rgba(0,0,0,0.5);}
         
-        .math-menu-grid{display:flex;gap:20px;} .math-mode-card{background:var(--panel-bg);border:3px solid #3390ec;border-radius:20px;padding:20px;width:200px;text-align:center;cursor:pointer;box-shadow:0 10px 0 #1c6ab3;}
+        .math-menu-grid{display:flex;gap:20px;} .math-mode-card{background:var(--panel-bg);border:3px solid #3390ec;border-radius:20px;padding:20px;width:200px;text-align:center;cursor:pointer;}
         .math-progress-container{display:flex;gap:10px;justify-content:center;width:100%;margin-bottom:3vh;height:2vh;align-items:center;}
-        .math-dot{width:2vh;height:2vh;background:#444;border-radius:50%;transition:0.3s;} .math-dot.active-dot{width:6vh;border-radius:1vh;background:#3390ec;} .math-dot.done-dot{background:#34c759;}
+        .math-dot{width:2vh;height:2vh;background:#444;border-radius:50%;} .math-dot.active-dot{width:6vh;border-radius:1vh;background:#3390ec;} .math-dot.done-dot{background:#34c759;}
         .math-equation{font-size:10vh;font-weight:900;margin-bottom:10px;display:flex;align-items:center;gap:20px;} .math-input-box{width:10vh;height:10vh;background:#333;border-radius:20px;display:flex;align-items:center;justify-content:center;color:#ff9f0a;border:4px dashed #666;}
         .math-numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;} .math-num-btn{font-size:4vh;font-weight:bold;padding:15px 30px;border-radius:15px;background:#3390ec;color:#fff;border:none;}
-        .math-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;} .math-ans-card{font-size:8vh;font-weight:900;background:#ff9f0a;border-radius:20px;width:25vh;height:12vh;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 0 #c27602;border:none;color:#fff;}
+        .math-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;} .math-ans-card{font-size:8vh;font-weight:900;background:#ff9f0a;border-radius:20px;width:25vh;height:12vh;display:flex;align-items:center;justify-content:center;color:#fff;}
         .math-sort-slots{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;} .math-slot{width:8vh;height:8vh;border:3px dashed #666;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;background:#222;}
-        .math-sort-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;} .math-drag-item{width:8vh;height:8vh;background:#34c759;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;box-shadow:0 5px 0 #248a3d;cursor:pointer;}
-        .shake{animation:shake 0.4s;} @keyframes shake{0%{transform:translateX(0);} 25%{transform:translateX(-10px);} 50%{transform:translateX(10px);} 75%{transform:translateX(-10px);} 100%{transform:translateX(0);}}
+        .math-sort-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;} .math-drag-item{width:8vh;height:8vh;background:#34c759;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;}
         
-        .board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:45vh;height:45vh;margin:0 auto;box-sizing:border-box;}
-        .cell{background:#2c2c2e;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:10vh;font-weight:bold;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,0.3);box-sizing:border-box;overflow:hidden;line-height:1;}
-        .cell.x{color:#ff453a;} .cell.o{color:#32ade6;}
+        .board{display:grid;gap:5px;width:60vh;height:60vh;margin:0 auto;box-sizing:border-box;}
+        .cell{background:#2c2c2e;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,0.3);box-sizing:border-box;overflow:hidden;line-height:1;}
+        .cell.x{color:#ff453a;} .cell.o{color:#32ade6;} .cell.triangle{color:#34c759;} .cell.square{color:#ff9f0a;} .cell.minus{color:#af52de;}
         
         .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom,#87CEEB 0%,#87CEEB 50%,#8FBC8F 50%,#8FBC8F 100%);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2);}
-        .hidden-item{position:absolute;font-size:5vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));} 
-        .scene-decor{position:absolute;font-size:6vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;opacity:0.9;}
+        .hidden-item{position:absolute;font-size:4vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));} 
+        .scene-decor{position:absolute;font-size:7vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;}
         
-        .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,0.2);}
+        .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;}
         .giant-click-btn{width:50vw;height:50vh;border-radius:20px;font-size:10vh;font-weight:900;background:#ff9f0a;color:#fff;border:none;}
         .styled-input{padding:15px;border-radius:10px;border:2px solid #444;background:#111;color:#fff;font-size:18px;width:80%;margin-bottom:10px;text-align:center;}
     </style>
@@ -129,7 +128,7 @@
                 </div>
                 <div class="lobby-buttons-panel" id="main-buttons-view">
                     <button class="mega-btn mega-create" onclick="openLobby()">Создать Лобби</button>
-                    <button class="mega-btn mega-custom" onclick="tg.showAlert('Кастомные лобби в разработке! 🚧')">Кастомное Лобби</button>
+                    <button class="mega-btn mega-custom" onclick="tg.showAlert('В разработке! 🚧')">Кастомное Лобби</button>
                 </div>
                 <div id="view-lobby">
                     <button class="btn btn-dark" style="position:absolute;top:-10px;right:0;z-index:5;" onclick="closeLobby()">Выйти 🚪</button>
@@ -145,7 +144,7 @@
             <div id="tab-settings" class="tab-view"><div style="margin:auto;text-align:center;"><div style="font-size:60px;">🚧</div><h2 style="color:gray;">Настройки в разработке</h2></div></div>
             
             <div id="tab-admin" class="tab-view" style="flex-direction: column;">
-                <h3 style="color:#ff453a; margin-top:0; margin-bottom: 10px;">Доступ: РАЗРАБОТЧИК 8451</h3>
+                <h3 style="color:#ff453a; margin-top:0; margin-bottom: 10px;">Доступ: РАЗРАБОТЧИК</h3>
                 <div class="sub-tabs-header">
                     <button class="sub-tab-btn active" onclick="switchSubTab('admin','add-admin',this)">Админы</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('admin','add-coins',this)">Выдать Монеты</button>
@@ -168,8 +167,7 @@
                         <input type="number" id="adm-promo-acts" class="styled-input" placeholder="Кол-во активаций">
                         <button class="btn btn-green" onclick="adminCreatePromo()">СОЗДАТЬ</button>
                     </div>
-                    <div id="promo-active" class="mini-tab-content" style="max-height: 40vh; overflow-y: auto;">
-                        </div>
+                    <div id="promo-active" class="mini-tab-content" style="max-height: 40vh; overflow-y: auto;"></div>
                 </div>
             </div>
         </div>
@@ -210,10 +208,6 @@
         </div>
 
         <div class="game-screen" id="screen-game-tictactoe">
-            <div id="ttt-choice" style="display:none;margin-bottom:20px;text-align:center;">
-                <h3>Кем играешь? (Хост)</h3>
-                <div style="display:flex;gap:10px;"><button class="btn btn-red" onclick="setTTTSymbol('x')">❌ Крестик</button><button class="btn" style="background:#32ade6;" onclick="setTTTSymbol('o')">⭕ Нолик</button></div>
-            </div>
             <div class="board" id="ttt-board"></div>
         </div>
 
@@ -234,13 +228,13 @@
 
     <div id="avatar-modal" class="overlay glass hidden" onclick="closeAvatarModal()"><div style="background:#111;padding:20px;border-radius:20px;width:80%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2>Выбери аватар</h2><div class="emoji-grid" id="emoji-grid"></div><button class="btn btn-red" onclick="closeAvatarModal()">Закрыть</button></div></div>
     <div id="pause-overlay" class="overlay glass hidden"><h2>ПАУЗА ⏸️</h2><div style="width:300px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button><button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button></div></div>
-    <div id="result-overlay" class="overlay glass hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text">Победа!</h2><div id="result-subtext" style="white-space:pre-line;margin-bottom:20px;"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff;" onclick="closeResult()">В Лобби</button></div>
+    <div id="result-overlay" class="overlay hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text">Победа!</h2><div id="result-subtext" style="white-space:pre-line;margin-bottom:20px;"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff;" onclick="closeResult()">В Лобби</button></div>
     
     <div id="mode-modal" class="overlay glass hidden" onclick="closeModeModal(event)">
         <div style="background:var(--panel-bg);padding:30px;border-radius:20px;width:400px;" onclick="event.stopPropagation()">
             <h2>Выбор режима 🎮</h2>
             <div style="display:flex;flex-direction:column;gap:10px;">
-                <button class="btn btn-dark" onclick="setGameMode('math', '🧮 Математика (Обучение)')">🧮 Математика (Обучение)</button>
+                <button class="btn btn-dark" onclick="setGameMode('math', '🧮 Математика')">🧮 Математика</button>
                 <button class="btn btn-dark" onclick="setGameMode('hidden', '🔎 Поиск предметов')">🔎 Поиск предметов</button>
                 <button class="btn btn-dark" onclick="setGameMode('tictactoe', '❌⭕ Крестики-нолики')">❌⭕ Крестики-нолики</button>
                 <button class="btn btn-dark" onclick="setGameMode('clicker', '⏱️ Кликер-дуэль')">⏱️ Кликер-дуэль</button>
@@ -265,10 +259,10 @@
             messagingSenderId: "523964322575",
             appId: "1:523964322575:web:a5502d0bf28f17b10f247a"
         };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
+        firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-        const EMOJIS = ['😎','👾','👽','👻','💩','🐵','🦊','🐯','🦁','🐸','🦖','🐉','🤡','👿'];
+        // 100 СМАЙЛИКОВ
+        const EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
         const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖' }; 
         
         let globalCoins = 0; let myName = tg.initDataUnsafe?.user?.first_name || "Игрок"; let myAvatar = "😎"; let myId = "0000";
@@ -309,7 +303,7 @@
                         let data = snap.val();
                         Object.keys(data).forEach(k => {
                             let div = document.createElement('div'); div.className = 'promo-item';
-                            div.innerHTML = `<div><b>${k}</b><br><span style="font-size:10px;color:gray;">Активаций: ${data[k].activations} | Награда: ${data[k].reward}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">УДАЛИТЬ</button>`;
+                            div.innerHTML = `<div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].activations} | Награда: ${data[k].reward}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">УДАЛИТЬ</button>`;
                             list.appendChild(div);
                         });
                     } else list.innerHTML = '<p style="color:gray;">Нет активных промокодов</p>';
@@ -319,30 +313,24 @@
 
         function tryAdminLogin() { if (myId === '8451') return; if (prompt("Пароль:") === "8451") { myId = "8451"; tg.CloudStorage.setItem('my_id', myId); checkAdminAccess(); tg.showAlert("Админ-панель открыта! 🛠️"); } }
         function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); tg.CloudStorage.setItem('my_name', myName); checkAdminAccess(); } }
-        function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML = ''; EMOJIS.forEach(em => { let div = document.createElement('div'); div.className = 'emoji-item'; div.innerText = em; div.onclick = () => { myAvatar = em; tg.CloudStorage.setItem('my_avatar', myAvatar); checkAdminAccess(); closeAvatarModal(); }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
+        function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML = ''; EMOJIS.forEach(em => { let div = document.createElement('div'); div.className = 'emoji-item'; div.innerText = em; div.onclick = () => { myAvatar = em; tg.CloudStorage.setItem('my_avatar', myAvatar); checkAdminAccess(); closeAvatarModal(); if(appState.inLobby && lobbyPlayers.length>0){lobbyPlayers[0].avatar=myAvatar; renderLobbySlots();} }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
-        function updateCoinsUI() { document.getElementById('menu-coins').innerText = globalCoins; document.getElementById('hidden-coins').innerText = globalCoins; }
+        function updateCoinsUI() { document.getElementById('menu-coins').innerText = globalCoins; }
         function addCoins(amount) { globalCoins = Math.max(0, globalCoins + amount); updateCoinsUI(); tg.CloudStorage.setItem('player_coins', globalCoins.toString()); db.ref('users/' + myId + '/coins').set(globalCoins); }
 
-        function switchTab(tabId, el) { if(appState.inLobby) return; document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active')); document.getElementById('tab-' + tabId).classList.add('active'); }
+        function switchTab(tabId, el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active')); document.getElementById('tab-' + tabId).classList.add('active'); }
         function switchSubTab(parent, subId, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${parent} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${parent==='weapons'?'weap':'adm'}-${subId}`).classList.add('active'); }
         function switchMiniTab(tabId, el) { el.parentElement.querySelectorAll('.mini-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.mini-tab-content').forEach(c => c.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
 
-        // --- АДМИНКА И ПРОМОКОДЫ ---
         function adminAddCoinsReal() { let t = document.getElementById('adm-coin-id').value; let amt = parseInt(document.getElementById('adm-coin-amount').value); if(!t || isNaN(amt)) { tg.showAlert("Заполни поля!"); return; } db.ref('users/'+t+'/coins').once('value').then(s => { if(s.exists()) { db.ref('users/'+t+'/coins').set(s.val() + amt); tg.showAlert("Отправлено!"); } else tg.showAlert("Игрок не найден!"); }); }
-        function adminCreatePromo() { 
-            let c = document.getElementById('adm-promo-code').value.trim().toUpperCase(); let r = parseInt(document.getElementById('adm-promo-coins').value); let a = parseInt(document.getElementById('adm-promo-acts').value);
-            if(!c || isNaN(r) || isNaN(a) || a <= 0) return tg.showAlert("Заполни все поля корректно!");
-            db.ref('promos/' + c).set({ reward: r, activations: a }); tg.showAlert(`Промокод ${c} создан!`);
-            document.getElementById('adm-promo-code').value=''; document.getElementById('adm-promo-coins').value=''; document.getElementById('adm-promo-acts').value='';
-        }
+        function adminCreatePromo() { let c = document.getElementById('adm-promo-code').value.trim().toUpperCase(); let r = parseInt(document.getElementById('adm-promo-coins').value); let a = parseInt(document.getElementById('adm-promo-acts').value); if(!c || isNaN(r) || isNaN(a) || a <= 0) return tg.showAlert("Заполни все поля корректно!"); db.ref('promos/' + c).set({ reward: r, activations: a }); tg.showAlert(`Промокод ${c} создан!`); document.getElementById('adm-promo-code').value=''; document.getElementById('adm-promo-coins').value=''; document.getElementById('adm-promo-acts').value=''; }
         function redeemPromo() { 
             let c = document.getElementById('promo-input').value.trim().toUpperCase(); if(!c) return;
             db.ref(`users/${myId}/used_promos/${c}`).once('value').then(uSnap => {
                 if(uSnap.exists()) return tg.showAlert("Уже использован!");
                 db.ref(`promos/${c}`).once('value').then(pSnap => {
                     if(!pSnap.exists()) return tg.showAlert("Неверный код!");
-                    let pData = pSnap.val(); if(pData.activations <= 0) return tg.showAlert("Лимит активаций исчерпан!");
+                    let pData = pSnap.val(); if(pData.activations <= 0) return tg.showAlert("Лимит исчерпан!");
                     db.ref(`promos/${c}/activations`).set(pData.activations - 1); db.ref(`users/${myId}/used_promos/${c}`).set(true);
                     addCoins(pData.reward); tg.showAlert(`Успех! +${pData.reward} 🪙`); document.getElementById('promo-input').value=''; tg.HapticFeedback.notificationOccurred('success');
                 });
@@ -352,22 +340,59 @@
         // --- ДРУЗЬЯ ---
         function renderFriends() { const list = document.getElementById('friends-list'); list.innerHTML = ''; friends.forEach(f => { let div = document.createElement('div'); div.className = 'friend-item'; let icon = f.avatar || '👤'; div.innerHTML = `<div><b>${icon} ${f.name}</b><br><span style="font-size:10px;color:gray;">ID: ${f.id}</span></div>`; div.onclick = () => openFriendModal(f); list.appendChild(div); }); }
         function addFriendBtn() { let id = prompt("Введи 4-значный ID друга:"); if (id && id !== myId) { if(friends.some(f => f.id === id) || id === 'ИИ') { tg.showAlert("Уже в друзьях!"); return; } db.ref('users/' + id).once('value').then(snap => { if(snap.exists()) { let data = snap.val(); friends.push({ id: id, name: data.name, avatar: data.avatar }); saveFriends(); tg.showAlert("Друг добавлен!"); } else { tg.showAlert("Игрок с таким ID не найден!"); } }); } }
-        function openFriendModal(f) { activeFriend = f; document.getElementById('fm-avatar').innerText = f.avatar; document.getElementById('fm-name').innerText = f.name; document.getElementById('fm-id').innerText = `ID: ${f.id}`; let actions = document.getElementById('friend-actions'); actions.innerHTML = ''; if (appState.inLobby) { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить ИИ 🤖</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="tg.showAlert('Пусть друг зайдет к тебе через кнопку Присоединиться!')">Пригласить 🎮</button>`; } else { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn" style="background: #444; color: gray; cursor: not-allowed;">Создай лобби для ИИ</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if (f.id !== 'ИИ') { actions.innerHTML += `<button class="btn btn-dark" onclick="tg.showAlert('Чат скоро!')">Сообщение 💬</button><button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`; } actions.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
+        function openFriendModal(f) { activeFriend = f; document.getElementById('fm-avatar').innerText = f.avatar; document.getElementById('fm-name').innerText = f.name; document.getElementById('fm-id').innerText = `ID: ${f.id}`; let actions = document.getElementById('friend-actions'); actions.innerHTML = ''; if (appState.inLobby) { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить ИИ 🤖</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="inviteRealFriend()">Пригласить 🎮</button>`; } else { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn" style="background: #444; color: gray; cursor: not-allowed;">Создай лобби для ИИ</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if (f.id !== 'ИИ') { actions.innerHTML += `<button class="btn btn-dark" onclick="tg.showAlert('Чат скоро!')">Сообщение 💬</button><button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`; } actions.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
         function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
         function removeFriend() { if(confirm(`Удалить?`)){ friends = friends.filter(f => f.id !== activeFriend.id); saveFriends(); closeFriendModal(); } }
 
-        // --- ЛОББИ ---
-        function renderLobbySlots() { const container = document.getElementById('lobby-slots-container'); container.innerHTML = ''; lobbyPlayers.forEach((p, i) => { container.innerHTML += `<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`; }); if (lobbyPlayers.length < 2) container.innerHTML += `<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="tg.showAlert('Выбери друга слева!')"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`; }
+        // --- ЛОББИ 5 МЕСТ ---
+        function renderLobbySlots() { 
+            const c = document.getElementById('lobby-slots-container'); c.innerHTML = ''; 
+            for(let i=0; i<5; i++) {
+                if(i < lobbyPlayers.length) {
+                    let p = lobbyPlayers[i];
+                    c.innerHTML += `<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`;
+                } else {
+                    c.innerHTML += `<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="tg.showAlert('Выбери друга слева!')"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пусто</div></div>`;
+                }
+            }
+        }
         function openLobby() { appState.inLobby = true; lobbyId = myId; isHost = true; lobbyPlayers = [{id: myId, name: myName, avatar: myAvatar}]; db.ref('lobbies/' + lobbyId).set({ host: myId, game: '', status: 'waiting', players: { [myId]: {name: myName, avatar: myAvatar} } }); listenLobby(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex'; }
         function closeLobby() { appState.inLobby = false; if(lobbyRef) lobbyRef.off(); if(isHost) db.ref('lobbies/' + lobbyId).remove(); else db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); document.getElementById('main-buttons-view').style.display = 'flex'; document.getElementById('view-lobby').style.display = 'none'; }
-        function inviteBotLobby() { if(!isHost) return; closeFriendModal(); lobbyPlayers.push(SYSTEM_BOT); renderLobbySlots(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({ name: 'ИИ', avatar: '🤖' }); }
+        function inviteBotLobby() { if(!isHost) return; if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({ name: 'ИИ', avatar: '🤖' }); }
+        function inviteRealFriend() { if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); tg.showAlert('Пусть друг нажмет Присоединиться к тебе!'); closeFriendModal(); }
         function joinFriendLobby() { lobbyId = activeFriend.id; isHost = false; closeFriendModal(); db.ref('lobbies/' + lobbyId).once('value').then(snap => { if(snap.exists()) { db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; document.querySelectorAll('.nav-item')[2].click(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex'; listenLobby(); } else tg.showAlert("Друг еще не создал лобби!"); }); }
-        function listenLobby() { if(lobbyRef) lobbyRef.off(); lobbyRef = db.ref('lobbies/' + lobbyId); lobbyRef.on('value', snap => { if(!snap.exists()) { if(!isHost) { tg.showAlert("Хост распустил лобби!"); closeLobby(); } return; } let data = snap.val(); lobbyPlayers = []; if(data.players) { if(data.players[data.host]) lobbyPlayers.push({id: data.host, ...data.players[data.host]}); Object.keys(data.players).forEach(k => { if(k !== data.host) lobbyPlayers.push({id: k, ...data.players[k]}); }); } renderLobbySlots(); if(data.game) { appState.selectedGameId = data.game; document.getElementById('selected-mode-text').innerText = "Готов к игре"; document.getElementById('selected-mode-text').style.color = '#34c759'; } if(data.status === 'playing' && document.getElementById('game-container').style.display === 'none') { startLocalGameUI(); } }); }
+        
+        function listenLobby() { 
+            if(lobbyRef) lobbyRef.off(); lobbyRef = db.ref('lobbies/' + lobbyId); 
+            lobbyRef.on('value', snap => { 
+                if(!snap.exists()) { if(!isHost) { tg.showAlert("Хост распустил лобби!"); closeLobby(); } return; } 
+                let data = snap.val(); lobbyPlayers = []; 
+                if(data.players) { if(data.players[data.host]) lobbyPlayers.push({id: data.host, ...data.players[data.host]}); Object.keys(data.players).forEach(k => { if(k !== data.host) lobbyPlayers.push({id: k, ...data.players[k]}); }); } 
+                renderLobbySlots(); 
+                if(data.game) { appState.selectedGameId = data.game; document.getElementById('selected-mode-text').innerText = "Готов к игре"; document.getElementById('selected-mode-text').style.color = '#34c759'; } 
+                if(data.status === 'playing' && document.getElementById('game-container').style.display === 'none') { startLocalGameUI(); } 
+            }); 
+        }
         function openModeSelect() { if(isHost) document.getElementById('mode-modal').classList.remove('hidden'); else tg.showAlert("Только Хост выбирает!"); }
         function closeModeModal() { document.getElementById('mode-modal').classList.add('hidden'); }
         function setGameMode(id, name) { db.ref(`lobbies/${lobbyId}/game`).set(id); closeModeModal(); }
-        function startLobbyGame() { if(!isHost) return tg.showAlert("Только Хост запускает игру!"); if(!appState.selectedGameId) return tg.showAlert("Выбери режим!"); let hasRealOpponent = lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'ИИ'; if (hasRealOpponent) db.ref(`lobbies/${lobbyId}`).update({ status: 'playing', tttBoard: ['','','','','','','','',''], tttTurn: 'x' }); else startLocalGameUI(); }
-        function startLocalGameUI() { appState.game = appState.selectedGameId; document.getElementById('game-container').style.display = 'block'; document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active')); if(appState.game === 'math') document.getElementById('screen-game-math-menu').classList.add('active'); else { document.getElementById('pause-btn').style.display = 'flex'; document.getElementById('screen-game-'+appState.game).classList.add('active'); if(appState.game === 'tictactoe') initTicTacToe(); else if(appState.game === 'hidden') initHiddenGame(); else if(appState.game === 'clicker') initClicker(); } }
+        function startLobbyGame() { 
+            if(!isHost) return tg.showAlert("Только Хост запускает игру!"); 
+            if(!appState.selectedGameId) return tg.showAlert("Выбери режим!"); 
+            let hasReal = lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'ИИ'; 
+            if (hasReal || lobbyPlayers.length > 2) db.ref(`lobbies/${lobbyId}`).update({ status: 'playing', tttBoard: [''], tttTurn: 0 }); 
+            else startLocalGameUI(); 
+        }
+
+        function startLocalGameUI() { 
+            appState.game = appState.selectedGameId; document.getElementById('game-container').style.display = 'block'; 
+            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active')); 
+            if(appState.game === 'math') document.getElementById('screen-game-math-menu').classList.add('active'); 
+            else { 
+                document.getElementById('pause-btn').style.display = 'flex'; document.getElementById('screen-game-'+appState.game).classList.add('active'); 
+                if(appState.game === 'tictactoe') initTicTacToe(); else if(appState.game === 'hidden') initHiddenGame(); else if(appState.game === 'clicker') initClicker(); 
+            } 
+        }
 
         function togglePause(p) { appState.isPaused = p; document.getElementById('pause-overlay').classList.toggle('hidden', !p); }
         function exitToLobby() { togglePause(false); document.getElementById('game-container').style.display = 'none'; if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); if(tttRef) tttRef.off(); }
@@ -375,50 +400,106 @@
         function showResult(t, bg, em, sub='') { document.getElementById('dynamic-island').style.display='none'; document.getElementById('pause-btn').style.display='none'; let ov = document.getElementById('result-overlay'); ov.style.backgroundColor=bg; document.getElementById('result-text').innerText=t; document.getElementById('result-emoji').innerText=em; document.getElementById('result-subtext').innerText=sub; ov.classList.remove('hidden'); tg.HapticFeedback.notificationOccurred('success'); }
         function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); exitToLobby(); }
 
-        // ================= ИГРА: МАТЕМАТИКА =================
-        let mathAns = 0; let mathProgressCount = 0; let mathMode3State = { seq: [], currentTarget: 0 };
-        function drawMathProgress(mode) { const c = document.getElementById(`math-prog-${mode}`); if(!c) return; c.innerHTML = ''; for(let i=0; i<10; i++) { let dot = document.createElement('div'); dot.className = 'math-dot'; if(i < mathProgressCount) dot.classList.add('done-dot'); else if(i === mathProgressCount) dot.classList.add('active-dot'); c.appendChild(dot); } }
-        function generateSimpleMath() { let isAdd = Math.random()>0.5; let a,b; if(isAdd){ a=Math.floor(Math.random()*8)+1; b=Math.floor(Math.random()*(9-a))+1; mathAns=a+b; return `${a} + ${b} = `;} else{ a=Math.floor(Math.random()*8)+2; b=Math.floor(Math.random()*(a-1))+1; mathAns=a-b; return `${a} - ${b} = `;} }
-        function startMathMode(mode) { document.getElementById('screen-game-math-menu').classList.remove('active'); document.getElementById('pause-btn').style.display = 'flex'; mathProgressCount = 0; document.getElementById(`screen-game-math-${mode}`).classList.add('active'); if(mode===1) nextMath1(); else if(mode===2) nextMath2(); else initMath3(); }
-        function handleMathWin() { mathProgressCount++; if(mathProgressCount>=10) { addCoins(10); setTimeout(()=>showResult('МОЛОДЕЦ!', '#34c759', '🎓', 'Ты прошел 10 заданий!\n+10 🪙'), 500); } }
-        function nextMath1() { if(mathProgressCount>=10) return; drawMathProgress(1); document.getElementById('math1-q').innerText=generateSimpleMath(); document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a'; }
-        function math1Input(n) { document.getElementById('math1-ans').innerText=n; if(n===mathAns){ document.getElementById('math1-ans').style.color='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath1,1000); } else { document.getElementById('math1-ans').style.color='#ff453a'; setTimeout(()=>{document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a';},800); } }
-        function nextMath2() { if(mathProgressCount>=10) return; drawMathProgress(2); document.getElementById('math2-q').innerText=generateSimpleMath()+"?"; let cards=[mathAns]; while(cards.length<4){ let r=Math.floor(Math.random()*10); if(!cards.includes(r)) cards.push(r); } cards.sort(()=>Math.random()-0.5); const grid=document.getElementById('math2-cards'); grid.innerHTML=''; cards.forEach(c => { let btn=document.createElement('button'); btn.className='math-ans-card'; btn.innerText=c; btn.onclick=()=>{ if(c===mathAns){ btn.style.background='#34c759'; btn.style.boxShadow='0 8px 0 #248a3d'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath2,1000); } else { btn.style.background='#ff453a'; btn.style.boxShadow='0 8px 0 #8b0000'; btn.classList.add('shake'); setTimeout(()=>{btn.style.background='#ff9f0a'; btn.style.boxShadow='0 8px 0 #c27602'; btn.classList.remove('shake');},800); } }; grid.appendChild(btn); }); }
-        function initMath3() { let start = Math.floor(Math.random()*80)+1; mathMode3State.seq = Array.from({length:10}, (_,i)=>start+i); mathMode3State.currentTarget=0; let shuf = [...mathMode3State.seq].sort(()=>Math.random()-0.5); const s = document.getElementById('math3-slots'); s.innerHTML=''; const items = document.getElementById('math3-items'); items.innerHTML=''; for(let i=0; i<10; i++) { let slot = document.createElement('div'); slot.className='math-slot'; slot.id=`m3-slot-${i}`; s.appendChild(slot); let item = document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.onclick=()=>{ if(parseInt(item.innerText)===mathMode3State.seq[mathMode3State.currentTarget]){ let cSlot = document.getElementById(`m3-slot-${mathMode3State.currentTarget}`); cSlot.innerText=item.innerText; cSlot.style.background='#3390ec'; cSlot.style.border='none'; item.style.visibility='hidden'; mathMode3State.currentTarget++; if(mathMode3State.currentTarget>=10){ addCoins(5); setTimeout(()=>showResult('СУПЕР!','#34c759','🧩','+5 🪙'),500); } } else { item.classList.add('shake'); setTimeout(()=>item.classList.remove('shake'),400); } }; items.appendChild(item); } }
+        // ================= МАСШТАБНЫЕ КРЕСТИКИ НОЛИКИ =================
+        let tttBoard = [], tttTurnIdx = 0, tttGameOver = false;
+        let tttSize = 3, tttWinReq = 3;
+        const TTT_SYMBOLS = ['x', 'o', 'triangle', 'square', 'minus'];
+        const TTT_CHARS = { 'x': '❌', 'o': '⭕', 'triangle': '🔺', 'square': '🔲', 'minus': '➖' };
+        const TTT_COLORS = { 'x': '#ff453a', 'o': '#32ade6', 'triangle': '#34c759', 'square': '#ff9f0a', 'minus': '#af52de' };
 
-        // ================= КРЕСТИКИ НОЛИКИ =================
-        let tttBoard = [], tttTurn = 'x', myTTTSymbol = 'x', tttGameOver = false;
         function initTicTacToe() {
-            tttGameOver = false; tttBoard = ['','','','','','','','','']; tttTurn = 'x';
-            if (lobbyPlayers.length < 2) { myTTTSymbol='x'; setIsland('Ход: ❌ (1 устройство)', '#ff453a'); renderTicTacToe(); } 
-            else if (lobbyPlayers[1].id === 'ИИ') { myTTTSymbol='x'; setIsland('Твой ход! (❌)', '#34c759'); renderTicTacToe(); } 
-            else {
-                myTTTSymbol = isHost ? 'x' : 'o'; if(tttRef) tttRef.off(); tttRef = db.ref(`lobbies/${lobbyId}`);
+            tttGameOver = false; tttTurnIdx = 0;
+            let pCount = lobbyPlayers.length; if(pCount < 2) pCount = 2; // для локальной игры с самим собой
+            
+            if(pCount <= 2) { tttSize = 3; tttWinReq = 3; }
+            else if(pCount === 3) { tttSize = 5; tttWinReq = 4; }
+            else if(pCount === 4) { tttSize = 7; tttWinReq = 4; }
+            else { tttSize = 9; tttWinReq = 5; }
+            
+            document.getElementById('ttt-board').style.gridTemplateColumns = `repeat(${tttSize}, 1fr)`;
+            
+            // Если онлайн
+            if (lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'ИИ') {
+                if(tttRef) tttRef.off(); tttRef = db.ref(`lobbies/${lobbyId}`);
+                if(isHost) db.ref(`lobbies/${lobbyId}`).update({ tttBoard: new Array(tttSize*tttSize).fill(''), tttTurn: 0 });
                 tttRef.on('value', snap => {
                     if(!snap.exists() || snap.val().status !== 'playing') return;
-                    let data = snap.val(); tttBoard = data.tttBoard || ['','','','','','','','','']; tttTurn = data.tttTurn || 'x';
-                    if (checkTTTWin(tttBoard, true)) return;
-                    renderTicTacToe(); setIsland(tttTurn === myTTTSymbol ? "ТВОЙ ХОД!" : "ОЖИДАНИЕ ХОДА...", tttTurn === myTTTSymbol ? '#34c759' : '#ff9f0a');
+                    let data = snap.val(); tttBoard = data.tttBoard || new Array(tttSize*tttSize).fill(''); tttTurnIdx = data.tttTurn || 0;
+                    if (checkDynamicWin(true)) return;
+                    renderTicTacToe();
+                    let myIdx = lobbyPlayers.findIndex(p => p.id === myId);
+                    setIsland(tttTurnIdx === myIdx ? "ТВОЙ ХОД!" : `ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]);
                 });
+            } else {
+                tttBoard = new Array(tttSize*tttSize).fill('');
+                renderTicTacToe();
+                if(lobbyPlayers.length > 1 && lobbyPlayers[1].id === 'ИИ') setIsland('Твой ход! (❌)', '#34c759');
+                else setIsland('Ход: ❌ (На 1 устройстве)', '#ff453a');
             }
         }
-        function renderTicTacToe() { const b = document.getElementById('ttt-board'); b.innerHTML = ''; tttBoard.forEach((cell, i) => { let div = document.createElement('div'); div.className = `cell ${cell}`; div.innerText = cell === 'x' ? '❌' : (cell === 'o' ? '⭕' : ''); div.onclick = () => moveTicTacToe(i); b.appendChild(div); }); }
-        function moveTicTacToe(i) {
-            if (tttGameOver || tttBoard[i] !== '' || appState.isPaused) return;
-            if (lobbyPlayers.length < 2) { tttBoard[i] = tttTurn; renderTicTacToe(); if (checkTTTWin(tttBoard, false)) return; tttTurn = tttTurn === 'x' ? 'o' : 'x'; setIsland(`Ход: ${tttTurn === 'x' ? '❌' : '⭕'}`, tttTurn === 'x' ? '#ff453a' : '#32ade6'); } 
-            else if (lobbyPlayers[1].id === 'ИИ') { if (tttTurn !== myTTTSymbol) return; tttBoard[i] = tttTurn; renderTicTacToe(); if (checkTTTWin(tttBoard, false)) return; tttTurn = tttTurn === 'x' ? 'o' : 'x'; setIsland("ИИ ДУМАЕТ...", '#ff9f0a'); setTimeout(makeBotTTTMove, 800 + Math.random() * 500); } 
-            else { if (tttTurn !== myTTTSymbol) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[1].name}!`); tttBoard[i] = myTTTSymbol; db.ref(`lobbies/${lobbyId}`).update({ tttBoard: tttBoard, tttTurn: myTTTSymbol === 'x' ? 'o' : 'x' }); }
+
+        function renderTicTacToe() { 
+            const b = document.getElementById('ttt-board'); b.innerHTML = ''; 
+            let fSize = Math.max(3, 12 - tttSize) + 'vh';
+            tttBoard.forEach((cell, i) => { 
+                let div = document.createElement('div'); div.className = `cell ${cell}`; 
+                div.innerText = cell ? TTT_CHARS[cell] : ''; div.style.fontSize = fSize;
+                div.onclick = () => moveTicTacToe(i); b.appendChild(div); 
+            }); 
         }
-        function makeBotTTTMove() { if (tttGameOver || appState.isPaused || appState.game !== 'tictactoe') return; let empty = []; tttBoard.forEach((c, i) => { if (c === '') empty.push(i); }); if (empty.length > 0) { tttBoard[empty[Math.floor(Math.random() * empty.length)]] = tttTurn; renderTicTacToe(); if (checkTTTWin(tttBoard, false)) return; tttTurn = tttTurn === 'x' ? 'o' : 'x'; setIsland("ТВОЙ ХОД!", '#34c759'); } }
-        function checkTTTWin(board, isOnline) {
-            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; let winner = null;
-            wins.forEach(c => { if(board[c[0]]!=='' && board[c[0]]===board[c[1]] && board[c[1]]===board[c[2]]) winner = board[c[0]]; });
-            if (winner) { tttGameOver = true; if (isOnline && tttRef) tttRef.off(); let txt = "ПОБЕДА!", color = '#34c759'; if (lobbyPlayers.length < 2) { txt = winner === 'x' ? "ПОБЕДИЛ КРЕСТИК!" : "ПОБЕДИЛ НОЛИК!"; color = winner === 'x' ? '#ff453a' : '#32ade6'; } else if (winner !== myTTTSymbol) { txt = lobbyPlayers.length > 1 && lobbyPlayers[1].id === 'ИИ' ? "ИИ ВЫИГРАЛ!" : "ПОРАЖЕНИЕ!"; color = '#ff453a'; } setTimeout(()=>showResult(txt, color, winner==='x'?'❌':'⭕'), 300); return true; } 
-            else if (!board.includes('')) { tttGameOver = true; if (isOnline && tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true; }
+
+        function moveTicTacToe(i) {
+            if (tttGameOver || tttBoard[i] || appState.isPaused) return;
+
+            if (lobbyPlayers.length <= 1) { // Локально 1 устройство
+                tttBoard[i] = TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return;
+                tttTurnIdx = (tttTurnIdx + 1) % 2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]);
+            } else if (lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ') { // С Ботом
+                if(tttTurnIdx !== 0) return;
+                tttBoard[i] = 'x'; renderTicTacToe(); if(checkDynamicWin(false)) return;
+                tttTurnIdx = 1; setIsland("ИИ ДУМАЕТ...", '#ff9f0a'); setTimeout(makeBotDynamicMove, 800);
+            } else { // Мультиплеер онлайн
+                let myIdx = lobbyPlayers.findIndex(p => p.id === myId);
+                if (tttTurnIdx !== myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`);
+                tttBoard[i] = TTT_SYMBOLS[myIdx];
+                let next = (tttTurnIdx + 1) % lobbyPlayers.length;
+                db.ref(`lobbies/${lobbyId}`).update({ tttBoard: tttBoard, tttTurn: next });
+            }
+        }
+
+        function makeBotDynamicMove() {
+            if (tttGameOver || appState.isPaused) return;
+            let empty = []; tttBoard.forEach((c, i) => { if(!c) empty.push(i); });
+            if (empty.length > 0) {
+                tttBoard[empty[Math.floor(Math.random() * empty.length)]] = 'o'; renderTicTacToe();
+                if(checkDynamicWin(false)) return; tttTurnIdx = 0; setIsland("ТВОЙ ХОД!", '#34c759');
+            }
+        }
+
+        function checkDynamicWin(isOnline) {
+            let s = tttSize, req = tttWinReq; let winner = null;
+            for(let r=0; r<s; r++) {
+                for(let c=0; c<s; c++) {
+                    let sym = tttBoard[r*s+c]; if(!sym) continue;
+                    if(c <= s-req) { let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; }
+                    if(r <= s-req) { let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; }
+                    if(c <= s-req && r <= s-req) { let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; }
+                    if(c >= req-1 && r <= s-req) { let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; }
+                }
+            }
+            if (winner) {
+                tttGameOver = true; if(isOnline && tttRef) tttRef.off();
+                let wName = lobbyPlayers.length <= 1 ? `ПОБЕДИЛ ${TTT_CHARS[winner]}!` : (TTT_SYMBOLS.indexOf(winner) === lobbyPlayers.findIndex(p=>p.id===myId) ? "ПОБЕДА!" : "ПОРАЖЕНИЕ!");
+                if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === 'o') wName = "ИИ ВЫИГРАЛ!";
+                setTimeout(()=>showResult(wName, TTT_COLORS[winner], TTT_CHARS[winner]), 300); return true;
+            } else if (!tttBoard.includes('')) {
+                tttGameOver = true; if(isOnline && tttRef) tttRef.off();
+                setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true;
+            }
             return false;
         }
 
-        // ================= ПОИСК ПРЕДМЕТОВ =================
+        // ================= ПОИСК ПРЕДМЕТОВ (С ПРЯТКАМИ) =================
         const ALL_ITEMS = ['🍎','🔑','💎','👑','🧸','🍔','🎸','⚽','📱','🕶️','🍉','🦴']; let hiddenFound=0, hiddenMisses=0;
         function initHiddenGame() { 
             document.getElementById('hidden-found').innerText = '0'; const scene = document.getElementById('hidden-scene'); scene.innerHTML = ''; 
@@ -429,13 +510,24 @@
                 item.onmousedown = (e) => hitHiddenItem(e, item); item.ontouchstart = (e) => { e.preventDefault(); hitHiddenItem(e, item); }; scene.appendChild(item);
                 
                 let d = document.createElement('div'); d.className = 'scene-decor'; d.innerText = ['🌲', '☁️', '🍄', '🌿', '🍂', '🍁'][Math.floor(Math.random()*6)];
-                d.style.left = (tx + (Math.random() * 6 - 3)) + '%'; d.style.top = (ty + (Math.random() * 6 - 3)) + '%'; d.style.zIndex = '15'; scene.appendChild(d);
+                d.style.left = (tx + (Math.random() * 4 - 2)) + '%'; d.style.top = (ty + (Math.random() * 4 - 2)) + '%'; d.style.zIndex = '15'; scene.appendChild(d);
             }
-            for(let i=0; i<20; i++) { let d = document.createElement('div'); d.className = 'scene-decor'; d.innerText = ['🌲', '☁️', '🍄', '🌿', '🍂', '🍁'][Math.floor(Math.random()*6)]; d.style.left = (10+Math.random()*80)+'%'; d.style.top = (10+Math.random()*80)+'%'; d.style.zIndex = '15'; scene.appendChild(d); }
+            for(let i=0; i<15; i++) { let d = document.createElement('div'); d.className = 'scene-decor'; d.innerText = ['🌲', '☁️', '🍄', '🌿', '🍂', '🍁'][Math.floor(Math.random()*6)]; d.style.left = (10+Math.random()*80)+'%'; d.style.top = (10+Math.random()*80)+'%'; d.style.zIndex = '15'; scene.appendChild(d); }
             setIsland(`Найди 15 предметов!`); hiddenFound=0; hiddenMisses=0; 
         }
         function hitHiddenItem(e, el) { e.stopPropagation(); if(appState.isPaused) return; el.remove(); hiddenFound++; document.getElementById('hidden-found').innerText=hiddenFound; setIsland('Найдено!','#34c759'); if(hiddenFound>=15) { if(lobbyPlayers.length>1){ let oppMisses=Math.floor(Math.random()*6); let win=hiddenMisses<=oppMisses; setTimeout(()=>showResult(win?"ВЫИГРАЛ!":"ПРОИГРАЛ!",win?'#34c759':'#ff453a','🕵️‍♂️',`Твои ошибки: ${hiddenMisses}\nОшибки соперника: ${oppMisses}`),500); } else { addCoins(15); setTimeout(()=>showResult('Пройдено!','#34c759','🕵️‍♂️','+15 🪙'),500); } } }
         function missHiddenClick(e) { if(appState.isPaused) return; hiddenMisses++; if(lobbyPlayers.length===1) addCoins(-2); setIsland('Мимо!','#ff453a'); }
+
+        // ================= МАТЕМАТИКА =================
+        let mathAns = 0; let mathProgressCount = 0; let mathMode3State = { seq: [], currentTarget: 0 };
+        function drawMathProgress(mode) { const c = document.getElementById(`math-prog-${mode}`); if(!c) return; c.innerHTML = ''; for(let i=0; i<10; i++) { let dot = document.createElement('div'); dot.className = 'math-dot'; if(i < mathProgressCount) dot.classList.add('done-dot'); else if(i === mathProgressCount) dot.classList.add('active-dot'); c.appendChild(dot); } }
+        function generateSimpleMath() { let isAdd = Math.random()>0.5; let a,b; if(isAdd){ a=Math.floor(Math.random()*8)+1; b=Math.floor(Math.random()*(9-a))+1; mathAns=a+b; return `${a} + ${b} = `;} else{ a=Math.floor(Math.random()*8)+2; b=Math.floor(Math.random()*(a-1))+1; mathAns=a-b; return `${a} - ${b} = `;} }
+        function startMathMode(mode) { document.getElementById('screen-game-math-menu').classList.remove('active'); document.getElementById('pause-btn').style.display = 'flex'; mathProgressCount = 0; document.getElementById(`screen-game-math-${mode}`).classList.add('active'); if(mode===1) nextMath1(); else if(mode===2) nextMath2(); else initMath3(); }
+        function handleMathWin() { mathProgressCount++; if(mathProgressCount>=10) { addCoins(10); setTimeout(()=>showResult('МОЛОДЕЦ!', '#34c759', '🎓', 'Ты прошел 10 заданий!\n+10 🪙'), 500); } }
+        function nextMath1() { if(mathProgressCount>=10) return; drawMathProgress(1); document.getElementById('math1-q').innerText=generateSimpleMath(); document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a'; }
+        function math1Input(n) { document.getElementById('math1-ans').innerText=n; if(n===mathAns){ document.getElementById('math1-ans').style.color='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath1,1000); } else { document.getElementById('math1-ans').style.color='#ff453a'; setTimeout(()=>{document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a';},800); } }
+        function nextMath2() { if(mathProgressCount>=10) return; drawMathProgress(2); document.getElementById('math2-q').innerText=generateSimpleMath()+"?"; let cards=[mathAns]; while(cards.length<4){ let r=Math.floor(Math.random()*10); if(!cards.includes(r)) cards.push(r); } cards.sort(()=>Math.random()-0.5); const grid=document.getElementById('math2-cards'); grid.innerHTML=''; cards.forEach(c => { let btn=document.createElement('button'); btn.className='math-ans-card'; btn.innerText=c; btn.onclick=()=>{ if(c===mathAns){ btn.style.background='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath2,1000); } else { btn.style.background='#ff453a'; btn.classList.add('shake'); setTimeout(()=>{btn.style.background='#ff9f0a'; btn.classList.remove('shake');},800); } }; grid.appendChild(btn); }); }
+        function initMath3() { let start = Math.floor(Math.random()*80)+1; mathMode3State.seq = Array.from({length:10}, (_,i)=>start+i); mathMode3State.currentTarget=0; let shuf = [...mathMode3State.seq].sort(()=>Math.random()-0.5); const s = document.getElementById('math3-slots'); s.innerHTML=''; const items = document.getElementById('math3-items'); items.innerHTML=''; for(let i=0; i<10; i++) { let slot = document.createElement('div'); slot.className='math-slot'; slot.id=`m3-slot-${i}`; s.appendChild(slot); let item = document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.onclick=()=>{ if(parseInt(item.innerText)===mathMode3State.seq[mathMode3State.currentTarget]){ let cSlot = document.getElementById(`m3-slot-${mathMode3State.currentTarget}`); cSlot.innerText=item.innerText; cSlot.style.background='#3390ec'; cSlot.style.border='none'; item.style.visibility='hidden'; mathMode3State.currentTarget++; if(mathMode3State.currentTarget>=10){ addCoins(5); setTimeout(()=>showResult('СУПЕР!','#34c759','🧩','+5 🪙'),500); } } else { item.classList.add('shake'); setTimeout(()=>item.classList.remove('shake'),400); } }; items.appendChild(item); } }
 
         // ================= КЛИКЕР =================
         let clicks=0, clickTimeSetting=15, clickTimeCurrent=0, clickInterval, clickActive=false;
