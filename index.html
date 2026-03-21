@@ -287,7 +287,6 @@
                     checkAdminAccess();
                     
                     if(values['friends']) { try { friends = JSON.parse(values['friends']); } catch(e){} }
-                    // Убрана строгая проверка на undefined, чтобы друзья без имени не пропадали
                     friends = friends.filter(f => f.id !== 'БОТ' && f.id !== 'ИИ');
                     friends.unshift(SYSTEM_BOT); saveFriends();
 
@@ -366,7 +365,6 @@
                     let p = lobbyPlayers[i];
                     c.innerHTML += `<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`;
                 } else {
-                    // Кликабельный плюсик открывает меню приглашений
                     c.innerHTML += `<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`;
                 }
             }
@@ -394,8 +392,8 @@
 
         function openLobby() { appState.inLobby = true; lobbyId = myId; isHost = true; lobbyPlayers = [{id: myId, name: myName, avatar: myAvatar}]; db.ref('lobbies/' + lobbyId).set({ host: myId, game: '', status: 'waiting', players: { [myId]: {name: myName, avatar: myAvatar} } }); listenLobby(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex'; }
         function closeLobby() { appState.inLobby = false; if(lobbyRef) lobbyRef.off(); if(isHost) db.ref('lobbies/' + lobbyId).remove(); else db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); document.getElementById('main-buttons-view').style.display = 'flex'; document.getElementById('view-lobby').style.display = 'none'; }
-        function inviteBotLobby() { if(!isHost) return; if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); document.getElementById('friend-modal').classList.add('hidden'); document.getElementById('invite-modal').classList.add('hidden'); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({ name: 'ИИ', avatar: '🤖' }); }
-        function inviteRealFriend(f) { if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); tg.showAlert(`Скажи игроку ${f.name} зайти к тебе через кнопку Присоединиться!`); document.getElementById('friend-modal').classList.add('hidden'); document.getElementById('invite-modal').classList.add('hidden'); }
+        function inviteBotLobby() { if(!isHost) return; if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); document.getElementById('friend-modal').classList.add('hidden'); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({ name: 'ИИ', avatar: '🤖' }); }
+        function inviteRealFriend(f) { if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); tg.showAlert(`Скажи игроку ${f.name} зайти к тебе через кнопку Присоединиться!`); document.getElementById('friend-modal').classList.add('hidden'); }
         function joinFriendLobby() { lobbyId = activeFriend.id; isHost = false; closeFriendModal(); db.ref('lobbies/' + lobbyId).once('value').then(snap => { if(snap.exists()) { db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; document.querySelectorAll('.nav-item')[2].click(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex'; listenLobby(); } else tg.showAlert("Друг еще не создал лобби!"); }); }
         
         function listenLobby() { 
@@ -406,7 +404,9 @@
                 if(data.players) { if(data.players[data.host]) lobbyPlayers.push({id: data.host, ...data.players[data.host]}); Object.keys(data.players).forEach(k => { if(k !== data.host) lobbyPlayers.push({id: k, ...data.players[k]}); }); } 
                 renderLobbySlots(); 
                 if(data.game) { appState.selectedGameId = data.game; document.getElementById('selected-mode-text').innerText = "Готов к игре"; document.getElementById('selected-mode-text').style.color = '#34c759'; } 
-                if(data.status === 'playing' && document.getElementById('game-container').style.display === 'none') { startLocalGameUI(); } 
+                
+                // ИСПРАВЛЕН БАГ ЗАПУСКА: Теперь проверяем, что контейнер НЕ имеет статус display block
+                if(data.status === 'playing' && document.getElementById('game-container').style.display !== 'block') { startLocalGameUI(); } 
             }); 
         }
         function openModeSelect() { if(isHost) document.getElementById('mode-modal').classList.remove('hidden'); else tg.showAlert("Только Хост выбирает!"); }
