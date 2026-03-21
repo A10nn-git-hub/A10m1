@@ -46,13 +46,13 @@
         #view-lobby{display:none;flex-direction:column;flex-grow:1;position:relative;align-items:center;justify-content:center;width:100%;height:100%;}
         .lobby-slots-container{display:flex;gap:20px;justify-content:center;align-items:center;width:100%;flex-wrap:wrap;}
         .square-slot{width:18vh;height:18vh;background:var(--panel-bg);border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #444;position:relative;}
-        .square-slot.active-slot{border-color:#ff9f0a;} .slot-avatar{font-size:6vh;margin-bottom:1vh;} .slot-name{font-weight:bold;font-size:2vh;text-align:center;} .slot-status{font-size:1.4vh;color:#34c759;position:absolute;bottom:-24px;font-weight:bold;}
+        .square-slot.active-slot{border-color:#ff9f0a;} .slot-avatar{font-size:6vh;margin-bottom:1vh;} .slot-name{font-weight:bold;font-size:2vh;text-align:center;width:90%;overflow:hidden;text-overflow:ellipsis;} .slot-status{font-size:1.4vh;color:#34c759;position:absolute;bottom:-24px;font-weight:bold;}
         .lobby-controls-bottom-right{position:absolute;bottom:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
         .play-btn{background:#34c759;color:#fff;border:none;border-radius:12px;padding:15px 50px;font-size:26px;font-weight:900;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 0 #248a3d;}
         #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:1000;}
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
-        #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;}
-        #pause-btn{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:25px;border:2px solid #fff;font-size:20px;display:none;align-items:center;justify-content:center;z-index:1100;cursor:pointer;background:rgba(0,0,0,0.5);}
+        #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none;}
+        #pause-btn{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:25px;border:2px solid #fff;font-size:20px;display:none;align-items:center;justify-content:center;z-index:1100;cursor:pointer;background:rgba(0,0,0,0.5);box-shadow:0 4px 10px rgba(0,0,0,0.5);}
         .math-menu-grid{display:flex;gap:20px;} .math-mode-card{background:var(--panel-bg);border:3px solid #3390ec;border-radius:20px;padding:20px;width:200px;text-align:center;cursor:pointer;box-shadow:0 10px 0 #1c6ab3;}
         .math-progress-container{display:flex;gap:10px;justify-content:center;width:100%;margin-bottom:3vh;height:2vh;align-items:center;}
         .math-dot{width:2vh;height:2vh;background:#444;border-radius:50%;transition:0.3s;} .math-dot.active-dot{width:6vh;border-radius:1vh;background:#3390ec;} .math-dot.done-dot{background:#34c759;}
@@ -64,7 +64,7 @@
         .shake{animation:shake 0.4s;} @keyframes shake{0%{transform:translateX(0);} 25%{transform:translateX(-10px);} 50%{transform:translateX(10px);} 75%{transform:translateX(-10px);} 100%{transform:translateX(0);}}
         .board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:45vh;height:45vh;margin:0 auto;box-sizing:border-box;}
         .cell{background:#2c2c2e;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:10vh;font-weight:bold;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,0.3);box-sizing:border-box;overflow:hidden;line-height:1;}
-        .cell.x{color:#ff453a;} .cell.o{color:#32ade6;}
+        .cell.x{color:#ff453a;text-shadow:0 4px 0 #8b0000;} .cell.o{color:#32ade6;text-shadow:0 4px 0 #005f8b;}
         .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom,#87CEEB 0%,#87CEEB 50%,#8FBC8F 50%,#8FBC8F 100%);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2);}
         .hidden-item,.scene-decor{position:absolute;font-size:5vh;transform:translate(-50%,-50%);} .hidden-item{cursor:pointer;z-index:10;}
         .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,0.2);}
@@ -132,11 +132,15 @@
             <div id="tab-admin" class="tab-view" style="flex-direction: column;">
                 <h3 style="color:#ff453a; margin-top:0;">Доступ: РАЗРАБОТЧИК 8451</h3>
                 <div class="sub-tabs-header">
-                    <button class="sub-tab-btn active" onclick="switchSubTab('admin','add-coins',this)">Выдать Монеты</button>
+                    <button class="sub-tab-btn active" onclick="switchSubTab('admin','add-admin',this)">Админы</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('admin','add-coins',this)">Выдать Монеты</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('admin','create-promo',this)">Создать Промо</button>
                 </div>
-                <div id="adm-add-coins" class="sub-tab-content active">
-                    <input type="text" id="adm-coin-id" class="styled-input" placeholder="ID игрока"><input type="number" id="adm-coin-amount" class="styled-input" placeholder="Кол-во"><button class="btn btn-gold" onclick="adminAddCoinsReal()">ОТПРАВИТЬ</button>
+                <div id="adm-add-admin" class="sub-tab-content active">
+                    <input type="text" id="adm-id-input" class="styled-input" placeholder="ID игрока (4 цифры)"><button class="btn btn-red" onclick="tg.showAlert('Игрок назначен админом!')">ВЫДАТЬ ПРАВА</button>
+                </div>
+                <div id="adm-add-coins" class="sub-tab-content">
+                    <input type="text" id="adm-coin-id" class="styled-input" placeholder="ID игрока"><input type="number" id="adm-coin-amount" class="styled-input" placeholder="Кол-во монет"><button class="btn btn-gold" onclick="adminAddCoinsReal()">ОТПРАВИТЬ</button>
                 </div>
                 <div id="adm-create-promo" class="sub-tab-content">
                     <input type="text" id="adm-promo-code" class="styled-input" placeholder="Код"><input type="number" id="adm-promo-coins" class="styled-input" placeholder="Награда"><button class="btn btn-green" onclick="adminCreatePromo()">СОЗДАТЬ</button>
@@ -180,10 +184,6 @@
         </div>
 
         <div class="game-screen" id="screen-game-tictactoe">
-            <div id="ttt-choice" style="display:none;margin-bottom:20px;text-align:center;">
-                <h3>Кем играешь? (Хост)</h3>
-                <div style="display:flex;gap:10px;"><button class="btn btn-red" onclick="setTTTSymbol('x')">❌ Крестик</button><button class="btn" style="background:#32ade6;" onclick="setTTTSymbol('o')">⭕ Нолик</button></div>
-            </div>
             <div class="board" id="ttt-board"></div>
         </div>
 
@@ -204,7 +204,7 @@
 
     <div id="avatar-modal" class="overlay glass hidden" onclick="closeAvatarModal()"><div style="background:#111;padding:20px;border-radius:20px;width:80%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2>Выбери аватар</h2><div class="emoji-grid" id="emoji-grid"></div><button class="btn btn-red" onclick="closeAvatarModal()">Закрыть</button></div></div>
     <div id="pause-overlay" class="overlay glass hidden"><h2>ПАУЗА ⏸️</h2><div style="width:300px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button><button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button></div></div>
-    <div id="result-overlay" class="overlay glass hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text">Победа!</h2><div id="result-subtext" style="white-space:pre-line;margin-bottom:20px;"></div><button class="btn btn-dark" onclick="closeResult()">В Лобби</button></div>
+    <div id="result-overlay" class="overlay glass hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text">Победа!</h2><div id="result-subtext" style="white-space:pre-line;margin-bottom:20px;"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff;" onclick="closeResult()">В Лобби</button></div>
     
     <div id="mode-modal" class="overlay glass hidden" onclick="closeModeModal(event)">
         <div style="background:var(--panel-bg);padding:30px;border-radius:20px;width:400px;" onclick="event.stopPropagation()">
@@ -215,7 +215,7 @@
                 <button class="btn btn-dark" onclick="setGameMode('tictactoe', '❌⭕ Крестики-нолики')">❌⭕ Крестики-нолики</button>
                 <button class="btn btn-dark" onclick="setGameMode('clicker', '⏱️ Кликер-дуэль')">⏱️ Кликер-дуэль</button>
             </div>
-            <button class="btn btn-red" onclick="closeModeModal()">Отмена</button>
+            <button class="btn btn-red" onclick="closeModeModal()" style="margin-top:15px;">Отмена</button>
         </div>
     </div>
     
@@ -226,7 +226,7 @@
         try { tg.expand(); if (tg.requestFullscreen) tg.requestFullscreen(); } catch(e) {}
         tg.ready();
 
-        // ⚠️ FIREBASE НАСТРОЙКИ ⚠️
+        // ⚠️ FIREBASE НАСТРОЙКИ (ТВОИ КЛЮЧИ) ⚠️
         const firebaseConfig = {
             apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg",
             authDomain: "mini-games-b9400.firebaseapp.com",
@@ -240,7 +240,7 @@
         const db = firebase.database();
 
         const EMOJIS = ['😎','👾','👽','👻','💩','🐵','🦊','🐯','🦁','🐸','🦖','🐉','🤡','👿'];
-        const SYSTEM_BOT = { id: 'БОТ', name: 'ИИ', avatar: '🤖' };
+        const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖' }; // ID изменен на 'ИИ' как ты просил
         
         let globalCoins = 0; let myName = tg.initDataUnsafe?.user?.first_name || "Игрок"; let myAvatar = "😎"; let myId = "0000";
         let friends = []; let activeFriend = null; 
@@ -258,8 +258,8 @@
                     checkAdminAccess();
                     
                     if(values['friends']) { try { friends = JSON.parse(values['friends']); } catch(e){} }
-                    // ЖЕСТКАЯ ОЧИСТКА БОТА ОТ БАГОВ
-                    friends = friends.filter(f => f.id !== 'БОТ' && f.name !== undefined);
+                    // ЖЕСТКАЯ ОЧИСТКА СТАРЫХ БОТОВ
+                    friends = friends.filter(f => f.id !== 'БОТ' && f.id !== 'ИИ' && f.name !== undefined);
                     friends.unshift(SYSTEM_BOT); saveFriends();
 
                     if(!localStorage.getItem('promos')) localStorage.setItem('promos', JSON.stringify({}));
@@ -279,7 +279,7 @@
             db.ref('users/' + myId).update({ name: myName, avatar: myAvatar });
         }
         function tryAdminLogin() { if (myId === '8451') return; if (prompt("Пароль:") === "8451") { myId = "8451"; tg.CloudStorage.setItem('my_id', myId); checkAdminAccess(); tg.showAlert("Админ-панель открыта! 🛠️"); } }
-        function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length <= 12) { myName = n.trim(); tg.CloudStorage.setItem('my_name', myName); checkAdminAccess(); } }
+        function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); tg.CloudStorage.setItem('my_name', myName); checkAdminAccess(); } }
         
         function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML = ''; EMOJIS.forEach(em => { let div = document.createElement('div'); div.className = 'emoji-item'; div.innerText = em; div.onclick = () => { myAvatar = em; tg.CloudStorage.setItem('my_avatar', myAvatar); checkAdminAccess(); closeAvatarModal(); }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
@@ -301,13 +301,13 @@
         // --- ДРУЗЬЯ ---
         function renderFriends() {
             const list = document.getElementById('friends-list'); list.innerHTML = '';
-            friends.forEach(f => { let div = document.createElement('div'); div.className = 'friend-item'; div.innerHTML = `<div><b>${f.avatar} ${f.name}</b><br><span style="font-size:10px;color:gray;">ID: ${f.id}</span></div>`; div.onclick = () => openFriendModal(f); list.appendChild(div); });
+            friends.forEach(f => { let div = document.createElement('div'); div.className = 'friend-item'; let icon = f.avatar || '👤'; div.innerHTML = `<div><b>${icon} ${f.name}</b><br><span style="font-size:10px;color:gray;">ID: ${f.id}</span></div>`; div.onclick = () => openFriendModal(f); list.appendChild(div); });
         }
 
         function addFriendBtn() {
             let id = prompt("Введи 4-значный ID друга:");
             if (id && id !== myId) {
-                if(friends.some(f => f.id === id)) { tg.showAlert("Уже в друзьях!"); return; }
+                if(friends.some(f => f.id === id) || id === 'ИИ') { tg.showAlert("Уже в друзьях!"); return; }
                 db.ref('users/' + id).once('value').then(snap => {
                     if(snap.exists()) { let data = snap.val(); friends.push({ id: id, name: data.name, avatar: data.avatar }); saveFriends(); tg.showAlert("Друг добавлен!"); } 
                     else { tg.showAlert("Игрок с таким ID не найден!"); }
@@ -318,14 +318,19 @@
         function openFriendModal(f) {
             activeFriend = f; document.getElementById('fm-avatar').innerText = f.avatar; document.getElementById('fm-name').innerText = f.name; document.getElementById('fm-id').innerText = `ID: ${f.id}`;
             let actions = document.getElementById('friend-actions'); actions.innerHTML = '';
+            
             if (appState.inLobby) {
-                if(f.id === 'БОТ') actions.innerHTML += `<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить ИИ 🤖</button>`;
+                if(f.id === 'ИИ') actions.innerHTML += `<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить ИИ 🤖</button>`;
                 else actions.innerHTML += `<button class="btn btn-green" onclick="tg.showAlert('Пусть друг зайдет к тебе через кнопку Присоединиться!')">Пригласить 🎮</button>`;
             } else {
-                if(f.id !== 'БОТ') actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`;
+                if(f.id === 'ИИ') actions.innerHTML += `<button class="btn" style="background: #444; color: gray; cursor: not-allowed;">Создай лобби для ИИ</button>`;
+                else actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`;
             }
-            if (f.id !== 'БОТ') actions.innerHTML += `<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`;
-            actions.innerHTML += `<button class="btn btn-dark" onclick="closeFriendModal()">Отмена</button>`;
+            if (f.id !== 'ИИ') {
+                actions.innerHTML += `<button class="btn btn-dark" onclick="tg.showAlert('Чат скоро!')">Сообщение 💬</button>
+                                      <button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`;
+            }
+            actions.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`;
             document.getElementById('friend-modal').classList.remove('hidden');
         }
         function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
@@ -334,8 +339,8 @@
         // --- ЛОББИ И ЗАПУСК ---
         function renderLobbySlots() {
             const container = document.getElementById('lobby-slots-container'); container.innerHTML = '';
-            lobbyPlayers.forEach((p, i) => { container.innerHTML += `<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':'Игрок'}</div></div>`; });
-            if (lobbyPlayers.length < 2) container.innerHTML += `<div class="square-slot" style="opacity:0.5;"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Ожидание...</div></div>`;
+            lobbyPlayers.forEach((p, i) => { container.innerHTML += `<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`; });
+            if (lobbyPlayers.length < 2) container.innerHTML += `<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="tg.showAlert('Выбери друга слева!')"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`;
         }
 
         function openLobby() {
@@ -350,15 +355,15 @@
         }
         function inviteBotLobby() {
             if(!isHost) return; closeFriendModal();
-            lobbyPlayers.push(SYSTEM_BOT); renderLobbySlots(); // Моментальный визуал
-            db.ref(`lobbies/${lobbyId}/players/БОТ`).set({ name: 'ИИ', avatar: '🤖' });
+            lobbyPlayers.push(SYSTEM_BOT); renderLobbySlots(); 
+            db.ref(`lobbies/${lobbyId}/players/ИИ`).set({ name: 'ИИ', avatar: '🤖' });
         }
         function joinFriendLobby() {
             lobbyId = activeFriend.id; isHost = false; closeFriendModal();
             db.ref('lobbies/' + lobbyId).once('value').then(snap => {
                 if(snap.exists()) {
                     db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar });
-                    appState.inLobby = true; document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex';
+                    appState.inLobby = true; document.querySelectorAll('.nav-item')[2].click(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex';
                     listenLobby();
                 } else tg.showAlert("Друг еще не создал лобби!");
             });
@@ -377,7 +382,7 @@
                 if(data.status === 'playing' && document.getElementById('game-container').style.display === 'none') { startLocalGameUI(); }
             });
         }
-        function openModeSelect() { if(isHost) document.getElementById('mode-modal').classList.remove('hidden'); else tg.showAlert("Только Хост может выбирать!"); }
+        function openModeSelect() { if(isHost) document.getElementById('mode-modal').classList.remove('hidden'); else tg.showAlert("Только Хост выбирает!"); }
         function closeModeModal() { document.getElementById('mode-modal').classList.add('hidden'); }
         function setGameMode(id, name) { db.ref(`lobbies/${lobbyId}/game`).set(id); closeModeModal(); }
 
@@ -385,14 +390,9 @@
             if(!isHost) return tg.showAlert("Только Хост запускает игру!");
             if(!appState.selectedGameId) return tg.showAlert("Выбери режим!");
             
-            // Если играем с реальным человеком, ждем ответа от БД. Иначе (соло/бот) стартуем моментально
-            let hasRealOpponent = lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'БОТ';
-            
-            if (hasRealOpponent) {
-                db.ref(`lobbies/${lobbyId}`).update({ status: 'playing', tttBoard: ['','','','','','','','',''], tttTurn: 'x' });
-            } else {
-                startLocalGameUI();
-            }
+            let hasRealOpponent = lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'ИИ';
+            if (hasRealOpponent) db.ref(`lobbies/${lobbyId}`).update({ status: 'playing', tttBoard: ['','','','','','','','',''], tttTurn: 'x' });
+            else startLocalGameUI();
         }
 
         function startLocalGameUI() {
@@ -408,6 +408,14 @@
         function togglePause(p) { appState.isPaused = p; document.getElementById('pause-overlay').classList.toggle('hidden', !p); }
         function exitToLobby() { togglePause(false); document.getElementById('game-container').style.display = 'none'; if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); if(tttRef) tttRef.off(); }
         function setIsland(t, c='#fff') { let is = document.getElementById('dynamic-island'); document.getElementById('island-text').innerText = t; is.style.display = 'block'; is.style.border = `2px solid ${c}`; }
+        
+        // КРАСИВАЯ ПОБЕДА (зеленый/красный/желтый)
+        function showResult(t, bg, em, sub='') { 
+            document.getElementById('dynamic-island').style.display='none'; document.getElementById('pause-btn').style.display='none'; 
+            let ov = document.getElementById('result-overlay'); ov.style.backgroundColor=bg; 
+            document.getElementById('result-text').innerText=t; document.getElementById('result-emoji').innerText=em; document.getElementById('result-subtext').innerText=sub; 
+            ov.classList.remove('hidden'); tg.HapticFeedback.notificationOccurred('success'); 
+        }
         function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); exitToLobby(); }
 
         // ================= ИГРА: МАТЕМАТИКА =================
@@ -421,37 +429,71 @@
         function nextMath2() { if(mathProgressCount>=10) return; drawMathProgress(2); document.getElementById('math2-q').innerText=generateSimpleMath()+"?"; let cards=[mathAns]; while(cards.length<4){ let r=Math.floor(Math.random()*10); if(!cards.includes(r)) cards.push(r); } cards.sort(()=>Math.random()-0.5); const grid=document.getElementById('math2-cards'); grid.innerHTML=''; cards.forEach(c => { let btn=document.createElement('button'); btn.className='math-ans-card'; btn.innerText=c; btn.onclick=()=>{ if(c===mathAns){ btn.style.background='#34c759'; btn.style.boxShadow='0 8px 0 #248a3d'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath2,1000); } else { btn.style.background='#ff453a'; btn.style.boxShadow='0 8px 0 #8b0000'; btn.classList.add('shake'); setTimeout(()=>{btn.style.background='#ff9f0a'; btn.style.boxShadow='0 8px 0 #c27602'; btn.classList.remove('shake');},800); } }; grid.appendChild(btn); }); }
         function initMath3() { let start = Math.floor(Math.random()*80)+1; mathMode3State.seq = Array.from({length:10}, (_,i)=>start+i); mathMode3State.currentTarget=0; let shuf = [...mathMode3State.seq].sort(()=>Math.random()-0.5); const s = document.getElementById('math3-slots'); s.innerHTML=''; const items = document.getElementById('math3-items'); items.innerHTML=''; for(let i=0; i<10; i++) { let slot = document.createElement('div'); slot.className='math-slot'; slot.id=`m3-slot-${i}`; s.appendChild(slot); let item = document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.onclick=()=>{ if(parseInt(item.innerText)===mathMode3State.seq[mathMode3State.currentTarget]){ let cSlot = document.getElementById(`m3-slot-${mathMode3State.currentTarget}`); cSlot.innerText=item.innerText; cSlot.style.background='#3390ec'; cSlot.style.border='none'; item.style.visibility='hidden'; mathMode3State.currentTarget++; if(mathMode3State.currentTarget>=10){ addCoins(5); setTimeout(()=>showResult('СУПЕР!','#34c759','🧩','+5 🪙'),500); } } else { item.classList.add('shake'); setTimeout(()=>item.classList.remove('shake'),400); } }; items.appendChild(item); } }
 
-        // ================= КРЕСТИКИ НОЛИКИ =================
-        let tttRef = null; let myTTTSymbol = 'x';
+        // ================= КРЕСТИКИ НОЛИКИ (С БЛОКИРОВКОЙ ПОСЛЕ ПОБЕДЫ) =================
+        let tttBoard = [], tttTurn = 'x', myTTTSymbol = 'x', tttGameOver = false;
         function initTicTacToe() {
-            if(lobbyPlayers.length < 2) { myTTTSymbol = 'x'; document.getElementById('ttt-choice').style.display='none'; document.getElementById('ttt-board').style.display='grid'; return renderLocalTTT(); }
-            myTTTSymbol = isHost ? 'x' : 'o'; document.getElementById('ttt-choice').style.display='none'; document.getElementById('ttt-board').style.display='grid';
-            if(lobbyPlayers[1].id === 'БОТ') return initBotTTT();
-
-            if(tttRef) tttRef.off(); tttRef = db.ref(`lobbies/${lobbyId}`);
-            tttRef.on('value', snap => {
-                if(!snap.exists() || snap.val().status !== 'playing') return;
-                let data = snap.val(); let board = data.tttBoard || ['','','','','','','','','']; let turn = data.tttTurn || 'x';
-                const b = document.getElementById('ttt-board'); b.innerHTML = '';
-                board.forEach((cell, i) => {
-                    let div = document.createElement('div'); div.className = `cell ${cell}`; div.innerText = cell === 'x' ? '❌' : (cell === 'o' ? '⭕' : '');
-                    div.onclick = () => { if(cell === '' && turn === myTTTSymbol && !appState.isPaused) db.ref(`lobbies/${lobbyId}`).update({ tttBoard: [...board.slice(0,i), myTTTSymbol, ...board.slice(i+1)], tttTurn: myTTTSymbol === 'x' ? 'o' : 'x' }); };
-                    b.appendChild(div);
+            tttGameOver = false; tttBoard = ['','','','','','','','','']; tttTurn = 'x';
+            
+            if (lobbyPlayers.length < 2) {
+                // ИГРА СОЛО НА ОДНОМ ЭКРАНЕ
+                setIsland('Ход: ❌ (Игра на 1 устройстве)', '#ff453a'); renderTicTacToe();
+            } else if (lobbyPlayers[1].id === 'ИИ') {
+                // ИГРА С БОТОМ
+                myTTTSymbol = 'x'; setIsland('Твой ход! (❌)', '#34c759'); renderTicTacToe();
+            } else {
+                // ИГРА ОНЛАЙН
+                myTTTSymbol = isHost ? 'x' : 'o'; if(tttRef) tttRef.off(); tttRef = db.ref(`lobbies/${lobbyId}`);
+                tttRef.on('value', snap => {
+                    if(!snap.exists() || snap.val().status !== 'playing') return;
+                    let data = snap.val(); tttBoard = data.tttBoard || ['','','','','','','','','']; tttTurn = data.tttTurn || 'x';
+                    if (checkTTTWin(tttBoard, true)) return;
+                    renderTicTacToe(); setIsland(tttTurn === myTTTSymbol ? "ТВОЙ ХОД!" : "ОЖИДАНИЕ ХОДА...", tttTurn === myTTTSymbol ? '#34c759' : '#ff9f0a');
                 });
-                setIsland(turn === myTTTSymbol ? "ТВОЙ ХОД!" : "ОЖИДАНИЕ ХОДА...", turn === myTTTSymbol ? '#34c759' : '#ff9f0a');
-                
-                const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; let winner = null; wins.forEach(c => { if(board[c[0]]!=='' && board[c[0]]===board[c[1]] && board[c[1]]===board[c[2]]) winner = board[c[0]]; });
-                if (winner) { tttRef.off(); setTimeout(()=>showResult(winner === myTTTSymbol ? "ПОБЕДА!" : "ПОРАЖЕНИЕ", winner===myTTTSymbol?'#34c759':'#ff453a', winner==='x'?'❌':'⭕'), 500); } 
-                else if (!board.includes('')) { tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 500); }
-            });
+            }
         }
+        function renderTicTacToe() { const b = document.getElementById('ttt-board'); b.innerHTML = ''; tttBoard.forEach((cell, i) => { let div = document.createElement('div'); div.className = `cell ${cell}`; div.innerText = cell === 'x' ? '❌' : (cell === 'o' ? '⭕' : ''); div.onclick = () => moveTicTacToe(i); b.appendChild(div); }); }
         
-        let localBoard = []; let localTurn = 'x';
-        function initBotTTT() { localBoard=['','','','','','','','','']; localTurn='x'; renderBotTTT(); setIsland('Твой ход! (❌)'); }
-        function renderBotTTT() { const b = document.getElementById('ttt-board'); b.innerHTML=''; localBoard.forEach((c,i)=>{ let div=document.createElement('div'); div.className=`cell ${c}`; div.innerText=c==='x'?'❌':(c==='o'?'⭕':''); div.onclick=()=>{ if(c===''&&localTurn==='x') processBotTTTMove(i); }; b.appendChild(div); }); }
-        function processBotTTTMove(i) { localBoard[i]=localTurn; renderBotTTT(); if(checkLocalWin()) return; localTurn = localTurn==='x'?'o':'x'; setIsland(localTurn==='x'?"ТВОЙ ХОД!":"ИИ ДУМАЕТ..."); if(localTurn==='o') setTimeout(()=>{ let e=[]; localBoard.forEach((c,idx)=>{if(c==='')e.push(idx);}); if(e.length>0) processBotTTTMove(e[Math.floor(Math.random()*e.length)]); }, 1000); }
-        function checkLocalWin() { const w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; let win=null; w.forEach(c=>{ if(localBoard[c[0]]!=='' && localBoard[c[0]]===localBoard[c[1]] && localBoard[c[1]]===localBoard[c[2]]) win=localBoard[c[0]]; }); if(win){ setTimeout(()=>showResult(win==='x'?"ПОБЕДА!":"ИИ ВЫИГРАЛ", win==='x'?'#34c759':'#ff453a', win==='x'?'❌':'⭕'),300); return true; } if(!localBoard.includes('')){ setTimeout(()=>showResult("НИЧЬЯ!",'#ffd60a','🤝'),300); return true; } return false; }
-        function renderLocalTTT(){ initBotTTT(); }
+        function moveTicTacToe(i) {
+            if (tttGameOver || tttBoard[i] !== '' || appState.isPaused) return;
+
+            if (lobbyPlayers.length < 2) {
+                // Ход на 1 экране
+                tttBoard[i] = tttTurn; renderTicTacToe(); if (checkTTTWin(tttBoard, false)) return;
+                tttTurn = tttTurn === 'x' ? 'o' : 'x'; setIsland(`Ход: ${tttTurn === 'x' ? '❌' : '⭕'}`, tttTurn === 'x' ? '#ff453a' : '#32ade6');
+            } else if (lobbyPlayers[1].id === 'ИИ') {
+                // Ход с ботом
+                if (tttTurn !== myTTTSymbol) return;
+                tttBoard[i] = tttTurn; renderTicTacToe(); if (checkTTTWin(tttBoard, false)) return;
+                tttTurn = tttTurn === 'x' ? 'o' : 'x'; setIsland("ИИ ДУМАЕТ...", '#ff9f0a'); setTimeout(makeBotTTTMove, 800 + Math.random() * 500);
+            } else {
+                // Онлайн ход
+                if (tttTurn !== myTTTSymbol) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[1].name}!`);
+                tttBoard[i] = myTTTSymbol; db.ref(`lobbies/${lobbyId}`).update({ tttBoard: tttBoard, tttTurn: myTTTSymbol === 'x' ? 'o' : 'x' });
+            }
+        }
+
+        function makeBotTTTMove() {
+            if (tttGameOver || appState.isPaused || appState.game !== 'tictactoe') return;
+            let empty = []; tttBoard.forEach((c, i) => { if (c === '') empty.push(i); });
+            if (empty.length > 0) { tttBoard[empty[Math.floor(Math.random() * empty.length)]] = tttTurn; renderTicTacToe(); if (checkTTTWin(tttBoard, false)) return; tttTurn = tttTurn === 'x' ? 'o' : 'x'; setIsland("ТВОЙ ХОД!", '#34c759'); }
+        }
+
+        function checkTTTWin(board, isOnline) {
+            const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; let winner = null;
+            wins.forEach(c => { if(board[c[0]]!=='' && board[c[0]]===board[c[1]] && board[c[1]]===board[c[2]]) winner = board[c[0]]; });
+            
+            if (winner) {
+                tttGameOver = true; if (isOnline && tttRef) tttRef.off();
+                let txt = "ПОБЕДА!", color = '#34c759';
+                if (lobbyPlayers.length < 2) { txt = winner === 'x' ? "ПОБЕДИЛ КРЕСТИК!" : "ПОБЕДИЛ НОЛИК!"; color = winner === 'x' ? '#ff453a' : '#32ade6'; } 
+                else if (winner !== myTTTSymbol) { txt = lobbyPlayers[1].id === 'ИИ' ? "ИИ ВЫИГРАЛ!" : "ПОРАЖЕНИЕ!"; color = '#ff453a'; }
+                setTimeout(()=>showResult(txt, color, winner==='x'?'❌':'⭕'), 300); return true;
+            } else if (!board.includes('')) {
+                tttGameOver = true; if (isOnline && tttRef) tttRef.off();
+                setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true;
+            }
+            return false;
+        }
 
         // ================= ПОИСК И КЛИКЕР =================
         const ALL_ITEMS = ['🍎','🔑','💎','👑','🧸','🍔','🎸','⚽','📱','🕶️','🍉','🦴']; let hiddenFound=0, hiddenMisses=0;
