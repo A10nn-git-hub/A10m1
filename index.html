@@ -45,6 +45,7 @@
         .lobby-slots-container{display:flex;gap:20px;justify-content:center;align-items:center;width:100%;flex-wrap:wrap;}
         .square-slot{width:16vh;height:16vh;background:var(--panel-bg);border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #444;position:relative;transition:0.2s;}
         .square-slot.active-slot{border-color:#ff9f0a;} .slot-avatar{font-size:5vh;margin-bottom:1vh;} .slot-name{font-weight:bold;font-size:1.8vh;text-align:center;width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .slot-status{font-size:1.2vh;color:#34c759;position:absolute;bottom:-20px;font-weight:bold;}
+        .lobby-controls-bottom-right{position:absolute;bottom:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
         .play-btn{background:#34c759;color:#fff;border:none;border-radius:12px;padding:15px 50px;font-size:26px;font-weight:900;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 0 #248a3d;}
         #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:1000;}
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
@@ -58,8 +59,9 @@
         .math-sort-slots{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;} .math-slot{width:8vh;height:8vh;border:3px dashed #666;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;background:#222;} .math-sort-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;} .math-drag-item{width:8vh;height:8vh;background:#34c759;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;}
         .shake{animation:shake 0.4s;} @keyframes shake{0%{transform:translateX(0);} 25%{transform:translateX(-10px);} 50%{transform:translateX(10px);} 75%{transform:translateX(-10px);} 100%{transform:translateX(0);}}
         .board{display:grid;gap:5px;width:60vh;height:60vh;margin:0 auto;box-sizing:border-box;} .cell{background:#2c2c2e;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,0.3);box-sizing:border-box;overflow:hidden;line-height:1;}
-        .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom,#87CEEB 0%,#87CEEB 50%,#8FBC8F 50%,#8FBC8F 100%);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2);} .hidden-item{position:absolute;font-size:4vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));} .scene-decor{position:absolute;font-size:7vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;}
-        .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;} .giant-click-btn{width:50vw;height:40vh;border-radius:20px;font-size:10vh;font-weight:900;background:#ff9f0a;color:#fff;border:none;}
+        .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom,#87CEEB 0%,#87CEEB 50%,#8FBC8F 50%,#8FBC8F 100%);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2);} .hidden-item{position:absolute;font-size:4vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));} .scene-decor{position:absolute;font-size:7vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;opacity:0.9;}
+        .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;box-shadow:0 4px 0 rgba(0,0,0,0.2);}
+        .giant-click-btn{width:50vw;height:40vh;border-radius:20px;font-size:10vh;font-weight:900;background:#ff9f0a;color:#fff;border:none;}
         .styled-input{padding:15px;border-radius:10px;border:2px solid #444;background:#111;color:#fff;font-size:18px;width:80%;margin-bottom:10px;text-align:center;}
         .badge{display:none;background:red;color:white;border-radius:50%;padding:2px 6px;font-size:10px;position:absolute;top:-5px;right:-10px;}
         #top-notify{position:fixed;top:-100px;left:50%;transform:translateX(-50%);z-index:3000;padding:15px 30px;border-radius:20px;transition:0.4s;font-weight:bold;cursor:pointer;color:#fff;display:flex;gap:10px;align-items:center;box-shadow:0 5px 15px rgba(0,0,0,0.5);}
@@ -260,40 +262,53 @@
         let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
         let lobbyId = null; let lobbyPlayers = []; let lobbyRef = null; let isHost = false; let pendingInvite = null;
 
-        // СТАРТ
-        tg.CloudStorage.getKeys((err, keys) => {
-            if(err) return;
-            tg.CloudStorage.getItems(keys, (err, vals) => {
-                if(!err) {
-                    globalCoins = parseInt(vals['player_coins']) || 0; updateCoinsUI();
-                    if(vals['my_id']) myId = vals['my_id']; else { myId = Math.floor(1000 + Math.random() * 9000).toString(); tg.CloudStorage.setItem('my_id', myId); }
-                    if(vals['my_name']) myName = vals['my_name']; if(vals['my_avatar']) myAvatar = vals['my_avatar'];
-                    
-                    // АДМИН ПРОВЕРКА 0000
-                    if (vals['dev_mode']) myId = '0000';
-                    checkAdminAccess();
-                    
-                    if(vals['friendsIds']) { try { friendsIds = JSON.parse(vals['friendsIds']); } catch(e){} }
-                    if(!friendsIds.includes('ИИ')) friendsIds.unshift('ИИ'); tg.CloudStorage.setItem('friendsIds', JSON.stringify(friendsIds));
+        // БРОНЕБОЙНАЯ СИСТЕМА ЗАПУСКА (ФИКС "ЗАГРУЗКА...")
+        function initApp() {
+            let isInit = false;
+            
+            function startData(vals) {
+                if(isInit) return; isInit = true;
+                
+                globalCoins = parseInt(vals['player_coins']) || 0; updateCoinsUI();
+                if(vals['my_id']) myId = vals['my_id']; else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} }
+                if(vals['my_name']) myName = vals['my_name']; if(vals['my_avatar']) myAvatar = vals['my_avatar'];
+                
+                if (vals['dev_mode']) myId = '0000';
+                checkAdminAccess();
+                
+                if(vals['friendsIds']) { try { friendsIds = JSON.parse(vals['friendsIds']); } catch(e){} }
+                friendsIds = friendsIds.filter(f => f !== 'БОТ' && f !== 'ИИ');
+                friendsIds.unshift('ИИ'); 
+                try{tg.CloudStorage.setItem('friendsIds', JSON.stringify(friendsIds));}catch(e){}
 
-                    // СОЗДАНИЕ В БАЗЕ
-                    db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, coins: globalCoins });
-                    db.ref('users/' + myId + '/coins').on('value', snap => { if(snap.exists() && snap.val() !== globalCoins) { globalCoins = snap.val(); updateCoinsUI(); tg.CloudStorage.setItem('player_coins', globalCoins.toString()); } });
-                    
-                    // КЛАНЫ
-                    db.ref('users/' + myId + '/clan').on('value', snap => { myClan = snap.val(); document.getElementById('my-clan-display').innerText = myClan ? `[${myClan}]` : ''; renderClanTab(); });
-                    
-                    // ДРУЗЬЯ (РЕАЛ-ТАЙМ ЗАЯВКИ И СПИСОК)
-                    db.ref(`users/${myId}/friend_reqs`).on('value', snap => { let c = snap.exists() ? Object.keys(snap.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(snap.val()); });
-                    renderFriends();
+                db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, coins: globalCoins });
+                db.ref('users/' + myId + '/coins').on('value', snap => { if(snap.exists() && snap.val() !== globalCoins) { globalCoins = snap.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } });
+                
+                db.ref('users/' + myId + '/clan').on('value', snap => { myClan = snap.val(); document.getElementById('my-clan-display').innerText = myClan ? `[${myClan}]` : ''; renderClanTab(); });
+                
+                db.ref(`users/${myId}/friend_reqs`).on('value', snap => { let c = snap.exists() ? Object.keys(snap.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(snap.val()); });
+                renderFriends();
 
-                    // ИНВАЙТЫ В ЛОББИ
-                    db.ref(`users/${myId}/invite`).on('value', s => {
-                        if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); }
+                db.ref(`users/${myId}/invite`).on('value', s => {
+                    if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); }
+                });
+            }
+
+            try {
+                tg.CloudStorage.getKeys((err, keys) => {
+                    if (err || !keys || keys.length === 0) return startData({});
+                    tg.CloudStorage.getItems(keys, (err, vals) => {
+                        startData(vals || {});
                     });
-                }
-            });
-        });
+                });
+            } catch(e) { startData({}); }
+            
+            // Если Телеграм завис, принудительно стартуем через 1 секунду
+            setTimeout(() => startData({}), 1000);
+        }
+        
+        // Запускаем систему
+        initApp();
 
         function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[3]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
 
@@ -304,7 +319,7 @@
             db.ref('users/' + myId).update({ name: myName, avatar: myAvatar });
             
             if(myId === '0000') {
-                db.ref('users/0000/clan').set('DEVELOPERS'); // Выдача клана разрабу
+                db.ref('users/0000/clan').set('DEVELOPERS');
                 db.ref('promos').on('value', snap => {
                     const list = document.getElementById('promo-active'); list.innerHTML = '';
                     if(snap.exists()) { let data = snap.val(); Object.keys(data).forEach(k => { let div = document.createElement('div'); div.className = 'list-item'; div.innerHTML = `<div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">УДАЛИТЬ</button>`; list.appendChild(div); }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>';
@@ -312,12 +327,12 @@
             }
         }
 
-        function tryAdminLogin() { if(myId === '0000') return; if(prompt("Пароль:") === "0000") { myId = "0000"; tg.CloudStorage.setItem('my_id', myId); tg.CloudStorage.setItem('dev_mode', 'true'); checkAdminAccess(); tg.showAlert("Админ-панель открыта!"); } }
-        function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length <= 12) { myName = n.trim(); tg.CloudStorage.setItem('my_name', myName); checkAdminAccess(); } }
-        function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML=''; EMOJIS.forEach(em => { let div=document.createElement('div'); div.className='emoji-item'; div.innerText=em; div.onclick=()=>{ myAvatar=em; tg.CloudStorage.setItem('my_avatar', myAvatar); checkAdminAccess(); closeAvatarModal(); if(appState.inLobby && lobbyPlayers.length>0){lobbyPlayers[0].avatar=myAvatar; renderLobbySlots();} }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
+        function tryAdminLogin() { if(myId === '0000') return; if(prompt("Пароль:") === "0000") { myId = "0000"; try{tg.CloudStorage.setItem('my_id', myId); tg.CloudStorage.setItem('dev_mode', 'true');}catch(e){} checkAdminAccess(); tg.showAlert("Админ-панель открыта!"); } }
+        function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length <= 12) { myName = n.trim(); try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} checkAdminAccess(); } }
+        function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML=''; EMOJIS.forEach(em => { let div=document.createElement('div'); div.className='emoji-item'; div.innerText=em; div.onclick=()=>{ myAvatar=em; try{tg.CloudStorage.setItem('my_avatar', myAvatar);}catch(e){} checkAdminAccess(); closeAvatarModal(); if(appState.inLobby && lobbyPlayers.length>0){lobbyPlayers[0].avatar=myAvatar; renderLobbySlots();} }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
         function updateCoinsUI() { document.getElementById('menu-coins').innerText=globalCoins; document.getElementById('game-coins-val').innerText=globalCoins; document.getElementById('hidden-coins').innerText=globalCoins; }
-        function addCoins(a) { globalCoins = Math.max(0, globalCoins+a); updateCoinsUI(); tg.CloudStorage.setItem('player_coins', globalCoins.toString()); db.ref('users/'+myId+'/coins').set(globalCoins); }
+        function addCoins(a) { globalCoins = Math.max(0, globalCoins+a); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} db.ref('users/'+myId+'/coins').set(globalCoins); }
 
         function switchTab(t, el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); }
         function switchSubTab(p, s, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${p} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${p==='inv'?'inv':(p==='admin'?'adm':'clan')}-${s}`).classList.add('active'); }
@@ -340,8 +355,8 @@
         }
         function addFriendBtn() { let id=prompt("ID друга:"); if(id&&id!==myId){ if(friendsIds.includes(id)) return tg.showAlert("Уже в списке!"); db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ db.ref(`users/${id}/friend_reqs/${myId}`).set(true); tg.showAlert("Заявка отправлена!"); } else tg.showAlert("Не найден!"); }); } }
         function renderFrReqs(reqs) { const l = document.getElementById('fr-reqs'); l.innerHTML=''; if(!reqs) return l.innerHTML='<p style="color:gray;">Нет заявок</p>'; Object.keys(reqs).forEach(id => { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>${p.avatar||'👤'} ${p.name||'Игрок'}</b></div><div><button class="btn btn-green" style="padding:5px;" onclick="acceptReq('${id}')">➕</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('users/${myId}/friend_reqs/${id}').remove()">➖</button></div>`; l.appendChild(d); } }); }); }
-        function acceptReq(id) { db.ref(`users/${myId}/friend_reqs/${id}`).remove(); if(!friendsIds.includes(id)){ friendsIds.push(id); tg.CloudStorage.setItem('friendsIds', JSON.stringify(friendsIds)); db.ref(`users/${id}/friend_reqs/${myId}`).remove(); db.ref('users/'+id).once('value').then(s=>{ let f=s.val(); if(f.friends){ let fa=JSON.parse(f.friends); if(!fa.includes(myId)){ fa.push(myId); db.ref(`users/${id}`).update({friends: JSON.stringify(fa)}); } } }); renderFriends(); } }
-        function openFriendModal(f) { activeFriend=f; document.getElementById('fm-avatar').innerText=f.avatar; document.getElementById('fm-name').innerText=f.name; document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; if(appState.inLobby){ if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; } else { if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;">Сначала создай лобби</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if(f.id!=='ИИ') a.innerHTML+=`<button class="btn btn-red" onclick="friendsIds=friendsIds.filter(i=>i!=='${f.id}');tg.CloudStorage.setItem('friendsIds',JSON.stringify(friendsIds));renderFriends();closeFriendModal();">Удалить 🗑️</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
+        function acceptReq(id) { db.ref(`users/${myId}/friend_reqs/${id}`).remove(); if(!friendsIds.includes(id)){ friendsIds.push(id); try{tg.CloudStorage.setItem('friendsIds', JSON.stringify(friendsIds));}catch(e){} db.ref(`users/${id}/friend_reqs/${myId}`).remove(); db.ref('users/'+id).once('value').then(s=>{ let f=s.val(); if(f.friends){ let fa=JSON.parse(f.friends); if(!fa.includes(myId)){ fa.push(myId); db.ref(`users/${id}`).update({friends: JSON.stringify(fa)}); } } }); renderFriends(); } }
+        function openFriendModal(f) { activeFriend=f; document.getElementById('fm-avatar').innerText=f.avatar; document.getElementById('fm-name').innerText=f.name; document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; if(appState.inLobby){ if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; } else { if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;">Сначала создай лобби</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if(f.id!=='ИИ') a.innerHTML+=`<button class="btn btn-red" onclick="friendsIds=friendsIds.filter(i=>i!=='${f.id}');try{tg.CloudStorage.setItem('friendsIds',JSON.stringify(friendsIds));}catch(e){}renderFriends();closeFriendModal();">Удалить 🗑️</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
         function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
 
         // --- КЛАНЫ ---
