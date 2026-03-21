@@ -15,10 +15,8 @@
         .glass{background:rgba(30,30,30,0.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 4px 15px rgba(0,0,0,0.5);}
         .overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;text-align:center;color:#fff;transition:0.3s;}
         .overlay.hidden{display:none!important;}
-        .btn{padding:12px 20px;font-size:16px;font-weight:bold;border:none;border-radius:12px;background:var(--btn);color:#fff;cursor:pointer;transition:0.1s;margin:5px;}
-        .btn:active{transform:scale(0.95);opacity:0.8;}
+        .btn{padding:12px 20px;font-size:16px;font-weight:bold;border:none;border-radius:12px;background:var(--btn);color:#fff;cursor:pointer;transition:0.1s;margin:5px;} .btn:active{transform:scale(0.95);opacity:0.8;}
         .btn-red{background:#ff453a;} .btn-green{background:#34c759;} .btn-dark{background:#333;} .btn-gold{background:#ff9f0a;}
-        
         #app-container{display:flex;width:100vw;height:100vh;position:relative;}
         .nav-bar{width:var(--nav-w);background:var(--sidebar-bg);border-right:2px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;padding-top:20px;gap:20px;z-index:50;overflow-y:auto;}
         .nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.5;transition:0.2s;width:100%;padding:10px 0;}
@@ -26,73 +24,57 @@
         .nav-icon{font-size:26px;margin-bottom:5px;} .nav-text{font-size:9px;font-weight:bold;text-transform:uppercase;text-align:center;}
         .main-content{flex-grow:1;position:relative;background:var(--bg);overflow:hidden;}
         .tab-view{display:none;width:100%;height:100%;padding:20px;box-sizing:border-box;} .tab-view.active{display:flex;}
-        
         .sub-tabs-header{display:flex;justify-content:center;gap:10px;margin-bottom:20px;width:100%;}
-        .sub-tab-btn{background:#333;color:gray;padding:10px 20px;border-radius:20px;font-weight:bold;cursor:pointer;border:none;font-size:14px;} .sub-tab-btn.active{background:#3390ec;color:#fff;}
+        .sub-tab-btn{background:#333;color:gray;padding:10px 20px;border-radius:20px;font-weight:bold;cursor:pointer;border:none;font-size:14px;position:relative;} .sub-tab-btn.active{background:#3390ec;color:#fff;}
         .sub-tab-content{display:none;flex-direction:column;align-items:center;width:100%;flex-grow:1;} .sub-tab-content.active{display:flex;}
-        
         .mini-tabs-header{display:flex;gap:10px;margin-bottom:15px;width:100%;justify-content:center;}
         .mini-tab-btn{background:#444;color:gray;padding:8px 15px;border-radius:15px;border:none;font-size:13px;font-weight:bold;cursor:pointer;} .mini-tab-btn.active{background:#ff9f0a;color:#fff;}
         .mini-tab-content{display:none;flex-direction:column;width:100%;align-items:center;} .mini-tab-content.active{display:flex;}
-        .promo-item{display:flex;justify-content:space-between;align-items:center;background:#111;padding:10px 15px;width:90%;box-sizing:border-box;border-radius:10px;margin-bottom:8px;border-left:3px solid #3390ec;}
-
+        .list-item{display:flex;justify-content:space-between;align-items:center;background:#111;padding:12px;border-radius:12px;margin-bottom:10px;width:100%;box-sizing:border-box;border-left:3px solid transparent;}
+        .list-item:active{background:#333;border-color:#3390ec;}
         #tab-profile{flex-direction:column;align-items:center;justify-content:center;}
         .profile-mega-box{background:var(--panel-bg);padding:40px;border-radius:20px;text-align:center;border:2px solid #444;width:400px;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
         .profile-avatar{font-size:80px;margin-bottom:10px;cursor:pointer;display:inline-block;padding:10px;background:rgba(255,255,255,0.05);border-radius:50%;}
         .profile-name{font-size:32px;font-weight:900;margin-bottom:5px;cursor:pointer;border-bottom:2px dashed transparent;display:inline-block;}
         .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px;cursor:pointer;}
         .profile-coins{font-size:24px;color:#ff9f0a;font-weight:bold;background:rgba(255,159,10,0.1);padding:10px 20px;border-radius:15px;border:1px solid #ff9f0a;display:inline-block;}
-        .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;}
-        .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:#ff9f0a;}
-        
-        #tab-friends{flex-direction:row;gap:20px;padding:20px;}
-        .friends-list-panel{width:300px;background:var(--panel-bg);border-radius:20px;padding:15px;display:flex;flex-direction:column;}
-        .friend-item{display:flex;justify-content:space-between;align-items:center;background:#111;padding:12px;border-radius:12px;margin-bottom:10px;cursor:pointer;} .friend-item:active{background:#333;}
-        .lobby-buttons-panel{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
+        .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;} .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:#ff9f0a;}
         .mega-btn{width:80%;max-width:400px;padding:30px;border-radius:20px;font-size:24px;font-weight:900;color:#fff;border:none;cursor:pointer;text-transform:uppercase;box-shadow:0 8px 0 rgba(0,0,0,0.3);}
         .mega-create{background:linear-gradient(45deg,#ff9f0a,#ff453a);} .mega-custom{background:linear-gradient(45deg,#32ade6,#3390ec);opacity:0.8;}
-        
         #view-lobby{display:none;flex-direction:column;flex-grow:1;position:relative;align-items:center;justify-content:center;width:100%;height:100%;}
         .lobby-slots-container{display:flex;gap:20px;justify-content:center;align-items:center;width:100%;flex-wrap:wrap;}
         .square-slot{width:16vh;height:16vh;background:var(--panel-bg);border-radius:15px;display:flex;flex-direction:column;align-items:center;justify-content:center;border:2px solid #444;position:relative;transition:0.2s;}
         .square-slot.active-slot{border-color:#ff9f0a;} .slot-avatar{font-size:5vh;margin-bottom:1vh;} .slot-name{font-weight:bold;font-size:1.8vh;text-align:center;width:90%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .slot-status{font-size:1.2vh;color:#34c759;position:absolute;bottom:-20px;font-weight:bold;}
-        .lobby-controls-bottom-right{position:absolute;bottom:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
         .play-btn{background:#34c759;color:#fff;border:none;border-radius:12px;padding:15px 50px;font-size:26px;font-weight:900;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 0 #248a3d;}
-        
         #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:1000;}
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
         #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none;}
         #pause-btn{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:25px;border:2px solid #fff;font-size:20px;display:none;align-items:center;justify-content:center;z-index:1100;cursor:pointer;background:rgba(0,0,0,0.5);box-shadow:0 4px 10px rgba(0,0,0,0.5);}
-        
         .math-menu-grid{display:flex;gap:20px;} .math-mode-card{background:var(--panel-bg);border:3px solid #3390ec;border-radius:20px;padding:20px;width:200px;text-align:center;cursor:pointer;}
-        .math-progress-container{display:flex;gap:10px;justify-content:center;width:100%;margin-bottom:3vh;height:2vh;align-items:center;}
-        .math-dot{width:2vh;height:2vh;background:#444;border-radius:50%;} .math-dot.active-dot{width:6vh;border-radius:1vh;background:#3390ec;} .math-dot.done-dot{background:#34c759;}
+        .math-progress-container{display:flex;gap:10px;justify-content:center;width:100%;margin-bottom:3vh;height:2vh;align-items:center;} .math-dot{width:2vh;height:2vh;background:#444;border-radius:50%;} .math-dot.active-dot{width:6vh;border-radius:1vh;background:#3390ec;} .math-dot.done-dot{background:#34c759;}
         .math-equation{font-size:10vh;font-weight:900;margin-bottom:10px;display:flex;align-items:center;gap:20px;} .math-input-box{width:10vh;height:10vh;background:#333;border-radius:20px;display:flex;align-items:center;justify-content:center;color:#ff9f0a;border:4px dashed #666;}
         .math-numpad{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;} .math-num-btn{font-size:4vh;font-weight:bold;padding:15px 30px;border-radius:15px;background:#3390ec;color:#fff;border:none;}
         .math-cards-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;} .math-ans-card{font-size:8vh;font-weight:900;background:#ff9f0a;border-radius:20px;width:25vh;height:12vh;display:flex;align-items:center;justify-content:center;color:#fff;}
-        .math-sort-slots{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;} .math-slot{width:8vh;height:8vh;border:3px dashed #666;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;background:#222;}
-        .math-sort-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;} .math-drag-item{width:8vh;height:8vh;background:#34c759;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;}
-        
-        .board{display:grid;gap:5px;width:60vh;height:60vh;margin:0 auto;box-sizing:border-box;}
-        .cell{background:#2c2c2e;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,0.3);box-sizing:border-box;overflow:hidden;line-height:1;}
-        .cell.x{color:#ff453a;} .cell.o{color:#32ade6;} .cell.triangle{color:#34c759;} .cell.square{color:#ff9f0a;} .cell.minus{color:#af52de;}
-        
-        .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom,#87CEEB 0%,#87CEEB 50%,#8FBC8F 50%,#8FBC8F 100%);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2);}
-        .hidden-item{position:absolute;font-size:4vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));} 
-        .scene-decor{position:absolute;font-size:7vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;}
-        
-        .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;}
-        .giant-click-btn{width:50vw;height:50vh;border-radius:20px;font-size:10vh;font-weight:900;background:#ff9f0a;color:#fff;border:none;}
+        .math-sort-slots{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center;} .math-slot{width:8vh;height:8vh;border:3px dashed #666;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;background:#222;} .math-sort-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;} .math-drag-item{width:8vh;height:8vh;background:#34c759;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;}
+        .shake{animation:shake 0.4s;} @keyframes shake{0%{transform:translateX(0);} 25%{transform:translateX(-10px);} 50%{transform:translateX(10px);} 75%{transform:translateX(-10px);} 100%{transform:translateX(0);}}
+        .board{display:grid;gap:5px;width:60vh;height:60vh;margin:0 auto;box-sizing:border-box;} .cell{background:#2c2c2e;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:bold;cursor:pointer;box-shadow:inset 0 -4px 0 rgba(0,0,0,0.3);box-sizing:border-box;overflow:hidden;line-height:1;}
+        .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom,#87CEEB 0%,#87CEEB 50%,#8FBC8F 50%,#8FBC8F 100%);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2);} .hidden-item{position:absolute;font-size:4vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.5));} .scene-decor{position:absolute;font-size:7vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;}
+        .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;} .giant-click-btn{width:50vw;height:40vh;border-radius:20px;font-size:10vh;font-weight:900;background:#ff9f0a;color:#fff;border:none;}
         .styled-input{padding:15px;border-radius:10px;border:2px solid #444;background:#111;color:#fff;font-size:18px;width:80%;margin-bottom:10px;text-align:center;}
+        .badge{display:none;background:red;color:white;border-radius:50%;padding:2px 6px;font-size:10px;position:absolute;top:-5px;right:-10px;}
+        #top-notify{position:fixed;top:-100px;left:50%;transform:translateX(-50%);z-index:3000;padding:15px 30px;border-radius:20px;transition:0.4s;font-weight:bold;cursor:pointer;color:#fff;display:flex;gap:10px;align-items:center;box-shadow:0 5px 15px rgba(0,0,0,0.5);}
+        #game-top-coins{position:absolute;top:10px;right:20px;font-size:24px;font-weight:bold;color:#ff9f0a;background:rgba(0,0,0,0.5);padding:5px 15px;border-radius:15px;z-index:1100;}
     </style>
 </head>
 <body>
     <div id="rotate-overlay"><div style="font-size:80px;margin-bottom:20px;">🔄</div><h2>Поверните телефон</h2></div>
+    <div id="top-notify" class="glass" onclick="acceptLobbyInvite()"><span>Тебя зовут в игру!</span></div>
 
     <div id="app-container">
         <div class="nav-bar" id="nav-bar">
             <div class="nav-item active" onclick="switchTab('profile', this)"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
-            <div class="nav-item" onclick="switchTab('weapons', this)"><div class="nav-icon">🔫</div><div class="nav-text">Оружие</div></div>
+            <div class="nav-item" onclick="switchTab('inv', this)"><div class="nav-icon">🎒</div><div class="nav-text">Инвентарь</div></div>
+            <div class="nav-item" onclick="switchTab('clan', this)"><div class="nav-icon">🛡️</div><div class="nav-text">Клан</div></div>
             <div class="nav-item" onclick="switchTab('friends', this)"><div class="nav-icon">👥</div><div class="nav-text">Друзья</div></div>
             <div class="nav-item" onclick="switchTab('settings', this)"><div class="nav-icon">⚙️</div><div class="nav-text">Настройки</div></div>
             <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this)"><div class="nav-icon">🛠️</div><div class="nav-text">Параметры</div></div>
@@ -103,28 +85,55 @@
                 <div class="profile-mega-box">
                     <div class="profile-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
                     <div class="profile-name" id="my-name" onclick="changeName()">Игрок ✏️</div><br>
-                    <div class="profile-id" id="my-id-display" onclick="tryAdminLogin()">ID: Загрузка...</div><br>
+                    <div class="profile-id" id="my-id-display" onclick="tryAdminLogin()">ID: Загрузка...</div>
+                    <div style="color:gray;margin-bottom:15px;font-weight:bold;" id="my-clan-display"></div>
                     <div class="profile-coins">🪙 <span id="menu-coins">0</span></div>
                 </div>
             </div>
 
-            <div id="tab-weapons" class="tab-view" style="flex-direction: column;">
+            <div id="tab-inv" class="tab-view" style="flex-direction: column;">
                 <div class="sub-tabs-header">
-                    <button class="sub-tab-btn active" onclick="switchSubTab('weapons','inv',this)">Инвентарь</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('weapons','shop',this)">Магазин</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('weapons','promo',this)">Промокоды</button>
+                    <button class="sub-tab-btn active" onclick="switchSubTab('inv','bag',this)">Инвентарь</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('inv','shop',this)">Магазин</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('inv','promo',this)">Промокоды</button>
                 </div>
-                <div id="weap-inv" class="sub-tab-content active"><div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Инвентарь пуст</h2></div>
-                <div id="weap-shop" class="sub-tab-content"><div style="font-size:60px;margin-top:50px;">🛒</div><h2 style="color:gray;">Магазин скоро</h2></div>
-                <div id="weap-promo" class="sub-tab-content">
-                    <h2>Ввод промокода</h2><input type="text" id="promo-input" class="styled-input"><button class="btn btn-green" onclick="redeemPromo()">ПРИМЕНИТЬ</button>
-                </div>
+                <div id="inv-bag" class="sub-tab-content active"><div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2></div>
+                <div id="inv-shop" class="sub-tab-content"><div style="font-size:60px;margin-top:50px;">🛒</div><h2 style="color:gray;">Скоро</h2></div>
+                <div id="inv-promo" class="sub-tab-content"><h2>Промокод</h2><input type="text" id="promo-input" class="styled-input"><button class="btn btn-green" onclick="redeemPromo()">ПРИМЕНИТЬ</button></div>
             </div>
 
-            <div id="tab-friends" class="tab-view">
+            <div id="tab-clan" class="tab-view" style="flex-direction: column;">
+                <div class="sub-tabs-header">
+                    <button class="sub-tab-btn active" onclick="switchSubTab('clan','my',this)">Мой клан</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('clan','reqs',this)">Заявки <span id="clan-badge" class="badge">0</span></button>
+                </div>
+                <div id="clan-my" class="sub-tab-content active">
+                    <div id="clan-create-view">
+                        <h2>Создать Клан (1000 🪙)</h2>
+                        <input type="text" id="clan-tag-input" class="styled-input" placeholder="Тег (макс 5 букв/цифр)" maxlength="5">
+                        <button class="btn btn-gold" onclick="createClan()">СОЗДАТЬ</button>
+                    </div>
+                    <div id="clan-info-view" style="display:none;width:100%;">
+                        <h1 id="clan-title-tag" style="color:#ff9f0a;text-align:center;">[TAG]</h1>
+                        <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('clan-members',this)">Участники</button><button class="mini-tab-btn" onclick="switchMiniTab('clan-apps',this)">Кандидаты</button></div>
+                        <div id="clan-members" class="mini-tab-content active" style="width:300px;margin:0 auto;"></div>
+                        <div id="clan-apps" class="mini-tab-content" style="width:300px;margin:0 auto;"></div>
+                    </div>
+                </div>
+                <div id="clan-reqs" class="sub-tab-content" style="width:300px;"></div>
+            </div>
+
+            <div id="tab-friends" class="tab-view" style="flex-direction: row; gap:20px;">
                 <div class="friends-list-panel">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:15px;"><h3>Друзья</h3><button class="btn btn-dark" onclick="addFriendBtn()">+ Добавить</button></div>
-                    <div id="friends-list" style="overflow-y:auto;flex-grow:1;"></div>
+                    <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
+                        <h3 style="margin:0;">Друзья</h3><button class="btn btn-dark" style="padding:5px 10px;font-size:12px;" onclick="addFriendBtn()">+ Добавить</button>
+                    </div>
+                    <div class="mini-tabs-header" style="margin-bottom:10px;">
+                        <button class="mini-tab-btn active" onclick="switchMiniTab('fr-list',this)">Список</button>
+                        <button class="mini-tab-btn" style="position:relative;" onclick="switchMiniTab('fr-reqs',this)">Заявки <span id="fr-badge" class="badge">0</span></button>
+                    </div>
+                    <div id="fr-list" class="mini-tab-content active" style="overflow-y:auto;flex-grow:1;"></div>
+                    <div id="fr-reqs" class="mini-tab-content" style="overflow-y:auto;flex-grow:1;"></div>
                 </div>
                 <div class="lobby-buttons-panel" id="main-buttons-view">
                     <button class="mega-btn mega-create" onclick="openLobby()">Создать Лобби</button>
@@ -144,36 +153,27 @@
             <div id="tab-settings" class="tab-view"><div style="margin:auto;text-align:center;"><div style="font-size:60px;">🚧</div><h2 style="color:gray;">Настройки в разработке</h2></div></div>
             
             <div id="tab-admin" class="tab-view" style="flex-direction: column;">
-                <h3 style="color:#ff453a; margin-top:0; margin-bottom: 10px;">Доступ: РАЗРАБОТЧИК</h3>
+                <h3 style="color:#ff453a; margin-top:0; margin-bottom:10px;">Доступ: РАЗРАБОТЧИК</h3>
                 <div class="sub-tabs-header">
-                    <button class="sub-tab-btn active" onclick="switchSubTab('admin','add-admin',this)">Админы</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('admin','add-coins',this)">Выдать Монеты</button>
+                    <button class="sub-tab-btn active" onclick="switchSubTab('admin','coins',this)">МОНЕТЫ</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОДЫ</button>
                 </div>
-                <div id="adm-add-admin" class="sub-tab-content active">
-                    <input type="text" id="adm-id-input" class="styled-input" placeholder="ID игрока"><button class="btn btn-red" onclick="tg.showAlert('Игрок назначен админом!')">ВЫДАТЬ ПРАВА</button>
-                </div>
-                <div id="adm-add-coins" class="sub-tab-content">
-                    <input type="text" id="adm-coin-id" class="styled-input" placeholder="ID игрока"><input type="number" id="adm-coin-amount" class="styled-input" placeholder="Кол-во монет"><button class="btn btn-gold" onclick="adminAddCoinsReal()">ОТПРАВИТЬ</button>
+                <div id="adm-coins" class="sub-tab-content active">
+                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('c-give',this)">Выдать</button><button class="mini-tab-btn" onclick="switchMiniTab('c-take',this)">Забрать</button></div>
+                    <div id="c-give" class="mini-tab-content active"><input type="text" id="adm-coin-id" class="styled-input" placeholder="ID игрока"><input type="number" id="adm-coin-amount" class="styled-input" placeholder="Кол-во"><button class="btn btn-gold" onclick="adminCoins(1)">ОТПРАВИТЬ</button></div>
+                    <div id="c-take" class="mini-tab-content"><input type="text" id="adm-take-id" class="styled-input" placeholder="ID игрока"><input type="number" id="adm-take-amount" class="styled-input" placeholder="Кол-во"><button class="btn btn-red" onclick="adminCoins(-1)">ЗАБРАТЬ</button></div>
                 </div>
                 <div id="adm-promos" class="sub-tab-content">
-                    <div class="mini-tabs-header">
-                        <button class="mini-tab-btn active" onclick="switchMiniTab('promo-create', this)">Создать</button>
-                        <button class="mini-tab-btn" onclick="switchMiniTab('promo-active', this)">Активные</button>
-                    </div>
-                    <div id="promo-create" class="mini-tab-content active">
-                        <input type="text" id="adm-promo-code" class="styled-input" placeholder="Код (GIFT50)">
-                        <input type="number" id="adm-promo-coins" class="styled-input" placeholder="Награда (монеты)">
-                        <input type="number" id="adm-promo-acts" class="styled-input" placeholder="Кол-во активаций">
-                        <button class="btn btn-green" onclick="adminCreatePromo()">СОЗДАТЬ</button>
-                    </div>
-                    <div id="promo-active" class="mini-tab-content" style="max-height: 40vh; overflow-y: auto;"></div>
+                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('promo-create', this)">Создать</button><button class="mini-tab-btn" onclick="switchMiniTab('promo-active', this)">Активные</button></div>
+                    <div id="promo-create" class="mini-tab-content active"><input type="text" id="adm-promo-code" class="styled-input" placeholder="Код"><input type="number" id="adm-promo-coins" class="styled-input" placeholder="Награда"><input type="number" id="adm-promo-acts" class="styled-input" placeholder="Активаций"><button class="btn btn-green" onclick="adminCreatePromo()">СОЗДАТЬ</button></div>
+                    <div id="promo-active" class="mini-tab-content" style="max-height:30vh;overflow-y:auto;width:350px;"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="game-container">
+        <div id="game-top-coins">🪙 <span id="game-coins-val">0</span></div>
         <div id="dynamic-island" class="glass"><span id="island-text">...</span></div>
         <div id="pause-btn" class="glass" onclick="togglePause(true)">⏸</div>
 
@@ -207,28 +207,28 @@
             <div class="math-sort-slots" id="math3-slots"></div><div class="math-sort-items" id="math3-items"></div>
         </div>
 
-        <div class="game-screen" id="screen-game-tictactoe">
-            <div class="board" id="ttt-board"></div>
-        </div>
+        <div class="game-screen" id="screen-game-tictactoe"><div class="board" id="ttt-board"></div></div>
 
         <div class="game-screen" id="screen-game-hidden">
-            <div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>Найдено: <span id="hidden-found">0</span>/15</div><div style="color:#ff9f0a;">🪙 <span id="hidden-coins">0</span></div></div>
+            <div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>Найдено: <span id="hidden-found">0</span>/15</div></div>
             <div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div>
         </div>
 
         <div class="game-screen" id="screen-game-clicker">
+            <h2 style="font-size:3vh;margin-bottom:10px;" id="clk-msg">Настрой время и ЖМИ!</h2>
             <div class="clicker-setup" id="clicker-controls">
-                <button class="round-btn" onclick="changeClickTime(-5)">◀</button>
+                <button class="round-btn" id="clk-btn-m" onclick="changeClickTime(-5)">◀</button>
                 <div id="click-time-val" style="font-size:28px;font-weight:bold;width:100px;text-align:center;">15 сек</div>
-                <button class="round-btn" onclick="changeClickTime(5)">▶</button>
+                <button class="round-btn" id="clk-btn-p" onclick="changeClickTime(5)">▶</button>
             </div>
-            <h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClick()">ЖМИ!</button>
+            <h1 id="click-score" style="font-size:10vh;">0</h1>
+            <button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button>
         </div>
     </div>
 
     <div id="avatar-modal" class="overlay glass hidden" onclick="closeAvatarModal()"><div style="background:#111;padding:20px;border-radius:20px;width:80%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2>Выбери аватар</h2><div class="emoji-grid" id="emoji-grid"></div><button class="btn btn-red" onclick="closeAvatarModal()">Закрыть</button></div></div>
     <div id="pause-overlay" class="overlay glass hidden"><h2>ПАУЗА ⏸️</h2><div style="width:300px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button><button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button></div></div>
-    <div id="result-overlay" class="overlay hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text">Победа!</h2><div id="result-subtext" style="white-space:pre-line;margin-bottom:20px;"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff;" onclick="closeResult()">В Лобби</button></div>
+    <div id="result-overlay" class="overlay hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text">Победа!</h2><div id="result-subtext" style="white-space:pre-line;margin-bottom:20px;font-weight:bold;font-size:18px;"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff;" onclick="closeResult()">В Лобби</button></div>
     
     <div id="mode-modal" class="overlay glass hidden" onclick="closeModeModal(event)">
         <div style="background:var(--panel-bg);padding:30px;border-radius:20px;width:400px;" onclick="event.stopPropagation()">
@@ -238,336 +238,200 @@
                 <button class="btn btn-dark" onclick="setGameMode('hidden', '🔎 Поиск предметов')">🔎 Поиск предметов</button>
                 <button class="btn btn-dark" onclick="setGameMode('tictactoe', '❌⭕ Крестики-нолики')">❌⭕ Крестики-нолики</button>
                 <button class="btn btn-dark" onclick="setGameMode('clicker', '⏱️ Кликер-дуэль')">⏱️ Кликер-дуэль</button>
-            </div>
-            <button class="btn btn-red" onclick="closeModeModal()" style="margin-top:15px;">Отмена</button>
+            </div><button class="btn btn-red" onclick="closeModeModal()" style="margin-top:15px;">Отмена</button>
         </div>
     </div>
     
     <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)"><div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px;" onclick="event.stopPropagation()"><div style="font-size:50px;" id="fm-avatar">👤</div><h2 id="fm-name">Имя</h2><p id="fm-id" style="color:gray;">ID: 0000</p><div style="display:flex;flex-direction:column;gap:10px;" id="friend-actions"></div></div></div>
-    
-    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()">
-        <div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()">
-            <h2 style="margin-top:0;">Пригласить друга</h2>
-            <div id="invite-friends-list" style="max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;"></div>
-            <button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button>
-        </div>
-    </div>
+    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list" style="max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        try { tg.expand(); if (tg.requestFullscreen) tg.requestFullscreen(); } catch(e) {}
-        tg.ready();
-
+        const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
+        
+        // ⚠️ FIREBASE КЛЮЧИ
         const firebaseConfig = {
-            apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg",
-            authDomain: "mini-games-b9400.firebaseapp.com",
-            databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app",
-            projectId: "mini-games-b9400",
-            storageBucket: "mini-games-b9400.firebasestorage.app",
-            messagingSenderId: "523964322575",
-            appId: "1:523964322575:web:a5502d0bf28f17b10f247a"
-        };
-        firebase.initializeApp(firebaseConfig); const db = firebase.database();
+            apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a"
+        }; firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
         const EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
         const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖' }; 
-        
-        let globalCoins = 0; let myName = tg.initDataUnsafe?.user?.first_name || "Игрок"; let myAvatar = "😎"; let myId = "0000";
-        let friends = []; let activeFriend = null; 
-        let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, selectedGameName: "Не выбран" };
-        let lobbyId = null; let lobbyPlayers = []; let lobbyRef = null; let isHost = false;
+        let globalCoins = 0; let myName = tg.initDataUnsafe?.user?.first_name || "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myClan = null;
+        let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
+        let lobbyId = null; let lobbyPlayers = []; let lobbyRef = null; let isHost = false; let pendingInvite = null;
 
+        // СТАРТ
         tg.CloudStorage.getKeys((err, keys) => {
             if(err) return;
-            tg.CloudStorage.getItems(keys, (err, values) => {
+            tg.CloudStorage.getItems(keys, (err, vals) => {
                 if(!err) {
-                    globalCoins = parseInt(values['player_coins']) || 0; updateCoinsUI();
-                    if(values['my_id']) myId = values['my_id']; else { myId = Math.floor(1000 + Math.random() * 9000).toString(); tg.CloudStorage.setItem('my_id', myId); }
-                    if(values['my_name']) myName = values['my_name']; if(values['my_avatar']) myAvatar = values['my_avatar'];
+                    globalCoins = parseInt(vals['player_coins']) || 0; updateCoinsUI();
+                    if(vals['my_id']) myId = vals['my_id']; else { myId = Math.floor(1000 + Math.random() * 9000).toString(); tg.CloudStorage.setItem('my_id', myId); }
+                    if(vals['my_name']) myName = vals['my_name']; if(vals['my_avatar']) myAvatar = vals['my_avatar'];
+                    
+                    // АДМИН ПРОВЕРКА 0000
+                    if (vals['dev_mode']) myId = '0000';
                     checkAdminAccess();
                     
-                    if(values['friends']) { try { friends = JSON.parse(values['friends']); } catch(e){} }
-                    friends = friends.filter(f => f.id !== 'БОТ' && f.id !== 'ИИ');
-                    friends.unshift(SYSTEM_BOT); saveFriends();
+                    if(vals['friendsIds']) { try { friendsIds = JSON.parse(vals['friendsIds']); } catch(e){} }
+                    if(!friendsIds.includes('ИИ')) friendsIds.unshift('ИИ'); tg.CloudStorage.setItem('friendsIds', JSON.stringify(friendsIds));
 
+                    // СОЗДАНИЕ В БАЗЕ
                     db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, coins: globalCoins });
                     db.ref('users/' + myId + '/coins').on('value', snap => { if(snap.exists() && snap.val() !== globalCoins) { globalCoins = snap.val(); updateCoinsUI(); tg.CloudStorage.setItem('player_coins', globalCoins.toString()); } });
+                    
+                    // КЛАНЫ
+                    db.ref('users/' + myId + '/clan').on('value', snap => { myClan = snap.val(); document.getElementById('my-clan-display').innerText = myClan ? `[${myClan}]` : ''; renderClanTab(); });
+                    
+                    // ДРУЗЬЯ (РЕАЛ-ТАЙМ ЗАЯВКИ И СПИСОК)
+                    db.ref(`users/${myId}/friend_reqs`).on('value', snap => { let c = snap.exists() ? Object.keys(snap.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(snap.val()); });
+                    renderFriends();
+
+                    // ИНВАЙТЫ В ЛОББИ
+                    db.ref(`users/${myId}/invite`).on('value', s => {
+                        if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); }
+                    });
                 }
             });
         });
 
+        function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[3]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
+
         function checkAdminAccess() {
-            document.getElementById('my-id-display').innerText = myId === '8451' ? "ID: DEVELOPER" : `ID: ${myId}`;
-            document.getElementById('my-id-display').style.color = myId === '8451' ? "#ff453a" : "#888";
-            document.getElementById('nav-admin').style.display = myId === '8451' ? 'flex' : 'none';
+            document.getElementById('my-id-display').innerText = myId === '0000' ? "ID: 0000" : `ID: ${myId}`;
+            document.getElementById('nav-admin').style.display = myId === '0000' ? 'flex' : 'none';
             document.getElementById('my-name').innerHTML = `${myName} ✏️`; document.getElementById('my-avatar').innerText = myAvatar;
             db.ref('users/' + myId).update({ name: myName, avatar: myAvatar });
             
-            if(myId === '8451') {
+            if(myId === '0000') {
+                db.ref('users/0000/clan').set('DEVELOPERS'); // Выдача клана разрабу
                 db.ref('promos').on('value', snap => {
                     const list = document.getElementById('promo-active'); list.innerHTML = '';
-                    if(snap.exists()) {
-                        let data = snap.val();
-                        Object.keys(data).forEach(k => {
-                            let div = document.createElement('div'); div.className = 'promo-item';
-                            div.innerHTML = `<div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].activations} | Награда: ${data[k].reward}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">УДАЛИТЬ</button>`;
-                            list.appendChild(div);
-                        });
-                    } else list.innerHTML = '<p style="color:gray;">Нет активных промокодов</p>';
+                    if(snap.exists()) { let data = snap.val(); Object.keys(data).forEach(k => { let div = document.createElement('div'); div.className = 'list-item'; div.innerHTML = `<div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">УДАЛИТЬ</button>`; list.appendChild(div); }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>';
                 });
             }
         }
 
-        function tryAdminLogin() { if (myId === '8451') return; if (prompt("Пароль:") === "8451") { myId = "8451"; tg.CloudStorage.setItem('my_id', myId); checkAdminAccess(); tg.showAlert("Админ-панель открыта! 🛠️"); } }
-        function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); tg.CloudStorage.setItem('my_name', myName); checkAdminAccess(); } }
-        function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML = ''; EMOJIS.forEach(em => { let div = document.createElement('div'); div.className = 'emoji-item'; div.innerText = em; div.onclick = () => { myAvatar = em; tg.CloudStorage.setItem('my_avatar', myAvatar); checkAdminAccess(); closeAvatarModal(); if(appState.inLobby && lobbyPlayers.length>0){lobbyPlayers[0].avatar=myAvatar; renderLobbySlots();} }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
+        function tryAdminLogin() { if(myId === '0000') return; if(prompt("Пароль:") === "0000") { myId = "0000"; tg.CloudStorage.setItem('my_id', myId); tg.CloudStorage.setItem('dev_mode', 'true'); checkAdminAccess(); tg.showAlert("Админ-панель открыта!"); } }
+        function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length <= 12) { myName = n.trim(); tg.CloudStorage.setItem('my_name', myName); checkAdminAccess(); } }
+        function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML=''; EMOJIS.forEach(em => { let div=document.createElement('div'); div.className='emoji-item'; div.innerText=em; div.onclick=()=>{ myAvatar=em; tg.CloudStorage.setItem('my_avatar', myAvatar); checkAdminAccess(); closeAvatarModal(); if(appState.inLobby && lobbyPlayers.length>0){lobbyPlayers[0].avatar=myAvatar; renderLobbySlots();} }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
-        function updateCoinsUI() { document.getElementById('menu-coins').innerText = globalCoins; document.getElementById('hidden-coins').innerText = globalCoins; }
-        function addCoins(amount) { globalCoins = Math.max(0, globalCoins + amount); updateCoinsUI(); tg.CloudStorage.setItem('player_coins', globalCoins.toString()); db.ref('users/' + myId + '/coins').set(globalCoins); }
+        function updateCoinsUI() { document.getElementById('menu-coins').innerText=globalCoins; document.getElementById('game-coins-val').innerText=globalCoins; document.getElementById('hidden-coins').innerText=globalCoins; }
+        function addCoins(a) { globalCoins = Math.max(0, globalCoins+a); updateCoinsUI(); tg.CloudStorage.setItem('player_coins', globalCoins.toString()); db.ref('users/'+myId+'/coins').set(globalCoins); }
 
-        function switchTab(tabId, el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.tab-view').forEach(t => t.classList.remove('active')); document.getElementById('tab-' + tabId).classList.add('active'); }
-        function switchSubTab(parent, subId, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${parent} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${parent==='weapons'?'weap':'adm'}-${subId}`).classList.add('active'); }
-        function switchMiniTab(tabId, el) { el.parentElement.querySelectorAll('.mini-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.mini-tab-content').forEach(c => c.classList.remove('active')); document.getElementById(tabId).classList.add('active'); }
+        function switchTab(t, el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); }
+        function switchSubTab(p, s, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${p} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${p==='inv'?'inv':(p==='admin'?'adm':'clan')}-${s}`).classList.add('active'); }
+        function switchMiniTab(id, el) { el.parentElement.querySelectorAll('.mini-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.mini-tab-content').forEach(c => { if(c.parentElement.contains(el)) c.classList.remove('active'); }); document.getElementById(id).classList.add('active'); }
 
-        function adminAddCoinsReal() { let t = document.getElementById('adm-coin-id').value; let amt = parseInt(document.getElementById('adm-coin-amount').value); if(!t || isNaN(amt)) { tg.showAlert("Заполни поля!"); return; } db.ref('users/'+t+'/coins').once('value').then(s => { if(s.exists()) { db.ref('users/'+t+'/coins').set(s.val() + amt); tg.showAlert("Отправлено!"); } else tg.showAlert("Игрок не найден!"); }); }
-        function adminCreatePromo() { 
-            let c = document.getElementById('adm-promo-code').value.trim().toUpperCase(); let r = parseInt(document.getElementById('adm-promo-coins').value); let a = parseInt(document.getElementById('adm-promo-acts').value);
-            if(!c || isNaN(r) || isNaN(a) || a <= 0) return tg.showAlert("Заполни все поля корректно!");
-            db.ref('promos/' + c).set({ reward: r, activations: a }); tg.showAlert(`Промокод ${c} создан!`);
-            document.getElementById('adm-promo-code').value=''; document.getElementById('adm-promo-coins').value=''; document.getElementById('adm-promo-acts').value='';
-        }
-        function redeemPromo() { 
-            let c = document.getElementById('promo-input').value.trim().toUpperCase(); if(!c) return;
-            db.ref(`users/${myId}/used_promos/${c}`).once('value').then(uSnap => {
-                if(uSnap.exists()) return tg.showAlert("Уже использован!");
-                db.ref(`promos/${c}`).once('value').then(pSnap => {
-                    if(!pSnap.exists()) return tg.showAlert("Неверный код!");
-                    let pData = pSnap.val(); if(pData.activations <= 0) return tg.showAlert("Лимит активаций исчерпан!");
-                    db.ref(`promos/${c}/activations`).set(pData.activations - 1); db.ref(`users/${myId}/used_promos/${c}`).set(true);
-                    addCoins(pData.reward); tg.showAlert(`Успех! +${pData.reward} 🪙`); document.getElementById('promo-input').value=''; tg.HapticFeedback.notificationOccurred('success');
+        // --- АДМИНКА ПРОМО ---
+        function adminCoins(mult) { let t = document.getElementById(mult===1?'adm-coin-id':'adm-take-id').value; let a = parseInt(document.getElementById(mult===1?'adm-coin-amount':'adm-take-amount').value); if(!t||isNaN(a)) return; db.ref('users/'+t+'/coins').once('value').then(s => { if(s.exists()){ db.ref('users/'+t+'/coins').set(Math.max(0, s.val() + (a*mult))); tg.showAlert("Успех!"); } else tg.showAlert("Не найден!"); }); }
+        function adminCreatePromo() { let c = document.getElementById('adm-promo-code').value.toUpperCase(); let r = parseInt(document.getElementById('adm-promo-coins').value); let a = parseInt(document.getElementById('adm-promo-acts').value); if(!c||isNaN(r)||isNaN(a)) return; db.ref('promos/'+c).set({rew:r, acts:a}); tg.showAlert("Создан!"); }
+        function redeemPromo() { let c = document.getElementById('promo-input').value.toUpperCase(); if(!c) return; db.ref(`users/${myId}/used_promos/${c}`).once('value').then(us => { if(us.exists()) return tg.showAlert("Уже юзал!"); db.ref(`promos/${c}`).once('value').then(ps => { if(!ps.exists()) return tg.showAlert("Нет кода!"); let d = ps.val(); if(d.acts<=0) return tg.showAlert("Лимит!"); db.ref(`promos/${c}/acts`).set(d.acts-1); db.ref(`users/${myId}/used_promos/${c}`).set(true); addCoins(d.rew); tg.showAlert(`+${d.rew} 🪙`); }); }); }
+
+        // --- ДРУЗЬЯ (ЖИВОЙ ПОИСК) ---
+        function renderFriends() { 
+            const list = document.getElementById('fr-list'); list.innerHTML='';
+            friendsIds.forEach(id => {
+                if(id==='ИИ') { let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>🤖 ИИ</b><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div>`; d.onclick=()=>openFriendModal(SYSTEM_BOT); list.appendChild(d); return; }
+                db.ref('users/'+id).once('value').then(s => {
+                    if(s.exists()){ let p = s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>${p.avatar||'👤'} ${p.name||'Игрок'}</b> ${p.clan?`<span style="color:#ff9f0a;font-size:12px;">[${p.clan}]</span>`:''}<br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>`; d.onclick=()=>openFriendModal({id:id, name:p.name||'Игрок', avatar:p.avatar||'👤'}); list.appendChild(d); }
                 });
             });
         }
-
-        // --- ДРУЗЬЯ ---
-        function renderFriends() { const list = document.getElementById('friends-list'); list.innerHTML = ''; friends.forEach(f => { let div = document.createElement('div'); div.className = 'friend-item'; let icon = f.avatar || '👤'; div.innerHTML = `<div><b>${icon} ${f.name}</b><br><span style="font-size:10px;color:gray;">ID: ${f.id}</span></div>`; div.onclick = () => openFriendModal(f); list.appendChild(div); }); }
-        function saveFriends() { tg.CloudStorage.setItem('friends', JSON.stringify(friends)); renderFriends(); }
-        function addFriendBtn() { let id = prompt("Введи 4-значный ID друга:"); if (id && id !== myId) { if(friends.some(f => f.id === id) || id === 'ИИ') { tg.showAlert("Уже в друзьях!"); return; } db.ref('users/' + id).once('value').then(snap => { if(snap.exists()) { let data = snap.val(); friends.push({ id: id, name: data.name || "Игрок", avatar: data.avatar || "👤" }); saveFriends(); tg.showAlert("Друг добавлен!"); } else { tg.showAlert("Игрок с таким ID не найден!"); } }); } }
-        function openFriendModal(f) { activeFriend = f; document.getElementById('fm-avatar').innerText = f.avatar || '👤'; document.getElementById('fm-name').innerText = f.name; document.getElementById('fm-id').innerText = `ID: ${f.id}`; let actions = document.getElementById('friend-actions'); actions.innerHTML = ''; if (appState.inLobby) { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить ИИ 🤖</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="inviteRealFriend(${JSON.stringify(f).replace(/"/g, '&quot;')})">Пригласить 🎮</button>`; } else { if(f.id === 'ИИ') actions.innerHTML += `<button class="btn" style="background: #444; color: gray; cursor: not-allowed;">Создай лобби для ИИ</button>`; else actions.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if (f.id !== 'ИИ') { actions.innerHTML += `<button class="btn btn-dark" onclick="tg.showAlert('Чат скоро!')">Сообщение 💬</button><button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`; } actions.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
+        function addFriendBtn() { let id=prompt("ID друга:"); if(id&&id!==myId){ if(friendsIds.includes(id)) return tg.showAlert("Уже в списке!"); db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ db.ref(`users/${id}/friend_reqs/${myId}`).set(true); tg.showAlert("Заявка отправлена!"); } else tg.showAlert("Не найден!"); }); } }
+        function renderFrReqs(reqs) { const l = document.getElementById('fr-reqs'); l.innerHTML=''; if(!reqs) return l.innerHTML='<p style="color:gray;">Нет заявок</p>'; Object.keys(reqs).forEach(id => { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>${p.avatar||'👤'} ${p.name||'Игрок'}</b></div><div><button class="btn btn-green" style="padding:5px;" onclick="acceptReq('${id}')">➕</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('users/${myId}/friend_reqs/${id}').remove()">➖</button></div>`; l.appendChild(d); } }); }); }
+        function acceptReq(id) { db.ref(`users/${myId}/friend_reqs/${id}`).remove(); if(!friendsIds.includes(id)){ friendsIds.push(id); tg.CloudStorage.setItem('friendsIds', JSON.stringify(friendsIds)); db.ref(`users/${id}/friend_reqs/${myId}`).remove(); db.ref('users/'+id).once('value').then(s=>{ let f=s.val(); if(f.friends){ let fa=JSON.parse(f.friends); if(!fa.includes(myId)){ fa.push(myId); db.ref(`users/${id}`).update({friends: JSON.stringify(fa)}); } } }); renderFriends(); } }
+        function openFriendModal(f) { activeFriend=f; document.getElementById('fm-avatar').innerText=f.avatar; document.getElementById('fm-name').innerText=f.name; document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; if(appState.inLobby){ if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; } else { if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;">Сначала создай лобби</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if(f.id!=='ИИ') a.innerHTML+=`<button class="btn btn-red" onclick="friendsIds=friendsIds.filter(i=>i!=='${f.id}');tg.CloudStorage.setItem('friendsIds',JSON.stringify(friendsIds));renderFriends();closeFriendModal();">Удалить 🗑️</button>`; document.getElementById('friend-modal').classList.remove('hidden'); }
         function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
-        function removeFriend() { if(confirm(`Удалить?`)){ friends = friends.filter(f => f.id !== activeFriend.id); saveFriends(); closeFriendModal(); } }
 
-        // --- ЛОББИ 5 МЕСТ ---
-        function renderLobbySlots() { 
-            const c = document.getElementById('lobby-slots-container'); c.innerHTML = ''; 
-            for(let i=0; i<5; i++) {
-                if(i < lobbyPlayers.length) {
-                    let p = lobbyPlayers[i];
-                    c.innerHTML += `<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`;
-                } else {
-                    c.innerHTML += `<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`;
-                }
-            }
+        // --- КЛАНЫ ---
+        function renderClanTab() {
+            if(!myClan) { document.getElementById('clan-create-view').style.display='block'; document.getElementById('clan-info-view').style.display='none'; }
+            else { document.getElementById('clan-create-view').style.display='none'; document.getElementById('clan-info-view').style.display='block'; document.getElementById('clan-title-tag').innerText = `🛡️ [${myClan}]`; loadClanData(); }
         }
-        
-        function openInviteModal() {
-            if(!isHost) return tg.showAlert("Приглашать может только Хост!");
-            if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби уже полное!");
-            
-            let list = document.getElementById('invite-friends-list'); list.innerHTML = '';
-            let available = friends.filter(f => !lobbyPlayers.some(p => p.id === f.id));
-            
-            if(available.length === 0) { list.innerHTML = '<p style="color:gray;text-align:center;">Нет доступных друзей</p>'; } 
-            else {
-                available.forEach(f => {
-                    let div = document.createElement('div'); div.className = 'friend-item';
-                    div.innerHTML = `<div><b>${f.avatar || '👤'} ${f.name}</b></div><button class="btn btn-green" style="padding:5px 10px;font-size:12px;">Выбрать</button>`;
-                    div.onclick = () => { if(f.id === 'ИИ') inviteBotLobby(); else inviteRealFriend(f); closeInviteModal(); };
-                    list.appendChild(div);
-                });
-            }
-            document.getElementById('invite-modal').classList.remove('hidden');
-        }
+        function createClan() { let tag = document.getElementById('clan-tag-input').value.toUpperCase().trim(); if(!tag || tag.length>5 || tag==='BOT') return tg.showAlert("Неверный тег (макс 5)!"); if(globalCoins<1000) return tg.showAlert("Нужно 1000 монет!"); db.ref('clans/'+tag).once('value').then(s => { if(s.exists()) return tg.showAlert("Занят!"); addCoins(-1000); db.ref('clans/'+tag).set({owner: myId, members: {[myId]:true}}); db.ref('users/'+myId).update({clan: tag}); }); }
+        function loadClanData() { db.ref('clans/'+myClan).on('value', s=>{ if(!s.exists()) return; let d=s.val(); let ml=document.getElementById('clan-members'); ml.innerHTML=''; Object.keys(d.members||{}).forEach(id => { db.ref('users/'+id).once('value').then(us=>{ if(us.exists()){ let p=us.val(); let md=document.createElement('div'); md.className='list-item'; md.innerHTML=`<div>${p.avatar||'👤'} ${p.name||'Игрок'} ${id===d.owner?'👑':''}</div>`; ml.appendChild(md); } }); }); }); }
+
+        // --- ЛОББИ ---
+        function renderLobbySlots() { const c = document.getElementById('lobby-slots-container'); c.innerHTML=''; for(let i=0;i<5;i++){ if(i<lobbyPlayers.length){ let p=lobbyPlayers[i]; c.innerHTML+=`<div class="square-slot ${i===0?'active-slot':''}"><div class="slot-avatar">${p.avatar}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`; } else c.innerHTML+=`<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`; } }
+        function openInviteModal() { if(!isHost) return tg.showAlert("Только Хост!"); if(lobbyPlayers.length>=5) return tg.showAlert("Полно!"); let l=document.getElementById('invite-friends-list'); l.innerHTML=''; let a = friendsIds.filter(id=> !lobbyPlayers.some(p=>p.id===id)); if(a.length===0) l.innerHTML='<p style="color:gray;">Нет доступных</p>'; else a.forEach(id=>{ if(id==='ИИ'){ let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>🤖 ИИ</b><button class="btn btn-green" onclick="inviteBotLobby();closeInviteModal()">Выбрать</button>`; l.appendChild(d); } else { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>${p.avatar||'👤'} ${p.name||'Игрок'}</b><button class="btn btn-green" onclick="inviteRealFriend('${id}');closeInviteModal()">Выбрать</button>`; l.appendChild(d); } }); } }); document.getElementById('invite-modal').classList.remove('hidden'); }
         function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
-
-        function openLobby() { appState.inLobby = true; lobbyId = myId; isHost = true; lobbyPlayers = [{id: myId, name: myName, avatar: myAvatar}]; db.ref('lobbies/' + lobbyId).set({ host: myId, game: '', status: 'waiting', players: { [myId]: {name: myName, avatar: myAvatar} } }); listenLobby(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex'; }
-        function closeLobby() { appState.inLobby = false; if(lobbyRef) lobbyRef.off(); if(isHost) db.ref('lobbies/' + lobbyId).remove(); else db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); document.getElementById('main-buttons-view').style.display = 'flex'; document.getElementById('view-lobby').style.display = 'none'; }
-        function inviteBotLobby() { if(!isHost) return; if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); document.getElementById('friend-modal').classList.add('hidden'); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({ name: 'ИИ', avatar: '🤖' }); }
-        function inviteRealFriend(f) { if(lobbyPlayers.length >= 5) return tg.showAlert("Лобби полно!"); tg.showAlert(`Скажи игроку ${f.name} зайти к тебе через кнопку Присоединиться!`); document.getElementById('friend-modal').classList.add('hidden'); }
-        function joinFriendLobby() { lobbyId = activeFriend.id; isHost = false; closeFriendModal(); db.ref('lobbies/' + lobbyId).once('value').then(snap => { if(snap.exists()) { db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; document.querySelectorAll('.nav-item')[2].click(); document.getElementById('main-buttons-view').style.display = 'none'; document.getElementById('view-lobby').style.display = 'flex'; listenLobby(); } else tg.showAlert("Друг еще не создал лобби!"); }); }
+        function openLobby() { appState.inLobby=true; lobbyId=myId; isHost=true; lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar}]; db.ref('lobbies/'+lobbyId).set({host:myId, game:'', status:'waiting', clickTime:15, players:{[myId]:{name:myName,avatar:myAvatar}}}); listenLobby(); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; }
+        function closeLobby() { appState.inLobby=false; if(lobbyRef) lobbyRef.off(); if(isHost) db.ref('lobbies/'+lobbyId).remove(); else db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); document.getElementById('main-buttons-view').style.display='flex'; document.getElementById('view-lobby').style.display='none'; }
+        function inviteBotLobby() { if(!isHost || lobbyPlayers.length>=5) return; closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({name:'ИИ', avatar:'🤖'}); }
+        function inviteRealFriend(id) { if(lobbyPlayers.length>=5) return; db.ref(`users/${id}/invite`).set({lId: lobbyId, host: myName}); tg.showAlert("Уведомление отправлено!"); closeFriendModal(); }
+        function joinFriendLobby() { lobbyId=activeFriend.id; isHost=false; closeFriendModal(); db.ref('lobbies/'+lobbyId).once('value').then(s=>{ if(s.exists()){ db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name:myName, avatar:myAvatar}); appState.inLobby=true; switchTab('friends', document.querySelectorAll('.nav-item')[3]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); } else tg.showAlert("Лобби нет!"); }); }
         
         function listenLobby() { 
-            if(lobbyRef) lobbyRef.off(); lobbyRef = db.ref('lobbies/' + lobbyId); 
+            if(lobbyRef) lobbyRef.off(); lobbyRef = db.ref('lobbies/'+lobbyId); 
             lobbyRef.on('value', snap => { 
-                if(!snap.exists()) { if(!isHost) { tg.showAlert("Хост распустил лобби!"); closeLobby(); } return; } 
-                let data = snap.val(); lobbyPlayers = []; 
-                if(data.players) { if(data.players[data.host]) lobbyPlayers.push({id: data.host, ...data.players[data.host]}); Object.keys(data.players).forEach(k => { if(k !== data.host) lobbyPlayers.push({id: k, ...data.players[k]}); }); } 
+                if(!snap.exists()) { if(!isHost){tg.showAlert("Хост распустил лобби!"); closeLobby();} return; } 
+                let d = snap.val(); lobbyPlayers=[]; 
+                if(d.players) { if(d.players[d.host]) lobbyPlayers.push({id:d.host, ...d.players[d.host]}); Object.keys(d.players).forEach(k=>{if(k!==d.host) lobbyPlayers.push({id:k, ...d.players[k]});}); } 
                 renderLobbySlots(); 
-                if(data.game) { appState.selectedGameId = data.game; document.getElementById('selected-mode-text').innerText = "Готов к игре"; document.getElementById('selected-mode-text').style.color = '#34c759'; } 
+                if(d.game) { appState.selectedGameId = d.game; document.getElementById('selected-mode-text').innerText="Готов"; document.getElementById('selected-mode-text').style.color='#34c759'; } 
                 
-                // ИСПРАВЛЕН БАГ ЗАПУСКА: Теперь проверяем, что контейнер НЕ имеет статус display block
-                if(data.status === 'playing' && document.getElementById('game-container').style.display !== 'block') { startLocalGameUI(); } 
+                // CLICKER SYNC
+                if(d.game === 'clicker') {
+                    if(d.clickTime && !clickActive) { clickTimeSetting = d.clickTime; document.getElementById('click-time-val').innerText = clickTimeSetting+' сек'; }
+                    if(d.clickState === 'playing' && !clickActive) { startClickerGame(); }
+                    if(d.clickScores && Object.keys(d.clickScores).length === lobbyPlayers.filter(p=>p.id!=='ИИ').length && d.clickState==='playing') {
+                        let t="ОЧКИ:\n", mx=-1, w=[];
+                        Object.keys(d.clickScores).forEach(k=>{ let nm=lobbyPlayers.find(p=>p.id===k)?.name||'Игрок'; t+=`${nm}: ${d.clickScores[k]}\n`; if(d.clickScores[k]>mx){mx=d.clickScores[k];w=[k];} else if(d.clickScores[k]===mx) w.push(k); });
+                        let win = w.includes(myId); showResult(win?"ПОБЕДА!":"ПОРАЖЕНИЕ", win?'#34c759':'#ff453a','⏱️',t); db.ref(`lobbies/${lobbyId}/clickState`).set('ended');
+                    }
+                }
+                
+                if(d.status === 'playing' && document.getElementById('game-container').style.display !== 'block') { startLocalGameUI(); } 
             }); 
         }
-        function openModeSelect() { if(isHost) document.getElementById('mode-modal').classList.remove('hidden'); else tg.showAlert("Только Хост выбирает!"); }
+        function openModeSelect() { if(isHost) document.getElementById('mode-modal').classList.remove('hidden'); else tg.showAlert("Только Хост!"); }
         function closeModeModal() { document.getElementById('mode-modal').classList.add('hidden'); }
         function setGameMode(id, name) { db.ref(`lobbies/${lobbyId}/game`).set(id); closeModeModal(); }
-        function startLobbyGame() { 
-            if(!isHost) return tg.showAlert("Только Хост запускает игру!"); 
-            if(!appState.selectedGameId) return tg.showAlert("Выбери режим!"); 
-            let hasReal = lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'ИИ'; 
-            if (hasReal || lobbyPlayers.length > 2) db.ref(`lobbies/${lobbyId}`).update({ status: 'playing', tttBoard: [''], tttTurn: 0 }); 
-            else startLocalGameUI(); 
-        }
+        function startLobbyGame() { if(!isHost) return tg.showAlert("Только Хост!"); if(!appState.selectedGameId) return tg.showAlert("Выбери режим!"); let hasReal = lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'; if (hasReal || lobbyPlayers.length>2) { if(appState.selectedGameId==='tictactoe') db.ref(`lobbies/${lobbyId}`).update({status:'playing', tttBoard:[''], tttTurn:0}); else if(appState.selectedGameId==='clicker') db.ref(`lobbies/${lobbyId}`).update({status:'playing', clickState:'waiting', clickScores:null}); else db.ref(`lobbies/${lobbyId}/status`).set('playing'); } else startLocalGameUI(); }
 
         function startLocalGameUI() { 
-            appState.game = appState.selectedGameId; document.getElementById('game-container').style.display = 'block'; 
-            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active')); 
-            if(appState.game === 'math') document.getElementById('screen-game-math-menu').classList.add('active'); 
-            else { 
-                document.getElementById('pause-btn').style.display = 'flex'; document.getElementById('screen-game-'+appState.game).classList.add('active'); 
-                if(appState.game === 'tictactoe') initTicTacToe(); else if(appState.game === 'hidden') initHiddenGame(); else if(appState.game === 'clicker') initClicker(); 
-            } 
+            appState.game = appState.selectedGameId; document.getElementById('game-container').style.display='block'; document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); document.getElementById('game-top-coins').style.display = appState.game==='math'?'none':'block';
+            if(appState.game==='math') document.getElementById('screen-game-math-menu').classList.add('active'); 
+            else { document.getElementById('pause-btn').style.display='flex'; document.getElementById('screen-game-'+appState.game).classList.add('active'); if(appState.game==='tictactoe') initTicTacToe(); else if(appState.game==='hidden') initHiddenGame(); else if(appState.game==='clicker') initClickerUI(); } 
         }
-
-        function togglePause(p) { appState.isPaused = p; document.getElementById('pause-overlay').classList.toggle('hidden', !p); }
-        function exitToLobby() { togglePause(false); document.getElementById('game-container').style.display = 'none'; if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); if(tttRef) tttRef.off(); }
-        function setIsland(t, c='#fff') { let is = document.getElementById('dynamic-island'); document.getElementById('island-text').innerText = t; is.style.display = 'block'; is.style.border = `2px solid ${c}`; }
-        function showResult(t, bg, em, sub='') { document.getElementById('dynamic-island').style.display='none'; document.getElementById('pause-btn').style.display='none'; let ov = document.getElementById('result-overlay'); ov.style.backgroundColor=bg; document.getElementById('result-text').innerText=t; document.getElementById('result-emoji').innerText=em; document.getElementById('result-subtext').innerText=sub; ov.classList.remove('hidden'); tg.HapticFeedback.notificationOccurred('success'); }
+        function togglePause(p) { appState.isPaused=p; document.getElementById('pause-overlay').classList.toggle('hidden', !p); }
+        function exitToLobby() { togglePause(false); document.getElementById('game-container').style.display='none'; document.getElementById('game-top-coins').style.display='none'; if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); if(tttRef) tttRef.off(); }
+        function setIsland(t, c='#fff') { let is = document.getElementById('dynamic-island'); document.getElementById('island-text').innerText=t; is.style.display='block'; is.style.border=`2px solid ${c}`; }
+        function showResult(t, bg, em, sub='') { document.getElementById('dynamic-island').style.display='none'; document.getElementById('pause-btn').style.display='none'; let ov=document.getElementById('result-overlay'); ov.style.backgroundColor=bg; document.getElementById('result-text').innerText=t; document.getElementById('result-emoji').innerText=em; document.getElementById('result-subtext').innerText=sub; ov.classList.remove('hidden'); }
         function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); exitToLobby(); }
 
+        // ================= КЛИКЕР СИНХРОН =================
+        let clicks=0, clickTimeSetting=15, clickTimeCurrent=0, clickInterval, clickActive=false;
+        function changeClickTime(delta) { if(clickActive||appState.isPaused) return; if(!isHost) return tg.showAlert("Только Хост меняет время!"); let n = Math.max(5,Math.min(100,clickTimeSetting+delta)); db.ref(`lobbies/${lobbyId}/clickTime`).set(n); }
+        function initClickerUI() { clicks=0; clickActive=false; clearInterval(clickInterval); document.getElementById('click-score').innerText=0; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; document.getElementById('clicker-controls').style.display='flex'; document.getElementById('click-btn').style.display='block'; document.getElementById('clk-btn-m').style.display = isHost?'block':'none'; document.getElementById('clk-btn-p').style.display = isHost?'block':'none'; document.getElementById('clk-msg').innerText = isHost?"Настрой время и ЖМИ!":"Жди запуска..."; setIsland(isHost?'Настраивай!':'Ожидание...'); }
+        function doClickStart() { if(appState.isPaused) return; if(!clickActive) { if(isHost) db.ref(`lobbies/${lobbyId}/clickState`).set('playing'); else tg.showAlert("Жди хоста!"); } else { clicks++; document.getElementById('click-score').innerText=clicks; } }
+        function startClickerGame() { clickActive=true; clickTimeCurrent=clickTimeSetting; clicks=0; document.getElementById('click-score').innerText=0; document.getElementById('clicker-controls').style.display='none'; document.getElementById('clk-msg').innerText="ТАПАЙ!!!"; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; document.getElementById('click-btn').style.display='none'; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ db.ref(`lobbies/${lobbyId}/clickScores/${myId}`).set(clicks); setIsland("Ждем остальных..."); } else { let rew=Math.floor(clicks/10); addCoins(rew); showResult(`Счет: ${clicks}`,'#ff9f0a','⏱️',`+${rew} 🪙`); } } },1000); }
+
         // ================= МАСШТАБНЫЕ КРЕСТИКИ НОЛИКИ =================
-        let tttBoard = [], tttTurnIdx = 0, tttGameOver = false;
-        let tttSize = 3, tttWinReq = 3;
-        const TTT_SYMBOLS = ['x', 'o', 'triangle', 'square', 'minus'];
-        const TTT_CHARS = { 'x': '❌', 'o': '⭕', 'triangle': '🔺', 'square': '🔲', 'minus': '➖' };
-        const TTT_COLORS = { 'x': '#ff453a', 'o': '#32ade6', 'triangle': '#34c759', 'square': '#ff9f0a', 'minus': '#af52de' };
-
-        function initTicTacToe() {
-            tttGameOver = false; tttTurnIdx = 0;
-            let pCount = lobbyPlayers.length; if(pCount < 2) pCount = 2; 
-            
-            if(pCount <= 2) { tttSize = 3; tttWinReq = 3; }
-            else if(pCount === 3) { tttSize = 5; tttWinReq = 4; }
-            else if(pCount === 4) { tttSize = 7; tttWinReq = 4; }
-            else { tttSize = 9; tttWinReq = 5; }
-            
-            document.getElementById('ttt-board').style.gridTemplateColumns = `repeat(${tttSize}, 1fr)`;
-            document.getElementById('ttt-board').style.gridTemplateRows = `repeat(${tttSize}, 1fr)`;
-            
-            if (lobbyPlayers.length > 1 && lobbyPlayers[1].id !== 'ИИ') {
-                if(tttRef) tttRef.off(); tttRef = db.ref(`lobbies/${lobbyId}`);
-                if(isHost) db.ref(`lobbies/${lobbyId}`).update({ tttBoard: new Array(tttSize*tttSize).fill(''), tttTurn: 0 });
-                tttRef.on('value', snap => {
-                    if(!snap.exists() || snap.val().status !== 'playing') return;
-                    let data = snap.val(); tttBoard = data.tttBoard || new Array(tttSize*tttSize).fill(''); tttTurnIdx = data.tttTurn || 0;
-                    if (checkDynamicWin(true)) return;
-                    renderTicTacToe();
-                    let myIdx = lobbyPlayers.findIndex(p => p.id === myId);
-                    setIsland(tttTurnIdx === myIdx ? "ТВОЙ ХОД!" : `ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]);
-                });
-            } else {
-                tttBoard = new Array(tttSize*tttSize).fill(''); renderTicTacToe();
-                if(lobbyPlayers.length > 1 && lobbyPlayers[1].id === 'ИИ') setIsland('Твой ход! (❌)', '#34c759');
-                else setIsland('Ход: ❌ (На 1 устройстве)', '#ff453a');
-            }
-        }
-
-        function renderTicTacToe() { 
-            const b = document.getElementById('ttt-board'); b.innerHTML = ''; 
-            let fSize = Math.max(3, 12 - tttSize) + 'vh';
-            tttBoard.forEach((cell, i) => { 
-                let div = document.createElement('div'); div.className = `cell ${cell}`; 
-                div.innerText = cell ? TTT_CHARS[cell] : ''; div.style.fontSize = fSize;
-                div.onclick = () => moveTicTacToe(i); b.appendChild(div); 
-            }); 
-        }
-
-        function moveTicTacToe(i) {
-            if (tttGameOver || tttBoard[i] || appState.isPaused) return;
-            if (lobbyPlayers.length <= 1) { 
-                tttBoard[i] = TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return;
-                tttTurnIdx = (tttTurnIdx + 1) % 2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]);
-            } else if (lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ') { 
-                if(tttTurnIdx !== 0) return;
-                tttBoard[i] = 'x'; renderTicTacToe(); if(checkDynamicWin(false)) return;
-                tttTurnIdx = 1; setIsland("ИИ ДУМАЕТ...", '#ff9f0a'); setTimeout(makeBotDynamicMove, 800);
-            } else { 
-                let myIdx = lobbyPlayers.findIndex(p => p.id === myId);
-                if (tttTurnIdx !== myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`);
-                tttBoard[i] = TTT_SYMBOLS[myIdx];
-                let next = (tttTurnIdx + 1) % lobbyPlayers.length;
-                db.ref(`lobbies/${lobbyId}`).update({ tttBoard: tttBoard, tttTurn: next });
-            }
-        }
-
-        function makeBotDynamicMove() {
-            if (tttGameOver || appState.isPaused) return;
-            let empty = []; tttBoard.forEach((c, i) => { if(!c) empty.push(i); });
-            if (empty.length > 0) {
-                tttBoard[empty[Math.floor(Math.random() * empty.length)]] = 'o'; renderTicTacToe();
-                if(checkDynamicWin(false)) return; tttTurnIdx = 0; setIsland("ТВОЙ ХОД!", '#34c759');
-            }
-        }
-
-        function checkDynamicWin(isOnline) {
-            let s = tttSize, req = tttWinReq; let winner = null;
-            for(let r=0; r<s; r++) {
-                for(let c=0; c<s; c++) {
-                    let sym = tttBoard[r*s+c]; if(!sym) continue;
-                    if(c <= s-req) { let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; }
-                    if(r <= s-req) { let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; }
-                    if(c <= s-req && r <= s-req) { let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; }
-                    if(c >= req-1 && r <= s-req) { let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; }
-                }
-            }
-            if (winner) {
-                tttGameOver = true; if(isOnline && tttRef) tttRef.off();
-                let wName = lobbyPlayers.length <= 1 ? `ПОБЕДИЛ ${TTT_CHARS[winner]}!` : (TTT_SYMBOLS.indexOf(winner) === lobbyPlayers.findIndex(p=>p.id===myId) ? "ПОБЕДА!" : "ПОРАЖЕНИЕ!");
-                if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === 'o') wName = "ИИ ВЫИГРАЛ!";
-                setTimeout(()=>showResult(wName, TTT_COLORS[winner], TTT_CHARS[winner]), 300); return true;
-            } else if (!tttBoard.includes('')) {
-                tttGameOver = true; if(isOnline && tttRef) tttRef.off();
-                setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true;
-            }
-            return false;
-        }
+        let tttBoard=[], tttTurnIdx=0, tttGameOver=false, tttSize=3, tttWinReq=3; const TTT_SYMBOLS=['x','o','triangle','square','minus']; const TTT_CHARS={'x':'❌','o':'⭕','triangle':'🔺','square':'🔲','minus':'➖'}; const TTT_COLORS={'x':'#ff453a','o':'#32ade6','triangle':'#34c759','square':'#ff9f0a','minus':'#af52de'};
+        function initTicTacToe() { tttGameOver=false; tttTurnIdx=0; let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=4;} else{tttSize=9;tttWinReq=5;} document.getElementById('ttt-board').style.gridTemplateColumns=`repeat(${tttSize}, 1fr)`; document.getElementById('ttt-board').style.gridTemplateRows=`repeat(${tttSize}, 1fr)`; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ if(tttRef) tttRef.off(); tttRef=db.ref(`lobbies/${lobbyId}`); if(isHost) db.ref(`lobbies/${lobbyId}`).update({tttBoard:new Array(tttSize*tttSize).fill(''), tttTurn:0}); tttRef.on('value', snap=>{ if(!snap.exists()||snap.val().status!=='playing') return; let data=snap.val(); tttBoard=data.tttBoard||new Array(tttSize*tttSize).fill(''); tttTurnIdx=data.tttTurn||0; if(checkDynamicWin(true)) return; renderTicTacToe(); let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); setIsland(tttTurnIdx===myIdx?"ТВОЙ ХОД!":`ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); }); } else { tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe(); if(lobbyPlayers.length>1&&lobbyPlayers[1].id==='ИИ') setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a'); } }
+        function renderTicTacToe() { const b=document.getElementById('ttt-board'); b.innerHTML=''; let fSize=Math.max(3, 12-tttSize)+'vh'; tttBoard.forEach((cell,i)=>{ let div=document.createElement('div'); div.className=`cell ${cell}`; div.innerText=cell?TTT_CHARS[cell]:''; div.style.fontSize=fSize; div.onclick=()=>moveTicTacToe(i); b.appendChild(div); }); }
+        function moveTicTacToe(i) { if(tttGameOver||tttBoard[i]||appState.isPaused) return; if(lobbyPlayers.length<=1){ tttBoard[i]=TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=(tttTurnIdx+1)%2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); } else if(lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ'){ if(tttTurnIdx!==0) return; tttBoard[i]='x'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=1; setIsland("ИИ ДУМАЕТ...",'#ff9f0a'); setTimeout(makeBotDynamicMove,800); } else { let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); if(tttTurnIdx!==myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`); tttBoard[i]=TTT_SYMBOLS[myIdx]; let next=(tttTurnIdx+1)%lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({tttBoard:tttBoard, tttTurn:next}); } }
+        function makeBotDynamicMove() { if(tttGameOver||appState.isPaused) return; let empty=[]; tttBoard.forEach((c,i)=>{if(!c)empty.push(i);}); if(empty.length>0){ tttBoard[empty[Math.floor(Math.random()*empty.length)]]='o'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=0; setIsland("ТВОЙ ХОД!",'#34c759'); } }
+        function checkDynamicWin(isOnline) { let s=tttSize, req=tttWinReq; let winner=null; for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } if(winner){ tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); let wName=lobbyPlayers.length<=1?`ПОБЕДИЛ ${TTT_CHARS[winner]}!`:(TTT_SYMBOLS.indexOf(winner)===lobbyPlayers.findIndex(p=>p.id===myId)?"ПОБЕДА!":"ПОРАЖЕНИЕ!"); if(lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ'&&winner==='o') wName="ИИ ВЫИГРАЛ!"; setTimeout(()=>showResult(wName, TTT_COLORS[winner], TTT_CHARS[winner]), 300); return true; } else if(!tttBoard.includes('')){ tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!",'#ffd60a','🤝'), 300); return true; } return false; }
 
         // ================= ПОИСК ПРЕДМЕТОВ =================
         const ALL_ITEMS = ['🍎','🔑','💎','👑','🧸','🍔','🎸','⚽','📱','🕶️','🍉','🦴']; let hiddenFound=0, hiddenMisses=0;
-        function initHiddenGame() { 
-            document.getElementById('hidden-found').innerText = '0'; const scene = document.getElementById('hidden-scene'); scene.innerHTML = ''; 
-            for(let i=0; i<15; i++) {
-                let tx = 10 + Math.random() * 80; let ty = 10 + Math.random() * 80;
-                let item = document.createElement('div'); item.className = 'hidden-item'; item.innerText = ALL_ITEMS[Math.floor(Math.random() * ALL_ITEMS.length)];
-                item.style.left = tx + '%'; item.style.top = ty + '%'; item.style.zIndex = '10';
-                item.onmousedown = (e) => hitHiddenItem(e, item); item.ontouchstart = (e) => { e.preventDefault(); hitHiddenItem(e, item); }; scene.appendChild(item);
-                
-                let d = document.createElement('div'); d.className = 'scene-decor'; d.innerText = ['🌲', '☁️', '🍄', '🌿', '🍂', '🍁'][Math.floor(Math.random()*6)];
-                d.style.left = (tx + (Math.random() * 4 - 2)) + '%'; d.style.top = (ty + (Math.random() * 4 - 2)) + '%'; d.style.zIndex = '15'; scene.appendChild(d);
-            }
-            for(let i=0; i<15; i++) { let d = document.createElement('div'); d.className = 'scene-decor'; d.innerText = ['🌲', '☁️', '🍄', '🌿', '🍂', '🍁'][Math.floor(Math.random()*6)]; d.style.left = (10+Math.random()*80)+'%'; d.style.top = (10+Math.random()*80)+'%'; d.style.zIndex = '15'; scene.appendChild(d); }
-            setIsland(`Найди 15 предметов!`); hiddenFound=0; hiddenMisses=0; 
-        }
-        function hitHiddenItem(e, el) { e.stopPropagation(); if(appState.isPaused) return; el.remove(); hiddenFound++; document.getElementById('hidden-found').innerText=hiddenFound; setIsland('Найдено!','#34c759'); if(hiddenFound>=15) { if(lobbyPlayers.length>1){ let oppMisses=Math.floor(Math.random()*6); let win=hiddenMisses<=oppMisses; setTimeout(()=>showResult(win?"ВЫИГРАЛ!":"ПРОИГРАЛ!",win?'#34c759':'#ff453a','🕵️‍♂️',`Твои ошибки: ${hiddenMisses}\nОшибки соперника: ${oppMisses}`),500); } else { addCoins(15); setTimeout(()=>showResult('Пройдено!','#34c759','🕵️‍♂️','+15 🪙'),500); } } }
-        function missHiddenClick(e) { if(appState.isPaused) return; hiddenMisses++; if(lobbyPlayers.length===1) addCoins(-2); setIsland('Мимо!','#ff453a'); }
+        function initHiddenGame() { document.getElementById('hidden-found').innerText='0'; const scene=document.getElementById('hidden-scene'); scene.innerHTML=''; for(let i=0;i<15;i++){ let tx=10+Math.random()*80; let ty=10+Math.random()*80; let item=document.createElement('div'); item.className='hidden-item'; item.innerText=ALL_ITEMS[Math.floor(Math.random()*ALL_ITEMS.length)]; item.style.left=tx+'%'; item.style.top=ty+'%'; item.style.zIndex='10'; item.onmousedown=(e)=>hitHiddenItem(e,item); item.ontouchstart=(e)=>{e.preventDefault(); hitHiddenItem(e,item);}; scene.appendChild(item); let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; d.style.left=(tx+(Math.random()*4-2))+'%'; d.style.top=(ty+(Math.random()*4-2))+'%'; d.style.zIndex='15'; scene.appendChild(d); } for(let i=0;i<15;i++){ let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; d.style.left=(10+Math.random()*80)+'%'; d.style.top=(10+Math.random()*80)+'%'; d.style.zIndex='15'; scene.appendChild(d); } setIsland(`Найди 15 предметов!`); hiddenFound=0; hiddenMisses=0; }
+        function hitHiddenItem(e, el) { e.stopPropagation(); if(appState.isPaused) return; el.remove(); hiddenFound++; addCoins(1); document.getElementById('hidden-found').innerText=hiddenFound; setIsland('Найдено!','#34c759'); if(hiddenFound>=15) { if(lobbyPlayers.length>1){ let oppMisses=Math.floor(Math.random()*6); let win=hiddenMisses<=oppMisses; setTimeout(()=>showResult(win?"ВЫИГРАЛ!":"ПРОИГРАЛ!",win?'#34c759':'#ff453a','🕵️‍♂️',`Твои ошибки: ${hiddenMisses}\nОшибки соперника: ${oppMisses}`),500); } else { setTimeout(()=>showResult('Пройдено!','#34c759','🕵️‍♂️','Все найдено!'),500); } } }
+        function missHiddenClick(e) { if(appState.isPaused) return; hiddenMisses++; setIsland('Мимо!','#ff453a'); }
 
         // ================= МАТЕМАТИКА =================
-        let mathAns = 0; let mathProgressCount = 0; let mathMode3State = { seq: [], currentTarget: 0 };
-        function drawMathProgress(mode) { const c = document.getElementById(`math-prog-${mode}`); if(!c) return; c.innerHTML = ''; for(let i=0; i<10; i++) { let dot = document.createElement('div'); dot.className = 'math-dot'; if(i < mathProgressCount) dot.classList.add('done-dot'); else if(i === mathProgressCount) dot.classList.add('active-dot'); c.appendChild(dot); } }
-        function generateSimpleMath() { let isAdd = Math.random()>0.5; let a,b; if(isAdd){ a=Math.floor(Math.random()*8)+1; b=Math.floor(Math.random()*(9-a))+1; mathAns=a+b; return `${a} + ${b} = `;} else{ a=Math.floor(Math.random()*8)+2; b=Math.floor(Math.random()*(a-1))+1; mathAns=a-b; return `${a} - ${b} = `;} }
-        function startMathMode(mode) { document.getElementById('screen-game-math-menu').classList.remove('active'); document.getElementById('pause-btn').style.display = 'flex'; mathProgressCount = 0; document.getElementById(`screen-game-math-${mode}`).classList.add('active'); if(mode===1) nextMath1(); else if(mode===2) nextMath2(); else initMath3(); }
-        function handleMathWin() { mathProgressCount++; if(mathProgressCount>=10) { addCoins(10); setTimeout(()=>showResult('МОЛОДЕЦ!', '#34c759', '🎓', 'Ты прошел 10 заданий!\n+10 🪙'), 500); } }
+        let mathAns=0, mathProgressCount=0, lastMathQ='', mathMode3State={seq:[], currentTarget:0};
+        function drawMathProgress(mode) { const c=document.getElementById(`math-prog-${mode}`); if(!c) return; c.innerHTML=''; for(let i=0;i<10;i++){ let dot=document.createElement('div'); dot.className='math-dot'; if(i<mathProgressCount) dot.classList.add('done-dot'); else if(i===mathProgressCount) dot.classList.add('active-dot'); c.appendChild(dot); } }
+        function generateSimpleMath() { let q=''; let a,b; do { let isAdd=Math.random()>0.5; if(isAdd){a=Math.floor(Math.random()*8)+1; b=Math.floor(Math.random()*(9-a))+1; mathAns=a+b; q=`${a} + ${b} = `;} else{a=Math.floor(Math.random()*8)+2; b=Math.floor(Math.random()*(a-1))+1; mathAns=a-b; q=`${a} - ${b} = `;} } while(q===lastMathQ); lastMathQ=q; return q; }
+        function startMathMode(mode) { document.getElementById('screen-game-math-menu').classList.remove('active'); document.getElementById('pause-btn').style.display='flex'; document.getElementById('game-top-coins').style.display='block'; mathProgressCount=0; document.getElementById(`screen-game-math-${mode}`).classList.add('active'); if(mode===1) nextMath1(); else if(mode===2) nextMath2(); else initMath3(); }
+        function handleMathWin() { mathProgressCount++; addCoins(1); if(mathProgressCount>=10) setTimeout(()=>showResult('МОЛОДЕЦ!','#34c759','🎓','10 из 10!'),500); }
         function nextMath1() { if(mathProgressCount>=10) return; drawMathProgress(1); document.getElementById('math1-q').innerText=generateSimpleMath(); document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a'; }
-        function math1Input(n) { document.getElementById('math1-ans').innerText=n; if(n===mathAns){ document.getElementById('math1-ans').style.color='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath1,1000); } else { document.getElementById('math1-ans').style.color='#ff453a'; setTimeout(()=>{document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a';},800); } }
-        function nextMath2() { if(mathProgressCount>=10) return; drawMathProgress(2); document.getElementById('math2-q').innerText=generateSimpleMath()+"?"; let cards=[mathAns]; while(cards.length<4){ let r=Math.floor(Math.random()*10); if(!cards.includes(r)) cards.push(r); } cards.sort(()=>Math.random()-0.5); const grid=document.getElementById('math2-cards'); grid.innerHTML=''; cards.forEach(c => { let btn=document.createElement('button'); btn.className='math-ans-card'; btn.innerText=c; btn.onclick=()=>{ if(c===mathAns){ btn.style.background='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath2,1000); } else { btn.style.background='#ff453a'; btn.classList.add('shake'); setTimeout(()=>{btn.style.background='#ff9f0a'; btn.classList.remove('shake');},800); } }; grid.appendChild(btn); }); }
-        function initMath3() { let start = Math.floor(Math.random()*80)+1; mathMode3State.seq = Array.from({length:10}, (_,i)=>start+i); mathMode3State.currentTarget=0; let shuf = [...mathMode3State.seq].sort(()=>Math.random()-0.5); const s = document.getElementById('math3-slots'); s.innerHTML=''; const items = document.getElementById('math3-items'); items.innerHTML=''; for(let i=0; i<10; i++) { let slot = document.createElement('div'); slot.className='math-slot'; slot.id=`m3-slot-${i}`; s.appendChild(slot); let item = document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.onclick=()=>{ if(parseInt(item.innerText)===mathMode3State.seq[mathMode3State.currentTarget]){ let cSlot = document.getElementById(`m3-slot-${mathMode3State.currentTarget}`); cSlot.innerText=item.innerText; cSlot.style.background='#3390ec'; cSlot.style.border='none'; item.style.visibility='hidden'; mathMode3State.currentTarget++; if(mathMode3State.currentTarget>=10){ addCoins(5); setTimeout(()=>showResult('СУПЕР!','#34c759','🧩','+5 🪙'),500); } } else { item.classList.add('shake'); setTimeout(()=>item.classList.remove('shake'),400); } }; items.appendChild(item); } }
-
-        // ================= КЛИКЕР =================
-        let clicks=0, clickTimeSetting=15, clickTimeCurrent=0, clickInterval, clickActive=false;
-        function changeClickTime(delta) { if(clickActive||appState.isPaused) return; clickTimeSetting=Math.max(5,Math.min(100,clickTimeSetting+delta)); clickTimeCurrent=clickTimeSetting; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; }
-        function initClicker() { clicks=0; clickTimeCurrent=clickTimeSetting; clickActive=false; clearInterval(clickInterval); document.getElementById('click-score').innerText=0; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; document.getElementById('clicker-controls').style.display='flex'; setIsland('Настрой время и ЖМИ!'); }
-        function doClick() { if(appState.isPaused) return; if(!clickActive&&clickTimeCurrent>0){ clickActive=true; document.getElementById('clicker-controls').style.display='none'; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; if(lobbyPlayers.length>1){ let oppClicks=clickTimeSetting*(3+Math.floor(Math.random()*4)); let win=clicks>=oppClicks; setTimeout(()=>showResult(win?"ПОБЕДА!":"ПОРАЖЕНИЕ",win?'#34c759':'#ff453a','⏱️',`Твой счет: ${clicks}\nСчет соперника: ${oppClicks}`),300); }else{ let reward=Math.floor(clicks/10); addCoins(reward); showResult(`Счет: ${clicks}`,'#ff9f0a','⏱️',`+${reward} 🪙`); } } },1000); } if(clickActive){ clicks++; document.getElementById('click-score').innerText=clicks; } }
+        function math1Input(n) { document.getElementById('math1-ans').innerText=n; if(n===mathAns){ document.getElementById('math1-ans').style.color='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath1,800); } else { document.getElementById('math1-ans').style.color='#ff453a'; setTimeout(()=>{document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='#ff9f0a';},800); } }
+        function nextMath2() { if(mathProgressCount>=10) return; drawMathProgress(2); document.getElementById('math2-q').innerText=generateSimpleMath()+"?"; let cards=[mathAns]; while(cards.length<4){ let r=Math.floor(Math.random()*10); if(!cards.includes(r)) cards.push(r); } cards.sort(()=>Math.random()-0.5); const grid=document.getElementById('math2-cards'); grid.innerHTML=''; cards.forEach(c=>{ let btn=document.createElement('button'); btn.className='math-ans-card'; btn.innerText=c; btn.onclick=()=>{ if(c===mathAns){ btn.style.background='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath2,800); } else { btn.style.background='#ff453a'; btn.classList.add('shake'); setTimeout(()=>{btn.style.background='#ff9f0a'; btn.classList.remove('shake');},800); } }; grid.appendChild(btn); }); }
+        function initMath3() { let start=Math.floor(Math.random()*80)+1; mathMode3State.seq=Array.from({length:10}, (_,i)=>start+i); mathMode3State.currentTarget=0; let shuf=[...mathMode3State.seq].sort(()=>Math.random()-0.5); const s=document.getElementById('math3-slots'); s.innerHTML=''; const items=document.getElementById('math3-items'); items.innerHTML=''; for(let i=0;i<10;i++){ let slot=document.createElement('div'); slot.className='math-slot'; slot.id=`m3-slot-${i}`; s.appendChild(slot); let item=document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.onclick=()=>{ if(parseInt(item.innerText)===mathMode3State.seq[mathMode3State.currentTarget]){ let cSlot=document.getElementById(`m3-slot-${mathMode3State.currentTarget}`); cSlot.innerText=item.innerText; cSlot.style.background='#3390ec'; cSlot.style.border='none'; item.style.visibility='hidden'; addCoins(1); mathMode3State.currentTarget++; if(mathMode3State.currentTarget>=10) setTimeout(()=>showResult('СУПЕР!','#34c759','🧩','Все собрано!'),500); } else { item.classList.add('shake'); setTimeout(()=>item.classList.remove('shake'),400); } }; items.appendChild(item); } }
 
     </script>
 </body>
