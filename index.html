@@ -82,7 +82,7 @@
             <div class="nav-item active" onclick="switchTab('profile', this)"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
             <div class="nav-item" onclick="switchTab('inv', this)"><div class="nav-icon">🎒</div><div class="nav-text">Инвентарь</div></div>
             <div class="nav-item" onclick="switchTab('friends', this)"><div class="nav-icon">👥</div><div class="nav-text">Друзья</div></div>
-            <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this)"><div class="nav-icon">🛠️</div><div class="nav-text">Разраб</div></div>
+            <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this)"><div class="nav-icon">👨‍💻</div><div class="nav-text">Разраб</div></div>
         </div>
 
         <div class="main-content">
@@ -90,7 +90,7 @@
                 <div class="profile-mega-box">
                     <div class="profile-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
                     <div class="profile-name" id="my-name" onclick="changeName()">Игрок ✏️</div><br>
-                    <div class="profile-id" id="my-id-display" onclick="tryAdminLogin()">ID: ...</div>
+                    <div class="profile-id" id="my-id-display">ID: ...</div>
                     <div class="profile-coins">🪙 <span id="menu-coins">0</span></div>
                 </div>
             </div>
@@ -134,27 +134,59 @@
             </div>
             
             <div id="tab-admin" class="tab-view" style="flex-direction: column;">
-                <h3 style="color:#ff453a; margin-top:0; margin-bottom:10px;">Доступ: РАЗРАБОТЧИК</h3>
+                <h2 style="text-align:center; color:#ff9f0a; margin-top:0;">Панель Разработчика</h2>
                 <div class="sub-tabs-header">
-                    <button class="sub-tab-btn active" onclick="switchSubTab('admin','add-admin',this)">Админы</button>
+                    <button class="sub-tab-btn active" onclick="switchSubTab('admin','admins',this)">АДМИНЫ</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('admin','coins',this)">МОНЕТЫ</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОДЫ</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОД</button>
                 </div>
-                
-                <div id="adm-add-admin" class="sub-tab-content active">
-                    <input type="text" id="adm-id-input" class="styled-input" placeholder="ID игрока (4 цифры)">
-                    <button class="btn btn-red" onclick="tg.showAlert('Игрок назначен админом!')">ВЫДАТЬ ПРАВА</button>
+
+                <div id="adm-admins" class="sub-tab-content active">
+                    <div class="mini-tabs-header">
+                        <button class="mini-tab-btn active" onclick="switchMiniTab('adm-add',this)">ДОБАВИТЬ</button>
+                        <button class="mini-tab-btn" onclick="switchMiniTab('adm-rem',this)">УДАЛИТЬ</button>
+                    </div>
+                    <div id="adm-add" class="mini-tab-content active">
+                        <input type="text" id="dev-add-admin-id" class="styled-input" placeholder="ID игрока">
+                        <button class="btn btn-green" onclick="addAdmin()">Сделать админом</button>
+                    </div>
+                    <div id="adm-rem" class="mini-tab-content">
+                        <p style="color:gray;font-size:12px;">Удаляет всех админов кроме тебя</p>
+                        <button class="btn btn-red" onclick="removeAllAdmins()">УДАЛИТЬ ВСЕХ</button>
+                    </div>
                 </div>
-                
+
                 <div id="adm-coins" class="sub-tab-content">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('c-give',this)">Выдать</button><button class="mini-tab-btn" onclick="switchMiniTab('c-take',this)">Забрать</button></div>
-                    <div id="c-give" class="mini-tab-content active"><input type="text" id="adm-coin-id" class="styled-input" placeholder="ID игрока"><input type="number" id="adm-coin-amount" class="styled-input" placeholder="Кол-во"><button class="btn btn-gold" onclick="adminCoins(1)">ОТПРАВИТЬ</button></div>
-                    <div id="c-take" class="mini-tab-content"><input type="text" id="adm-take-id" class="styled-input" placeholder="ID игрока"><input type="number" id="adm-take-amount" class="styled-input" placeholder="Кол-во"><button class="btn btn-red" onclick="adminCoins(-1)">ЗАБРАТЬ</button></div>
+                    <div class="mini-tabs-header">
+                        <button class="mini-tab-btn active" onclick="switchMiniTab('c-give',this)">ВЫДАТЬ</button>
+                        <button class="mini-tab-btn" onclick="switchMiniTab('c-take',this)">ЗАБРАТЬ</button>
+                    </div>
+                    <div id="c-give" class="mini-tab-content active">
+                        <input type="text" id="give-coin-id" class="styled-input" placeholder="ID игрока">
+                        <input type="number" id="give-coin-amount" class="styled-input" placeholder="Кол-во монет">
+                        <button class="btn btn-green" onclick="giveCoinsDev()">Выдать</button>
+                    </div>
+                    <div id="c-take" class="mini-tab-content">
+                        <input type="text" id="take-coin-id" class="styled-input" placeholder="ID игрока">
+                        <input type="number" id="take-coin-amount" class="styled-input" placeholder="Кол-во монет">
+                        <button class="btn btn-red" onclick="takeCoinsDev()">Забрать</button>
+                    </div>
                 </div>
+
                 <div id="adm-promos" class="sub-tab-content">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('promo-create', this)">Создать</button><button class="mini-tab-btn" onclick="switchMiniTab('promo-active', this)">Активные</button></div>
-                    <div id="promo-create" class="mini-tab-content active"><input type="text" id="adm-promo-code" class="styled-input" placeholder="Код"><input type="number" id="adm-promo-coins" class="styled-input" placeholder="Награда"><input type="number" id="adm-promo-acts" class="styled-input" placeholder="Активаций"><button class="btn btn-green" onclick="adminCreatePromo()">СОЗДАТЬ</button></div>
-                    <div id="promo-active" class="mini-tab-content" style="max-height:30vh;overflow-y:auto;width:350px;"></div>
+                    <div class="mini-tabs-header">
+                        <button class="mini-tab-btn active" onclick="switchMiniTab('promo-create', this)">СОЗДАТЬ</button>
+                        <button class="mini-tab-btn" onclick="switchMiniTab('promo-active', this)">АКТИВНЫЕ</button>
+                    </div>
+                    <div id="promo-create" class="mini-tab-content active">
+                        <input type="text" id="promo-name" class="styled-input" placeholder="Код промокода">
+                        <input type="number" id="promo-acts" class="styled-input" placeholder="Активаций">
+                        <input type="number" id="promo-reward" class="styled-input" placeholder="Награда (монеты)">
+                        <button class="btn btn-gold" onclick="createPromoDev()">СОЗДАТЬ</button>
+                    </div>
+                    <div id="promo-active" class="mini-tab-content" style="max-height:30vh;overflow-y:auto;width:350px;">
+                        <div id="dev-promo-list" style="width:100%;"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -258,16 +290,17 @@
                 else if(vals['my_id']) myId = vals['my_id']; 
                 else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} }
 
-                document.getElementById('my-id-display').innerText = myId === '0000' ? "ID: 0000" : `ID: ${myId}`;
+                document.getElementById('my-id-display').innerText = `ID: ${myId}`;
 
                 db.ref('users/' + myId).once('value').then(snap => {
+                    let tgName = tg.initDataUnsafe?.user?.first_name; // Приоритет имени ТГ
                     if(snap.exists()) {
                         let d = snap.val();
-                        myName = d.name || vals['my_name'] || tg.initDataUnsafe?.user?.first_name || "Игрок";
+                        myName = tgName || d.name || vals['my_name'] || "Игрок";
                         myAvatar = d.avatar || vals['my_avatar'] || "😎";
                         globalCoins = d.coins !== undefined ? d.coins : (parseInt(vals['player_coins']) || 0);
                     } else {
-                        myName = vals['my_name'] || tg.initDataUnsafe?.user?.first_name || "Игрок";
+                        myName = tgName || vals['my_name'] || "Игрок";
                         myAvatar = vals['my_avatar'] || "😎";
                         globalCoins = parseInt(vals['player_coins']) || 0;
                     }
@@ -275,6 +308,7 @@
                     updateCoinsUI();
                     checkAdminAccess();
                     
+                    // Обновляем БД актуальным именем
                     db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, coins: globalCoins });
 
                     db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } });
@@ -318,37 +352,40 @@
         function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
 
         function checkAdminAccess() {
-            document.getElementById('my-id-display').innerText = myId === '0000' ? "ID: 0000" : `ID: ${myId}`;
-            document.getElementById('nav-admin').style.display = myId === '0000' ? 'flex' : 'none';
+            let isDev = (myId === '8451'); // Панель только для разработчика 8451
+            document.getElementById('my-id-display').innerText = `ID: ${myId}`;
+            document.getElementById('nav-admin').style.display = isDev ? 'flex' : 'none';
             document.getElementById('my-name').innerHTML = `${myName} ✏️`; 
             document.getElementById('my-avatar').innerText = myAvatar;
             
             db.ref('users/' + myId).update({ name: myName, avatar: myAvatar });
             
-            if(myId === '0000') {
+            if(isDev) {
                 db.ref('promos').on('value', snap => {
-                    const list = document.getElementById('promo-active'); list.innerHTML = '';
-                    if(snap.exists()) { let data = snap.val(); Object.keys(data).forEach(k => { let div = document.createElement('div'); div.className = 'list-item'; div.innerHTML = `<div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">УДАЛИТЬ</button>`; list.appendChild(div); }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>';
+                    const list = document.getElementById('dev-promo-list'); if(!list) return;
+                    list.innerHTML = '';
+                    if(snap.exists()) { let data = snap.val(); Object.keys(data).forEach(k => { let div = document.createElement('div'); div.className = 'list-item'; div.innerHTML = `<div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">X</button>`; list.appendChild(div); }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>';
                 });
             }
         }
 
-        function tryAdminLogin() { if(myId === '0000') return; if(prompt("Пароль:") === "0000") { myId = "0000"; try{tg.CloudStorage.setItem('my_id', myId); tg.CloudStorage.setItem('dev_mode', 'true');}catch(e){} 
-            db.ref('users/0000').once('value').then(s => { if(s.exists()) { myName = s.val().name || "Игрок"; } checkAdminAccess(); tg.showAlert("Админ-панель открыта!"); });
-        }}
         function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} db.ref('users/' + myId).update({ name: myName }); checkAdminAccess(); } }
         function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML=''; EMOJIS.forEach(em => { let div=document.createElement('div'); div.className='emoji-item'; div.innerText=em; div.onclick=()=>{ myAvatar=em; try{tg.CloudStorage.setItem('my_avatar', myAvatar);}catch(e){} db.ref('users/' + myId).update({ avatar: myAvatar }); checkAdminAccess(); closeAvatarModal(); if(appState.inLobby && lobbyPlayers.length>0){lobbyPlayers[0].avatar=myAvatar; renderLobbySlots();} }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
-        function updateCoinsUI() { document.getElementById('menu-coins').innerText=globalCoins; document.getElementById('game-coins-val').innerText=globalCoins; document.getElementById('hidden-coins').innerText=globalCoins; }
+        function updateCoinsUI() { document.getElementById('menu-coins').innerText=globalCoins; document.getElementById('game-coins-val').innerText=globalCoins; }
         function addCoins(a) { globalCoins = Math.max(0, globalCoins+a); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} db.ref('users/'+myId+'/coins').set(globalCoins); }
 
         function switchTab(t, el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active')); document.getElementById('tab-'+t).classList.add('active'); }
         function switchSubTab(p, s, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${p} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${p==='inv'?'inv':'adm'}-${s}`).classList.add('active'); }
         function switchMiniTab(id, el) { el.parentElement.querySelectorAll('.mini-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.mini-tab-content').forEach(c => { if(c.parentElement.contains(el)) c.classList.remove('active'); }); document.getElementById(id).classList.add('active'); }
 
-        // --- АДМИНКА ---
-        function adminCoins(mult) { let t = document.getElementById(mult===1?'adm-coin-id':'adm-take-id').value; let a = parseInt(document.getElementById(mult===1?'adm-coin-amount':'adm-take-amount').value); if(!t||isNaN(a)) return; db.ref('users/'+t+'/coins').once('value').then(s => { if(s.exists()){ db.ref('users/'+t+'/coins').set(Math.max(0, s.val() + (a*mult))); tg.showAlert("Успех!"); } else tg.showAlert("Не найден!"); }); }
-        function adminCreatePromo() { let c = document.getElementById('adm-promo-code').value.toUpperCase(); let r = parseInt(document.getElementById('adm-promo-coins').value); let a = parseInt(document.getElementById('adm-promo-acts').value); if(!c||isNaN(r)||isNaN(a)) return; db.ref('promos/'+c).set({rew:r, acts:a}); tg.showAlert("Создан!"); }
+        // --- НОВЫЕ ФУНКЦИИ АДМИНКИ ---
+        function addAdmin() { let id = document.getElementById('dev-add-admin-id').value; if(!id) return; db.ref('admins/'+id).set(true); tg.showAlert('Добавлен в админы!'); }
+        function removeAllAdmins() { db.ref('admins').once('value').then(snap=>{ if(snap.exists()){ let a=snap.val(); for(let k in a){ if(k!=='8451') db.ref('admins/'+k).remove(); } tg.showAlert('Все кроме 8451 удалены'); } }); }
+        function giveCoinsDev() { let id=document.getElementById('give-coin-id').value; let a=parseInt(document.getElementById('give-coin-amount').value); if(!id||isNaN(a)) return; db.ref('users/'+id+'/coins').once('value').then(s=>{ let c=s.val()||0; db.ref('users/'+id+'/coins').set(c+a); tg.showAlert('Монеты выданы!'); }); }
+        function takeCoinsDev() { let id=document.getElementById('take-coin-id').value; let a=parseInt(document.getElementById('take-coin-amount').value); if(!id||isNaN(a)) return; db.ref('users/'+id+'/coins').once('value').then(s=>{ let c=s.val()||0; db.ref('users/'+id+'/coins').set(Math.max(0,c-a)); tg.showAlert('Монеты забраны!'); }); }
+        function createPromoDev() { let n=document.getElementById('promo-name').value.toUpperCase(); let a=parseInt(document.getElementById('promo-acts').value); let r=parseInt(document.getElementById('promo-reward').value); if(!n||isNaN(a)||isNaN(r)) return; db.ref('promos/'+n).set({acts:a, rew:r}); tg.showAlert('Промокод создан!'); }
+
         function redeemPromo() { let c = document.getElementById('promo-input').value.toUpperCase(); if(!c) return; db.ref(`users/${myId}/used_promos/${c}`).once('value').then(us => { if(us.exists()) return tg.showAlert("Уже юзал!"); db.ref(`promos/${c}`).once('value').then(ps => { if(!ps.exists()) return tg.showAlert("Нет кода!"); let d = ps.val(); if(d.acts<=0) return tg.showAlert("Лимит!"); db.ref(`promos/${c}/acts`).set(d.acts-1); db.ref(`users/${myId}/used_promos/${c}`).set(true); addCoins(d.rew); tg.showAlert(`+${d.rew} 🪙`); }); }); }
 
         // --- ДРУЗЬЯ ---
@@ -498,27 +535,50 @@
             });
         }
 
+        // --- ИСПРАВЛЕННАЯ ПРОВЕРКА ПОБЕДЫ (С ДИНАМИЧЕСКИМИ ГРАНИЦАМИ) ---
         function checkDynamicWin(isOnline) { 
             let s=tttSize, req=tttWinReq; let winner=null; 
-            for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } 
+            for(let r=0;r<s;r++){ 
+                for(let c=0;c<s;c++){ 
+                    let sym=tttBoard[r*s+c]; if(!sym) continue; 
+                    if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } 
+                    if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } 
+                    if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } 
+                    if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } 
+                } 
+            } 
             
+            if(!winner && !tttBoard.includes('')){ 
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
+                setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true;
+            }
+
             if(winner){ 
                 tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
                 
                 let isMyWin = false;
-                if (lobbyPlayers.length <= 1) isMyWin = true; 
-                else { let myIdx = lobbyPlayers.findIndex(p => p.id === myId); if (TTT_SYMBOLS.indexOf(winner) === myIdx) isMyWin = true; }
+                let myIdx = lobbyPlayers.findIndex(p => p.id === myId);
+                let winIdx = TTT_SYMBOLS.indexOf(winner);
 
-                let wName = lobbyPlayers.length <= 1 ? `ПОБЕДИЛ ${TTT_CHARS[winner]}!` : (isMyWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ!"); 
+                if (lobbyPlayers.length <= 1) isMyWin = true; 
+                else if (winIdx === myIdx) isMyWin = true;
+
+                let wName = "ИГРОК ПОБЕДИЛ!";
+                if(lobbyPlayers.length <= 1) wName = `ПОБЕДИЛ ${TTT_CHARS[winner]}!`;
+                else if (isMyWin) {
+                    wName = "ПОБЕДА!";
+                    db.ref('users/' + myId + '/coins').set(globalCoins + 50); // Награда за победу
+                }
+                else {
+                    wName = lobbyPlayers[winIdx] ? lobbyPlayers[winIdx].name : "ПОРАЖЕНИЕ!";
+                }
+
                 if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === 'o') { wName = "ИИ ВЫИГРАЛ!"; isMyWin = false; }
                 
                 let bg = isMyWin ? '#34c759' : '#ff453a'; 
                 if (lobbyPlayers.length <= 1) bg = TTT_COLORS[winner];
                 
                 setTimeout(()=>showResult(wName, bg, TTT_CHARS[winner]), 300); return true; 
-            } else if(!tttBoard.includes('')){ 
-                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
-                setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true;
             } 
             return false; 
         }
