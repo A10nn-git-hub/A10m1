@@ -23,7 +23,7 @@
         .main-content{flex-grow:1;position:relative;background:var(--bg);overflow:hidden;}
         .tab-view{display:none;width:100%;height:100%;padding:20px;box-sizing:border-box;} .tab-view.active{display:flex;}
         .sub-tabs-header{display:flex;justify-content:center;gap:10px;margin-bottom:20px;width:100%;}
-        .sub-tab-btn{background:#333;color:gray;padding:10px 20px;border-radius:20px;font-weight:bold;cursor:pointer;border:none;font-size:14px;} .sub-tab-btn.active{background:#3390ec;color:#fff;}
+        .sub-tab-btn{background:#333;color:gray;padding:10px 20px;border-radius:20px;font-weight:bold;cursor:pointer;border:none;font-size:14px;position:relative;} .sub-tab-btn.active{background:#3390ec;color:#fff;}
         .sub-tab-content{display:none;flex-direction:column;align-items:center;width:100%;flex-grow:1;overflow-y:auto;} .sub-tab-content.active{display:flex;}
         .mini-tabs-header{display:flex;gap:10px;margin-bottom:15px;width:100%;justify-content:center;}
         .mini-tab-btn{background:#444;color:gray;padding:8px 15px;border-radius:15px;border:none;font-size:13px;font-weight:bold;cursor:pointer;} .mini-tab-btn.active{background:var(--coin-col);color:#000;}
@@ -32,7 +32,7 @@
         .profile-mega-box{background:var(--panel-bg);padding:40px;border-radius:20px;text-align:center;border:2px solid #444;width:400px;box-shadow:0 10px 30px rgba(0,0,0,0.5);}
         .profile-avatar{font-size:80px;margin-bottom:10px;cursor:pointer;display:inline-block;padding:10px;background:rgba(255,255,255,0.05);border-radius:50%; transition: 0.2s;}
         .profile-name{font-size:32px;font-weight:900;margin-bottom:15px;cursor:pointer;border-bottom:2px dashed transparent;display:inline-block;}
-        .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px;cursor:pointer;}
+        .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px;}
         .profile-coins{font-size:24px;color:var(--coin-col);font-weight:bold;background:rgba(255,214,10,0.1);padding:10px 20px;border-radius:15px;border:1px solid var(--coin-col);display:inline-block;}
         .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;} .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:var(--coin-col);}
         .friends-list-panel{width:300px;background:var(--panel-bg);border-radius:20px;padding:15px;display:flex;flex-direction:column;}
@@ -53,19 +53,26 @@
         .cell.x{color:#ff453a;} .cell.o{color:#32ade6;} .cell.triangle{color:#34c759;} .cell.square{color:var(--coin-col);} .cell.minus{color:#af52de;}
         .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;}
         .giant-click-btn{width:50vw;height:40vh;border-radius:20px;font-size:10vh;font-weight:900;background:var(--coin-col);color:#000;border:none;}
-        
         .styled-input{padding:15px;border-radius:10px;border:2px solid #444;background:#111;color:#fff;font-size:18px;width:80%;margin-bottom:10px; text-align:left; direction:ltr; unicode-bidi:isolate;}
         .badge{display:none;background:red;color:white;border-radius:50%;padding:2px 6px;font-size:10px;position:absolute;top:-5px;right:-10px;}
         #top-notify{position:fixed;top:-100px;left:50%;transform:translateX(-50%);z-index:3000;padding:15px 30px;border-radius:20px;transition:0.4s;font-weight:bold;cursor:pointer;color:#fff;display:flex;gap:10px;align-items:center;box-shadow:0 5px 15px rgba(0,0,0,0.5);}
         #game-top-coins{position:absolute;top:10px;right:20px;font-size:24px;font-weight:bold;color:var(--coin-col);background:rgba(0,0,0,0.5);padding:5px 15px;border-radius:15px;z-index:1100;}
         
         .shop-item-card { background:#222; border:2px solid #444; border-radius:15px; padding:15px; width:180px; text-align:center; }
-        .shop-item-card.bought { opacity:0.5; border-color:#222; filter:grayscale(100%); pointer-events:none; }
+        .shop-item-card.bought { opacity:0.5; border-color:#222; filter:grayscale(100%); }
         .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:15px; padding:15px; width:160px; text-align:center; }
         .inv-item-card.equipped { border-color:#34c759; box-shadow:0 0 15px rgba(52,199,89,0.3); }
 
         @keyframes poopAlive { 0%, 100% { transform: scale(1, 1) translateY(0); } 15% { transform: scale(1.2, 0.8) translateY(10%); } 30% { transform: scale(0.9, 1.2) translateY(-20%); } 45% { transform: scale(1.05, 0.95) rotate(15deg); } 60% { transform: scale(1, 1) rotate(-15deg); } 75% { transform: scale(1.1, 0.9) translateY(5%); } }
         .anim-poop { display:inline-block; animation:poopAlive 1.5s ease-in-out infinite; filter:drop-shadow(0 5px 10px rgba(255,214,10,0.3)); font-size:inherit; line-height:1; }
+
+        @keyframes mironColors { 0% { color:#ff453a; text-shadow:0 0 10px #ff453a; } 33% { color:#32ade6; text-shadow:0 0 10px #32ade6; } 66% { color:#34c759; text-shadow:0 0 10px #34c759; } 100% { color:var(--coin-col); text-shadow:0 0 10px var(--coin-col); } }
+        @keyframes balloonFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .anim-miron { display:inline-block; font-weight:900; animation:mironColors 3s infinite alternate; }
+        .anim-miron::before { content:'🎈'; display:inline-block; animation:balloonFloat 2s ease-in-out infinite; margin-right:5px; font-size:24px; }
+        .anim-miron::after { content:'🎈'; display:inline-block; animation:balloonFloat 2.5s ease-in-out infinite; margin-left:5px; font-size:24px; }
+
+        .medal-badge { background:linear-gradient(45deg, #ffd60a, #ff9f0a); color:#000; padding:2px 8px; border-radius:10px; font-size:14px; font-weight:bold; cursor:pointer; box-shadow:0 2px 5px rgba(255,214,10,0.5); display:inline-block; margin-left:5px; }
 
         .math-menu-grid{display:flex;gap:20px;} .math-mode-card{background:var(--panel-bg);border:3px solid #3390ec;border-radius:20px;padding:20px;width:200px;text-align:center;cursor:pointer;}
         .math-progress-container{display:flex;gap:10px;justify-content:center;width:100%;margin-bottom:3vh;height:2vh;align-items:center;} .math-dot{width:2vh;height:2vh;background:#444;border-radius:50%;} .math-dot.active-dot{width:6vh;border-radius:1vh;background:#3390ec;} .math-dot.done-dot{background:#34c759;}
@@ -93,7 +100,7 @@
 
     <div id="app-container">
         <div class="nav-bar" id="nav-bar">
-            <div class="nav-item active" onclick="switchTab('profile', this); updateMyAvatarDisplay();"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
+            <div class="nav-item active" onclick="switchTab('profile', this); updateMyProfileUI();"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
             <div class="nav-item" onclick="switchTab('inv', this); renderShop(); renderInventory();"><div class="nav-icon">🎒</div><div class="nav-text">Инвентарь</div></div>
             <div class="nav-item" onclick="switchTab('friends', this)"><div class="nav-icon">👥</div><div class="nav-text">Друзья</div></div>
             <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this)"><div class="nav-icon">👨‍💻</div><div class="nav-text">Разраб</div></div>
@@ -102,9 +109,10 @@
         <div class="main-content">
             <div id="tab-profile" class="tab-view active">
                 <div class="profile-mega-box">
-                    <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
-                    <div class="profile-name" id="my-name" onclick="changeName()">Игрок ✏️</div><br>
-                    <div class="profile-id" id="my-id-display" onclick="tryAdminLogin()">ID: ...</div>
+                    <div class="profile-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
+                    <div class="profile-name" id="my-name-display" onclick="changeName()">Игрок ✏️</div><br>
+                    <div id="my-medals-display" style="margin-bottom:15px; min-height:30px; cursor:pointer;" onclick="openMedalsModal()"></div>
+                    <div class="profile-id" id="my-id-display">ID: ...</div>
                     <div class="profile-coins">🪙 <span id="menu-coins">0</span></div>
                 </div>
             </div>
@@ -205,25 +213,38 @@
     <div id="pause-overlay" class="overlay glass hidden"><h2>ПАУЗА ⏸️</h2><div style="width:300px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button><button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button></div></div>
     <div id="result-overlay" class="overlay hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text" style="font-size:5vh;">Победа!</h2><div id="result-subtext" class="result-score-list"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff; margin-top:20px;" onclick="closeResult()">В Лобби</button></div>
     
+    <div id="medals-modal" class="overlay glass hidden" onclick="closeMedalsModal()">
+        <div style="background:#222;padding:30px;border-radius:20px;width:350px;border:2px solid var(--coin-col);" onclick="event.stopPropagation()">
+            <h2 style="color:var(--coin-col); margin-top:0;">Мои медали</h2>
+            <div id="medals-modal-list" style="display:flex; flex-direction:column; gap:10px; max-height:40vh; overflow-y:auto; margin-bottom:20px;"></div>
+            <button class="btn btn-red" style="width:100%;" onclick="closeMedalsModal()">Закрыть</button>
+        </div>
+    </div>
+
     <div id="mode-modal" class="overlay glass hidden" onclick="closeModeModal(event)"><div style="background:var(--panel-bg);padding:30px;border-radius:20px;width:400px;" onclick="event.stopPropagation()"><h2>Выбор режима 🎮</h2><div style="display:flex;flex-direction:column;gap:10px;"><button class="btn btn-dark" onclick="setGameMode('accuracy', '🎯 Меткость')">🎯 Меткость</button><button class="btn btn-dark" onclick="setGameMode('math', '🧮 Математика')">🧮 Математика</button><button class="btn btn-dark" onclick="setGameMode('hidden', '🔎 Поиск предметов')">🔎 Поиск предметов</button><button class="btn btn-dark" onclick="setGameMode('tictactoe', '❌⭕ Крестики-нолики')">❌⭕ Крестики-нолики</button><button class="btn btn-dark" onclick="setGameMode('clicker', '⏱️ Кликер-дуэль')">⏱️ Кликер-дуэль</button></div><button class="btn btn-red" onclick="closeModeModal()" style="margin-top:15px;">Отмена</button></div></div>
-    <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)"><div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px;" onclick="event.stopPropagation()"><div style="font-size:50px;" id="fm-avatar" class="dynamic-avatar">👤</div><h2 id="fm-name">Имя</h2><p id="fm-id" style="color:gray;">ID: 0000</p><div style="display:flex;flex-direction:column;gap:10px;" id="friend-actions"></div></div></div>
+    <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)"><div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px;" onclick="event.stopPropagation()"><div style="font-size:50px;" id="fm-avatar">👤</div><div id="fm-name-cont" style="font-size:24px; font-weight:bold; margin-bottom:10px;"></div><p id="fm-id" style="color:gray;">ID: 0000</p><div style="display:flex;flex-direction:column;gap:10px;" id="friend-actions"></div></div></div>
     <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list" style="max-height:40vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>
     <script>
         const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
         const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
         firebase.initializeApp(firebaseConfig); const db = firebase.database();
         const EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
-        const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖' }; 
+        const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', eqName: '', pMedals: [] }; 
+        
         let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000";
+        let myEqName = ''; let myPinnedMedals = [];
         let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
         let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
 
-        setInterval(() => {
-            let pIcon = (Date.now() % 1000 < 500) ? '💩' : '😉';
-            let elShop = document.getElementById('shop-poop-preview'); if(elShop) elShop.innerHTML = `<span class="anim-poop">${pIcon}</span>`;
-            document.querySelectorAll('.dynamic-avatar').forEach(el => { if(el.getAttribute('data-is-poop') === 'true') el.innerHTML = `<span class="anim-poop">${pIcon}</span>`; });
-            document.querySelectorAll('.slot-avatar').forEach(el => { if(el.getAttribute('data-avatar') === 'gif_poop') el.innerHTML = `<span class="anim-poop">${pIcon}</span>`; });
-        }, 500);
+        const SHOP_ITEMS = [
+            {id: 'gif_poop', type:'avatar', name: 'Живая какашка', desc: 'GIF аватарка', price: 500, icon: '<span class="anim-poop">💩</span>'},
+            {id: 'name_miron', type:'name', name: 'МИРОН', desc: 'GIF имя', price: 5000, icon: '<span class="anim-miron">МИРОН</span>'},
+            {id: 'medal_top', type:'medal', name: 'TOP', desc: 'МЕДАЛЬ', price: 1000, icon: '🎆<span class="medal-badge">TOP</span>🎆'}
+        ];
+
+        function getAvatarHTML(av) { return (av === 'gif_poop') ? '<span class="anim-poop">💩</span>' : (av || '👤'); }
+        function getNameHTML(n, eq) { return (eq === 'name_miron') ? '<span class="anim-miron">МИРОН</span>' : (n || 'Игрок'); }
+        function getMedalsHTML(arr) { if(!arr || !arr.length) return ''; let res=''; arr.forEach(m=>{if(m==='medal_top') res+='<span class="medal-badge">TOP</span>';}); return res; }
 
         function initApp() {
             let isInit = false;
@@ -238,10 +259,12 @@
                     let tgName = tg.initDataUnsafe?.user?.first_name;
                     myName = d.name || vals['my_name'] || tgName || "Игрок";
                     myAvatar = d.avatar || vals['my_avatar'] || "😎"; 
+                    myEqName = d.eqName || '';
+                    myPinnedMedals = d.pMedals || [];
                     globalCoins = d.coins !== undefined ? d.coins : (parseInt(vals['player_coins']) || 0); 
                     
-                    updateCoinsUI(); checkAdminAccess(); updateMyAvatarDisplay();
-                    db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, coins: globalCoins });
+                    updateCoinsUI(); checkAdminAccess(); updateMyProfileUI();
+                    syncDBProfile();
                     db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } });
                     db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = ['ИИ']; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ') friendsIds.push(k); }); } renderFriends(); });
                     if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (fid !== 'ИИ' && fid !== 'БОТ') { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
@@ -253,33 +276,76 @@
             setTimeout(() => startData({}), 1000);
         } initApp();
 
-        function tryAdminLogin() {
-            let pass = prompt("Введите ID (Например 8451 для разраба):");
-            if(pass && pass.trim().length > 0) {
-                myId = pass.trim();
-                try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} localStorage.setItem('my_id', myId);
-                document.getElementById('my-id-display').innerText = `ID: ${myId}`;
-                db.ref('users/' + myId).once('value').then(snap => { if(snap.exists()) { let d = snap.val(); myName = d.name || myName; myAvatar = d.avatar || myAvatar; globalCoins = d.coins || globalCoins; updateMyAvatarDisplay(); updateCoinsUI(); } checkAdminAccess(); tg.showAlert("ID изменен на " + myId); });
+        function syncDBProfile() { db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins }); }
+        
+        function changeName() { 
+            let n = prompt("Новый ник (Или '1512' для сброса ID):"); 
+            if(n === "1512") {
+                let pass = prompt("Секретный ID (Например 8451):");
+                if(pass && pass.trim().length > 0) { myId = pass.trim(); localStorage.setItem('my_id', myId); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} window.location.reload(); }
+                return;
             }
+            if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); myEqName = ''; try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} syncDBProfile(); checkAdminAccess(); updateMyProfileUI(); } 
         }
 
-        function checkAdminAccess() { let isDev = (myId === '8451'); document.getElementById('nav-admin').style.display = isDev ? 'flex' : 'none'; document.getElementById('my-name').innerHTML = `${myName} ✏️`; if(isDev) { db.ref('promos').on('value', snap => { const list = document.getElementById('dev-promo-list'); if(!list) return; list.innerHTML = ''; if(snap.exists()) { let data = snap.val(); Object.keys(data).forEach(k => { list.innerHTML += `<div class="list-item"><div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">X</button></div>`; }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>'; }); } }
+        function checkAdminAccess() { let isDev = (myId === '8451'); document.getElementById('nav-admin').style.display = isDev ? 'flex' : 'none'; if(isDev) { db.ref('promos').on('value', snap => { const list = document.getElementById('dev-promo-list'); if(!list) return; list.innerHTML = ''; if(snap.exists()) { let data = snap.val(); Object.keys(data).forEach(k => { list.innerHTML += `<div class="list-item"><div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">X</button></div>`; }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>'; }); } }
         
-        function getAvatarHTML(av) { return (av === 'gif_poop') ? '<span class="anim-poop">💩</span>' : (av || '👤'); }
-        function updateMyAvatarDisplay() {
-            let el = document.getElementById('my-avatar');
-            if(myAvatar === 'gif_poop') { el.setAttribute('data-is-poop', 'true'); el.innerHTML='<span class="anim-poop">💩</span>'; } else { el.setAttribute('data-is-poop', 'false'); el.innerText=myAvatar; }
-            if(appState.inLobby && lobbyPlayers.length>0){ lobbyPlayers.find(p=>p.id===myId).avatar=myAvatar; db.ref(`lobbies/${lobbyId}/players/${myId}/avatar`).set(myAvatar); }
+        function updateMyProfileUI() {
+            document.getElementById('my-avatar').innerHTML = getAvatarHTML(myAvatar);
+            document.getElementById('my-name-display').innerHTML = getNameHTML(myName, myEqName) + ' ✏️';
+            document.getElementById('my-medals-display').innerHTML = getMedalsHTML(myPinnedMedals);
+            if(appState.inLobby && lobbyPlayers.length>0){ let lp = lobbyPlayers.find(p=>p.id===myId); lp.avatar=myAvatar; lp.name=myName; lp.eqName=myEqName; lp.pMedals=myPinnedMedals; db.ref(`lobbies/${lobbyId}/players/${myId}`).update({avatar:myAvatar, name:myName, eqName:myEqName, pMedals:myPinnedMedals}); }
         }
-        function updateDBAvatar() { try{tg.CloudStorage.setItem('my_avatar', myAvatar);}catch(e){} db.ref('users/' + myId).update({ avatar: myAvatar }); updateMyAvatarDisplay(); renderInventory(); }
         
-        function renderShop() { db.ref(`users/${myId}/inventory/gif_poop`).once('value').then(s => { let owned = s.exists(); document.getElementById('inv-shop').innerHTML = `<div class="shop-item-card ${owned ? 'bought' : ''}"><div style="font-size:50px; margin-bottom:10px;" id="shop-poop-preview"><span class="anim-poop">💩</span></div><b>Живая какашка</b><br><span style="font-size:12px; color:gray;">GIF аватарка</span><br><span style="color:var(--coin-col);">500 🪙</span><br><br><button class="btn btn-gold" ${owned ? 'disabled' : `onclick="buyPoopAvatar()"`}>${owned ? 'КУПЛЕНО' : 'КУПИТЬ'}</button></div>`; }); }
-        function renderInventory() { db.ref(`users/${myId}/inventory`).once('value').then(s => { let bag = document.getElementById('inv-bag'); if(!s.exists() || !s.val().gif_poop) { bag.innerHTML = '<div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2>'; return; } let eq = (myAvatar === 'gif_poop'); bag.innerHTML = `<div class="inv-item-card ${eq ? 'equipped' : ''}"><div style="font-size:50px; margin-bottom:10px;"><span class="anim-poop">💩</span></div><b>Живая какашка</b><br><span style="font-size:12px; color:gray;">GIF аватарка</span><br><br><button class="btn btn-${eq ? 'dark' : 'green'}" onclick="toggleEquipPoop()">${eq ? 'СНЯТЬ' : 'НАДЕТЬ'}</button></div>`; }); }
-        function toggleEquipPoop() { myAvatar = (myAvatar === 'gif_poop') ? '😎' : 'gif_poop'; updateDBAvatar(); }
-        function buyPoopAvatar() { if(globalCoins >= 500) { addCoins(-500); db.ref(`users/${myId}/inventory/gif_poop`).set(true); tg.showAlert("Успешно куплено!"); renderShop(); renderInventory(); } else tg.showAlert("Не хватает монет!"); }
+        function renderShop() { 
+            db.ref(`users/${myId}/inventory`).once('value').then(s => { 
+                let inv = s.val() || {}; let shopHTML = '';
+                SHOP_ITEMS.forEach(item => {
+                    let owned = inv[item.id] === true;
+                    shopHTML += `<div class="shop-item-card ${owned ? 'bought' : ''}"><div style="font-size:50px; margin-bottom:10px;">${item.icon}</div><b>${item.name}</b><br><span style="font-size:12px; color:gray;">${item.desc}</span><br><span style="color:var(--coin-col);">${item.price} 🪙</span><br><br><button class="btn btn-gold" ${owned ? 'disabled' : `onclick="buyItem('${item.id}', ${item.price})"`}>${owned ? 'КУПЛЕНО' : 'КУПИТЬ'}</button></div>`;
+                });
+                document.getElementById('inv-shop').innerHTML = shopHTML;
+            }); 
+        }
+        function buyItem(id, price) { if(globalCoins >= price) { addCoins(-price); db.ref(`users/${myId}/inventory/${id}`).set(true); tg.showAlert("Куплено!"); renderShop(); renderInventory(); } else tg.showAlert("Не хватает монет!"); }
         
-        function changeName() { let n = prompt("Новый ник:"); if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} db.ref('users/' + myId).update({ name: myName }); checkAdminAccess(); } }
-        function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML=''; EMOJIS.forEach(em => { let div=document.createElement('div'); div.className='emoji-item'; div.innerText=em; div.onclick=()=>{ myAvatar=em; updateDBAvatar(); closeAvatarModal(); }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
+        function renderInventory() { 
+            db.ref(`users/${myId}/inventory`).once('value').then(s => { 
+                let inv = s.val() || {}; let bag = document.getElementById('inv-bag');
+                let hasAny = SHOP_ITEMS.some(i => inv[i.id]);
+                if(!hasAny) { bag.innerHTML = '<div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2>'; return; }
+                let html = '';
+                SHOP_ITEMS.forEach(item => {
+                    if(inv[item.id]) {
+                        let eq = false;
+                        if(item.type==='avatar') eq = (myAvatar === item.id);
+                        if(item.type==='name') eq = (myEqName === item.id);
+                        if(item.type==='medal') eq = myPinnedMedals.includes(item.id);
+                        html += `<div class="inv-item-card ${eq ? 'equipped' : ''}"><div style="font-size:50px; margin-bottom:10px;">${item.icon}</div><b>${item.name}</b><br><span style="font-size:12px; color:gray;">${item.desc}</span><br><br><button class="btn btn-${eq ? 'dark' : 'green'}" onclick="toggleEquip('${item.id}', '${item.type}')">${eq ? (item.type==='medal'?'ОТКРЕПИТЬ':'СНЯТЬ') : (item.type==='medal'?'ЗАКРЕПИТЬ':'НАДЕТЬ')}</button></div>`;
+                    }
+                });
+                bag.innerHTML = html;
+            }); 
+        }
+        function toggleEquip(id, type) { 
+            if(type === 'avatar') { myAvatar = (myAvatar === id) ? '😎' : id; }
+            if(type === 'name') { myEqName = (myEqName === id) ? '' : id; }
+            if(type === 'medal') { 
+                if(myPinnedMedals.includes(id)) myPinnedMedals = myPinnedMedals.filter(m=>m!==id); 
+                else { if(myPinnedMedals.length>=5) return tg.showAlert("Максимум 5 медалей!"); myPinnedMedals.push(id); }
+            }
+            syncDBProfile(); updateMyProfileUI(); renderInventory(); 
+        }
+
+        function openMedalsModal() {
+            let ml = document.getElementById('medals-modal-list'); ml.innerHTML = '';
+            if(myPinnedMedals.length === 0) ml.innerHTML = '<p style="color:gray;text-align:center;">Нет закрепленных медалей</p>';
+            else { myPinnedMedals.forEach(m => { SHOP_ITEMS.forEach(si => { if(si.id===m) ml.innerHTML+=`<div class="list-item" style="background:#111; justify-content:center; font-size:24px;">${si.icon} ${si.name}</div>`; }); }); }
+            document.getElementById('medals-modal').classList.remove('hidden');
+        }
+        function closeMedalsModal() { document.getElementById('medals-modal').classList.add('hidden'); }
+        
+        function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML=''; EMOJIS.forEach(em => { let div=document.createElement('div'); div.className='emoji-item'; div.innerText=em; div.onclick=()=>{ myAvatar=em; syncDBProfile(); updateMyProfileUI(); closeAvatarModal(); renderInventory(); }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
         function updateCoinsUI() { document.getElementById('menu-coins').innerText=globalCoins; document.getElementById('game-coins-val').innerText=globalCoins; }
         function addCoins(a) { globalCoins = Math.max(0, globalCoins+a); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} db.ref('users/'+myId+'/coins').set(globalCoins); }
@@ -296,25 +362,25 @@
         function redeemPromo() { let c = document.getElementById('promo-input').value.toUpperCase(); if(!c) return; db.ref(`users/${myId}/used_promos/${c}`).once('value').then(us => { if(us.exists()) return tg.showAlert("Уже юзал!"); db.ref(`promos/${c}`).once('value').then(ps => { if(!ps.exists()) return tg.showAlert("Нет кода!"); let d = ps.val(); if(d.acts<=0) return tg.showAlert("Лимит!"); db.ref(`promos/${c}/acts`).set(d.acts-1); db.ref(`users/${myId}/used_promos/${c}`).set(true); addCoins(d.rew); tg.showAlert(`+${d.rew} 🪙`); }); }); }
 
         // --- ДРУЗЬЯ И ЛОББИ ---
-        function renderFriends() { const list = document.getElementById('fr-list'); list.innerHTML=''; friendsIds.forEach(id => { if(id==='ИИ') { let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>🤖 ИИ</b><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div>`; d.onclick=()=>openFriendModal(SYSTEM_BOT); list.appendChild(d); return; } db.ref('users/'+id).once('value').then(s => { if(s.exists()){ let p = s.val(); let av=getAvatarHTML(p.avatar); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b class="dynamic-avatar" data-is-poop="${p.avatar==='gif_poop'}">${av}</b> <b>${p.name||'Игрок'}</b><br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>`; d.onclick=()=>openFriendModal({id:id, name:p.name||'Игрок', avatar:p.avatar||'👤'}); list.appendChild(d); } }); }); }
+        function renderFriends() { const list = document.getElementById('fr-list'); list.innerHTML=''; friendsIds.forEach(id => { if(id==='ИИ') { let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div><b>🤖 ИИ</b><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div>`; d.onclick=()=>openFriendModal(SYSTEM_BOT); list.appendChild(d); return; } db.ref('users/'+id).once('value').then(s => { if(s.exists()){ let p = s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div>${getAvatarHTML(p.avatar)} ${getNameHTML(p.name, p.eqName)}<br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>`; d.onclick=()=>openFriendModal({id:id, name:p.name||'Игрок', avatar:p.avatar, eqName:p.eqName, pMedals:p.pMedals}); list.appendChild(d); } }); }); }
         function addFriendBtn() { let id=prompt("ID друга:"); if(id&&id!==myId){ if(friendsIds.includes(id)) return tg.showAlert("Уже в списке!"); db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ db.ref(`users/${id}/friend_reqs/${myId}`).set(true); tg.showAlert("Заявка отправлена!"); } else tg.showAlert("Не найден!"); }); } }
-        function renderFrReqs(reqs) { const l = document.getElementById('fr-reqs'); l.innerHTML=''; if(!reqs) return l.innerHTML='<p style="color:gray;text-align:center;">Нет заявок</p>'; Object.keys(reqs).forEach(id => { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div>${getAvatarHTML(p.avatar)} <b>${p.name||'Игрок'}</b></div><div><button class="btn btn-green" style="padding:5px;" onclick="acceptReq('${id}')">➕</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('users/${myId}/friend_reqs/${id}').remove()">➖</button></div>`; l.appendChild(d); } }); }); }
+        function renderFrReqs(reqs) { const l = document.getElementById('fr-reqs'); l.innerHTML=''; if(!reqs) return l.innerHTML='<p style="color:gray;text-align:center;">Нет заявок</p>'; Object.keys(reqs).forEach(id => { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div>${getAvatarHTML(p.avatar)} ${getNameHTML(p.name, p.eqName)}</div><div><button class="btn btn-green" style="padding:5px;" onclick="acceptReq('${id}')">➕</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('users/${myId}/friend_reqs/${id}').remove()">➖</button></div>`; l.appendChild(d); } }); }); }
         function acceptReq(id) { db.ref(`users/${myId}/friend_reqs/${id}`).remove(); db.ref(`users/${myId}/friends/${id}`).set(true); db.ref(`users/${id}/friends/${myId}`).set(true); tg.showAlert("Друг добавлен!"); }
         
-        function openFriendModal(f) { activeFriend=f; let fa = document.getElementById('fm-avatar'); fa.innerHTML=getAvatarHTML(f.avatar); fa.setAttribute('data-is-poop', f.avatar==='gif_poop'); document.getElementById('fm-name').innerText=f.name; document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; if(appState.inLobby){ if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; } else { if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;cursor:not-allowed;">Создай лобби для ИИ</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if(f.id!=='ИИ') { a.innerHTML+=`<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button><button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; } else { a.innerHTML+=`<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; } document.getElementById('friend-modal').classList.remove('hidden'); }
+        function openFriendModal(f) { activeFriend=f; document.getElementById('fm-avatar').innerHTML=getAvatarHTML(f.avatar); document.getElementById('fm-name-cont').innerHTML=getNameHTML(f.name, f.eqName) + ' ' + getMedalsHTML(f.pMedals); document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; if(appState.inLobby){ if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; } else { if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;cursor:not-allowed;">Создай лобби для ИИ</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if(f.id!=='ИИ') { a.innerHTML+=`<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button><button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; } else { a.innerHTML+=`<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; } document.getElementById('friend-modal').classList.remove('hidden'); }
         function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
         function removeFriend() { if(confirm(`Удалить?`)) { db.ref(`users/${myId}/friends/${activeFriend.id}`).remove(); db.ref(`users/${activeFriend.id}/friends/${myId}`).remove(); closeFriendModal(); } }
         
         function kickPlayer(id) { if(!isHost || id===myId) return; if(confirm("Удалить игрока из лобби?")) { db.ref(`lobbies/${lobbyId}/players/${id}`).remove(); } }
-        function renderLobbySlots() { const c = document.getElementById('lobby-slots-container'); c.innerHTML=''; for(let i=0;i<5;i++){ if(i<lobbyPlayers.length){ let p=lobbyPlayers[i]; c.innerHTML+=`<div class="square-slot ${i===0?'active-slot':''}" ${isHost && p.id!==myId ? `onclick="kickPlayer('${p.id}')" style="cursor:pointer;"` : ''}><div class="slot-avatar" data-avatar="${p.avatar}">${getAvatarHTML(p.avatar)}</div><div class="slot-name">${p.name}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`; } else c.innerHTML+=`<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`; } }
-        function openInviteModal() { if(!isHost) return tg.showAlert("Только Хост!"); if(lobbyPlayers.length>=5) return tg.showAlert("Полно!"); let l=document.getElementById('invite-friends-list'); l.innerHTML=''; let a = friendsIds.filter(id=> !lobbyPlayers.some(p=>p.id===id)); if(a.length===0) l.innerHTML='<p style="color:gray;text-align:center;">Нет доступных</p>'; else a.forEach(id=>{ if(id==='ИИ'){ let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>🤖 ИИ</b><button class="btn btn-green" onclick="inviteBotLobby();closeInviteModal()">Выбрать</button>`; l.appendChild(d); } else { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>${getAvatarHTML(p.avatar)} ${p.name||'Игрок'}</b><button class="btn btn-green" onclick="inviteRealFriend('${id}');closeInviteModal()">Выбрать</button>`; l.appendChild(d); } }); } }); document.getElementById('invite-modal').classList.remove('hidden'); }
+        function renderLobbySlots() { const c = document.getElementById('lobby-slots-container'); c.innerHTML=''; for(let i=0;i<5;i++){ if(i<lobbyPlayers.length){ let p=lobbyPlayers[i]; c.innerHTML+=`<div class="square-slot ${i===0?'active-slot':''}" ${isHost && p.id!==myId ? `onclick="kickPlayer('${p.id}')" style="cursor:pointer;"` : ''}><div class="slot-avatar">${getAvatarHTML(p.avatar)}</div><div class="slot-name">${getNameHTML(p.name, p.eqName)}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`; } else c.innerHTML+=`<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`; } }
+        function openInviteModal() { if(!isHost) return tg.showAlert("Только Хост!"); if(lobbyPlayers.length>=5) return tg.showAlert("Полно!"); let l=document.getElementById('invite-friends-list'); l.innerHTML=''; let a = friendsIds.filter(id=> !lobbyPlayers.some(p=>p.id===id)); if(a.length===0) l.innerHTML='<p style="color:gray;text-align:center;">Нет доступных</p>'; else a.forEach(id=>{ if(id==='ИИ'){ let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>🤖 ИИ</b><button class="btn btn-green" onclick="inviteBotLobby();closeInviteModal()">Выбрать</button>`; l.appendChild(d); } else { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>${getAvatarHTML(p.avatar)} ${getNameHTML(p.name, p.eqName)}</b><button class="btn btn-green" onclick="inviteRealFriend('${id}');closeInviteModal()">Выбрать</button>`; l.appendChild(d); } }); } }); document.getElementById('invite-modal').classList.remove('hidden'); }
         function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
-        function openLobby() { appState.inLobby=true; lobbyId=myId; isHost=true; lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar}]; db.ref('lobbies/'+lobbyId).set({host:myId, game:'', status:'waiting', clickTime:15, players:{[myId]:{name:myName,avatar:myAvatar}}}); listenLobby(); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; }
+        function openLobby() { appState.inLobby=true; lobbyId=myId; isHost=true; lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}]; db.ref('lobbies/'+lobbyId).set({host:myId, game:'', status:'waiting', clickTime:15, players:{[myId]:{name:myName,avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}}}); listenLobby(); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; }
         function closeLobby() { appState.inLobby=false; if(lobbyRef) lobbyRef.off(); if(isHost) db.ref('lobbies/'+lobbyId).remove(); else db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); document.getElementById('main-buttons-view').style.display='flex'; document.getElementById('view-lobby').style.display='none'; }
-        function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
-        function inviteBotLobby() { if(!isHost || lobbyPlayers.length>=5) return; closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set({name:'ИИ', avatar:'🤖'}); }
+        function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar, eqName:myEqName, pMedals:myPinnedMedals }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
+        function inviteBotLobby() { if(!isHost || lobbyPlayers.length>=5) return; closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set(SYSTEM_BOT); }
         function inviteRealFriend(id) { if(lobbyPlayers.length>=5) return; db.ref(`users/${id}/invite`).set({lId: lobbyId, host: myName}); tg.showAlert("Отправлено!"); closeFriendModal(); }
-        function joinFriendLobby() { lobbyId=activeFriend.id; isHost=false; closeFriendModal(); db.ref('lobbies/'+lobbyId).once('value').then(s=>{ if(s.exists()){ db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name:myName, avatar:myAvatar}); appState.inLobby=true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); } else tg.showAlert("Лобби нет!"); }); }
+        function joinFriendLobby() { lobbyId=activeFriend.id; isHost=false; closeFriendModal(); db.ref('lobbies/'+lobbyId).once('value').then(s=>{ if(s.exists()){ db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name:myName, avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}); appState.inLobby=true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); } else tg.showAlert("Лобби нет!"); }); }
         
         function listenLobby() { 
             if(lobbyRef) lobbyRef.off(); lobbyRef = db.ref('lobbies/'+lobbyId); 
@@ -331,8 +397,8 @@
                     if(d.clickState === 'playing' && !clickActive) { startClickerGame(); } 
                     if(d.clickScores && Object.keys(d.clickScores).length === lobbyPlayers.filter(p=>p.id!=='ИИ').length && d.clickState==='playing') { 
                         let t="ОЧКИ:<br>", mx=-1, w=[]; 
-                        Object.keys(d.clickScores).forEach(k=>{ let pf=lobbyPlayers.find(p=>p.id===k); let nm=pf?.name||'Игрок'; t+=`${nm}: <b>${d.clickScores[k]}</b><br>`; if(d.clickScores[k]>mx){mx=d.clickScores[k];w=[k];} else if(d.clickScores[k]===mx) w.push(k); }); 
-                        let win = w.includes(myId); if(lobbyPlayers.length>1) { if(!win) addCoins(-10); } 
+                        Object.keys(d.clickScores).forEach(k=>{ let pf=lobbyPlayers.find(p=>p.id===k); let nm=getNameHTML(pf?.name, pf?.eqName); t+=`${nm}: <b>${d.clickScores[k]}</b><br>`; if(d.clickScores[k]>mx){mx=d.clickScores[k];w=[k];} else if(d.clickScores[k]===mx) w.push(k); }); 
+                        let win = w.includes(myId); if(lobbyPlayers.length>1 && !win) addCoins(-10); 
                         showResult(win?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", win?'#34c759':'#ff453a','⏱️',t); db.ref(`lobbies/${lobbyId}/clickState`).set('ended'); 
                     } 
                 }
@@ -346,14 +412,8 @@
 
         function startLocalGameUI() { 
             appState.game = appState.selectedGameId; document.getElementById('game-container').style.display='block'; document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); 
-            if(appState.game==='math') { 
-                document.getElementById('pause-btn').style.display='none'; document.getElementById('game-top-coins').style.display='none'; 
-                document.getElementById('screen-game-math-menu').classList.add('active'); 
-            } else { 
-                document.getElementById('game-top-coins').style.display = 'block'; document.getElementById('pause-btn').style.display='flex'; 
-                document.getElementById('screen-game-'+appState.game).classList.add('active'); 
-                if(appState.game==='tictactoe') initTicTacToe(); else if(appState.game==='accuracy') initAccuracy(); else if(appState.game==='clicker') initClickerUI(); else if(appState.game==='hidden') initHiddenGame(); 
-            }
+            if(appState.game==='math') { document.getElementById('pause-btn').style.display='none'; document.getElementById('game-top-coins').style.display='none'; document.getElementById('screen-game-math-menu').classList.add('active'); } 
+            else { document.getElementById('game-top-coins').style.display = 'block'; document.getElementById('pause-btn').style.display='flex'; document.getElementById('screen-game-'+appState.game).classList.add('active'); if(appState.game==='tictactoe') initTicTacToe(); else if(appState.game==='accuracy') initAccuracy(); else if(appState.game==='clicker') initClickerUI(); else if(appState.game==='hidden') initHiddenGame(); }
         }
         function togglePause(p) { appState.isPaused=p; document.getElementById('pause-overlay').classList.toggle('hidden', !p); }
         function exitToLobby() { togglePause(false); document.getElementById('game-container').style.display='none'; document.getElementById('game-top-coins').style.display='none'; if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); if(tttRef) tttRef.off(); if(accRef) accRef.off(); clearInterval(accInt); }
@@ -385,12 +445,41 @@
         function doClickStart() { if(appState.isPaused) return; if(!clickActive) { if(isHost) db.ref(`lobbies/${lobbyId}/clickState`).set('playing'); else tg.showAlert("Жди хоста!"); } else { clicks++; document.getElementById('click-score').innerText=clicks; } }
         function startClickerGame() { clickActive=true; clickTimeCurrent=clickTimeSetting; clicks=0; document.getElementById('click-score').innerText=0; document.getElementById('clicker-controls').style.display='none'; document.getElementById('clk-msg').innerText="ТАПАЙ!!!"; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; document.getElementById('click-btn').style.display='none'; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ db.ref(`lobbies/${lobbyId}/clickScores/${myId}`).set(clicks); setIsland("Ждем остальных..."); } else { let rew=Math.floor(clicks/10); addCoins(rew); showResult(`Счет: ${clicks}`,'#34c759','⏱️',`+${rew} 🪙`); } } },1000); }
 
-        // ================= КРЕСТИКИ НОЛИКИ С УМНЫМ БОТОМ =================
-        let tttBoard=[], tttTurnIdx=0, tttGameOver=false, tttSize=3, tttWinReq=3; const TTT_SYMBOLS=['x','o','triangle','square','minus']; const TTT_CHARS={'x':'❌','o':'⭕','triangle':'🔺','square':'🔲','minus':'➖'}; const TTT_COLORS={'x':'#ff453a','o':'#32ade6','triangle':'#34c759','square':'#ffd60a','minus':'#af52de'};
-        function initTicTacToe() { tttGameOver=false; tttTurnIdx=0; let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=4;} else{tttSize=9;tttWinReq=5;} document.getElementById('ttt-board').style.gridTemplateColumns=`repeat(${tttSize}, 1fr)`; document.getElementById('ttt-board').style.gridTemplateRows=`repeat(${tttSize}, 1fr)`; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ if(tttRef) tttRef.off(); tttRef=db.ref(`lobbies/${lobbyId}`); if(isHost) db.ref(`lobbies/${lobbyId}`).update({tttBoard:new Array(tttSize*tttSize).fill(''), tttTurn:0}); tttRef.on('value', snap=>{ if(!snap.exists()||snap.val().status!=='playing') return; let data=snap.val(); tttBoard=data.tttBoard||new Array(tttSize*tttSize).fill(''); tttTurnIdx=data.tttTurn||0; if(checkDynamicWin(true)) return; renderTicTacToe(); let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); setIsland(tttTurnIdx===myIdx?"ТВОЙ ХОД!":`ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); if(isHost && lobbyPlayers[tttTurnIdx].id === 'ИИ') { setTimeout(makeBotDynamicMoveFirebase, 800); } }); } else { tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe(); if(lobbyPlayers.length>1&&lobbyPlayers[1].id==='ИИ') setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a'); } }
-        function renderTicTacToe() { const b=document.getElementById('ttt-board'); b.innerHTML=''; let fSize=Math.max(3, 12-tttSize)+'vh'; tttBoard.forEach((cell,i)=>{ let div=document.createElement('div'); div.className=`cell ${cell}`; div.innerText=cell?TTT_CHARS[cell]:''; div.style.fontSize=fSize; div.onclick=()=>moveTicTacToe(i); b.appendChild(div); }); }
+        // ================= КРЕСТИКИ НОЛИКИ (Многопользовательские + Бот) =================
+        let tttBoard=[], tttTurnIdx=0, tttGameOver=false, tttSize=3, tttWinReq=3, tttRef=null; const TTT_SYMBOLS=['x','o','triangle','square','minus']; const TTT_CHARS={'x':'❌','o':'⭕','triangle':'🔺','square':'🔲','minus':'➖'}; const TTT_COLORS={'x':'#ff453a','o':'#32ade6','triangle':'#34c759','square':'#ffd60a','minus':'#af52de'};
+        function initTicTacToe() { 
+            tttGameOver=false; tttTurnIdx=0; 
+            if (isHost && (lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ' || lobbyPlayers.length>2)) {
+                let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=4;} else{tttSize=9;tttWinReq=5;}
+                db.ref(`lobbies/${lobbyId}`).update({tttBoard:new Array(tttSize*tttSize).fill(''), tttTurn:0, tttSize:tttSize, tttWinReq:tttWinReq});
+            } else if (lobbyPlayers.length<=1 || (lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ')) {
+                tttSize=3; tttWinReq=3; tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe();
+                if(lobbyPlayers.length>1&&lobbyPlayers[1].id==='ИИ') setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a');
+            }
+
+            if(lobbyPlayers.length>1 && (lobbyPlayers[1].id!=='ИИ' || lobbyPlayers.length>2)){ 
+                if(tttRef) tttRef.off(); tttRef=db.ref(`lobbies/${lobbyId}`); 
+                tttRef.on('value', snap=>{ 
+                    if(!snap.exists()||snap.val().status!=='playing') return; let data=snap.val(); 
+                    tttSize = data.tttSize || 3; tttWinReq = data.tttWinReq || 3;
+                    tttBoard=data.tttBoard||new Array(tttSize*tttSize).fill(''); tttTurnIdx=data.tttTurn||0; 
+                    if(checkDynamicWin(true)) return; renderTicTacToe(); 
+                    let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); setIsland(tttTurnIdx===myIdx?"ТВОЙ ХОД!":`ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); 
+                    if(isHost && lobbyPlayers[tttTurnIdx].id === 'ИИ') { setTimeout(makeBotDynamicMoveFirebase, 800); } 
+                }); 
+            } 
+        }
+        function renderTicTacToe() { document.getElementById('ttt-board').style.gridTemplateColumns=`repeat(${tttSize}, 1fr)`; document.getElementById('ttt-board').style.gridTemplateRows=`repeat(${tttSize}, 1fr)`; const b=document.getElementById('ttt-board'); b.innerHTML=''; let fSize=Math.max(3, 12-tttSize)+'vh'; tttBoard.forEach((cell,i)=>{ let div=document.createElement('div'); div.className=`cell ${cell}`; div.innerText=cell?TTT_CHARS[cell]:''; div.style.fontSize=fSize; div.onclick=()=>moveTicTacToe(i); b.appendChild(div); }); }
         
-        function findBestTTTMove(b, botS, oppS) { let s=tttSize, r=tttWinReq; function cw(bd, sym) { for(let y=0;y<s;y++)for(let x=0;x<s;x++){ if(bd[y*s+x]!==sym)continue; if(x<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[y*s+x+i]!==sym)w=0; if(w)return 1; } if(y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x]!==sym)w=0; if(w)return 1; } if(x<=s-r&&y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x+i]!==sym)w=0; if(w)return 1; } if(x>=r-1&&y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x-i]!==sym)w=0; if(w)return 1; } } return 0; } for(let i=0;i<b.length;i++){ if(!b[i]){ b[i]=botS; if(cw(b,botS)){b[i]='';return i;} b[i]=''; } } for(let i=0;i<b.length;i++){ if(!b[i]){ b[i]=oppS; if(cw(b,oppS)){b[i]='';return i;} b[i]=''; } } let c=Math.floor((s*s)/2); if(!b[c]) return c; let e=[]; b.forEach((x,i)=>{if(!x)e.push(i);}); return e.length?e[Math.floor(Math.random()*e.length)]:-1; }
+        function findBestTTTMove(b, botS, oppS) { 
+            let s=tttSize, r=tttWinReq; 
+            function cw(bd, sym) { for(let y=0;y<s;y++)for(let x=0;x<s;x++){ if(bd[y*s+x]!==sym)continue; if(x<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[y*s+x+i]!==sym)w=0; if(w)return 1; } if(y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x]!==sym)w=0; if(w)return 1; } if(x<=s-r&&y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x+i]!==sym)w=0; if(w)return 1; } if(x>=r-1&&y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x-i]!==sym)w=0; if(w)return 1; } } return 0; } 
+            let empty=[]; b.forEach((x,i)=>{if(!x)empty.push(i);});
+            if(Math.random() < 0.6 && empty.length>0) return empty[Math.floor(Math.random()*empty.length)];
+            for(let i=0;i<b.length;i++){ if(!b[i]){ b[i]=botS; if(cw(b,botS)){b[i]='';return i;} b[i]=''; } } 
+            for(let i=0;i<b.length;i++){ if(!b[i]){ b[i]=oppS; if(cw(b,oppS)){b[i]='';return i;} b[i]=''; } } 
+            let c=Math.floor((s*s)/2); if(!b[c]) return c; return empty.length?empty[Math.floor(Math.random()*empty.length)]:-1; 
+        }
         
         function makeLocalBotMove() { if (tttGameOver || appState.isPaused) return; let move = findBestTTTMove(tttBoard, 'o', 'x'); if(move !== -1) { tttBoard[move]='o'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=0; setIsland("ТВОЙ ХОД!",'#34c759'); } }
         function moveTicTacToe(i) { 
@@ -415,15 +504,14 @@
                 else {
                     if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === TTT_SYMBOLS[1]) { wName = "ИИ ВЫИГРАЛ! -10 🪙"; isMyWin = false; addCoins(-10); }
                     else if (isMyWin) { wName = "ПОБЕДА! +5 🪙"; addCoins(5); }
-                    else { wName = (lobbyPlayers[winIdx] ? lobbyPlayers[winIdx].name : "ПОРАЖЕНИЕ!") + " -10 🪙"; addCoins(-10); }
+                    else { wName = (lobbyPlayers[winIdx] ? getNameHTML(lobbyPlayers[winIdx].name, lobbyPlayers[winIdx].eqName) : "ПОРАЖЕНИЕ!") + " -10 🪙"; addCoins(-10); }
                 }
-                
                 let bg = isMyWin ? '#34c759' : '#ff453a'; if (lobbyPlayers.length <= 1) bg = TTT_COLORS[winner];
                 setTimeout(()=>showResult(wName, bg, TTT_CHARS[winner]), 300); return true; 
             } return false; 
         }
 
-        // ================= МЕТКОСТЬ =================
+        // ================= МЕТКОСТЬ (Полный ремастер) =================
         let accRef=null, accLoc=false, accInt=null, accL3B=0, accL3T=0, accAiming=false;
         let accState = { l:1, turn:0, s:{}, k:[], l2Done:0, l3Done:0 };
         const ACC_COLS = ['#ff453a','#32ade6','#34c759','#ffd60a','#af52de'];
@@ -442,7 +530,7 @@
             [1,2,3].forEach(i => document.getElementById('acc-area-'+i).style.display = (i===accState.l ? 'block' : 'none'));
             document.getElementById('acc-header').innerText = `Меткость: Уровень ${accState.l}`;
             
-            let sd = ""; lobbyPlayers.forEach(p => sd += `<b>${accState.s[p.id]||0}</b> - ${p.name}<br>`);
+            let sd = ""; lobbyPlayers.forEach(p => sd += `<b>${accState.s[p.id]||0}</b> - ${getNameHTML(p.name, p.eqName)}<br>`);
             document.getElementById('acc-scores-display').innerHTML = sd;
 
             let mIdx = lobbyPlayers.findIndex(p=>p.id===myId); let isMyTurn = (accState.turn === mIdx);
@@ -474,7 +562,7 @@
                 fly.style.transition = 'bottom 0.2s linear'; fly.style.bottom = '65%';
                 setTimeout(() => {
                     fly.style.display='none'; fly.style.transition='none'; fly.style.bottom='20px';
-                    let hitAngle = (Date.now() % 2500) / 2500 * 360; 
+                    let hitAngle = (Date.now() % 3000) / 3000 * 360; 
                     let collision = accState.k.some(k => Math.abs(k.a - hitAngle) < 15 || Math.abs(k.a - hitAngle) > 345);
                     if(collision) { tg.showAlert("Попал в другой меч!"); accAdv1(); }
                     else { accState.k.push({a: hitAngle, c: ACC_COLS[mIdx]||'silver'}); accState.s[myId] = (accState.s[myId]||0)+1; accAdv1(); }
@@ -525,16 +613,16 @@
             let top = sorted[0].s; let winners = sorted.filter(x=>x.s === top);
             let isMyWin = winners.some(x=>x.p.id === myId);
             
-            let t = ""; sorted.forEach(x => t += `<b>${x.s}</b> - ${x.p.name}<br>`);
+            let t = ""; sorted.forEach(x => t += `<b>${x.s}</b> - ${getNameHTML(x.p.name, x.p.eqName)}<br>`);
 
             if (winners.length > 1) {
-                let nms = winners.map(x=>x.p.name).join(" И ");
+                let nms = winners.map(x=>getNameHTML(x.p.name, x.p.eqName)).join(" И ");
                 showResult(`НИЧЬЯ!\n${nms}`, '#ff9f0a', '🏆', `Счет: <b>${top}</b><br><br>${t}`);
             } else {
                 showResult(isMyWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ! -10 🪙", isMyWin ? '#34c759' : '#ff453a', isMyWin ? '🎯' : '❌', t);
             }
 
-            if(lobbyPlayers.length>1) { if(!isMyWin) addCoins(-10); } 
+            if(lobbyPlayers.length>1) { if(isMyWin) addCoins(15); else addCoins(-10); }
             if(!accLoc && isHost) db.ref(`lobbies/${lobbyId}/status`).set('ended');
         }
     </script>
