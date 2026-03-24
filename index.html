@@ -10,7 +10,7 @@
     <style>
         :root{--bg:#1e1e1e;--text:#ffffff;--btn:#3390ec;--sidebar-bg:#111;--panel-bg:#222224;--nav-w:80px; --coin-col:#ffd60a;}
         body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0;box-sizing:border-box;overflow:hidden;user-select:none;width:100vw;height:100vh;}
-        #rotate-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;color:#fff;z-index:9999;flex-direction:column;align-items:center;justify-content:center;}
+        #rotate-overlay{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:#000;color:#fff;z-index:9999;flex-direction:column;align-items:center;justify-content:center; cursor:pointer;}
         @media screen and (orientation: portrait) { #rotate-overlay{display:flex;} #app-container{display:none!important;} }
         .glass{background:rgba(30,30,30,0.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 4px 15px rgba(0,0,0,0.5);}
         .overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;text-align:center;color:#fff;transition:0.3s;} .overlay.hidden{display:none!important;}
@@ -21,7 +21,7 @@
         .nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.5;transition:0.2s;width:100%;padding:10px 0;} .nav-item.active{opacity:1;filter:drop-shadow(0 0 8px #3390ec);color:#3390ec;background:rgba(51,144,236,0.1);border-left:3px solid #3390ec;}
         .nav-icon{font-size:26px;margin-bottom:5px;} .nav-text{font-size:9px;font-weight:bold;text-transform:uppercase;text-align:center;}
         .main-content{flex-grow:1;position:relative;background:var(--bg);overflow:hidden;}
-        .tab-view{display:none;width:100%;height:100%;padding:20px;box-sizing:border-box;overflow-y:auto;} .tab-view.active{display:flex;}
+        .tab-view{display:none;width:100%;height:100%;padding:20px;box-sizing:border-box;} .tab-view.active{display:flex;}
         .sub-tabs-header{display:flex;justify-content:center;gap:10px;margin-bottom:20px;width:100%;}
         .sub-tab-btn{background:#333;color:gray;padding:10px 20px;border-radius:20px;font-weight:bold;cursor:pointer;border:none;font-size:14px;position:relative;} .sub-tab-btn.active{background:#3390ec;color:#fff;}
         .sub-tab-content{display:none;flex-direction:column;align-items:center;width:100%;flex-grow:1;overflow-y:auto;} .sub-tab-content.active{display:flex;}
@@ -29,14 +29,12 @@
         .mini-tab-btn{background:#444;color:gray;padding:8px 15px;border-radius:15px;border:none;font-size:13px;font-weight:bold;cursor:pointer;} .mini-tab-btn.active{background:var(--coin-col);color:#000;}
         .mini-tab-content{display:none;flex-direction:column;width:100%;align-items:center;} .mini-tab-content.active{display:flex;}
         .list-item{display:flex;justify-content:space-between;align-items:center;background:#111;padding:12px;border-radius:12px;margin-bottom:10px;width:100%;box-sizing:border-box;} .list-item:active{background:#333;}
-        
         .profile-mega-box{background:var(--panel-bg);padding:30px;border-radius:20px;text-align:center;border:2px solid #444;width:90%;max-width:500px;box-shadow:0 10px 30px rgba(0,0,0,0.5);margin:0 auto;}
         .profile-avatar{font-size:80px;margin-bottom:10px;cursor:pointer;display:inline-block;padding:10px;background:rgba(255,255,255,0.05);border-radius:50%; transition: 0.2s;}
         .profile-name-container{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:15px;flex-wrap:wrap;}
         .profile-name{font-size:32px;font-weight:900;cursor:pointer;border-bottom:2px dashed transparent;}
-        .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px;cursor:pointer;}
+        .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px;}
         .profile-coins{font-size:24px;color:var(--coin-col);font-weight:bold;background:rgba(255,214,10,0.1);padding:10px 20px;border-radius:15px;border:1px solid var(--coin-col);display:inline-block;}
-        
         .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;} .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:var(--coin-col);}
         .friends-list-panel{width:300px;background:var(--panel-bg);border-radius:20px;padding:15px;display:flex;flex-direction:column;max-height:100%;}
         .lobby-buttons-panel{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
@@ -58,12 +56,10 @@
         .cell.x{color:#ff453a;} .cell.o{color:#32ade6;} .cell.triangle{color:#34c759;} .cell.square{color:var(--coin-col);} .cell.minus{color:#af52de;}
         .clicker-setup{display:flex;align-items:center;justify-content:center;gap:20px;margin:0 0 20px 0;} .round-btn{width:60px;height:60px;border-radius:30px;border:none;font-size:24px;font-weight:bold;background:var(--btn);color:#fff;}
         .giant-click-btn{width:50vw;height:40vh;border-radius:20px;font-size:10vh;font-weight:900;background:var(--coin-col);color:#000;border:none;}
-        
         .styled-input{padding:15px;border-radius:10px;border:2px solid #444;background:#111;color:#fff;font-size:18px;width:80%;margin-bottom:10px; text-align:left; direction:ltr; unicode-bidi:isolate;}
         .badge{display:none;background:red;color:white;border-radius:50%;padding:2px 6px;font-size:10px;position:absolute;top:-5px;right:-10px;}
         #top-notify{position:fixed;top:-100px;left:50%;transform:translateX(-50%);z-index:3000;padding:15px 30px;border-radius:20px;transition:0.4s;font-weight:bold;cursor:pointer;color:#fff;display:flex;gap:10px;align-items:center;box-shadow:0 5px 15px rgba(0,0,0,0.5);}
         #game-top-coins{position:absolute;top:10px;right:20px;font-size:24px;font-weight:bold;color:var(--coin-col);background:rgba(0,0,0,0.5);padding:5px 15px;border-radius:15px;z-index:1100;}
-        
         .shop-item-card { background:#222; border:2px solid #444; border-radius:15px; padding:15px; width:180px; text-align:center; }
         .shop-item-card.bought { opacity:0.5; border-color:#222; filter:grayscale(100%); }
         .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:15px; padding:15px; width:160px; text-align:center; cursor:pointer;}
@@ -74,14 +70,13 @@
 
         @keyframes mironColors { 0% { color:#ff453a; text-shadow:0 0 10px #ff453a; } 33% { color:#32ade6; text-shadow:0 0 10px #32ade6; } 66% { color:#34c759; text-shadow:0 0 10px #34c759; } 100% { color:var(--coin-col); text-shadow:0 0 10px var(--coin-col); } }
         @keyframes balloonFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        .anim-miron { display:inline-flex; align-items:center; justify-content:center; font-weight:900; animation:mironColors 3s infinite alternate; max-width:100%; }
+        .anim-miron { display:inline-flex; align-items:center; justify-content:center; font-weight:900; animation:mironColors 3s infinite alternate; width:100%; min-width:0; }
         .anim-miron-text { text-overflow:ellipsis; overflow:hidden; white-space:nowrap; }
-        .anim-miron::before { content:'🎈'; animation:balloonFloat 2s ease-in-out infinite; margin-right:2px; font-size:0.8em; flex-shrink:0;}
-        .anim-miron::after { content:'🎈'; animation:balloonFloat 2.5s ease-in-out infinite; margin-left:2px; font-size:0.8em; flex-shrink:0;}
+        .anim-miron::before { content:'🎈'; animation:balloonFloat 2s ease-in-out infinite; margin-right:2px; font-size:0.8em; flex-shrink:1; overflow:hidden;}
+        .anim-miron::after { content:'🎈'; animation:balloonFloat 2.5s ease-in-out infinite; margin-left:2px; font-size:0.8em; flex-shrink:1; overflow:hidden;}
 
-        /* КВАДРАТНАЯ МЕДАЛЬ В СТИЛЕ STANDOFF */
-        .medal-badge { background:linear-gradient(135deg, #222, #444); color:var(--coin-col); border:2px solid #ff9f0a; width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; cursor:pointer; box-shadow:inset 0 0 5px rgba(255,159,10,0.5), 0 2px 5px rgba(0,0,0,0.8); margin:0 2px; border-radius:4px; text-shadow: 0 1px 2px #000;}
-        .medal-badge-large { width:50px; height:50px; font-size:16px; border-radius:8px; border-width:3px; }
+        .medal-badge { background:linear-gradient(135deg, #111, #333); color:var(--coin-col); border:2px solid #ff9f0a; width:25px; height:25px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; cursor:pointer; box-shadow:inset 0 0 5px rgba(255,159,10,0.5), 0 2px 5px rgba(0,0,0,0.8); margin:0 2px; border-radius:4px; }
+        .medal-badge-large { width:50px; height:50px; font-size:18px; border-radius:8px; border-width:3px; }
 
         /* STANDOFF UI DRAFT */
         .so2-modal { background:url('https://i.pinimg.com/originals/30/b0/02/30b002de96324ec2dfed61d5f3032d84.jpg') center/cover; padding:0; width:95vw; height:90vh; border-radius:15px; display:flex; border:3px solid #555; overflow:hidden;}
@@ -107,27 +102,25 @@
         
         /* МЕТКОСТЬ СТИЛИ */
         @keyframes slideTarget { 0% { left: 5%; } 100% { left: 75%; } }
-        .acc-target-spin { width:25vh; height:25vh; border-radius:50%; position:absolute; top:15%; left:50%; margin-left:-12.5vh; background:repeating-radial-gradient(circle, #ff453a 0, #ff453a 20px, #fff 20px, #fff 40px); box-shadow:0 0 15px rgba(0,0,0,0.5); animation: spin 3s linear infinite;}
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-        .acc-anim-t2 { animation: slideTarget 2s alternate infinite ease-in-out; }
-        .acc-anim-bird { animation: slideTarget 2.5s alternate infinite linear; }
-        .acc-dash-line { position:absolute; bottom:0; width:4px; background:repeating-linear-gradient(to top, transparent, transparent 10px, rgba(255,255,255,0.7) 10px, rgba(255,255,255,0.7) 20px); transform-origin:bottom center; pointer-events:none; z-index:5; }
-        @keyframes acc-frog-jump { 0% { bottom:10%; } 50% { bottom:70%; } 100% { bottom:10%; } }
+        .acc-target-spin { width: 20vh; height: 20vh; border-radius: 50%; position: absolute; top: 15%; left: 50%; margin-left: -10vh; background: repeating-radial-gradient(circle, #ff453a 0, #ff453a 20px, #fff 20px, #fff 40px); box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+        .acc-knife { width: 4px; height: 60px; background: silver; position: absolute; left: 50%; top: 50%; transform-origin: 50% 0; }
+        .acc-knife-head { width: 10px; height: 10px; border-radius: 50%; position: absolute; bottom: 0; left: -3px; }
+        @keyframes acc-frog-jump { 0% { bottom: 10%; } 50% { bottom: 70%; } 100% { bottom: 10%; } }
+        .acc-dash-line { position: absolute; bottom: 0; width: 4px; background: repeating-linear-gradient(to top, transparent, transparent 10px, rgba(255,255,255,0.7) 10px, rgba(255,255,255,0.7) 20px); transform-origin: bottom center; pointer-events: none; z-index: 5; }
         
-        /* КРАСИВЫЙ МЕЧ ДЛЯ МЕТКОСТИ */
-        .acc-sword { width: 6px; height: 40px; background: linear-gradient(to right, #ccc, #fff, #999); position: absolute; left: 50%; margin-left:-3px; border-radius: 3px 3px 0 0; bottom: 12px; }
-        .acc-sword::before { content: ''; position: absolute; bottom: -4px; left: -6px; width: 18px; height: 4px; background: #555; border-radius: 2px; }
-        .acc-sword::after { content: ''; position: absolute; bottom: -16px; left: -2px; width: 10px; height: 12px; background: #8b4513; border-radius: 1px; }
-        .acc-knife-obj { width:6px; height:52px; position:absolute; left:50%; top:50%; transform-origin:50% 0; }
-        #acc-ready-knife, #acc-flying-knife { width:6px; height:52px; position:absolute; left:50%; margin-left:-3px; z-index:50; }
-
         /* БУКВЫ СТИЛИ */
         .draw-canvas { border:4px solid #3390ec; border-radius:15px; background:#fff; cursor:crosshair; }
         .letter-hint { position:absolute; font-size:25vh; font-weight:900; color:rgba(0,0,0,0.1); pointer-events:none; z-index:5; }
     </style>
 </head>
 <body>
-    <div id="rotate-overlay"><div style="font-size:80px;margin-bottom:20px;">🔄</div><h2>Поверните телефон</h2></div>
+    <div id="rotate-overlay" onclick="this.style.display='none'; document.getElementById('app-container').style.display='flex';">
+        <div id="reset-id-btn" style="font-size:80px;margin-bottom:20px;">🔄</div>
+        <h2>Поверните телефон</h2>
+        <p style="font-size:14px; color:gray; margin-top:20px;">(Тапни в любое место, чтобы убрать этот экран)</p>
+        <p style="font-size:10px; color:#444; margin-top:50px;">Быстро нажми 5 раз на 🔄 для сброса сломанного ID</p>
+    </div>
+    
     <div id="top-notify" class="glass" onclick="acceptLobbyInvite()"><span>Тебя зовут в игру!</span></div>
 
     <div id="app-container">
@@ -287,6 +280,7 @@
                 let savedId = localStorage.getItem('my_id') || vals['my_id'];
                 if(vals['dev_mode']) myId = '0000'; else if(savedId) myId = savedId; else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} localStorage.setItem('my_id', myId); }
                 document.getElementById('my-id-display').innerText = `ID: ${myId}`;
+                
                 db.ref('users/' + myId).once('value').then(snap => {
                     let d = snap.exists() ? snap.val() : {}; let tgName = tg.initDataUnsafe?.user?.first_name;
                     myName = d.name || vals['my_name'] || tgName || "Игрок"; myAvatar = d.avatar || vals['my_avatar'] || "😎"; myEqName = d.eqName || ''; myPinnedMedals = d.pMedals || []; globalCoins = d.coins !== undefined ? d.coins : (parseInt(vals['player_coins']) || 0); 
@@ -298,14 +292,30 @@
                     db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); } });
                 });
             }
-            try { tg.CloudStorage.getKeys((err, keys) => { if (err || !keys || keys.length === 0) return startData({}); tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); }); }); } catch(e) { startData({}); } setTimeout(() => startData({}), 1000);
+            try { tg.CloudStorage.getKeys((err, keys) => { if (err || !keys || keys.length === 0) return startData({}); tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); }); }); } catch(e) { startData({}); }
+            setTimeout(() => startData({}), 1000);
+            
+            // СЕКРЕТНЫЙ КЛИКЕР ДЛЯ СБРОСА НА ЭКРАНЕ ПОВОРОТА
+            let rClicks = 0;
+            document.getElementById('reset-id-btn').onclick = function(e) {
+                e.stopPropagation(); rClicks++;
+                if(rClicks >= 5) {
+                    localStorage.removeItem('my_id'); try { tg.CloudStorage.removeItem('my_id'); } catch(err){}
+                    tg.showAlert('СИСТЕМНЫЙ СБРОС ID! Перезагружаю...');
+                    setTimeout(() => window.location.reload(), 1500);
+                }
+            };
         } initApp();
 
         function syncDBProfile() { db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins }); }
         
         function changeName() { 
             let n = prompt("Новый ник:"); 
-            if(n === "1512") { let pass = prompt("Секретный ID:"); if(pass && pass.trim().length > 0) { myId = pass.trim(); localStorage.setItem('my_id', myId); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} window.location.reload(); } return; }
+            if(n === "1512") {
+                let pass = prompt("Секретный ID:");
+                if(pass && pass.trim().length > 0) { myId = pass.trim(); localStorage.setItem('my_id', myId); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} window.location.reload(); }
+                return;
+            }
             if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); myEqName = ''; try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} syncDBProfile(); checkAdminAccess(); updateMyProfileUI(); } 
         }
 
@@ -316,7 +326,7 @@
         function buyItem(id, price) { if(globalCoins >= price) { addCoins(-price); db.ref(`users/${myId}/inventory/${id}`).set(true); tg.showAlert("Куплено!"); renderShop(); renderInventory(); } else tg.showAlert("Не хватает монет!"); }
         function renderInventory() { db.ref(`users/${myId}/inventory`).once('value').then(s => { let inv = s.val() || {}; let bag = document.getElementById('inv-bag'); let hasAny = SHOP_ITEMS.some(i => inv[i.id]); if(!hasAny) { bag.innerHTML = '<div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2>'; return; } let html = ''; SHOP_ITEMS.forEach(item => { if(inv[item.id]) { let eq = false; if(item.type==='avatar') eq = (myAvatar === item.id); if(item.type==='name') eq = (myEqName === item.id); if(item.type==='medal') eq = myPinnedMedals.includes(item.id); html += `<div class="inv-item-card ${eq ? 'equipped' : ''}" onclick="toggleEquip('${item.id}', '${item.type}')"><div style="font-size:50px; margin-bottom:10px; display:flex; justify-content:center; align-items:center;">${item.icon}</div><b>${item.name}</b><br><span style="font-size:12px; color:gray;">${item.desc}</span><br><br><button class="btn btn-${eq ? 'dark' : 'green'}">${eq ? (item.type==='medal'?'ОТКРЕПИТЬ':'СНЯТЬ') : (item.type==='medal'?'ЗАКРЕПИТЬ':'НАДЕТЬ')}</button></div>`; } }); bag.innerHTML = html; }); }
         function toggleEquip(id, type) { if(type === 'avatar') { myAvatar = (myAvatar === id) ? '😎' : id; } if(type === 'name') { myEqName = (myEqName === id) ? '' : id; } if(type === 'medal') { if(myPinnedMedals.includes(id)) myPinnedMedals = myPinnedMedals.filter(m=>m!==id); else { if(myPinnedMedals.length>=5) return tg.showAlert("Максимум 5 медалей!"); myPinnedMedals.push(id); } } syncDBProfile(); updateMyProfileUI(); renderInventory(); }
-        function openMedalsModal() { let ml = document.getElementById('medals-modal-list'); ml.innerHTML = ''; if(myPinnedMedals.length === 0) ml.innerHTML = '<p style="color:gray;text-align:center;">Нет медалей</p>'; else { myPinnedMedals.forEach(m => { SHOP_ITEMS.forEach(si => { if(si.id===m) ml.innerHTML+=`<div class="inv-item-card" style="width:120px;"><div style="font-size:40px; margin-bottom:10px; display:flex; justify-content:center;">${si.icon}</div><b>${si.name}</b></div>`; }); }); } document.getElementById('medals-modal').classList.remove('hidden'); }
+        function openMedalsModal() { let ml = document.getElementById('medals-modal-list'); ml.innerHTML = ''; if(myPinnedMedals.length === 0) ml.innerHTML = '<p style="color:gray;text-align:center;">Нет закрепленных медалей</p>'; else { myPinnedMedals.forEach(m => { SHOP_ITEMS.forEach(si => { if(si.id===m) ml.innerHTML+=`<div class="inv-item-card" style="width:120px;"><div style="font-size:40px; margin-bottom:10px; display:flex; justify-content:center;">${si.icon}</div><b>${si.name}</b></div>`; }); }); } document.getElementById('medals-modal').classList.remove('hidden'); }
         function closeMedalsModal() { document.getElementById('medals-modal').classList.add('hidden'); }
         function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML=''; EMOJIS.forEach(em => { let div=document.createElement('div'); div.className='emoji-item'; div.innerText=em; div.onclick=()=>{ myAvatar=em; syncDBProfile(); updateMyProfileUI(); closeAvatarModal(); renderInventory(); }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
@@ -326,7 +336,7 @@
         function switchSubTab(p, s, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${p} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${p==='inv'?'inv':'adm'}-${s}`).classList.add('active'); }
         function switchMiniTab(id, el) { el.parentElement.querySelectorAll('.mini-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.mini-tab-content').forEach(c => { if(c.parentElement.contains(el)) c.classList.remove('active'); }); document.getElementById(id).classList.add('active'); }
 
-        function addAdmin() { let id = document.getElementById('dev-add-admin-id').value; if(!id) return; db.ref('admins/'+id).set(true); tg.showAlert('Добавлен!'); }
+        function addAdmin() { let id = document.getElementById('dev-add-admin-id').value; if(!id) return; db.ref('admins/'+id).set(true); tg.showAlert('Добавлен в админы!'); }
         function removeAllAdmins() { db.ref('admins').once('value').then(snap=>{ if(snap.exists()){ let a=snap.val(); for(let k in a){ if(k!=='8451') db.ref('admins/'+k).remove(); } tg.showAlert('Все удалены'); } }); }
         function giveCoinsDev() { let id=document.getElementById('give-coin-id').value; let a=parseInt(document.getElementById('give-coin-amount').value); if(!id||isNaN(a)) return; db.ref('users/'+id+'/coins').once('value').then(s=>{ let c=s.val()||0; db.ref('users/'+id+'/coins').set(c+a); tg.showAlert('Выдано!'); }); }
         function takeCoinsDev() { let id=document.getElementById('take-coin-id').value; let a=parseInt(document.getElementById('take-coin-amount').value); if(!id||isNaN(a)) return; db.ref('users/'+id+'/coins').once('value').then(s=>{ let c=s.val()||0; db.ref('users/'+id+'/coins').set(Math.max(0,c-a)); tg.showAlert('Забрано!'); }); }
@@ -377,7 +387,7 @@
             }); 
         }
 
-        // НОВОЕ SO2 МЕНЮ ВЫБОРА РЕЖИМОВ
+        // --- НОВОЕ SO2 МЕНЮ ВЫБОРА РЕЖИМОВ ---
         function openSO2ModeSelect() { if(isHost) { document.getElementById('so2-mode-modal').classList.remove('hidden'); selectSO2Category('math', document.querySelector('.so2-card')); } else tg.showAlert("Только Хост!"); }
         function closeSO2ModeSelect() { document.getElementById('so2-mode-modal').classList.add('hidden'); }
         function selectSO2Category(cat, el) {
@@ -405,7 +415,6 @@
 
         function startLocalGameUI() { 
             appState.game = appState.selectedGameId; document.getElementById('game-container').style.display='block'; document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); 
-            
             if(appState.game.startsWith('math')) { document.getElementById('pause-btn').style.display='flex'; document.getElementById('game-top-coins').style.display='block'; startMathMode(parseInt(appState.game.replace('math',''))); } 
             else if(appState.game.startsWith('let')) { document.getElementById('pause-btn').style.display='flex'; document.getElementById('game-top-coins').style.display='block'; startLettersMode(parseInt(appState.game.replace('let',''))); } 
             else { document.getElementById('game-top-coins').style.display = 'block'; document.getElementById('pause-btn').style.display='flex'; document.getElementById('screen-game-'+appState.game).classList.add('active'); if(appState.game==='tictactoe') initTicTacToe(); else if(appState.game==='accuracy') initAccuracy(); else if(appState.game==='clicker') initClickerUI(); else if(appState.game==='hidden') initHiddenGame(); }
@@ -448,26 +457,22 @@
         }
 
         function startLettersMode(m) {
-            document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active'));
-            document.getElementById('screen-game-letters-'+m).classList.add('active');
+            document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); document.getElementById('screen-game-letters-'+m).classList.add('active');
             if(m===1) {
                 let start = Math.floor(Math.random()*(ALPHABET.length-5)); let seq = ALPHABET.slice(start, start+5);
                 let shuf = [...seq].sort(()=>Math.random()-0.5);
                 let sP = document.getElementById('let1-slots'); let iP = document.getElementById('let1-items'); sP.innerHTML=''; iP.innerHTML='';
                 for(let i=0; i<5; i++){
                     sP.innerHTML += `<div class="math-slot" data-expected="${seq[i]}"></div>`;
-                    let item = document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.dataset.originId='let1-items';
-                    iP.appendChild(item); makeDraggable(item, 'let1-slots', checkLet1);
+                    let item = document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.dataset.originId='let1-items'; iP.appendChild(item); makeDraggable(item, 'let1-slots', checkLet1);
                 }
             } else if (m===2) {
                 let iP = document.getElementById('let2-items'); iP.innerHTML='';
                 let rLetters = []; for(let i=0; i<9; i++) rLetters.push(FREQ_LETTERS[Math.floor(Math.random()*FREQ_LETTERS.length)]);
                 [1,2,3].forEach(i=>{ let s=document.getElementById('let2-s'+i); s.innerHTML=''; for(let j=0;j<3;j++) s.innerHTML+=`<div class="math-slot"></div>`; });
                 rLetters.forEach((l, i)=>{ let item = document.createElement('div'); item.className='math-drag-item'; item.innerText=l; item.dataset.originId='let2-items'; iP.appendChild(item); makeDraggable(item, 'let2-s1'); makeDraggable(item, 'let2-s2'); makeDraggable(item, 'let2-s3'); });
-            } else if (m===3) {
-                letMode3Idx = 0; setupDrawing('let3-canvas'); showLetter3();
-            } else if (m===4) {
-                setupDrawing('let4-canvas');
+            } else if (m===3) { letMode3Idx = 0; setupDrawing('let3-canvas'); showLetter3();
+            } else if (m===4) { setupDrawing('let4-canvas');
             } else if (m===5) {
                 let iP = document.getElementById('let5-items'); iP.innerHTML='';
                 let rLetters = []; for(let i=0; i<9; i++) rLetters.push(FREQ_LETTERS[Math.floor(Math.random()*FREQ_LETTERS.length)]);
@@ -481,42 +486,26 @@
         function checkLet5() { let filled=0; document.querySelectorAll('#let5-rows .math-drag-item').forEach(s=>filled++); if(filled===9) { addCoins(10); showResult('СУПЕР!','#34c759','🎓','Слова в ряд собраны! +10 🪙'); } else tg.showAlert("Собери 3 слова по 3 буквы!"); }
 
         function setupDrawing(id) {
-            let c = document.getElementById(id); let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height);
-            let isD=false;
-            c.onmousedown=c.ontouchstart=(e)=>{ isD=true; ctx.beginPath(); ctx.lineWidth=15; ctx.lineCap='round'; ctx.strokeStyle=var(--coin-col); let r=c.getBoundingClientRect(); let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left; let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top; ctx.moveTo(x,y); };
+            let c = document.getElementById(id); let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); let isD=false;
+            c.onmousedown=c.ontouchstart=(e)=>{ isD=true; ctx.beginPath(); ctx.lineWidth=15; ctx.lineCap='round'; ctx.strokeStyle='var(--coin-col)'; let r=c.getBoundingClientRect(); let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left; let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top; ctx.moveTo(x,y); };
             c.onmousemove=c.ontouchmove=(e)=>{ if(!isD)return; e.preventDefault(); let r=c.getBoundingClientRect(); let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left; let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top; ctx.lineTo(x,y); ctx.stroke(); };
             c.onmouseup=c.ontouchend=()=>isD=false;
         }
         function clearCanvas(c) { c.getContext('2d').clearRect(0,0,c.width,c.height); }
 
-        function showLetter3() {
-            let h = document.getElementById('let3-hint'); h.innerText = ALPHABET[letMode3Idx]; h.style.color = 'var(--text)'; h.style.opacity = '1';
-            clearCanvas(document.getElementById('let3-canvas'));
-            setTimeout(() => { h.style.opacity = '0'; h.style.color = 'rgba(255,255,255,0.1)'; }, 3000);
+        function showLetter3() { let h = document.getElementById('let3-hint'); h.innerText = ALPHABET[letMode3Idx]; h.style.color = 'var(--text)'; h.style.opacity = '1'; clearCanvas(document.getElementById('let3-canvas')); setTimeout(() => { h.style.opacity = '0'; h.style.color = 'rgba(255,255,255,0.1)'; }, 3000); }
+        function checkLet3() { let c = document.getElementById('let3-canvas'); let ctx = c.getContext('2d'); let data = ctx.getImageData(0,0,c.width,c.height).data; let f=0; for(let i=3; i<data.length; i+=4) if(data[i]>100) f++;
+            if(f > 150) { letMode3Idx++; if(letMode3Idx >= ALPHABET.length) { addCoins(100); showResult('ВЕСЬ АЛФАВИТ!','#34c759','🎓','+100 🪙'); } else showLetter3(); } else { document.getElementById('let3-hint').style.opacity = '0.5'; }
         }
-        function checkLet3() {
-            let c = document.getElementById('let3-canvas'); let ctx = c.getContext('2d'); let data = ctx.getImageData(0,0,c.width,c.height).data; let f=0;
-            for(let i=3; i<data.length; i+=4) if(data[i]>100) f++;
-            if(f > 150) { 
-                letMode3Idx++; 
-                if(letMode3Idx >= ALPHABET.length) { addCoins(100); showResult('ВЕСЬ АЛФАВИТ!','#34c759','🎓','+100 🪙'); } 
-                else showLetter3(); 
-            } else { document.getElementById('let3-hint').style.opacity = '0.5'; }
-        }
-        function checkLet4() {
-            let c = document.getElementById('let4-canvas'); let ctx = c.getContext('2d'); let data = ctx.getImageData(0,0,c.width,c.height).data; let f=0;
-            for(let i=3; i<data.length; i+=4) if(data[i]>100) f++;
-            if(f > 100) {
-                let w = ["КОТ","ДОМ","МАМА","МИР","СОН"][Math.floor(Math.random()*5)];
-                if(confirm(`Система распознала: ${w} \nЭто верно?`)) { addCoins(10); showResult('СУПЕР!','#34c759','🎓','+10 🪙'); } else { clearCanvas(c); }
-            } else tg.showAlert("Нарисуй что-нибудь!");
+        function checkLet4() { let c = document.getElementById('let4-canvas'); let ctx = c.getContext('2d'); let data = ctx.getImageData(0,0,c.width,c.height).data; let f=0; for(let i=3; i<data.length; i+=4) if(data[i]>100) f++;
+            if(f > 100) { let w = ["КОТ","ДОМ","МАМА","МИР","СОН"][Math.floor(Math.random()*5)]; if(confirm(`Система распознала: ${w} \nЭто верно?`)) { addCoins(10); showResult('СУПЕР!','#34c759','🎓','+10 🪙'); } else { clearCanvas(c); } } else tg.showAlert("Нарисуй что-нибудь!");
         }
 
         // ================= МАТЕМАТИКА =================
         let mathAns=0, mathProgressCount=0, lastMathQ='', mathMode3State={seq:[], currentTarget:0};
         function drawMathProgress(mode) { const c=document.getElementById(`math-prog-${mode}`); if(!c) return; c.innerHTML=''; for(let i=0;i<10;i++){ let dot=document.createElement('div'); dot.className='math-dot'; if(i<mathProgressCount) dot.classList.add('done-dot'); else if(i===mathProgressCount) dot.classList.add('active-dot'); c.appendChild(dot); } }
         function generateSimpleMath() { let q=''; let a,b; do { let isAdd=Math.random()>0.5; if(isAdd){a=Math.floor(Math.random()*8)+1; b=Math.floor(Math.random()*(9-a))+1; mathAns=a+b; q=`${a} + ${b} = `;} else{a=Math.floor(Math.random()*8)+2; b=Math.floor(Math.random()*(a-1))+1; mathAns=a-b; q=`${a} - ${b} = `;} } while(q===lastMathQ); lastMathQ=q; return q; }
-        function startMathMode(mode) { document.getElementById('screen-game-math-menu').classList.remove('active'); document.getElementById('pause-btn').style.display='flex'; document.getElementById('game-top-coins').style.display='block'; mathProgressCount=0; document.getElementById(`screen-game-math-${mode}`).classList.add('active'); if(mode===1) nextMath1(); else if(mode===2) nextMath2(); else initMath3(); }
+        function startMathMode(mode) { document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); document.getElementById('pause-btn').style.display='flex'; document.getElementById('game-top-coins').style.display='block'; mathProgressCount=0; document.getElementById(`screen-game-math-${mode}`).classList.add('active'); if(mode===1) nextMath1(); else if(mode===2) nextMath2(); else initMath3(); }
         function handleMathWin() { mathProgressCount++; if(mathProgressCount>=10) { addCoins(10); setTimeout(()=>showResult('МОЛОДЕЦ!','#34c759','🎓','+10 🪙'),500); } }
         function nextMath1() { if(mathProgressCount>=10) return; drawMathProgress(1); document.getElementById('math1-q').innerText=generateSimpleMath(); document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='var(--coin-col)'; }
         function math1Input(n) { document.getElementById('math1-ans').innerText=n; if(n===mathAns){ document.getElementById('math1-ans').style.color='#34c759'; handleMathWin(); if(mathProgressCount<10) setTimeout(nextMath1,800); } else { document.getElementById('math1-ans').style.color='#ff453a'; setTimeout(()=>{document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='var(--coin-col)';},800); } }
@@ -606,7 +595,6 @@
         // ================= МЕТКОСТЬ (Полный ремастер) =================
         let accRef=null, accLoc=false, accInt=null, accL3B=0, accL3T=0, accAiming=false;
         let accState = { l:1, turn:0, s:{}, k:[], l2Done:0, l3Done:0 };
-        const ACC_COLS = ['#ff453a','#32ade6','#34c759','#ffd60a','#af52de'];
 
         function initAccuracy() {
             accState = { l:1, turn:0, s:{}, k:[], l2Done:0, l3Done:0 };
@@ -662,7 +650,7 @@
                     let hitAngle = (Date.now() % 3000) / 3000 * 360; 
                     let collision = accState.k.some(k => Math.abs(k.a - hitAngle) < 15 || Math.abs(k.a - hitAngle) > 345);
                     if(collision) { tg.showAlert("Попал в другой меч!"); accAdv1(); }
-                    else { accState.k.push({a: hitAngle, c: ACC_COLS[mIdx]||'silver'}); accState.s[myId] = (accState.s[myId]||0)+1; accAdv1(); }
+                    else { accState.k.push({a: hitAngle, c: 'silver'}); accState.s[myId] = (accState.s[myId]||0)+1; accAdv1(); }
                 }, 200);
             }, 10);
         }
