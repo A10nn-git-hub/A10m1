@@ -79,12 +79,10 @@
         .shop-item-card.bought { opacity:0.5; border-color:#222; filter:grayscale(100%); }
         .shop-item-card.selected { border-color:#34c759; box-shadow:0 0 15px rgba(52,199,89,0.5); }
         
-        .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:10px; padding:5px; width:90px; height:120px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:space-between; position:relative;}
+        .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:10px; padding:5px; width:90px; height:100px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative;}
         .inv-item-card.equipped { border-color:#34c759; box-shadow:0 0 10px rgba(52,199,89,0.5); }
-        .inv-item-icon { font-size:35px; margin-top:5px; display:flex; align-items:center; justify-content:center; flex-grow:1;}
-        .inv-item-name { font-size:10px; font-weight:bold; word-wrap:break-word; line-height:1; margin-bottom:5px; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
-        .btn-sell { font-size:9px; font-weight:bold; padding:4px; background:#ff453a; border-radius:5px; border:none; color:white; width:95%; cursor:pointer; }
-        .btn-sell:active { transform:scale(0.9); }
+        .inv-item-icon { font-size:40px; display:flex; align-items:center; justify-content:center; flex-grow:1;}
+        .inv-item-name { font-size:11px; font-weight:normal; word-wrap:break-word; line-height:1.2; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
 
         /* АНИМАЦИИ ПРОФИЛЯ И НОВЫЕ ИМЕНА */
         @keyframes poopAlive { 0%, 100% { transform: scale(1, 1) translateY(0); } 15% { transform: scale(1.2, 0.8) translateY(10%); } 30% { transform: scale(0.9, 1.2) translateY(-20%); } 45% { transform: scale(1.05, 0.95) rotate(15deg); } 60% { transform: scale(1, 1) rotate(-15deg); } 75% { transform: scale(1.1, 0.9) translateY(5%); } }
@@ -312,6 +310,18 @@
         </div>
     </div>
 
+    <div id="item-action-modal" class="overlay glass hidden" onclick="closeItemAction()">
+        <div style="background:#1c1c1e;padding:20px;border-radius:15px;width:250px;text-align:center;border:2px solid #444;" onclick="event.stopPropagation()">
+            <div id="action-modal-icon" style="font-size:60px; margin-bottom:10px;"></div>
+            <h3 id="action-modal-name" style="margin:0 0 20px 0;"></h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="action-btn-equip" class="btn btn-green">ПРИМЕНИТЬ</button>
+                <button id="action-btn-sell" class="btn btn-red" onclick="tg.showAlert('В разработке 🚧')">ПРОДАТЬ</button>
+                <button class="btn btn-dark" onclick="closeItemAction()">ОТМЕНА</button>
+            </div>
+        </div>
+    </div>
+
     <div id="so2-mode-modal" class="overlay hidden" style="background:rgba(0,0,0,0.9); z-index:2500;">
         <div class="so2-modal">
             <div class="so2-left">
@@ -358,14 +368,14 @@
         let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
 
         const SHOP_ITEMS = [ 
-            {id: 'gif_poop', type:'avatar', name: 'Живая какашка', desc: 'GIF аватарка', price: 500, icon: '<span class="anim-poop">💩</span>'}, 
-            {id: 'name_miron', type:'name', name: 'МИРОН', desc: 'GIF имя', price: 5000, icon: '<span class="anim-miron"><span class="anim-miron-text">МИРОН</span></span>'}, 
-            {id: 'name_mama', type:'name', name: 'МАМА', desc: 'Цветочный ник', price: 5000, icon: '<span class="name-mama">МАМА</span>'},
-            {id: 'name_masha', type:'name', name: 'МАША', desc: 'Яркий ник', price: 5000, icon: '<span class="name-masha">МАША</span>'},
-            {id: 'name_papa', type:'name', name: 'ПАПА', desc: 'Строгий ник', price: 5000, icon: '<span class="name-papa">ПАПА</span>'},
-            {id: 'name_tema', type:'name', name: 'ТЁМА', desc: 'Огонь и лед', price: 5000, icon: '<span class="name-tema">ТЁМА</span>'},
-            {id: 'medal_top', type:'medal', name: 'TOP', desc: 'МЕДАЛЬ', price: 1000, icon: '<span class="medal-badge medal-badge-large">TOP</span>'},
-            {id: 'bg_stars', type:'bg', name: 'Звездное Небо', desc: 'За 50 матчей', price: 0, icon: '🌌'}
+            {id: 'gif_poop', type:'avatar', name: 'Живая какашка', desc: 'GIF аватарка', price: 500, plainIcon: '💩', icon: '<span class="anim-poop">💩</span>'}, 
+            {id: 'name_miron', type:'name', name: 'МИРОН', desc: 'GIF имя', price: 5000, plainIcon: '🎈', icon: '<span class="anim-miron"><span class="anim-miron-text">МИРОН</span></span>'}, 
+            {id: 'name_mama', type:'name', name: 'МАМА', desc: 'Цветочный ник', price: 5000, plainIcon: '🌺', icon: '<span class="name-mama">МАМА</span>'},
+            {id: 'name_masha', type:'name', name: 'МАША', desc: 'Яркий ник', price: 5000, plainIcon: '✨', icon: '<span class="name-masha">МАША</span>'},
+            {id: 'name_papa', type:'name', name: 'ПАПА', desc: 'Строгий ник', price: 5000, plainIcon: '🛡️', icon: '<span class="name-papa">ПАПА</span>'},
+            {id: 'name_tema', type:'name', name: 'ТЁМА', desc: 'Огонь и лед', price: 5000, plainIcon: '🧊', icon: '<span class="name-tema">ТЁМА</span>'},
+            {id: 'medal_top', type:'medal', name: 'TOP', desc: 'МЕДАЛЬ', price: 1000, plainIcon: '🏅', icon: '<span class="medal-badge medal-badge-large">TOP</span>'},
+            {id: 'bg_stars', type:'bg', name: 'Звездное Небо', desc: 'За 50 матчей', price: 0, plainIcon: '🌌', icon: '🌌'}
         ];
 
         function getAvatarHTML(av) { return (av === 'gif_poop') ? '<span class="anim-poop">💩</span>' : (av || '👤'); }
@@ -450,16 +460,27 @@
                         if(item.type==='name') eq = (myEqName === item.id); 
                         if(item.type==='medal') eq = myPinnedMedals.includes(item.id); 
                         if(item.type==='bg') eq = (localStorage.getItem('eq_bg') === item.id);
-                        html += `<div class="inv-item-card ${eq ? 'equipped' : ''}" onclick="toggleEquip('${item.id}', '${item.type}')">
-                            <div class="inv-item-icon">${item.icon}</div>
+                        html += `<div class="inv-item-card ${eq ? 'equipped' : ''}" onclick="openItemAction('${item.id}', '${item.type}', ${eq})">
+                            <div class="inv-item-icon">${item.plainIcon || item.icon}</div>
                             <div class="inv-item-name">${item.name}</div>
-                            <button class="btn-sell" onclick="event.stopPropagation(); tg.showAlert('В разработке 🚧')">ПРОДАТЬ</button>
                         </div>`; 
                     } 
                 }); 
                 bag.innerHTML = html; 
             }); 
         }
+        
+        function openItemAction(id, type, isEquipped) {
+            let item = SHOP_ITEMS.find(i=>i.id===id);
+            document.getElementById('action-modal-icon').innerHTML = item.plainIcon || item.icon;
+            document.getElementById('action-modal-name').innerText = item.name;
+            let eqBtn = document.getElementById('action-btn-equip');
+            eqBtn.innerText = isEquipped ? (type==='medal'?'ОТКРЕПИТЬ':'СНЯТЬ') : (type==='medal'?'ЗАКРЕПИТЬ':'НАДЕТЬ');
+            eqBtn.onclick = () => { toggleEquip(id, type); closeItemAction(); };
+            document.getElementById('item-action-modal').classList.remove('hidden');
+        }
+        function closeItemAction() { document.getElementById('item-action-modal').classList.add('hidden'); }
+
         function toggleEquip(id, type) { 
             if(type === 'avatar') { myAvatar = (myAvatar === id) ? '😎' : id; } 
             if(type === 'name') { myEqName = (myEqName === id) ? '' : id; } 
@@ -483,7 +504,20 @@
 
         // --- АДМИНКА ---
         let adminSelectedItems = []; let adminActiveContext = '';
-        function openAdminItems(ctx) { adminActiveContext = ctx; adminSelectedItems = []; let g = document.getElementById('admin-items-grid'); g.innerHTML=''; SHOP_ITEMS.forEach(it => { let c = document.createElement('div'); c.className='shop-item-card'; c.style.cursor='pointer'; c.innerHTML=`<div style="font-size:30px;">${it.icon}</div><b>${it.name}</b>`; c.onclick=() => { if(adminSelectedItems.includes(it.id)) { adminSelectedItems=adminSelectedItems.filter(i=>i!==it.id); c.classList.remove('selected'); } else { adminSelectedItems.push(it.id); c.classList.add('selected'); } }; g.appendChild(c); }); document.getElementById('admin-items-modal').classList.remove('hidden'); }
+        function openAdminItems(ctx) { 
+            adminActiveContext = ctx; adminSelectedItems = []; let g = document.getElementById('admin-items-grid'); g.innerHTML=''; 
+            SHOP_ITEMS.forEach(it => { 
+                let c = document.createElement('div'); c.className='inv-item-card'; c.style.cursor='pointer'; 
+                let pIcon = it.plainIcon || it.icon;
+                c.innerHTML=`<div class="inv-item-icon">${pIcon}</div><div class="inv-item-name">${it.name}</div>`; 
+                c.onclick=() => { 
+                    if(adminSelectedItems.includes(it.id)) { adminSelectedItems=adminSelectedItems.filter(i=>i!==it.id); c.classList.remove('equipped'); } 
+                    else { adminSelectedItems.push(it.id); c.classList.add('equipped'); } 
+                }; 
+                g.appendChild(c); 
+            }); 
+            document.getElementById('admin-items-modal').classList.remove('hidden'); 
+        }
         function closeAdminItemsModal() { document.getElementById('admin-items-modal').classList.add('hidden'); }
         function confirmAdminItems() { let t = adminSelectedItems.length > 0 ? `Выбрано: ${adminSelectedItems.length}` : ''; if(adminActiveContext==='give') document.getElementById('give-sel-items').innerText=t; if(adminActiveContext==='take') document.getElementById('take-sel-items').innerText=t; if(adminActiveContext==='promo') document.getElementById('promo-sel-items').innerText=t; closeAdminItemsModal(); }
 
