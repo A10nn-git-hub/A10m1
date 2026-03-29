@@ -10,8 +10,10 @@
     <style>
         :root{--bg:#1e1e1e;--text:#ffffff;--btn:#3390ec;--sidebar-bg:#111;--panel-bg:#222224;--nav-w:80px; --coin-col:#ffd60a;}
         body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);margin:0;padding:0;box-sizing:border-box;overflow:hidden;user-select:none;width:100vw;height:100vh;}
+        
         body.star-bg { background: url('https://www.transparenttextures.com/patterns/stardust.png'), linear-gradient(to bottom, #0f0c29, #302b63, #24243e) !important; }
-        body.star-bg .game-screen { background: transparent !important; }
+        body.cats-bg { background: url('https://www.transparenttextures.com/patterns/kitty-pattern.png'), linear-gradient(to bottom, #ff9a9e, #fecfef) !important; }
+        body.star-bg .game-screen, body.cats-bg .game-screen { background: transparent !important; }
         
         #orientation-warning { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:white; }
         @media screen and (orientation: portrait) { #orientation-warning { display: flex; } }
@@ -45,11 +47,15 @@
         /* ПРОФИЛЬ */
         .profile-mega-box{background:var(--panel-bg);padding:30px;border-radius:20px;text-align:center;border:2px solid #444;width:90%;max-width:500px;box-shadow:0 10px 30px rgba(0,0,0,0.5);margin:0 auto; position:relative;}
         .profile-avatar{font-size:80px;cursor:pointer;display:inline-block;padding:10px;background:rgba(255,255,255,0.05);border-radius:50%;}
-        .profile-name-container{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:10px;margin-bottom:5px;flex-wrap:nowrap;}
+        .profile-name-container{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:10px;margin-bottom:5px;flex-wrap:nowrap; max-width:100%;}
         .profile-name{font-size:28px;font-weight:900;cursor:pointer;border-bottom:2px dashed transparent; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
         .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px; margin-top:15px;}
         
-        .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;} .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:var(--coin-col);}
+        /* АВАТАРКИ */
+        .emoji-grid{display:grid; grid-template-columns:repeat(5, 1fr); gap:10px; max-height:60vh; overflow-y:auto; overflow-x:hidden; padding:10px;} 
+        .emoji-item{font-size:30px;cursor:pointer;padding:10px 5px;background:#333;border-radius:10px;text-align:center; display:flex; justify-content:center; align-items:center;} 
+        .emoji-item:active{background:var(--coin-col);}
+        
         .friends-list-panel{width:300px;background:var(--panel-bg);border-radius:20px;padding:15px;display:flex;flex-direction:column;max-height:100%;}
         .lobby-buttons-panel{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
         .mega-btn{width:80%;max-width:400px;padding:30px;border-radius:20px;font-size:24px;font-weight:900;color:#fff;border:none;cursor:pointer;text-transform:uppercase;box-shadow:0 8px 0 rgba(0,0,0,0.3);}
@@ -99,7 +105,7 @@
         .anim-miron::after { content:'🎈'; animation:balloonFloat 2.5s ease-in-out infinite; font-size:0.8em; flex-shrink:0;}
         
         @keyframes hahaShake { 0% {transform: skewX(-10deg) translateY(0);} 50% {transform: skewX(10deg) translateY(-2px) scale(1.1);} 100% {transform: skewX(-10deg) translateY(0);} }
-        .anim-haha { display:inline-flex; font-weight:900; color:#ffcc00; text-shadow: 2px 2px 5px #ff453a; animation: hahaShake 0.4s infinite; }
+        .anim-haha { display:inline-flex; font-weight:900; color:#ffcc00; text-shadow: 2px 2px 5px #ff453a; animation: hahaShake 0.4s infinite; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
         .name-mama { color: #ff69b4; font-family: 'Comic Sans MS', cursive; text-shadow: 1px 1px 2px #ff1493; } .name-mama::before { content: '🌺 '; } .name-mama::after { content: ' 🌺'; }
         .name-masha { color: #b026ff; font-weight: bold; text-shadow: 0 0 10px #b026ff, 0 0 20px #ff00ff; } .name-masha::before { content: '✨ '; } .name-masha::after { content: ' ✨'; }
@@ -438,12 +444,9 @@
         firebase.initializeApp(firebaseConfig); const db = firebase.database();
         
         let EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
-        const KAOMOJI = ['( ͡° ͜ʖ ͡°)', '¯\\_(ツ)_/¯', '(ง\'̀-\'́)ง', '(⌐■_■)', 'ʕ•ᴥ•ʔ', '(╯°□°）╯', 'ಠ_ಠ', '(ಥ﹏ಥ)', '(˘▾˘)', '(° ͜ʖ °)', '(*_*)', '(O_O)', '(+_+)', '(@_@)', '(T_T)', '(^_-)', '(-_-)', '(>_<)', '(;_;)', '(;_;)', '(ToT)', '(-.-)', '(*^^*)', '(^_^)', '(^o^)', '(^-^)', '(^ ^)', '(^.^)', '(^o^)', '(^^)', '(^O^)', '(^_-)', '(^_−)', '(*^o^*)', '(*^O^*)', '(*^_^*)', '(*^.^*)', '(*^^)v', '(^^)v', '(^_^)v', '(^-^)v', '(*^▽^*)', '(´∀｀)', '(´▽｀)', '(´・ω・｀)', '(´ー｀)', '(´∀｀*)', '(´▽｀*)', '(´・ω・｀*)', '(´ー｀*)', '(´∀｀=)', '(´▽｀=)', '(´・ω・｀=)', '(´ー｀=)', '（＾_＾）', '（＾o＾）', '（＾-＾）', '（＾_＾）', '（＾.＾）', '（＾o＾）', '（＾＾）', '（＾Ｏ＾）', '（＾_−）', '（＊＾o＾＊）', '（＊＾Ｏ＾＊）', '（＊＾＿＾＊）', '（＊＾.＾＊）', '（＊＾＾）v', '（＾＾）v', '（＾_＾）v', '（＾-＾）v', '（＊＾▽＾＊）', '（´∀｀）', '（´▽｀）', '（´・ω・｀）', '（´ー｀）', '（´∀｀＊）', '（´▽｀＊）', '（´・ω・｀＊）', '（´ー｀＊）', '（´∀｀＝）', '（´▽｀＝）', '（´・ω・｀＝）', '（´ー｀＝）', '(=^・^=)'];
-        EMOJIS = EMOJIS.concat(KAOMOJI); // Добавили кучу текстовых аватарок
-
         const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', eqName: '', pMedals: [] }; 
         
-        let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0;
+        let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let catsProg = 0;
         let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
         let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
 
@@ -456,16 +459,17 @@
 
         const SHOP_ITEMS = [ 
             {id: 'gif_poop', type:'avatar', name: 'Живая какашка', desc: 'GIF аватарка', price: 500, plainIcon: '💩', icon: '<span class="anim-poop">💩</span>'}, 
-            {id: 'anim_clown', type:'avatar', name: 'Бешеный Клоун', desc: 'Анимация', price: 1500, plainIcon: '🤡', icon: '<span class="anim-clown">🤡</span>'},
+            {id: 'anim_clown', type:'avatar', name: 'Бешеный Клоун', desc: 'GIF аватарка', price: 1500, plainIcon: '🤡', icon: '<span class="anim-clown">🤡</span>'},
             {id: 'name_miron', type:'name', name: 'МИРОН', desc: 'GIF имя', price: 5000, plainIcon: '🎈', icon: '<span class="anim-miron"><span class="anim-miron-text">МИРОН</span></span>'}, 
-            {id: 'name_haha', type:'name', name: 'ХАХАХА', desc: 'Смешной ник', price: 5000, plainIcon: '😂', icon: '<span class="anim-haha">ХАХАХА 😂</span>'},
-            {id: 'name_mama', type:'name', name: 'МАМА', desc: 'Цветочный ник', price: 5000, plainIcon: '🌺', icon: '<span class="name-mama">МАМА</span>'},
-            {id: 'name_masha', type:'name', name: 'МАША', desc: 'Яркий ник', price: 5000, plainIcon: '✨', icon: '<span class="name-masha">МАША</span>'},
-            {id: 'name_papa', type:'name', name: 'ПАПА', desc: 'Строгий ник', price: 5000, plainIcon: '🛡️', icon: '<span class="name-papa">ПАПА</span>'},
-            {id: 'name_tema', type:'name', name: 'ТЁМА', desc: 'Огонь и лед', price: 5000, plainIcon: '🧊', icon: '<span class="name-tema">ТЁМА</span>'},
+            {id: 'name_haha', type:'name', name: 'ХАХАХА', desc: 'GIF имя', price: 5000, plainIcon: '😂', icon: '<span class="anim-haha">ХАХАХА 😂</span>'},
+            {id: 'name_mama', type:'name', name: 'МАМА', desc: 'GIF имя', price: 5000, plainIcon: '🌺', icon: '<span class="name-mama">МАМА</span>'},
+            {id: 'name_masha', type:'name', name: 'МАША', desc: 'GIF имя', price: 5000, plainIcon: '✨', icon: '<span class="name-masha">МАША</span>'},
+            {id: 'name_papa', type:'name', name: 'ПАПА', desc: 'GIF имя', price: 5000, plainIcon: '🛡️', icon: '<span class="name-papa">ПАПА</span>'},
+            {id: 'name_tema', type:'name', name: 'ТЁМА', desc: 'GIF имя', price: 5000, plainIcon: '🧊', icon: '<span class="name-tema">ТЁМА</span>'},
             {id: 'medal_top', type:'medal', name: 'TOP', desc: 'МЕДАЛЬ', price: 1000, plainIcon: '🏅', icon: '<span class="medal-badge medal-badge-large">TOP</span>'},
-            {id: 'medal_pro', type:'medal', name: 'PRO', desc: 'Про медалист', price: 2000, plainIcon: '🛡️', icon: '<span class="medal-badge medal-badge-large" style="border-color:#ff453a; background:linear-gradient(45deg, #8a0303, #ff453a);">PRO</span>'},
-            {id: 'bg_stars', type:'bg', name: 'Звездное Небо', desc: 'За 50 матчей', price: 0, plainIcon: '🌌', icon: '🌌'}
+            {id: 'medal_pro', type:'medal', name: 'PRO', desc: 'МЕДАЛЬ', price: 2000, plainIcon: '🛡️', icon: '<span class="medal-badge medal-badge-large" style="border-color:#ff453a; background:linear-gradient(45deg, #8a0303, #ff453a);">PRO</span>'},
+            {id: 'bg_stars', type:'bg', name: 'Звездное Небо', desc: 'За 50 матчей', price: 0, plainIcon: '🌌', icon: '🌌'},
+            {id: 'bg_cats', type:'bg', name: 'Котики', desc: 'За 150 матчей', price: 0, plainIcon: '🐱', icon: '🐱'}
         ];
 
         function getAvatarHTML(av) { 
@@ -494,7 +498,10 @@
                 db.ref('users/' + myId).once('value').then(snap => {
                     let d = snap.exists() ? snap.val() : {}; let tgName = tg.initDataUnsafe?.user?.first_name;
                     myName = d.name || vals['my_name'] || tgName || "Игрок"; myAvatar = d.avatar || vals['my_avatar'] || "😎"; myEqName = d.eqName || ''; myPinnedMedals = d.pMedals || []; globalCoins = d.coins !== undefined ? d.coins : (parseInt(vals['player_coins']) || 0); gamesPlayed = d.gamesPlayed || 0;
-                    if(localStorage.getItem('eq_bg') === 'bg_stars') document.body.classList.add('star-bg');
+                    catsProg = d.catsProg || 0;
+                    let eqBg = localStorage.getItem('eq_bg');
+                    if(eqBg === 'bg_stars') document.body.classList.add('star-bg');
+                    if(eqBg === 'bg_cats') document.body.classList.add('cats-bg');
                     updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile();
                     db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } });
                     db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = ['ИИ']; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ') friendsIds.push(k); }); } renderFriends(); });
@@ -506,8 +513,8 @@
             try { tg.CloudStorage.getKeys((err, keys) => { if (err || !keys || keys.length === 0) return startData({}); tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); }); }); } catch(e) { startData({}); } setTimeout(() => startData({}), 1000);
         } initApp();
 
-        function syncDBProfile() { db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins, gamesPlayed: gamesPlayed }); }
-        function addGamePlayed() { gamesPlayed++; syncDBProfile(); }
+        function syncDBProfile() { db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins, gamesPlayed: gamesPlayed, catsProg: catsProg }); }
+        function addGamePlayed() { gamesPlayed++; catsProg++; syncDBProfile(); }
         
         function changeName() { 
             let n = prompt("Новый ник:"); 
@@ -523,13 +530,21 @@
             db.ref(`users/${myId}/inventory`).once('value').then(s => { 
                 let inv = s.val() || {}; 
                 if (gamesPlayed >= 50 && !inv['bg_stars']) { db.ref(`users/${myId}/inventory/bg_stars`).set(true); inv['bg_stars'] = true; }
+                if (catsProg >= 150 && !inv['bg_cats']) { db.ref(`users/${myId}/inventory/bg_cats`).set(true); inv['bg_cats'] = true; }
+
                 let shopHTML = ''; 
                 SHOP_ITEMS.forEach(item => { 
                     let owned = inv[item.id] === true; 
                     let btnHTML = '';
+                    
                     if (item.id === 'bg_stars') {
                         if(!owned) btnHTML = `<button class="btn btn-dark" disabled>${gamesPlayed}/50 ИГР</button>`;
                         else btnHTML = `<button class="btn btn-gold" disabled>РАЗБЛОКИРОВАНО</button>`;
+                    } else if (item.id === 'bg_cats') {
+                        if(!owned) {
+                            let pct = Math.min(100, (catsProg/150)*100);
+                            btnHTML = `<div style="width:100%; background:#111; border-radius:10px; height:15px; margin-bottom:5px;"><div style="width:${pct}%; background:#34c759; height:100%; border-radius:10px;"></div></div><button class="btn btn-dark" disabled>${catsProg}/150</button>`;
+                        } else btnHTML = `<button class="btn btn-gold" disabled>РАЗБЛОКИРОВАНО</button>`;
                     } else {
                         btnHTML = `<button class="btn btn-gold" ${owned ? 'disabled' : `onclick="buyItem('${item.id}', ${item.price})"`}>${owned ? 'КУПЛЕНО' : 'КУПИТЬ'}</button>`;
                     }
@@ -544,6 +559,8 @@
             db.ref(`users/${myId}/inventory`).once('value').then(s => { 
                 let inv = s.val() || {}; 
                 if (gamesPlayed >= 50 && !inv['bg_stars']) { db.ref(`users/${myId}/inventory/bg_stars`).set(true); inv['bg_stars'] = true; }
+                if (catsProg >= 150 && !inv['bg_cats']) { db.ref(`users/${myId}/inventory/bg_cats`).set(true); inv['bg_cats'] = true; }
+                
                 let bag = document.getElementById('inv-bag'); 
                 let hasAny = SHOP_ITEMS.some(i => inv[i.id]); 
                 if(!hasAny) { bag.innerHTML = '<div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2>'; return; } 
@@ -609,8 +626,13 @@
             if(type === 'name') { myEqName = (myEqName === id) ? '' : id; } 
             if(type === 'medal') { if(myPinnedMedals.includes(id)) myPinnedMedals = myPinnedMedals.filter(m=>m!==id); else { if(myPinnedMedals.length>=5) return tg.showAlert("Максимум 5 медалей!"); myPinnedMedals.push(id); } } 
             if(type === 'bg') {
-                if (localStorage.getItem('eq_bg') === id) { document.body.classList.remove('star-bg'); localStorage.setItem('eq_bg', ''); }
-                else { document.body.classList.add('star-bg'); localStorage.setItem('eq_bg', id); }
+                if (localStorage.getItem('eq_bg') === id) { document.body.classList.remove('star-bg', 'cats-bg'); localStorage.setItem('eq_bg', ''); }
+                else { 
+                    document.body.classList.remove('star-bg', 'cats-bg');
+                    if(id === 'bg_stars') document.body.classList.add('star-bg');
+                    if(id === 'bg_cats') document.body.classList.add('cats-bg');
+                    localStorage.setItem('eq_bg', id); 
+                }
             }
             syncDBProfile(); updateMyProfileUI(); renderInventory(); 
         }
@@ -687,7 +709,7 @@
                 if(d.players) { if(d.players[d.host]) lobbyPlayers.push({id:d.host, ...d.players[d.host]}); Object.keys(d.players).forEach(k=>{if(k!==d.host) lobbyPlayers.push({id:k, ...d.players[k]});}); } 
                 renderLobbySlots(); 
                 
-                // ИЗМЕНЕНИЕ: Пишем красивое название режима из GAME_NAMES
+                // Красивое название режима
                 if(d.game) { 
                     appState.selectedGameId = d.game; 
                     document.getElementById('selected-mode-text').innerText = GAME_NAMES[d.game] || "Выбран режим"; 
@@ -715,6 +737,19 @@
                         let m = d.let4Scores[k]; let pf = lobbyPlayers.find(p=>p.id===k);
                         t += `${getNameHTML(pf?.name, pf?.eqName)}: ${m} ошиб.<br>`;
                         if(m < minMisses) { minMisses = m; w = [k]; } else if(m === minMisses) w.push(k);
+                    });
+                    if(w.length > 1) showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t);
+                    else { let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a', '🎓', t); if(!isMyWin) addCoins(-10); }
+                    if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('ended');
+                }
+
+                // СИНХРОНИЗАЦИЯ WORDLE (5 БУКВ)
+                if(d.wdlScores && Object.keys(d.wdlScores).length === lobbyPlayers.filter(p=>p.id!=='ИИ').length && d.status === 'playing') {
+                    let minTry = 999; let w = []; let t = "";
+                    Object.keys(d.wdlScores).forEach(k => {
+                        let tr = d.wdlScores[k]; let pf = lobbyPlayers.find(p=>p.id===k);
+                        t += `${getNameHTML(pf?.name, pf?.eqName)}: ${tr} поп.<br>`;
+                        if(tr < minTry) { minTry = tr; w = [k]; } else if(tr === minTry) w.push(k);
                     });
                     if(w.length > 1) showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t);
                     else { let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a', '🎓', t); if(!isMyWin) addCoins(-10); }
@@ -798,6 +833,7 @@
                 db.ref(`lobbies/${lobbyId}/let4Scores`).remove();
                 db.ref(`lobbies/${lobbyId}/hiddenScores`).remove();
                 db.ref(`lobbies/${lobbyId}/clickScores`).remove();
+                db.ref(`lobbies/${lobbyId}/wdlScores`).remove();
             }
             if(tttRef) tttRef.off(); if(accRef) accRef.off(); clearInterval(accInt); 
             document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); 
@@ -809,7 +845,9 @@
         // ================= БУКВЫ И НОВЫЕ РЕЖИМЫ =================
         const ALPHABET = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split('');
         const BIG_WORD_LIST = ["ЯБЛОКО", "МАШИНА", "САМОЛЕТ", "ТЕЛЕФОН", "РОБОТ", "КРОКОДИЛ", "ВЕЛОСИПЕД", "КАРАНДАШ", "КОМПЬЮТЕР", "ШОКОЛАД", "ПИНГВИН", "КВАРТИРА", "ПРАЗДНИК", "ПРИРОДА", "КАСТРЮЛЯ", "ТЕЛЕВИЗОР", "КОСМОНАВТ", "ЭКСКАВАТОР", "ТРАКТОР", "ВЕРТОЛЕТ", "АВТОБУС", "ТРАМВАЙ", "ПОЕЗД", "МОРКОВЬ", "КАПУСТА", "КАРТОФЕЛЬ", "ЛУКОВИЦА", "ЗЕМЛЯНИКА", "КЛУБНИКА", "ВИНОГРАД", "АПЕЛЬСИН", "МАНДАРИН", "ЧЕРЕПАХА", "БЕГЕМОТ", "КЕНГУРУ", "ОБЕЗЬЯНА", "КРОВАТЬ", "ДИВАН", "СТУЛ", "КРЕСЛО", "ЗЕРКАЛО", "ПОДУШКА", "ОДЕЯЛО", "ОКНО", "ДВЕРЬ", "КРЫША", "ТРУБА", "ЗАБОР", "КАЛИТКА", "БАБОЧКА"];
-        const WORDLE_WORDS = ["АБЗАЦ","БАНКА","ВЕТВЬ","ГАЗОН","ДВЕРЬ","ЖИВОТ","ЗАМОК","КАБАН","ЛАМПА","МАГИЯ","НАРОД","ОКЕАН","ПАПКА","РАДИО","САЛАТ","ТАБЛО","УЛИЦА","ФАКЕЛ","ХАЛВА","ШАПКА"];
+        const VALID_WORDS = ("АБЗАЦ АБОРТ АВТОР АГЕНТ АДРЕС АКТЕР АЛЛЕЯ АНГЕЛ АРГУМ АРХИВ БАЗАР БАГАЖ БАЛЕТ БАЛЛО БАНКА БАРЕЛЬ БАСНЯ БАШНЯ БЕРЕГ БИЛЕТ БИРЖА БИТВА БЛАГО БЛЮДО БОКАЛ БОМБА БОРЕЦ БРАВО БРЕНД БРОВЬ БУДКА БУКВА БУКЕТ БУРЯ БУФЕТ БЫТИЕ ВАГОН ВАЛЮТ ВАННА ВАФЛЯ ВДОВА ВЕДРО ВЕНЕЦ ВЕНИК ВЕРБА ВЕСНА ВЕТВЬ ВЕТЕР ВЕЧЕР ВИДЕО ВИЛКА ВИРУС ВИСОК ВОЖДЬ ВОКАЛ ВОЛНА ВОЛОС ВОРОН ВОРОТ ВРАТА ВРЕМЯ ВЫБОР ГАРАЖ ГАЗОН ГАЛКА ГЕНИЙ ГЕРОЙ ГЛИНА ГЛОБУ ГЛУШЬ ГОЛОД ГОЛОС ГОРОД ГОРОХ ГОСТЬ ГРАНЬ ГРАФА ГРОЗА ГРУДЬ ГРУПА ГУБА ГУСЬ ДАВКА ДВЕРЬ ДЕБЮТ ДЕВКА ДЕДОК ДЕКАН ДЕЛО ДЕМОН ДЕНЕГ ДЕПО ДЕТИ ДЖИП ДИВАН ДИЕТА ДИКИЙ ДИНАР ДИРЕК ДЛИНА ДОБРО ДОГМА ДОЖДЬ ДОКТОР ДОЛГ ДОЛЯ ДОМИК ДОСКА ДОЧКА ДРАКА ДРЕВО ДРОБЬ ДРУГ ДУРАК ДУША ДЫРА ДЯДЯ ЖАЖДА ЖАНР ЖАРА ЖДАТЬ ЖЕЛАЕ ЖЕМЧУ ЖЕНА ЖЕСТ ЖИВОТ ЖИЗНЬ ЖИЛЬЕ ЖЮРИ ЗАБОЙ ЗАБОР ЗАВОД ЗАВТРА ЗАГС ЗАДАЧ ЗАЕМ ЗАКАЗ ЗАКОН ЗАМОК ЗАПАД ЗАПАХ ЗАПРО ЗАРОК ЗАСАД ЗАТЕЯ ЗАЧЕМ ЗВАНИ ЗВЕРЬ ЗВУК ЗДАНИ ЗЕБРА ЗЕМЛЯ ЗЕРНО ЗИМА ЗЛОБА ЗМЕЯ ЗНАК ЗОЛОТ ЗОНА ЗРЕНИ ЗУБЫ ИГРА ИДЕЯ ИДОЛ ИЗБА ИЗДАН ИКОНА ИКРА ИЛЛЮЗ ИМЯ ИНТЕР ИНТИМ ИСКРА ИТОГ КАБАН КАБИН КАДР КАЗАК КАЗНА КАМИН КАНАЛ КАПЛЯ КАРАТ КАРТА КАССА КАТЕР КАФЕ КВАРТ КЕФИР КИНО КИОСК КЛАСС КЛИЕН КЛИН КЛОУН КЛУБ КЛЮЧ КНИГА КОВЕР КОЖА КОЗА КОЛБА КОЛЕС КОЛИЧ КОЛОС КОМАН КОМЕК КОМИН КОМПА КОНЕЦ КОНУС КОПИЯ КОРАБ КОРЕН КОРОБ КОРОВА КОРОЛ КОСА КОТЕЛ КОФЕ КОШКА КРАЖА КРАН КРАСО КРЕСТ КРИЗИ КРОВЬ КРОНА КРУГ КРЫЛО КРЫСА КРЫША КРЮК КУБИК КУКЛА КУЛАК КУПОЛ КУПОН КУРС КУСОК КУХНЯ ЛАВКА ЛАГЕР ЛАМПА ЛАПКА ЛАСКА ЛАУРЕ ЛЕБЕД ЛЕВЫЙ ЛЕГЕН ЛЕДИК ЛЕНТА ЛЕСКА ЛЕТО ЛИДЕР ЛИМОН ЛИНИЯ ЛИРИК ЛИСТ ЛИЦО ЛОБИК ЛОВЛЯ ЛОГИК ЛОДКА ЛОЖКА ЛОТОК ЛУЖА ЛУНА ЛЫЖИ ЛЮБОВ ЛЮДИ ЛЯГУШ МАГИЯ МАЙОР МАКАР МАКЕТ МАКРО МАКСИ МАЛЫШ МАЛЯР МАМКА МАНГА МАНЕР МАРКА МАСКА МАСЛО МАССА МАСТЕР МАТЕР МАТЧ МАФИЯ МАЧТА МАШИН МАЯК МЕБЕЛ МЕДАЛ МЕДИК МЕЛКО МЕНЮ МЕРКА МЕСТО МЕСЯЦ МЕТАЛ МЕТЕЛ МЕТРО МЕЧТА МИЛЫЙ МИНУС МИРАЖ МИСОК МИТИН МИШКА МЛЫШ МНОГО МОДА МОДЕЛЬ МОДЕМ МОЗГ МОЙКА МОЛИТ МОЛОК МОЛОТ МОНАХ МОНЕТ МОРАЛ МОРОЗ МОРЯК МОСТ МОТИВ МОТОР МОХИК МРАЗЬ МУЖИК МУЗЕЙ МУЗЫК МУКА МУСКУ МУСОР МУХА МЫСЛЬ МЫШКА МЯСО МЯТЕЖ НАБЕГ НАБОР НАВЫК НАГРА НАДЕЖ НАДОЙ НАЕЗД НАЖИВ НАЗВАН НАКАЗ НАЛОГ НАМЕК НАПИТ НАПОР НАРОД НАРЯД НАСОС НАУКА НАЦИЯ НАЧАЛ НЕБЕС НЕБО НЕДРА НЕДУГ НЕЖНО НЕЗАД НЕМЕЦ НЕНАВ НЕРВ НЕСКО НИТКА НИЧЬЯ НОМЕР НОРМА НОСОК НОЧКА НОЧЬ ОАЗИС ОБГОН ОБЕД ОБЕЗЬ ОБИДА ОБЛИК ОБЛОМ ОБМАН ОБМЕН ОБОИ ОБОРО ОБРАЗ ОБРЯД ОБУВЬ ОБЪЕМ ОБЪЕК ОВРАГ ОВЦА ОГОНЬ ОДЕЖД ОЗЕРО ОКЕАН ОКЛАД ОКНО ОКРУГ ОКУНЬ ОЛЕНЬ ОЛИГАР ОПЕРА ОПЛОТ ОПОР ОПРОС ОПЫТ ОРГАН ОРДЕН ОРЕЛ ОРЕХ ОРИГИ ОРУЖИ ОСАДО ОСЕНЬ ОСИНА ОСКАР ОСЛОВ ОСМОТ ОСНОВ ОСОБА ОСТАТ ОСТРО ОТЕЛЬ ОТДЕЛ ОТДЫХ ОТЕЦ ОТКАЗ ОТКОС ОТЛИЧ ОТМЕТ ОТНОШ ОТПОР ОТРЯД ОТРЯЗ ОТСЕК ОТСУТ ОТЧЕТ ОФИС ОХОТА ОЦЕНК ОЧЕРЕ ОЧКИ ОШИБК ПАДАЛ ПАКЕТ ПАЛАЧ ПАЛЕЦ ПАЛКА ПАЛЬТ ПАМЯТ ПАНЕЛ ПАНИК ПАПКА ПАРАД ПАРЕН ПАРК ПАРОМ ПАРОХ ПАРТН ПАРУС ПАСТА ПАСТЬ ПАСЯ ПАТЕН ПАУЗА ПАУТИН ПАФОС ПАХОТ ПАЦИЕ ПАЧКА ПАША ПЕДАЛ ПЕКЛО ПЕПЕЛ ПЕРВО ПЕРЕВО ПЕРИО ПЕРО ПЕСНЯ ПЕСОК ПЕТЛЯ ПЕЧАЛ ПЕЧАТ ПЕЧЕН ПЕЧЬ ПЕШЕХ ПИВНО ПИДЖА ПИСАТ ПИСЬМ ПИЩА ПЛАМЯ ПЛАН ПЛАТА ПЛАТО ПЛАЩ ПЛЕМЯ ПЛЕН ПЛЕЧО ПЛИТА ПЛОД ПЛОТ ПЛОЩА ПОБЕГ ПОБЕД ПОБОР ПОВАР ПОВОД ПОВТО ПОГОД ПОГОН ПОГРО ПОДАЧ ПОДВА ПОДВИ ПОДЛО ПОДОХ ПОДРЯ ПОДХО ПОЕЗД ПОЖАР ПОЗА ПОЗОР ПОИСК ПОКАЗ ПОКОЙ ПОКОЛ ПОКРО ПОЛЕТ ПОЛИЦ ПОЛКА ПОЛОВ ПОЛОЖ ПОЛОС ПОЛУЧ ПОЛЫН ПОЛЬЗ ПОЛЮС ПОМЕН ПОМОЩ ПОМПА ПОРА ПОРОГ ПОРОК ПОРОХ ПОРТ ПОРТФ ПОРЫВ ПОСАД ПОСЕВ ПОСОЛ ПОСОБ ПОСТ ПОСТУ ПОСУД ПОТЕЛ ПОТЕР ПОТОК ПОТОМ ПОХОД ПОХОТ ПОЦЕЛ ПОЧВА ПОЧЕР ПОЧЕТ ПОЧТА ПОЧТИ ПОШЛИ ПОЭМА ПОЭТ ПРАВО ПРАЗД ПРАКТ ПРЕДЛ ПРЕЗИ ПРЕСС ПРИЕМ ПРИЗ ПРИЗН ПРИКА ПРИНЦ ПРИРО ПРИСТ ПРИЧИ ПРОБА ПРОБЛ ПРОГН ПРОДА ПРОЕК ПРОИЗ ПРОКУ ПРОМА ПРОМЫ ПРОСИ ПРОСТ ПРОТИ ПРОФИ ПРОХО ПРОЦЕ ПРОЧЕ ПРЫЖО ПРЯТК ПСИХО ПТИЦА ПУБЛИ ПУГОВ ПУДРА ПУЛЬТ ПУНКТ ПУСТО ПУСТЬ ПУТЬ ПУШКА ПЧЕЛА ПШЕНИ ПЫЛЬ ПЬЕСА ПЯТНО РАБИН РАБОТ РАВНО РАДИО РАДОС РАЗВЕ РАЗВО РАЗМЕ РАЗНИ РАЙОН РАКЕТ РАМКА РАНА РАНО РАСКО РАСПА РАУНД РАСЧЕ РАСШИ РВОТА РЕАЛИ РЕБРО РЕБУС РЕВИЗ РЕВОЛ РЕГИО РЕЖИМ РЕЗЕР РЕЗОН РЕЗУЛ РЕКА РЕКОР РЕЛИГ РЕЛЬС РЕМЕН РЕМОН РЕНТА РЕЦЕП РЕЧЬ РЕШЕН РЖАВЧ РИСК РИТМ РОБОТ РОГАТ РОДИТ РОДНЯ РОЖДЕ РОЗА РОМАН РОССИ РОСТ РОТИК РУБЕЖ РУБИН РУБКА РУБЛЬ РУГАН РУКА РУКАВ РУКОВ РУСЛО РУЧКА РЫБАК РЫБКА РЫВОК РЫНОК РЯДОВ САБЛЯ САДОВ САЛОН САЛЮТ САМЕЦ САМОЛ САПОГ САХАР СБЕРЕ СБОР СБОРК СБРОС СВАДЬ СВАРК СВЕДЕ СВЕРХ СВЕТ СВЕЧА СВИДН СВИНЬ СВИТЕ СВЯЗЬ СГОВО СДАЧА СДВИГ СДЕЛК СЕАНС СЕВЕР СЕКРЕ СЕКС СЕКТА СЕКУН СЕЛО СЕМЬЯ СЕНАТ СЕРДЦ СЕРЕБ СЕРИЯ СЕСТР СЕТКА СЕЗОН СИГНА СИДЕН СИЛА СИМВО СИРОТ СИСТЕ СИТУА СИЯНИ СКАЗК СКАКА СКАЛА СКАНД СКВЕР СКЕЛЕ СКЛАД СКЛОН СКОРО СКРАБ СКРИП СКРЫТ СКУКА СЛАВА СЛЕД СЛЕЗА СЛИТО СЛОВАР СЛОВО СЛОГ СЛОЖН СЛОЙ СЛОН СЛУГА СЛУЖБ СЛУХ СЛУЧА СМЕНА СМЕРТ СМЕСЬ СМЕХ СМЫСЛ СМЯТЕ СНЕЖО СНИМО СНОВА СОБАК СОБОР СОБРА СОБЫТ СОВЕТ СОВПА СОГЛА СОДЕР СОЗДА СОКОЛ СОЛДАТ СОЛНЦ СОЛЬ СОМНЕ СОН СОПЕР СОПРО СОРТ СОСЕД СОСНА СОСТА СОСУД СОТРУ СОУС СОФИЯ СОЦИА СОЮЗ СПАД СПАЗМ СПАЛЬ СПАСЕ СПЕКТ СПЕЦИ СПИНА СПИРТ СПИСО СПЛАВ СПЛЕТ СПОКО СПОРТ СПОСО СПРАВ СПРОС СПУСК СРАЖЕ СРЕДА СРОК ССОРА ССЫЛК СТАДИ СТАДО СТАЖ СТАКАН СТАЛК СТАЛЬ СТАНД СТАНЦ СТАРО СТАРТ СТАТУ СТАТЬ СТВОЛ СТЕБЕ СТЕКЛ СТЕНА СТЕНД СТЕПЕ СТЕРЕ СТИЛЬ СТИХ СТОИМ СТОЛ СТОЛБ СТОЛК СТОПА СТОРА СТОРО СТРАД СТРАН СТРАХ СТРЕЛ СТРОЙ СТРУК СТРУЯ СТУДЕН СТУК СТУЛ СТЫД СУДЬБ СУЕТА СУКНО СУМКА СУММА СУПЕР СУПРУ СУРОК СУТКИ СУТЬ СУХАР СФЕРА СХЕМА СЦЕНА СЧАСТ СЧЕТ СЫР СЮЖЕТ СЮРПР ТАБАК ТАБЛИ ТАЙНА ТАКСИ ТАЛАН ТАЛОН ТАМОЖ ТАНЕЦ ТАПОК ТАРИФ ТАРЕЛ ТАЧКА ТВАРИ ТЕАТР ТЕКСТ ТЕЛЕГ ТЕЛЕЦ ТЕЛО ТЕМА ТЕМПО ТЕНДЕН ТЕНЬ ТЕПЛО ТЕРАП ТЕРМИ ТЕРРО ТЕСТ ТЕТРА ТЕХНИ ТИГР ТИРАЖ ТИТУЛ ТИШИН ТКАНЬ ТОВАР ТОЛПА ТОЛЩА ТОМ ТОННА ТОПЛИ ТОПОР ТОРГ ТОРМО ТОРТ ТОСКА ТОЧКА ТРАВМ ТРАДИ ТРАКТ ТРАНС ТРАСС ТРАТА ТРЕБЕ ТРЕВО ТРЕЙД ТРЕНИ ТРЕСК ТРЕТЬ ТРЕЩИ ТРИУМ ТРОПА ТРУБА ТРУД ТРУП ТРЯПК ТУАЛЕ ТУМАН ТУННЕ ТУПИК ТУРИС ТУРНИ ТУФЛЯ ТУЧА ТЩЕСЛ ТЫСЯЧ ТЬМА ТЯЖЕС ТЯЖЕК УБИЙС УБЫТО УВАЖЕ УВЕРЕ УГАР УГЛЕВ УГОЛ УГРОЗ УДАР УДАЧА УДЕЛ УДИВЛ УДОБС УДОВО УЖАС УЗЕЛ УЗНИК УЗОР УКАЗ УКОЛ УКСУС УЛИЦА УЛОВК УЛУЧШ УЛЫБК УЛЬТИ УМЕНИ УМИРА УМЫСЕ УНИВЕ УНИКА УНИЧТ УПАДО УПАКОВ УПЛАТ УПОМИН УПОРС УПРАВ УПРЕК УПРУГ УРОВЕ УРОЖА УРОК УСАДЬ УСИЛИ УСЛОВ УСЛУГ УСПЕХ УСТАВ УСТАН УСТРО УСТЬЕ УТВЕР УТЕЧК УТКА УТРО УХОД УЧАСТ УЧЕНИ УЧЕБН УЧЕБА УЧЕТ УЧИЛИ УЩЕРБ ФАБРИ ФАЗА ФАЙЛ ФАКТ ФАКТО ФАКУЛ ФАЛЬШ ФАМИЛ ФАНАТ ФАНТА ФАРА ФАРШ ФАСАД ФАСОЛ ФАШИЗ ФЕВРА ФЕДЕР ФЕРМА ФИГУР ФИЗИК ФИКСА ФИЛИА ФИЛЬМ ФИЛИН ФИНАЛ ФИНАН ФИНИШ ФИОЛЕ ФИРМА ФИШКА ФЛАГ ФЛАКО ФЛАНГ ФЛОТ ФОКУС ФОН ФОНД ФОРА ФОРМА ФОРМАТ ФОРУМ ФОТОГ ФРАЗА ФРАКЦ ФРАНЦ ФРАХТ ФРЕЗА ФРОНТ ФРУКТ ФУНДА ФУНКЦ ФУРА ФУРОР ФУТБО ХАЛАТ ХАЛВА ХАОС ХАРАК ХВАТК ХВОСТ ХИМИЯ ХИРУР ХИТРО ХЛЕБ ХЛОПК ХЛОПО ХМЕЛЬ ХОББИ ХОЗЯИ ХОККЕ ХОЛМ ХОЛОД ХОЛСТ ХРАМ ХРЕБЕ ХРИСТ ХРОНИ ХРУСТ ХУДОЖ ХУЛИГ ХУТОР ЦАРСТ ЦАРЬ ЦВЕТ ЦВЕТО ЦЕЛОЕ ЦЕЛЬ ЦЕНА ЦЕНЗУ ЦЕННО ЦЕНТР ЦЕПЬ ЦЕРКО ЦИВИН ЦИКЛ ЦИЛИН ЦИНК ЦИРК ЦИФРА ЦОКОЛ ЧАЙ ЧАЙКА ЧАШКА ЧАЩА ЧЕЛОВ ЧЕЛЮС ЧЕМПИ ЧЕРЕП ЧЕРТА ЧЕСНО ЧЕСТЬ ЧЕТВЕ ЧЕТКО ЧЕХОЛ ЧИСЛО ЧИСТО ЧЛЕН ЧОПОК ЧУВСТ ЧУДАК ЧУДО ЧУЖАЯ ЧУЖОЙ ШАБЛО ШАГ ШАЛЬ ШАМПА ШАНС ШАПКА ШАР ШАРИК ШАХМА ШЕЙКА ШЕЛК ШЕРСТ ШЕРШЕ ШЕСТЬ ШЕФ ШИРИН ШИШКА ШКАЛА ШКАФ ШКОЛА ШКУРА ШЛАК ШЛАНГ ШЛЕМ ШЛЯПА ШНУР ШОК ШОКОЛ ШОРОХ ШОССЕ ШОФЕР ШПИОН ШРАМ ШТАБ ШТАМП ШТАНГ ШТАНЫ ШТАТ ШТОРМ ШТОФ ШТРАФ ШТРИХ ШТУКА ШУБКА ШУМ ШУТКА ЩЕБЕН ЩЕКА ЩЕЛЬ ЩЕНОК ЩЕТКА ЩИТ ЭВОЛЮ ЭГОИЗ ЭКЗАМ ЭКИПА ЭКРАН ЭКСКУ ЭКСПЕ ЭЛИТА ЭМАЛЬ ЭМОЦИ ЭНЕРГ ЭПОХА ЭСКАД ЭСКИЗ ЭТАЖ ЭТАП ЭФИР ЭФФЕК ЮБИЛЕ ЮБКА ЮМОР ЮНОША ЮРИСТ ЯБЛОК ЯВЛЕН ЯГОДА ЯДРО ЯЗЫК ЯЙЦО ЯКОРЬ ЯМА ЯНВАР ЯРКОС ЯРЛЫК ЯРОСТ ЯРУС ЯЩИК").split(' ');
+        // 20 целевых слов добавляем в общий валидный список, чтобы их тоже можно было вводить
+        WORDLE_WORDS.forEach(w => { if(!VALID_WORDS.includes(w)) VALID_WORDS.push(w); });
         
         // База для нового режима Соедини Слова
         const CONNECT_PAIRS = [
@@ -882,14 +920,14 @@
             else tg.showAlert("Попробуй еще раз!");
         }
 
-        // === РИСУЙ БУКВУ ===
+        // === РИСУЙ БУКВУ (ИСПРАВЛЕНО НА ТОНКУЮ ОДНУ ЛИНИЮ) ===
         function setupDrawing(id, useHint) {
             let c = document.getElementById(id); let rect = c.parentElement.getBoundingClientRect(); c.width=rect.width; c.height=rect.height;
             let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn = false;
             let isD=false;
             c.onmousedown=c.ontouchstart=(e)=>{ 
                 document.getElementById('hand-tutor').style.display = 'none'; 
-                // Не стираем холст! Просто рисуем поверх.
+                // Не стираем холст при касании, рисуем поверх
                 c.hasDrawn=true;
                 isD=true; ctx.beginPath(); ctx.lineWidth=15; ctx.lineCap='round'; ctx.strokeStyle='var(--coin-col)'; let r=c.getBoundingClientRect(); let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left; let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top; ctx.moveTo(x,y); 
             };
@@ -900,9 +938,11 @@
         function showLetter2() { 
             let c = document.getElementById('let3-canvas'); let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn=false;
             document.getElementById('hand-tutor').style.display = 'block'; 
-            ctx.font = `900 ${c.height*0.7}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; 
-            ctx.setLineDash([15, 15]); ctx.strokeStyle='rgba(200,200,200,0.8)'; ctx.lineWidth=8; // Сделали пунктир виднее
-            ctx.strokeText(ALPHABET[letMode2Idx], c.width/2, c.height/2); ctx.setLineDash([]);
+            // Используем fillText с очень тонким шрифтом для эффекта "одной линии"
+            ctx.font = `100 ${c.height*0.8}px Arial, sans-serif`; 
+            ctx.textAlign='center'; ctx.textBaseline='middle'; 
+            ctx.fillStyle='rgba(200,200,200,0.6)'; 
+            ctx.fillText(ALPHABET[letMode2Idx], c.width/2, c.height/2 + 20); 
         }
         function checkLet3() { 
             let c = document.getElementById('let3-canvas'); if(!c.hasDrawn) return tg.showAlert("Обведи или нарисуй букву!");
@@ -913,7 +953,7 @@
         function initConnectWords() {
             cConnections = {}; cActiveWord = null; window.let4ImFirst = false;
             let shuffledPairs = [...CONNECT_PAIRS].sort(()=>Math.random()-0.5).slice(0,4);
-            cPairs = shuffledPairs;
+            cPairs = shuffledPairs; // Индексы 0-3
             
             let picsHtml = ''; let wordsHtml = '';
             let wordsShuffled = [...shuffledPairs].sort(()=>Math.random()-0.5);
@@ -935,7 +975,7 @@
 
         function connectPicClick(picIdx) {
             if(!cActiveWord) return tg.showAlert("Сначала выбери слово внизу!");
-            // Удаляем старые связи для этого слова и картинки
+            
             for(let key in cConnections) { 
                 if(key === cActiveWord) delete cConnections[key]; 
                 else if(cConnections[key] === picIdx) delete cConnections[key]; 
@@ -973,11 +1013,14 @@
             if(Object.keys(cConnections).length < 4) return tg.showAlert("Соедини все 4 слова!");
             
             let errors = 0;
+            document.querySelectorAll('.c-wrong, .c-right').forEach(el => el.classList.remove('c-wrong', 'c-right'));
+            
             for(let word in cConnections) {
                 let picIdx = cConnections[word];
                 let correctPair = cPairs[picIdx];
                 let wEl = document.getElementById('cword-'+word); let pEl = document.getElementById('cpic-'+picIdx);
                 
+                // Проверяем: слово из cConnections совпадает со словом в картинке?
                 if(correctPair.w !== word) { errors++; wEl.classList.add('c-wrong'); pEl.classList.add('c-wrong'); }
                 else { wEl.classList.add('c-right'); pEl.classList.add('c-right'); }
             }
@@ -1011,7 +1054,10 @@
         function wBack() { if(wdlCol>0) { wdlCol--; wdlGrid[wdlRow][wdlCol]=''; document.getElementById(`w-${wdlRow}-${wdlCol}`).innerText=''; } }
         function wEnter() {
             if(wdlCol<5) return tg.showAlert("Слово слишком короткое!");
-            let guess = wdlGrid[wdlRow].join(''); let tArr = wdlTarget.split(''); let rArr = new Array(5).fill('w-absent');
+            let guess = wdlGrid[wdlRow].join(''); 
+            if(!VALID_WORDS.includes(guess)) return tg.showAlert("Такого слова нет в словаре!");
+
+            let tArr = wdlTarget.split(''); let rArr = new Array(5).fill('w-absent');
             for(let i=0; i<5; i++){ if(guess[i]===tArr[i]) { rArr[i]='w-correct'; tArr[i]=null; } }
             for(let i=0; i<5; i++){ if(rArr[i]!=='w-correct' && tArr.includes(guess[i])) { rArr[i]='w-present'; tArr[tArr.indexOf(guess[i])]=null; } }
             for(let i=0; i<5; i++){ 
@@ -1021,10 +1067,44 @@
                 else if (rArr[i] === 'w-present' && !kbKey.classList.contains('w-key-correct')) kbKey.className = 'w-key w-key-present';
                 else if (rArr[i] === 'w-absent' && !kbKey.classList.contains('w-key-correct') && !kbKey.classList.contains('w-key-present')) kbKey.className = 'w-key w-key-absent';
             }
-            if(guess === wdlTarget) { addCoins(10); setTimeout(()=>showResult('УГАДАЛ!','#34c759','🎓','Слово: '+wdlTarget+'\n+10 🪙'), 500); }
-            else if(wdlRow===5) { setTimeout(()=>showResult('НЕ УГАДАЛ','#ff453a','🎓','Было слово: '+wdlTarget), 500); }
-            else { wdlRow++; wdlCol=0; }
+            
+            let isWin = (guess === wdlTarget);
+            
+            if(lobbyPlayers.length > 1) {
+                if(isWin) {
+                    db.ref(`lobbies/${lobbyId}/wdlScores/${myId}`).set(wdlRow + 1);
+                    setIsland("ЖДЕМ ОСТАЛЬНЫХ...", '#ffd60a');
+                } else if(wdlRow === 5) {
+                    db.ref(`lobbies/${lobbyId}/wdlScores/${myId}`).set(99); // 99 значит не отгадал
+                    setIsland("ЖДЕМ ОСТАЛЬНЫХ...", '#ff453a');
+                } else {
+                    wdlRow++; wdlCol=0;
+                }
+            } else {
+                if(isWin) { addCoins(10); setTimeout(()=>showResult('УГАДАЛ!','#34c759','🎓','Слово: '+wdlTarget+'\n+10 🪙'), 500); }
+                else if(wdlRow===5) { setTimeout(()=>showResult('НЕ УГАДАЛ','#ff453a','🎓','Было слово: '+wdlTarget), 500); }
+                else { wdlRow++; wdlCol=0; }
+            }
         }
+
+        // ================= МАТЕМАТИКА =================
+        let mathAns=0, mathProgressCount=0, lastMathQ='', mathMode3State={seq:[], currentTarget:0};
+        function updateMathDots(contId) {
+            let c = document.getElementById(contId); if(!c) return;
+            c.innerHTML='';
+            for(let i=0; i<10; i++) {
+                let d = document.createElement('div'); d.className='math-dot';
+                if(i < mathProgressCount) d.classList.add('done-dot');
+                else if(i === mathProgressCount) d.classList.add('active-dot');
+                c.appendChild(d);
+            }
+        }
+        function generateSimpleMath() { let q=''; let a,b; do { let isAdd=Math.random()>0.5; if(isAdd){a=Math.floor(Math.random()*8)+1; b=Math.floor(Math.random()*(9-a))+1; mathAns=a+b; q=`${a} + ${b} = `;} else{a=Math.floor(Math.random()*8)+2; b=Math.floor(Math.random()*(a-1))+1; mathAns=a-b; q=`${a} - ${b} = `;} } while(q===lastMathQ); lastMathQ=q; return q; }
+        function startMathMode(mode) { document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); document.getElementById('pause-btn').style.display='flex'; document.getElementById('game-top-coins').style.display='block'; mathProgressCount=0; document.getElementById(`screen-game-math-${mode}`).classList.add('active'); if(mode===1) nextMath1(); else if(mode===2) nextMath2(); else initMath3(); }
+        function nextMath1() { updateMathDots('math-prog-1'); if(mathProgressCount>=10) return; document.getElementById('math1-q').innerText=generateSimpleMath(); document.getElementById('math1-ans').innerText='?'; document.getElementById('math1-ans').style.color='var(--coin-col)'; }
+        function math1Input(n) { document.getElementById('math1-ans').innerText=n; if(n===mathAns){ document.getElementById('math1-ans').style.color='#34c759'; mathProgressCount++; if(mathProgressCount>=10){ addCoins(10); setTimeout(()=>showResult('МОЛОДЕЦ!','#34c759','🎓','+10 🪙'),500); } else setTimeout(nextMath1,800); } else { document.getElementById('math1-ans').style.color='#ff453a'; setTimeout(nextMath1,800); } }
+        function nextMath2() { updateMathDots('math-prog-2'); if(mathProgressCount>=10) return; document.getElementById('math2-q').innerText=generateSimpleMath()+"?"; let cards=[mathAns]; while(cards.length<4){ let r=Math.floor(Math.random()*10); if(!cards.includes(r)) cards.push(r); } cards.sort(()=>Math.random()-0.5); const grid=document.getElementById('math2-cards'); grid.innerHTML=''; cards.forEach(c=>{ let btn=document.createElement('button'); btn.className='math-ans-card'; btn.innerText=c; btn.onclick=()=>{ if(c===mathAns){ btn.style.background='#34c759'; mathProgressCount++; if(mathProgressCount>=10){ addCoins(10); setTimeout(()=>showResult('МОЛОДЕЦ!','#34c759','🎓','+10 🪙'),500); } else setTimeout(nextMath2,800); } else { btn.style.background='#ff453a'; btn.classList.add('shake'); setTimeout(nextMath2,800); } }; grid.appendChild(btn); }); }
+        function initMath3() { mathProgressCount=0; updateMathDots('math-prog-3'); let start=Math.floor(Math.random()*80)+1; mathMode3State.seq=Array.from({length:10}, (_,i)=>start+i); mathMode3State.currentTarget=0; let shuf=[...mathMode3State.seq].sort(()=>Math.random()-0.5); const s=document.getElementById('math3-slots'); s.innerHTML=''; const items=document.getElementById('math3-items'); items.innerHTML=''; for(let i=0;i<10;i++){ let slot=document.createElement('div'); slot.className='math-slot'; slot.id=`m3-slot-${i}`; s.appendChild(slot); let item=document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.dataset.originId='math3-items'; items.appendChild(item); makeDraggable(item, 'math3-slots', (sl, it)=>{ if(parseInt(it.innerText)===mathMode3State.seq[mathMode3State.currentTarget]){ sl.style.background='#3390ec'; sl.style.border='none'; addCoins(1); mathMode3State.currentTarget++; mathProgressCount++; updateMathDots('math-prog-3'); if(mathMode3State.currentTarget>=10){ addCoins(10); setTimeout(()=>showResult('СУПЕР!','#34c759','🧩','+10 🪙'),500); } } else { it.classList.add('shake'); setTimeout(()=>{ document.getElementById('math3-items').appendChild(it); }, 400); } }); } }
 
         // ================= ПРЯТКИ =================
         let hiddenFound=0, hiddenMisses=0;
@@ -1137,8 +1217,12 @@
             
             if(accState.l === 1) { 
                 let tgt = document.getElementById('acc-t1-rotator'); 
-                tgt.innerHTML = '<div id="acc-t1" class="acc-target-spin"></div>';
+                // Не уничтожаем мишень, чтобы анимация не сбрасывалась
+                if(!document.getElementById('acc-t1')) {
+                    tgt.innerHTML = '<div id="acc-t1" class="acc-target-spin"></div>';
+                }
                 let spinner = document.getElementById('acc-t1');
+                spinner.innerHTML = ''; // Очищаем только ножи
                 
                 accState.k.forEach(k => { 
                     let d = document.createElement('div'); 
@@ -1190,6 +1274,7 @@
                 ready.style.display = 'block';
                 window.isKnifeFlying = false;
                 
+                // Чтобы угол был точным, привязываемся к времени
                 let currentRot = ((Date.now() % 3000) / 3000) * 360;
                 let hitAngle = (360 - currentRot) % 360; 
 
@@ -1211,10 +1296,8 @@
             let fr = document.getElementById('acc-frog');
             fr.style.animation = 'acc-frog-jump 0.5s ease-out';
             
-            // ИСПРАВЛЕН ХИТБОКС: Проверяем ровно на 250мс (пик прыжка лягушки)
             setTimeout(() => {
                 let t = document.getElementById('acc-t2').getBoundingClientRect(); let f = fr.getBoundingClientRect();
-                // Проверка пересечения:
                 let hit = !(f.right < t.left || f.left > t.right || f.bottom < t.top || f.top > t.bottom); 
                 if(hit) { accState.s[myId] = (accState.s[myId]||0)+1; tg.showAlert("Попал!"); } else tg.showAlert("Мимо!");
             }, 250);
