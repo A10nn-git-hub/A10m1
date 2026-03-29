@@ -74,7 +74,7 @@
         #top-notify{position:fixed;top:-100px;left:50%;transform:translateX(-50%);z-index:3000;padding:15px 30px;border-radius:20px;transition:0.4s;font-weight:bold;cursor:pointer;color:#fff;display:flex;gap:10px;align-items:center;box-shadow:0 5px 15px rgba(0,0,0,0.5);}
         #game-top-coins{position:absolute;top:10px;right:20px;font-size:24px;font-weight:bold;color:var(--coin-col);background:rgba(0,0,0,0.5);padding:5px 15px;border-radius:15px;z-index:1100;}
         
-        /* МАГАЗИН И ИНВЕНТАРЬ (КОМПАКТНЫЕ) */
+        /* МАГАЗИН И ИНВЕНТАРЬ */
         .shop-item-card { background:#222; border:2px solid #444; border-radius:15px; padding:15px; width:180px; text-align:center; position:relative;}
         .shop-item-card.bought { opacity:0.5; border-color:#222; filter:grayscale(100%); }
         .shop-item-card.selected { border-color:#34c759; box-shadow:0 0 15px rgba(52,199,89,0.5); }
@@ -84,7 +84,7 @@
         .inv-item-icon { font-size:40px; display:flex; align-items:center; justify-content:center; flex-grow:1;}
         .inv-item-name { font-size:11px; font-weight:normal; word-wrap:break-word; line-height:1.2; max-width:100%; overflow:hidden; text-overflow:ellipsis;}
 
-        /* АНИМАЦИИ ПРОФИЛЯ И НОВЫЕ ИМЕНА */
+        /* АНИМАЦИИ ПРОФИЛЯ */
         @keyframes poopAlive { 0%, 100% { transform: scale(1, 1) translateY(0); } 15% { transform: scale(1.2, 0.8) translateY(10%); } 30% { transform: scale(0.9, 1.2) translateY(-20%); } 45% { transform: scale(1.05, 0.95) rotate(15deg); } 60% { transform: scale(1, 1) rotate(-15deg); } 75% { transform: scale(1.1, 0.9) translateY(5%); } }
         .anim-poop { display:inline-block; animation:poopAlive 1.5s ease-in-out infinite; filter:drop-shadow(0 5px 10px rgba(255,214,10,0.3)); font-size:inherit; line-height:1; }
 
@@ -132,9 +132,7 @@
         .math-sort-slots{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center; min-height:8vh; padding:10px; background:rgba(0,0,0,0.2); border-radius:15px; width:90%;} .math-slot{width:8vh;height:8vh;border:3px dashed #666;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;background:#222;} .math-sort-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center; min-height:8vh;} .math-drag-item{width:8vh;height:8vh;background:#34c759;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold; cursor:pointer;}
         .shake{animation:shake 0.4s;} @keyframes shake{0%{transform:translateX(0);} 25%{transform:translateX(-10px);} 50%{transform:translateX(10px);} 75%{transform:translateX(-10px);} 100%{transform:translateX(0);}}
         
-        /* ПОИСК СТИЛИ (Новые) */
         .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom, #87CEEB, #e0f6ff);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2); border:3px solid #555;} 
-        /* 1. СДЕЛАЛИ КРИСТАЛЛЫ ПРОЗРАЧНЕЕ (opacity: 0.5) */
         .hidden-item{position:absolute;font-size:5vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.4)); opacity:0.5; transition:transform 0.1s;} 
         .hidden-item:active { transform:translate(-50%,-50%) scale(0.8); }
         .scene-decor{position:absolute;font-size:4vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;opacity:0.8; filter:drop-shadow(0 5px 5px rgba(0,0,0,0.2));}
@@ -142,39 +140,73 @@
 
         .result-score-list { background:rgba(0,0,0,0.3); border-radius:10px; padding:15px; max-height:25vh; overflow-y:auto; text-align:left; font-size:18px; margin-top:10px; font-family:sans-serif; }
         
-        /* МЕТКОСТЬ СТИЛИ */
-        @keyframes slideTarget { 0% { left: 10%; } 100% { left: 80%; } }
-        .acc-target-spin { width:20vh; height:20vh; border-radius:50%; position:absolute; top:15%; left:50%; margin-left:-10vh; background:repeating-radial-gradient(circle, #ff453a 0, #ff453a 20px, #fff 20px, #fff 40px); box-shadow:0 0 15px rgba(0,0,0,0.5); animation: spin 3s linear infinite;}
+        /* === НОВЫЙ ДИЗАЙН МЕЧЕЙ (ПОЛНЫЙ РЕХОСТ) === */
         @keyframes spin { 100% { transform: rotate(360deg); } }
         
-        /* 2. НОВАЯ КРАСНО-БЕЛАЯ МИШЕНЬ И АНИМАЦИЯ ПРЫЖКА */
+        .acc-target-spin { 
+            width:20vh; height:20vh; border-radius:50%; 
+            position:absolute; top:15vh; left:50%; margin-left:-10vh; 
+            background:repeating-radial-gradient(circle, #8b4513 0, #8b4513 10px, #a0522d 10px, #a0522d 20px); 
+            box-shadow:0 0 15px rgba(0,0,0,0.8); 
+            animation: spin 3s linear infinite;
+        }
+
+        /* Огромный реалистичный меч */
+        .acc-big-sword {
+            width: 0.8vh; height: 10vh;
+            background: linear-gradient(to right, #e0e0e0, #fff, #b0b0b0);
+            position: absolute; left: 50%; margin-left: -0.4vh;
+            border-radius: 50% 50% 0 0; bottom: 3vh;
+            box-shadow: inset 0 0 2px #fff;
+        }
+        .acc-big-sword::after {
+            content: ''; position: absolute;
+            bottom: -1vh; left: -1vh; width: 2.8vh; height: 1vh;
+            background: #444; border-radius: 2px;
+        }
+        .acc-big-sword::before {
+            content: ''; position: absolute;
+            bottom: -4vh; left: -0.6vh; width: 2vh; height: 3vh;
+            background: #654321; border-radius: 2px;
+        }
+
+        /* Контейнер для вонзенных мечей (крутится вместе с мишенью) */
+        .acc-stuck-knife {
+            position: absolute; top: 50%; left: 50%;
+            width: 2vh; height: 12vh;
+            transform-origin: 50% 0; /* Ось в центре мишени */
+        }
+        
+        /* 2-3 режимы */
+        @keyframes slideTarget { 0% { left: 10%; } 100% { left: 80%; } }
         .acc-target-frog { border-radius: 50%; background: radial-gradient(circle, red 20%, white 20%, white 40%, red 40%, red 60%, white 60%, white 80%, red 80%); box-shadow: 0 0 15px rgba(0,0,0,0.5); }
         .acc-anim-t2 { animation: slideTarget 4s alternate infinite ease-in-out; width:12vh; height:12vh; line-height:12vh; text-align:center; }
         @keyframes acc-frog-jump { 0% { bottom: 10%; transform: translateX(-50%) scale(1); } 50% { bottom: 70%; transform: translateX(-50%) scale(1.2); } 100% { bottom: 20%; transform: translateX(-50%) scale(1); } }
-        
         .acc-anim-bird { animation: slideTarget 4.5s alternate infinite linear; width:12vh; height:12vh; line-height:12vh; text-align:center; }
         .acc-dash-line { position:absolute; bottom:0; width:4px; background:repeating-linear-gradient(to top, transparent, transparent 10px, rgba(255,255,255,0.7) 10px, rgba(255,255,255,0.7) 20px); transform-origin:bottom center; pointer-events:none; z-index:5; left:50%; margin-left:-2px;}
-        
-        .acc-sword { width: 6px; height: 50px; background: linear-gradient(to right, #e0e0e0, #fff, #b0b0b0); position: absolute; left: 50%; margin-left:-3px; border-radius: 3px 3px 0 0; bottom: 15px; box-shadow:inset 0 0 2px #fff;}
-        .acc-sword::before { content: ''; position: absolute; bottom: -4px; left: -8px; width: 22px; height: 4px; background: linear-gradient(to right, #666, #aaa, #666); border-radius: 2px; }
-        .acc-sword::after { content: ''; position: absolute; bottom: -18px; left: -2px; width: 10px; height: 14px; background: linear-gradient(to right, #8b4513, #a0522d, #8b4513); border-radius: 2px; }
-        .acc-knife-obj { position:absolute; left:50%; top:50%; transform-origin:50% 0; z-index:10;}
 
-        /* БУКВЫ СТИЛИ */
+        /* БУКВЫ И РИСОВАНИЕ */
         .draw-canvas { border:4px solid #3390ec; border-radius:15px; background:#fff; cursor:crosshair; touch-action: none; }
-        /* АНИМАЦИЯ ДЛЯ ТУТОРИАЛА С РУКОЙ */
         @keyframes handDraw { 0% { transform: translate(-20px, 20px); } 50% { transform: translate(20px, -20px); } 100% { transform: translate(-20px, 20px); } }
         
-        .wordle-main { display:flex; flex-direction:column; width:100%; max-width:500px; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;}
+        /* === WORDLE (5 БУКВ) - ИСПРАВЛЕНА КЛАВИАТУРА === */
+        .wordle-main { display:flex; flex-direction:column; width:95%; max-width:500px; justify-content:center; align-items:center; gap:10px; margin: 0 auto;}
         .wordle-row { display:flex; gap:5px; margin-bottom:5px; }
         .wordle-cell { width:6vh; height:6vh; border:2px solid #555; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:3.5vh; font-weight:bold; background:#222; text-transform:uppercase;}
         .w-correct { background:var(--coin-col) !important; border-color:var(--coin-col) !important; color:#000 !important; } 
         .w-present { background:#fff !important; border-color:#fff !important; color:#000 !important; } 
         .w-absent { background:#333 !important; border-color:#333 !important; color:#888 !important; }
-        .w-key { padding:12px 10px; background:#555; border-radius:8px; cursor:pointer; font-weight:bold; min-width:25px; text-align:center; transition:background 0.2s; color:#fff;} 
-        .w-key:active{background:var(--coin-col) !important; color:#000 !important;}
         
-        /* Классы для клавиатуры в 5 букв */
+        /* Исправленная клавиатура на всю ширину, без обрезаний */
+        #wdl-kb { display: flex; flex-direction: column; width: 100%; margin-top: 20px; }
+        .wdl-kb-row { display: flex; justify-content: center; gap: 4px; width: 100%; margin-bottom: 4px; }
+        .w-key { 
+            padding: 12px 0; background:#555; border-radius:6px; cursor:pointer; font-weight:bold; 
+            flex: 1; text-align:center; transition:background 0.2s; color:#fff; font-size: 2vh; 
+            display: flex; justify-content: center; align-items: center; user-select: none;
+        } 
+        .w-key.action { flex: 1.5; font-size: 1.5vh; }
+        .w-key:active{background:var(--coin-col) !important; color:#000 !important;}
         .w-key-correct { background: var(--coin-col) !important; color: #000 !important; }
         .w-key-present { background: #fff !important; color: #000 !important; }
         .w-key-absent { background: #222 !important; color: #666 !important; }
@@ -297,7 +329,14 @@
         
         <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let4-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let4-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;"><div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-green" onclick="checkLet4()">✅ ПРОВЕРИТЬ</button></div></div>
         <div class="game-screen" id="screen-game-letters-4"><h2 style="font-size:4vh;margin-bottom:20px;">Составь слова!</h2><div style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;" id="let5-rows"><div class="math-sort-slots" id="let5-r1" style="min-width:40vh; background:#222; border-radius:10px; padding:10px; margin:0; justify-content:flex-start;"></div><div class="math-sort-slots" id="let5-r2" style="min-width:40vh; background:#222; border-radius:10px; padding:10px; margin:0; justify-content:flex-start;"></div><div class="math-sort-slots" id="let5-r3" style="min-width:40vh; background:#222; border-radius:10px; padding:10px; margin:0; justify-content:flex-start;"></div></div><div class="math-sort-items" id="let5-items"></div><button class="btn btn-green" onclick="checkLet5()">ГОТОВО</button></div>
-        <div class="game-screen" id="screen-game-letters-5"><h2 style="font-size:4vh;margin-bottom:10px;">5 БУКВ</h2><div class="wordle-main"><div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div><div id="wdl-kb" style="display:flex; flex-direction:column; gap:5px; width:100%; max-width:500px; margin-top:20px;"></div></div></div>
+        
+        <div class="game-screen" id="screen-game-letters-5">
+            <h2 style="font-size:4vh;margin-bottom:10px;">5 БУКВ</h2>
+            <div class="wordle-main">
+                <div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div>
+                <div id="wdl-kb"></div>
+            </div>
+        </div>
 
         <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div></div>
 
@@ -309,9 +348,14 @@
             <div id="acc-scores-display" style="position:absolute; top:70px; right:10px; background:rgba(0,0,0,0.6); padding:10px; border-radius:10px; z-index:100; font-size:2vh; color:#fff; text-align:right;"></div>
             
             <div id="acc-area-1" style="width:100%; height:100%; display:none; background:#222; position:relative;" onmousedown="accThrowKnifeClick()" ontouchstart="accThrowKnifeClick()">
-                <div id="acc-t1-rotator" style="width:100%; height:100%; position:absolute;"><div id="acc-t1" class="acc-target-spin"></div></div>
-                <div id="acc-ready-knife" style="pointer-events:none;"><div class="acc-sword"></div></div>
-                <div id="acc-flying-knife" style="pointer-events:none; display:none;"><div class="acc-sword"></div></div>
+                <div id="acc-t1-rotator" style="width:100%; height:100%; position:absolute;">
+                    </div>
+                <div id="acc-ready-knife" style="position:absolute; bottom:5vh; left:50%; margin-left:-1vh; z-index:20;">
+                    <div class="acc-big-sword"></div>
+                </div>
+                <div id="acc-flying-knife" style="position:absolute; bottom:5vh; left:50%; margin-left:-1vh; display:none; z-index:15;">
+                    <div class="acc-big-sword"></div>
+                </div>
             </div>
 
             <div id="acc-area-2" style="width:100%; height:100%; display:none; background:#2e7d32; position:relative;" onmousedown="accTriggerFrogClick()" ontouchstart="accTriggerFrogClick()">
@@ -650,8 +694,8 @@
             togglePause(false); 
             document.getElementById('game-container').style.display='none'; 
             document.getElementById('game-top-coins').style.display='none'; 
-            document.body.classList.remove('require-portrait', 'allow-portrait'); // 5. ИСКЛЮЧЕНИЕ СБРОСА WORDLE ОРИЕНТАЦИИ
-            [1,2,3].forEach(i => { let el = document.getElementById('acc-area-'+i); if(el) el.style.display = 'none'; }); // 3. ФИКС БАГА С УТКАМИ
+            document.body.classList.remove('require-portrait', 'allow-portrait');
+            [1,2,3].forEach(i => { let el = document.getElementById('acc-area-'+i); if(el) el.style.display = 'none'; });
             document.getElementById('dynamic-island').style.display='none';
             if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); 
             if(tttRef) tttRef.off(); if(accRef) accRef.off(); clearInterval(accInt); 
@@ -732,7 +776,7 @@
             let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn = false;
             let isD=false;
             c.onmousedown=c.ontouchstart=(e)=>{ 
-                document.getElementById('hand-tutor').style.display = 'none'; // Скрываем руку-туториал при касании
+                document.getElementById('hand-tutor').style.display = 'none'; 
                 if(useHint && !c.hasDrawn) { ctx.clearRect(0,0,c.width,c.height); c.hasDrawn=true; }
                 isD=true; ctx.beginPath(); ctx.lineWidth=15; ctx.lineCap='round'; ctx.strokeStyle='var(--coin-col)'; let r=c.getBoundingClientRect(); let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left; let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top; ctx.moveTo(x,y); 
             };
@@ -743,7 +787,7 @@
 
         function showLetter2() { 
             let c = document.getElementById('let3-canvas'); let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn=false;
-            document.getElementById('hand-tutor').style.display = 'block'; // Показываем туториал
+            document.getElementById('hand-tutor').style.display = 'block'; 
             ctx.font = `900 ${c.height*0.7}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.setLineDash([10, 10]); ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=10; ctx.strokeText(ALPHABET[letMode2Idx], c.width/2, c.height/2); ctx.setLineDash([]);
         }
         function checkLet3() { 
@@ -753,17 +797,17 @@
 
         // --- WORDLE (5 БУКВ) ---
         function initWordle() {
-            document.body.classList.add('require-portrait', 'allow-portrait'); // 5. ИСКЛЮЧЕНИЕ ДЛЯ ПОРТРЕТНОГО РЕЖИМА
+            document.body.classList.add('require-portrait', 'allow-portrait');
             wdlTarget = WORDLE_WORDS[Math.floor(Math.random()*WORDLE_WORDS.length)]; wdlRow=0; wdlCol=0; wdlGrid = Array.from({length:6}, ()=>new Array(5).fill(''));
             let g = document.getElementById('wordle-grid'); g.innerHTML='';
             for(let i=0; i<6; i++) { let row=document.createElement('div'); row.className='wordle-row'; row.id='w-row-'+i; for(let j=0; j<5; j++) row.innerHTML+=`<div class="wordle-cell" id="w-${i}-${j}"></div>`; g.appendChild(row); }
             let kb = document.getElementById('wdl-kb'); kb.innerHTML='';
             let layouts = ["ЙЦУКЕНГШЩЗХ", "ФЫВАПРОЛДЖЭ", "ЯЧСМИТЬБЮ"];
             layouts.forEach((rowStr, i) => {
-                let rDiv = document.createElement('div'); rDiv.style.display='flex'; rDiv.style.justifyContent='center'; rDiv.style.gap='4px';
-                if(i===2) { rDiv.innerHTML += `<div class="w-key" style="font-size:12px; padding: 15px 5px;" onclick="wEnter()">ВВОД</div>`; }
+                let rDiv = document.createElement('div'); rDiv.className = 'wdl-kb-row';
+                if(i===2) { rDiv.innerHTML += `<div class="w-key action" onclick="wEnter()">ВВОД</div>`; }
                 rowStr.split('').forEach(l=>{ rDiv.innerHTML += `<div class="w-key" id="wk-${l}" onclick="wPress('${l}')">${l}</div>`; });
-                if(i===2) { rDiv.innerHTML += `<div class="w-key" style="padding: 15px 5px;" onclick="wBack()">⌫</div>`; }
+                if(i===2) { rDiv.innerHTML += `<div class="w-key action" onclick="wBack()">⌫</div>`; }
                 kb.appendChild(rDiv);
             });
         }
@@ -905,7 +949,7 @@
 
         function renderAcc() {
             if(appState.isPaused) return;
-            [1,2,3].forEach(i => document.getElementById('acc-area-'+i).style.display = (i===accState.l ? 'block' : 'none'));
+            [1,2,3].forEach(i => { let el = document.getElementById('acc-area-'+i); if(el) el.style.display = (i===accState.l ? 'block' : 'none'); });
             let modeNames = ['Ножи', 'Лягушка', 'Утки'];
             document.getElementById('acc-header').innerText = `Меткость: ${modeNames[accState.l-1]}`;
             
@@ -915,8 +959,18 @@
             let mIdx = lobbyPlayers.findIndex(p=>p.id===myId); let isMyTurn = (accState.turn === mIdx);
             
             if(accState.l === 1) { 
-                let tgt = document.getElementById('acc-t1-rotator'); tgt.innerHTML = '<div id="acc-t1" class="acc-target-spin"></div>';
-                accState.k.forEach(k => { let d=document.createElement('div'); d.className='acc-knife-obj'; d.style.transform=`translate(-50%, -12.5vh) rotate(${k.a}deg) translate(0, 12.5vh)`; d.innerHTML='<div class="acc-sword"></div>'; tgt.appendChild(d); });
+                let tgt = document.getElementById('acc-t1-rotator'); 
+                tgt.innerHTML = '<div id="acc-t1" class="acc-target-spin"></div>';
+                let spinner = document.getElementById('acc-t1');
+                
+                accState.k.forEach(k => { 
+                    let d = document.createElement('div'); 
+                    d.className = 'acc-stuck-knife'; 
+                    d.style.transform = `translate(-50%, 0) rotate(${k.a}deg)`; 
+                    d.innerHTML = '<div class="acc-big-sword" style="top: 8vh; bottom: auto;"></div>'; 
+                    spinner.appendChild(d); 
+                });
+                
                 document.getElementById('acc-ready-knife').style.display = isMyTurn ? 'block' : 'none';
                 setIsland(isMyTurn?'Тапни чтобы метнуть!':`Кидает ${lobbyPlayers[accState.turn].name}...`, isMyTurn?'#34c759':'#ffd60a');
                 
@@ -937,24 +991,50 @@
 
         function accThrowKnifeClick() {
             let mIdx = lobbyPlayers.findIndex(p=>p.id===myId); if(accState.turn !== mIdx) return;
-            let fly = document.getElementById('acc-flying-knife'); fly.style.display = 'block'; fly.style.bottom = '20px';
+            if (window.isKnifeFlying) return;
+            window.isKnifeFlying = true;
+
+            let fly = document.getElementById('acc-flying-knife');
+            let ready = document.getElementById('acc-ready-knife');
+            ready.style.display = 'none';
+            
+            fly.style.display = 'block';
+            fly.style.transform = 'translateX(-50%) translateY(0)';
+            
+            void fly.offsetWidth; // Принудительно обновляем стили перед анимацией
+            
+            fly.style.transition = 'transform 0.25s ease-in';
+            // Поднимаем меч вверх на 55vh, чтобы он реалистично вонзился в мишень
+            fly.style.transform = 'translateX(-50%) translateY(-55vh)'; 
+            
             setTimeout(() => {
-                fly.style.transition = 'bottom 0.2s linear'; fly.style.bottom = '65%';
-                setTimeout(() => {
-                    fly.style.display='none'; fly.style.transition='none'; fly.style.bottom='20px';
-                    let hitAngle = (Date.now() % 3000) / 3000 * 360; 
-                    let collision = accState.k.some(k => Math.abs(k.a - hitAngle) < 15 || Math.abs(k.a - hitAngle) > 345);
-                    if(collision) { tg.showAlert("Попал в другой меч!"); accAdv1(); }
-                    else { accState.k.push({a: hitAngle, c: 'silver'}); accState.s[myId] = (accState.s[myId]||0)+1; accAdv1(); }
-                }, 200);
-            }, 10);
+                fly.style.display = 'none';
+                fly.style.transition = 'none';
+                fly.style.transform = 'translateX(-50%) translateY(0)';
+                ready.style.display = 'block';
+                window.isKnifeFlying = false;
+                
+                // Вычисляем угол поворота мишени
+                let currentRot = ((Date.now() % 3000) / 3000) * 360;
+                let hitAngle = (360 - currentRot) % 360; 
+
+                let collision = accState.k.some(k => Math.abs(k.a - hitAngle) < 15 || Math.abs(k.a - hitAngle) > 345);
+                if(collision) {
+                    tg.showAlert("Дзинь! Попал в меч!");
+                    accAdv1();
+                } else {
+                    accState.k.push({a: hitAngle, c: 'silver'});
+                    accState.s[myId] = (accState.s[myId]||0)+1;
+                    accAdv1();
+                }
+            }, 250);
         }
         function accAdv1() { let kTotal = Math.floor(12 / lobbyPlayers.length) * lobbyPlayers.length; accState.turn = (accState.turn + 1) % lobbyPlayers.length; if(accState.k.length >= kTotal) { finishAcc(); } else { syncAcc(); } }
 
         function accTriggerFrogClick() {
             if(accState.turn !== lobbyPlayers.findIndex(p=>p.id===myId)) return;
             let fr = document.getElementById('acc-frog');
-            fr.style.animation = 'acc-frog-jump 0.5s ease-out'; // Анимация прыжка
+            fr.style.animation = 'acc-frog-jump 0.5s ease-out';
             setTimeout(() => {
                 let t = document.getElementById('acc-t2').getBoundingClientRect(); let f = fr.getBoundingClientRect();
                 let hit = !(f.right < t.left+20 || f.left > t.right-20 || f.bottom < t.top || f.top > t.bottom); 
