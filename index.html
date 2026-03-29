@@ -134,7 +134,8 @@
         
         /* ПОИСК СТИЛИ (Новые) */
         .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom, #87CEEB, #e0f6ff);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2); border:3px solid #555;} 
-        .hidden-item{position:absolute;font-size:5vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.4)); opacity:1; transition:transform 0.1s;} 
+        /* 1. СДЕЛАЛИ КРИСТАЛЛЫ ПРОЗРАЧНЕЕ (opacity: 0.5) */
+        .hidden-item{position:absolute;font-size:5vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.4)); opacity:0.5; transition:transform 0.1s;} 
         .hidden-item:active { transform:translate(-50%,-50%) scale(0.8); }
         .scene-decor{position:absolute;font-size:4vh;transform:translate(-50%,-50%);z-index:15;pointer-events:none;opacity:0.8; filter:drop-shadow(0 5px 5px rgba(0,0,0,0.2));}
         .sun-decor { position:absolute; top:20px; right:20px; font-size:8vh; animation:spin 10s linear infinite; pointer-events:none; z-index:5;}
@@ -145,7 +146,12 @@
         @keyframes slideTarget { 0% { left: 10%; } 100% { left: 80%; } }
         .acc-target-spin { width:20vh; height:20vh; border-radius:50%; position:absolute; top:15%; left:50%; margin-left:-10vh; background:repeating-radial-gradient(circle, #ff453a 0, #ff453a 20px, #fff 20px, #fff 40px); box-shadow:0 0 15px rgba(0,0,0,0.5); animation: spin 3s linear infinite;}
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        
+        /* 2. НОВАЯ КРАСНО-БЕЛАЯ МИШЕНЬ И АНИМАЦИЯ ПРЫЖКА */
+        .acc-target-frog { border-radius: 50%; background: radial-gradient(circle, red 20%, white 20%, white 40%, red 40%, red 60%, white 60%, white 80%, red 80%); box-shadow: 0 0 15px rgba(0,0,0,0.5); }
         .acc-anim-t2 { animation: slideTarget 4s alternate infinite ease-in-out; width:12vh; height:12vh; line-height:12vh; text-align:center; }
+        @keyframes acc-frog-jump { 0% { bottom: 10%; transform: translateX(-50%) scale(1); } 50% { bottom: 70%; transform: translateX(-50%) scale(1.2); } 100% { bottom: 20%; transform: translateX(-50%) scale(1); } }
+        
         .acc-anim-bird { animation: slideTarget 4.5s alternate infinite linear; width:12vh; height:12vh; line-height:12vh; text-align:center; }
         .acc-dash-line { position:absolute; bottom:0; width:4px; background:repeating-linear-gradient(to top, transparent, transparent 10px, rgba(255,255,255,0.7) 10px, rgba(255,255,255,0.7) 20px); transform-origin:bottom center; pointer-events:none; z-index:5; left:50%; margin-left:-2px;}
         
@@ -156,6 +162,8 @@
 
         /* БУКВЫ СТИЛИ */
         .draw-canvas { border:4px solid #3390ec; border-radius:15px; background:#fff; cursor:crosshair; touch-action: none; }
+        /* АНИМАЦИЯ ДЛЯ ТУТОРИАЛА С РУКОЙ */
+        @keyframes handDraw { 0% { transform: translate(-20px, 20px); } 50% { transform: translate(20px, -20px); } 100% { transform: translate(-20px, 20px); } }
         
         .wordle-main { display:flex; flex-direction:column; width:100%; max-width:500px; justify-content:center; align-items:center; gap:10px; flex-wrap:wrap;}
         .wordle-row { display:flex; gap:5px; margin-bottom:5px; }
@@ -274,7 +282,19 @@
         <div class="game-screen" id="screen-game-math-3"><div class="math-progress-container" id="math-prog-3"></div><h2 style="font-size:4vh;margin-bottom:20px;">Расставь по порядку!</h2><div class="math-sort-slots" id="math3-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:90%;"></div><div class="math-sort-items" id="math3-items"></div></div>
 
         <div class="game-screen" id="screen-game-letters-1"><h2 style="font-size:4vh;margin-bottom:20px;">Алфавит по порядку!</h2><div class="math-sort-slots" id="let1-slots"></div><div class="math-sort-items" id="let1-items"></div></div>
-        <div class="game-screen" id="screen-game-letters-2"><h2 style="font-size:4vh;margin-bottom:10px;">Нарисуй букву!</h2><div style="position:relative; width:40vh; height:40vh; display:flex; justify-content:center; align-items:center;"><canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10;"></canvas></div><div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button><button class="btn btn-green" id="let3-ok-btn" onclick="checkLet3()">✅ ГОТОВО</button></div></div>
+        
+        <div class="game-screen" id="screen-game-letters-2">
+            <h2 style="font-size:4vh;margin-bottom:10px;">Нарисуй букву!</h2>
+            <div style="position:relative; width:40vh; height:40vh; display:flex; justify-content:center; align-items:center;">
+                <canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10;"></canvas>
+                <div id="hand-tutor" style="position:absolute; font-size:8vh; z-index:20; pointer-events:none; animation: handDraw 2s infinite;">✍️</div>
+            </div>
+            <div style="margin-top:20px; display:flex; gap:20px;">
+                <button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button>
+                <button class="btn btn-green" id="let3-ok-btn" onclick="checkLet3()">✅ ГОТОВО</button>
+            </div>
+        </div>
+        
         <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let4-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let4-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;"><div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-green" onclick="checkLet4()">✅ ПРОВЕРИТЬ</button></div></div>
         <div class="game-screen" id="screen-game-letters-4"><h2 style="font-size:4vh;margin-bottom:20px;">Составь слова!</h2><div style="display:flex; flex-direction:column; gap:15px; margin-bottom:20px;" id="let5-rows"><div class="math-sort-slots" id="let5-r1" style="min-width:40vh; background:#222; border-radius:10px; padding:10px; margin:0; justify-content:flex-start;"></div><div class="math-sort-slots" id="let5-r2" style="min-width:40vh; background:#222; border-radius:10px; padding:10px; margin:0; justify-content:flex-start;"></div><div class="math-sort-slots" id="let5-r3" style="min-width:40vh; background:#222; border-radius:10px; padding:10px; margin:0; justify-content:flex-start;"></div></div><div class="math-sort-items" id="let5-items"></div><button class="btn btn-green" onclick="checkLet5()">ГОТОВО</button></div>
         <div class="game-screen" id="screen-game-letters-5"><h2 style="font-size:4vh;margin-bottom:10px;">5 БУКВ</h2><div class="wordle-main"><div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div><div id="wdl-kb" style="display:flex; flex-direction:column; gap:5px; width:100%; max-width:500px; margin-top:20px;"></div></div></div>
@@ -295,7 +315,7 @@
             </div>
 
             <div id="acc-area-2" style="width:100%; height:100%; display:none; background:#2e7d32; position:relative;" onmousedown="accTriggerFrogClick()" ontouchstart="accTriggerFrogClick()">
-                <div id="acc-t2" class="acc-anim-t2" style="font-size:8vh; position:absolute; top:20%; left:-100px;">🌸</div>
+                <div id="acc-t2" class="acc-anim-t2 acc-target-frog" style="position:absolute; top:20%; left:-100px;"></div>
                 <div id="acc-frog" style="font-size:10vh; position:absolute; bottom:10%; left:50%; transform:translateX(-50%); z-index:10; pointer-events:none;">🐸</div>
                 <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:#fff; pointer-events:none;">Тапни чтобы лягушка прыгнула!</div>
             </div>
@@ -626,7 +646,17 @@
             else { document.getElementById('game-top-coins').style.display = 'block'; document.getElementById('pause-btn').style.display='flex'; document.getElementById('screen-game-'+appState.game).classList.add('active'); if(appState.game==='tictactoe') initTicTacToe(); else if(appState.game==='clicker') initClickerUI(); else if(appState.game==='hidden') initHiddenGame(); }
         }
         function togglePause(p) { appState.isPaused=p; document.getElementById('pause-overlay').classList.toggle('hidden', !p); }
-        function exitToLobby() { togglePause(false); document.getElementById('game-container').style.display='none'; document.getElementById('game-top-coins').style.display='none'; document.body.classList.remove('require-portrait'); if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); if(tttRef) tttRef.off(); if(accRef) accRef.off(); clearInterval(accInt); document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); }
+        function exitToLobby() { 
+            togglePause(false); 
+            document.getElementById('game-container').style.display='none'; 
+            document.getElementById('game-top-coins').style.display='none'; 
+            document.body.classList.remove('require-portrait', 'allow-portrait'); // 5. ИСКЛЮЧЕНИЕ СБРОСА WORDLE ОРИЕНТАЦИИ
+            [1,2,3].forEach(i => { let el = document.getElementById('acc-area-'+i); if(el) el.style.display = 'none'; }); // 3. ФИКС БАГА С УТКАМИ
+            document.getElementById('dynamic-island').style.display='none';
+            if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting'); 
+            if(tttRef) tttRef.off(); if(accRef) accRef.off(); clearInterval(accInt); 
+            document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); 
+        }
         function setIsland(t, c='#fff') { let is = document.getElementById('dynamic-island'); document.getElementById('island-text').innerText=t; is.style.display='block'; is.style.border=`2px solid ${c}`; }
         function showResult(t, bg, em, htmlSub='') { document.getElementById('dynamic-island').style.display='none'; document.getElementById('pause-btn').style.display='none'; let ov=document.getElementById('result-overlay'); ov.style.backgroundColor=bg; document.getElementById('result-text').innerText=t; document.getElementById('result-emoji').innerText=em; document.getElementById('result-subtext').innerHTML=htmlSub; ov.classList.remove('hidden'); }
         function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); exitToLobby(); }
@@ -702,6 +732,7 @@
             let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn = false;
             let isD=false;
             c.onmousedown=c.ontouchstart=(e)=>{ 
+                document.getElementById('hand-tutor').style.display = 'none'; // Скрываем руку-туториал при касании
                 if(useHint && !c.hasDrawn) { ctx.clearRect(0,0,c.width,c.height); c.hasDrawn=true; }
                 isD=true; ctx.beginPath(); ctx.lineWidth=15; ctx.lineCap='round'; ctx.strokeStyle='var(--coin-col)'; let r=c.getBoundingClientRect(); let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left; let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top; ctx.moveTo(x,y); 
             };
@@ -712,6 +743,7 @@
 
         function showLetter2() { 
             let c = document.getElementById('let3-canvas'); let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn=false;
+            document.getElementById('hand-tutor').style.display = 'block'; // Показываем туториал
             ctx.font = `900 ${c.height*0.7}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.setLineDash([10, 10]); ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=10; ctx.strokeText(ALPHABET[letMode2Idx], c.width/2, c.height/2); ctx.setLineDash([]);
         }
         function checkLet3() { 
@@ -721,7 +753,7 @@
 
         // --- WORDLE (5 БУКВ) ---
         function initWordle() {
-            document.body.classList.add('require-portrait'); // Блокируем ландшафтный режим
+            document.body.classList.add('require-portrait', 'allow-portrait'); // 5. ИСКЛЮЧЕНИЕ ДЛЯ ПОРТРЕТНОГО РЕЖИМА
             wdlTarget = WORDLE_WORDS[Math.floor(Math.random()*WORDLE_WORDS.length)]; wdlRow=0; wdlCol=0; wdlGrid = Array.from({length:6}, ()=>new Array(5).fill(''));
             let g = document.getElementById('wordle-grid'); g.innerHTML='';
             for(let i=0; i<6; i++) { let row=document.createElement('div'); row.className='wordle-row'; row.id='w-row-'+i; for(let j=0; j<5; j++) row.innerHTML+=`<div class="wordle-cell" id="w-${i}-${j}"></div>`; g.appendChild(row); }
@@ -921,14 +953,15 @@
 
         function accTriggerFrogClick() {
             if(accState.turn !== lobbyPlayers.findIndex(p=>p.id===myId)) return;
-            let fr = document.getElementById('acc-frog'); fr.style.animation = 'acc-frog-jump 0.8s linear';
+            let fr = document.getElementById('acc-frog');
+            fr.style.animation = 'acc-frog-jump 0.5s ease-out'; // Анимация прыжка
             setTimeout(() => {
                 let t = document.getElementById('acc-t2').getBoundingClientRect(); let f = fr.getBoundingClientRect();
                 let hit = !(f.right < t.left+20 || f.left > t.right-20 || f.bottom < t.top || f.top > t.bottom); 
                 if(hit) { accState.s[myId] = (accState.s[myId]||0)+1; tg.showAlert("Попал!"); } else tg.showAlert("Мимо!");
                 fr.style.animation = 'none'; accState.l2Done++; accState.turn = (accState.turn+1)%lobbyPlayers.length;
                 if(accState.l2Done >= lobbyPlayers.length) { finishAcc(); } else { syncAcc(); }
-            }, 400); 
+            }, 500); 
         }
 
         function accAimStart(e) {
