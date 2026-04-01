@@ -21,7 +21,7 @@
         #screen-game-math-1, #screen-game-math-2, #screen-game-math-3, #screen-game-letters-1, #screen-game-letters-2, #screen-game-letters-3, #screen-game-letters-4, #screen-game-letters-5, #screen-game-tictactoe, #screen-game-clicker { background: transparent; }
 
         #wordle-orientation-warning { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:white; }
-        @media screen and (orientation: landscape) { body.require-portrait #wordle-orientation-warning { display: flex; } }
+        @media screen and (orientation: portrait) { #wordle-orientation-warning { display: flex; } }
 
         .glass{background:rgba(30,30,30,0.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 4px 15px rgba(0,0,0,0.5);}
         .overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;text-align:center;color:#fff;transition:0.3s;} .overlay.hidden{display:none!important;}
@@ -239,7 +239,7 @@
     </style>
 </head>
 <body>
-    <div id="wordle-orientation-warning"><h2>НЕЛЬЗЯ ИГРАТЬ В ГОРИЗОНТАЛЬНОМ РЕЖИМЕ 🔄<br><br>Поверни телефон вертикально!</h2></div>
+    <div id="wordle-orientation-warning"><h2>НЕЛЬЗЯ ИГРАТЬ В ВЕРТИКАЛЬНОМ РЕЖИМЕ 🔄<br><br>Поверни планшет горизонтально!</h2></div>
     <div id="top-notify" class="glass" onclick="acceptLobbyInvite()"><span>Тебя зовут в игру!</span></div>
     
     <div id="global-coins" class="glass">🪙 <span id="global-coins-val">0</span></div>
