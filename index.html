@@ -16,11 +16,9 @@
         .balloon-bg-item { position: fixed; bottom: -100px; font-size: 40px; animation: floatUp 10s linear infinite; z-index: 0; pointer-events: none; opacity: 0.6; }
         @keyframes floatUp { 0% { transform: translateY(0) translateX(0) rotate(0deg); } 100% { transform: translateY(-120vh) translateX(50px) rotate(20deg); } }
         
+        /* Исправлено: прозрачный фон для экранов игры */
         body.star-bg .game-screen, body.bg-balloons .game-screen { background: transparent !important; }
-        
-        #orientation-warning { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:white; }
-        @media screen and (orientation: portrait) { #orientation-warning { display: flex; } }
-        body.allow-portrait #orientation-warning { display: none !important; }
+        #screen-game-math-1, #screen-game-math-2, #screen-game-math-3, #screen-game-letters-1, #screen-game-letters-2, #screen-game-letters-3, #screen-game-letters-4, #screen-game-letters-5, #screen-game-tictactoe, #screen-game-clicker { background: transparent; }
 
         #wordle-orientation-warning { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:white; }
         @media screen and (orientation: landscape) { body.require-portrait #wordle-orientation-warning { display: flex; } }
@@ -47,8 +45,8 @@
         .list-item{display:flex;justify-content:space-between;align-items:center;background:#111;padding:12px;border-radius:12px;margin-bottom:10px;width:100%;box-sizing:border-box;} .list-item:active{background:#333;}
         .friend-row { display:flex; align-items:center; gap:10px; }
         
-        /* ГЛОБАЛЬНЫЕ МОНЕТКИ */
-        #global-coins { position: fixed; top: 15px; right: 55px; font-size: 20px; font-weight: bold; color: var(--coin-col); padding: 8px 15px; border-radius: 15px; z-index: 9999; display: flex; align-items: center; gap: 5px; pointer-events: none;}
+        /* Исправлено: Монетки левее */
+        #global-coins { position: fixed; top: 15px; left: 100px; font-size: 20px; font-weight: bold; color: var(--coin-col); padding: 8px 15px; border-radius: 15px; z-index: 9999; display: flex; align-items: center; gap: 5px; pointer-events: none; background: rgba(0,0,0,0.5);}
 
         /* ПРОФИЛЬ */
         .profile-mega-box{background:var(--panel-bg);padding:30px;border-radius:20px;text-align:center;border:2px solid #444;width:90%;max-width:500px;box-shadow:0 10px 30px rgba(0,0,0,0.5);margin:0 auto; position:relative;}
@@ -57,7 +55,10 @@
         .profile-name{font-size:28px;font-weight:900;cursor:pointer;border-bottom:2px dashed transparent; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
         .profile-id{font-size:18px;color:#888;font-family:monospace;background:#111;padding:5px 15px;border-radius:10px;display:inline-block;margin-bottom:20px; margin-top:15px;}
         
-        .emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px;} .emoji-item{font-size:30px;cursor:pointer;padding:5px;background:#333;border-radius:10px;text-align:center;} .emoji-item:active{background:var(--coin-col);}
+        /* Исправлено: Аватарки в 5 столбиков, квадратные */
+        .emoji-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;max-height:60vh;overflow-y:auto;padding:10px; overflow-x:hidden;} 
+        .emoji-item{font-size:30px;cursor:pointer;background:#333;border-radius:10px;text-align:center; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;} .emoji-item:active{background:var(--coin-col);}
+        
         .friends-list-panel{width:300px;background:var(--panel-bg);border-radius:20px;padding:15px;display:flex;flex-direction:column;max-height:100%;}
         .lobby-buttons-panel{flex-grow:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;}
         .mega-btn{width:80%;max-width:400px;padding:30px;border-radius:20px;font-size:24px;font-weight:900;color:#fff;border:none;cursor:pointer;text-transform:uppercase;box-shadow:0 8px 0 rgba(0,0,0,0.3);}
@@ -72,27 +73,28 @@
         .lobby-controls-bottom-right{position:absolute;bottom:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
         .play-btn{background:#34c759;color:#fff;border:none;border-radius:12px;padding:15px 50px;font-size:26px;font-weight:900;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 0 #248a3d;}
         
-        #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:1000;}
+        #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:transparent;z-index:1000;}
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
-        #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none;}
+        #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none; background:rgba(0,0,0,0.8);}
         #pause-btn{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:25px;border:2px solid #fff;font-size:20px;display:none;align-items:center;justify-content:center;z-index:1100;cursor:pointer;background:rgba(0,0,0,0.5);box-shadow:0 4px 10px rgba(0,0,0,0.5);}
         
         .styled-input{padding:15px;border-radius:10px;border:2px solid #444;background:#111;color:#fff;font-size:18px;width:80%;margin-bottom:10px; text-align:left; direction:ltr; unicode-bidi:isolate;}
         .badge{display:none;background:red;color:white;border-radius:50%;padding:2px 6px;font-size:10px;position:absolute;top:-5px;right:-10px;}
         #top-notify{position:fixed;top:-100px;left:50%;transform:translateX(-50%);z-index:3000;padding:15px 30px;border-radius:20px;transition:0.4s;font-weight:bold;cursor:pointer;color:#fff;display:flex;gap:10px;align-items:center;box-shadow:0 5px 15px rgba(0,0,0,0.5);}
         
-        /* МАГАЗИН И ИНВЕНТАРЬ - ОБНОВЛЕНО */
-        .shop-item-card { background:#222; border:2px solid #444; border-radius:15px; padding:10px; width:120px; text-align:center; position:relative; display:flex; flex-direction:column; align-items:center;}
+        /* Исправлено: Магазин стал как раньше (ширина 180px) */
+        .shop-item-card { background:#222; border:2px solid #444; border-radius:15px; padding:15px; width:180px; text-align:center; position:relative; display:flex; flex-direction:column; align-items:center;}
         .shop-item-card.bought { opacity:0.5; border-color:#222; filter:grayscale(100%); }
         .shop-item-card.selected { border-color:#34c759; box-shadow:0 0 15px rgba(52,199,89,0.5); }
-        .shop-rarity-bar { width:100%; border-radius:3px; padding:2px 0; font-size:9px; font-weight:bold; color:#fff; margin:5px 0; text-transform:uppercase; }
+        .shop-rarity-bar { width:100%; border-radius:3px; padding:3px 0; font-size:11px; font-weight:bold; color:#fff; margin:8px 0; text-transform:uppercase; text-shadow: 1px 1px 2px #000;}
 
-        .inv-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; width: 100%; justify-items: center; align-content: start; }
-        .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:10px; width:12vw; max-width:55px; height:70px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; position:relative; overflow:hidden;}
+        /* Исправлено: Инвентарь плотнее (4 колонки), карточки больше */
+        .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: 100%; justify-items: center; align-content: start; }
+        .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:10px; width:22vw; max-width:85px; height:100px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; position:relative; overflow:hidden;}
         .inv-item-card.equipped { border-color:#34c759; box-shadow:0 0 10px rgba(52,199,89,0.5); }
-        .inv-item-icon { font-size:25px; margin-top:5px; }
-        .inv-item-name { font-size:8px; font-weight:normal; line-height:1.1; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:2px; padding: 0 2px;}
-        .inv-rarity-line { position: absolute; bottom: 0; left: 0; width: 100%; height: 5px; }
+        .inv-item-icon { font-size:35px; margin-top:10px; display:flex; align-items:center; justify-content:center; }
+        .inv-item-name { font-size:10px; font-weight:normal; line-height:1.1; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:5px; padding: 0 4px;}
+        .inv-rarity-line { position: absolute; bottom: 0; left: 0; width: 100%; height: 6px; }
 
         /* АНИМАЦИИ ПРОФИЛЯ И НОВЫЕ ПРЕДМЕТЫ */
         @keyframes poopAlive { 0%, 100% { transform: scale(1, 1) translateY(0); } 15% { transform: scale(1.2, 0.8) translateY(10%); } 30% { transform: scale(0.9, 1.2) translateY(-20%); } 45% { transform: scale(1.05, 0.95) rotate(15deg); } 60% { transform: scale(1, 1) rotate(-15deg); } 75% { transform: scale(1.1, 0.9) translateY(5%); } }
@@ -148,9 +150,9 @@
         .math-sort-slots{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;justify-content:center; min-height:8vh; padding:10px; background:rgba(0,0,0,0.2); border-radius:15px; width:90%;} .math-slot{width:8vh;height:8vh;border:3px dashed #666;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold;background:#222;} .math-sort-items{display:flex;gap:10px;flex-wrap:wrap;justify-content:center; min-height:8vh;} .math-drag-item{width:8vh;height:8vh;background:#34c759;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:4vh;font-weight:bold; cursor:pointer;}
         .shake{animation:shake 0.4s;} @keyframes shake{0%{transform:translateX(0);} 25%{transform:translateX(-10px);} 50%{transform:translateX(10px);} 75%{transform:translateX(-10px);} 100%{transform:translateX(0);}}
         
-        /* ПРЯТКИ ИЗМЕНЕНИЯ */
+        /* ПРЯТКИ: Меньше алмазы, больше декораций */
         .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom, #87CEEB, #e0f6ff);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2); border:3px solid #555;} 
-        .hidden-item{position:absolute;font-size:3vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.4)); opacity:0.7; transition:transform 0.1s;} 
+        .hidden-item{position:absolute;font-size:1.5vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.4)); opacity:0.4; transition:transform 0.1s;} 
         .hidden-item:active { transform:translate(-50%,-50%) scale(0.8); }
         .scene-decor{position:absolute;font-size:6vh;transform:translate(-50%,-50%);z-index:20;pointer-events:none;opacity:0.95; filter:drop-shadow(0 5px 5px rgba(0,0,0,0.3));}
         .sun-decor { position:absolute; top:20px; right:20px; font-size:8vh; animation:spin 10s linear infinite; pointer-events:none; z-index:5;}
@@ -165,6 +167,7 @@
             background:repeating-radial-gradient(circle, #8b4513 0, #8b4513 10px, #a0522d 10px, #a0522d 20px); 
             box-shadow:0 0 15px rgba(0,0,0,0.8); 
             animation: spin 3s linear infinite;
+            z-index: 5;
         }
         .acc-big-sword {
             width: 0.8vh; height: 10vh;
@@ -187,6 +190,7 @@
             position: absolute; top: 50%; left: 50%;
             width: 2vh; height: 12vh;
             transform-origin: 50% 0;
+            z-index: 10;
         }
         
         /* 2-3 режимы меткости */
@@ -228,10 +232,13 @@
 
         #invite-friends-list { display:flex; flex-direction:row; gap:10px; overflow-x:auto; max-height:none; padding-bottom:10px; }
         #invite-friends-list .list-item { min-width:130px; flex-direction:column; justify-content:center; text-align:center; }
+        
+        .ai-stats-table { width: 100%; margin-top: 15px; border-collapse: collapse; text-align: center; }
+        .ai-stats-table th, .ai-stats-table td { border: 1px solid #444; padding: 8px; }
+        .ai-stats-table th { background: #222; color: var(--coin-col); }
     </style>
 </head>
 <body>
-    <div id="orientation-warning"><h2>Пожалуйста, переверни телефон горизонтально 🔄</h2></div>
     <div id="wordle-orientation-warning"><h2>НЕЛЬЗЯ ИГРАТЬ В ГОРИЗОНТАЛЬНОМ РЕЖИМЕ 🔄<br><br>Поверни телефон вертикально!</h2></div>
     <div id="top-notify" class="glass" onclick="acceptLobbyInvite()"><span>Тебя зовут в игру!</span></div>
     
@@ -242,7 +249,7 @@
             <div class="nav-item active" onclick="switchTab('profile', this); updateMyProfileUI();"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
             <div class="nav-item" onclick="switchTab('inv', this); renderShop(); renderInventory();"><div class="nav-icon">🎒</div><div class="nav-text">Инвентарь</div></div>
             <div class="nav-item" onclick="switchTab('friends', this)"><div class="nav-icon">👥</div><div class="nav-text">Друзья</div></div>
-            <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this)"><div class="nav-icon">👨‍💻</div><div class="nav-text">Разраб</div></div>
+            <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this); renderAdminList();"><div class="nav-icon">👨‍💻</div><div class="nav-text">Разраб</div></div>
         </div>
 
         <div class="main-content">
@@ -291,7 +298,19 @@
             <div id="tab-admin" class="tab-view" style="flex-direction: column;">
                 <h2 style="text-align:center; color:var(--coin-col); margin-top:0;">Панель Разработчика</h2>
                 <div class="sub-tabs-header"><button class="sub-tab-btn active" onclick="switchSubTab('admin','admins',this)">АДМИНЫ</button><button class="sub-tab-btn" onclick="switchSubTab('admin','coins',this)">ИГРОКИ</button><button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОД</button></div>
-                <div id="adm-admins" class="sub-tab-content active"><div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('adm-add',this)">ДОБАВИТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('adm-rem',this)">УДАЛИТЬ</button></div><div id="adm-add" class="mini-tab-content active"><input type="text" inputmode="numeric" id="dev-add-admin-id" class="styled-input" placeholder="ID игрока"><button class="btn btn-green" onclick="addAdmin()">Сделать админом</button></div><div id="adm-rem" class="mini-tab-content"><button class="btn btn-red" onclick="removeAllAdmins()">УДАЛИТЬ ВСЕХ</button></div></div>
+                
+                <div id="adm-admins" class="sub-tab-content active">
+                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('adm-add',this)">ДОБАВИТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('adm-rem',this)">УДАЛИТЬ</button></div>
+                    <div id="adm-add" class="mini-tab-content active">
+                        <input type="text" inputmode="numeric" id="dev-add-admin-id" class="styled-input" placeholder="ID игрока">
+                        <button class="btn btn-green" onclick="addAdmin()">Сделать админом</button>
+                    </div>
+                    <div id="adm-rem" class="mini-tab-content" style="width:100%; max-width:400px;">
+                        <div id="admin-list-display" style="max-height: 200px; overflow-y:auto; margin-bottom:15px; width:100%;"></div>
+                        <button class="btn btn-red" onclick="removeAllAdmins()">УДАЛИТЬ ВСЕХ (кроме себя)</button>
+                    </div>
+                </div>
+
                 <div id="adm-coins" class="sub-tab-content">
                     <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('c-give',this)">ВЫДАТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('c-take',this)">ЗАБРАТЬ</button></div>
                     <div id="c-give" class="mini-tab-content active">
@@ -442,21 +461,35 @@
     <div id="avatar-modal" class="overlay glass hidden" onclick="closeAvatarModal()"><div style="background:#111;padding:20px;border-radius:20px;width:80%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2>Выбери аватар</h2><div class="emoji-grid" id="emoji-grid"></div><button class="btn btn-red" onclick="closeAvatarModal()">Закрыть</button></div></div>
     <div id="pause-overlay" class="overlay glass hidden"><h2>ПАУЗА ⏸️</h2><div style="width:300px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button><button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button></div></div>
     <div id="result-overlay" class="overlay hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text" style="font-size:5vh;">Победа!</h2><div id="result-subtext" class="result-score-list"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff; margin-top:20px;" onclick="closeResult()">В Лобби</button></div>
-    <div id="medals-modal" class="overlay glass hidden" onclick="closeMedalsModal()"><div style="background:#222;padding:30px;border-radius:20px;width:350px;border:2px solid var(--coin-col);" onclick="event.stopPropagation()"><h2 style="color:var(--coin-col); margin-top:0;">Мои медали</h2><div id="medals-modal-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-height:40vh; overflow-y:auto; margin-bottom:20px;"></div><button class="btn btn-red" style="width:100%;" onclick="closeMedalsModal()">Закрыть</button></div></div>
-    <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)"><div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px;" onclick="event.stopPropagation()"><div style="font-size:50px;" id="fm-avatar" class="dynamic-avatar">👤</div><div id="fm-name-cont" class="friend-row" style="font-size:24px; font-weight:bold; margin-bottom:10px; justify-content:center;"></div><div id="fm-medals-cont" class="medals-container" style="margin-bottom:15px;"></div><p id="fm-id" style="color:gray;">ID: 0000</p><div style="display:flex;flex-direction:column;gap:10px;" id="friend-actions"></div></div></div>
-    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>
+    
+    <div id="medals-modal" class="overlay glass hidden" onclick="closeMedalsModal()"><div style="background:#222;padding:30px;border-radius:20px;width:350px;border:2px solid var(--coin-col);" onclick="event.stopPropagation()"><h2 style="color:var(--coin-col); margin-top:0;">Мои медали</h2><div id="medals-modal-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:5px; max-height:40vh; overflow-y:auto; margin-bottom:20px;"></div><button class="btn btn-red" style="width:100%;" onclick="closeMedalsModal()">Закрыть</button></div></div>
+    
+    <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)">
+        <div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px; max-height: 80vh; overflow-y:auto;" onclick="event.stopPropagation()">
+            <div style="font-size:50px;" id="fm-avatar" class="dynamic-avatar">👤</div>
+            <div id="fm-name-cont" class="friend-row" style="font-size:24px; font-weight:bold; margin-bottom:10px; justify-content:center;"></div>
+            <div id="fm-medals-cont" class="medals-container" style="margin-bottom:15px;"></div>
+            <p id="fm-id" style="color:gray;">ID: 0000</p>
+            <div id="fm-ai-stats" style="display:none; width:100%;">
+                <h4 style="margin:5px 0;">Статистика против ИИ</h4>
+                <table class="ai-stats-table" id="ai-stats-table-content"></table>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px; margin-top:15px;" id="friend-actions"></div>
+        </div>
+    </div>
+    
+    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>/
     <script>
         const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
         const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
         firebase.initializeApp(firebaseConfig); const db = firebase.database();
         
+        // Исправлено: Убраны каомодзи
         let EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
-        const KAOMOJI = ['( ͡° ͜ʖ ͡°)', '¯\\_(ツ)_/¯', '(ง\'̀-\'́)ง', '(⌐■_■)', 'ʕ•ᴥ•ʔ', '(╯°□°）╯', 'ಠ_ಠ', '(ಥ﹏ಥ)', '(˘▾˘)', '(° ͜ʖ °)', '(*_*)', '(O_O)', '(+_+)', '(@_@)', '(T_T)', '(^_-)', '(-_-)', '(>_<)', '(;_;)', '(;_;)', '(ToT)', '(-.-)', '(*^^*)', '(^_^)', '(^o^)', '(^-^)', '(^ ^)', '(^.^)', '(^o^)', '(^^)', '(^O^)', '(^_-)', '(^_−)', '(*^o^*)', '(*^O^*)', '(*^_^*)', '(*^.^*)', '(*^^)v', '(^^)v', '(^_^)v', '(^-^)v', '(*^▽^*)', '(´∀｀)', '(´▽｀)', '(´・ω・｀)', '(´ー｀)', '(´∀｀*)', '(´▽｀*)', '(´・ω・｀*)', '(´ー｀*)', '(´∀｀=)', '(´▽｀=)', '(´・ω・｀=)', '(´ー｀=)', '（＾_＾）', '（＾o＾）', '（＾-＾）', '（＾_＾）', '（＾.＾）', '（＾o＾）', '（＾＾）', '（＾Ｏ＾）', '（＾_−）', '（＊＾o＾＊）', '（＊＾Ｏ＾＊）', '（＊＾＿＾＊）', '（＊＾.＾＊）', '（＊＾＾）v', '（＾＾）v', '（＾_＾）v', '（＾-＾）v', '（＊＾▽＾＊）', '（´∀｀）', '（´▽｀）', '（´・ω・｀）', '（´ー｀）', '（´∀｀＊）', '（´▽｀＊）', '（´・ω・｀＊）', '（´ー｀＊）', '（´∀｀＝）', '（´▽｀＝）', '（´・ω・｀＝）', '（´ー｀＝）', '(=^・^=)'];
-        EMOJIS = EMOJIS.concat(KAOMOJI);
 
         const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', eqName: '', pMedals: [] }; 
         
-        let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0;
+        let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let aiStats = {};
         let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
         let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
 
@@ -467,21 +500,23 @@
             'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР'
         };
 
-        const RARITIES = { 'UNCOMMON': '#32ade6', 'RARE': '#007aff', 'EPIC': '#af52de', 'LEGENDARY': '#ff2d55', 'ARCANE': '#ff3b30', 'NAMELESS': '#ffcc00' };
+        // Исправлено: Легендарный цвет более розовый
+        const RARITIES = { 'UNCOMMON': '#32ade6', 'RARE': '#007aff', 'EPIC': '#af52de', 'LEGENDARY': '#ff1493', 'ARCANE': '#ff3b30', 'NAMELESS': '#ffcc00' };
 
+        // Исправлено: Описания для магазина
         const SHOP_ITEMS = [ 
             {id: 'gif_poop', type:'avatar', name: 'Живая какашка', desc: 'GIF аватарка', price: 500, plainIcon: '💩', icon: '<span class="anim-poop">💩</span>', rarity: 'EPIC'}, 
-            {id: 'anim_clown', type:'avatar', name: 'Бешеный Клоун', desc: 'Анимация', price: 1500, plainIcon: '🤡', icon: '<span class="anim-clown">🤡</span>', rarity: 'EPIC'},
-            {id: 'name_miron', type:'name', name: 'МИРОН', desc: 'GIF имя', price: 5000, plainIcon: '🎈', icon: '<span class="anim-miron"><span class="anim-miron-text">МИРОН</span></span>', rarity: 'EPIC'}, 
-            {id: 'name_haha', type:'name', name: 'ХАХАХА', desc: 'Смешной ник', price: 5000, plainIcon: '😂', icon: '<span class="anim-haha">ХАХАХА 😂</span>', rarity: 'EPIC'},
-            {id: 'name_mama', type:'name', name: 'МАМА', desc: 'Цветочный ник', price: 5000, plainIcon: '🌺', icon: '<span class="name-mama">МАМА</span>', rarity: 'RARE'},
-            {id: 'name_masha', type:'name', name: 'МАША', desc: 'Яркий ник', price: 5000, plainIcon: '✨', icon: '<span class="name-masha">МАША</span>', rarity: 'RARE'},
-            {id: 'name_papa', type:'name', name: 'ПАПА', desc: 'Строгий ник', price: 5000, plainIcon: '🛡️', icon: '<span class="name-papa">ПАПА</span>', rarity: 'RARE'},
-            {id: 'name_tema', type:'name', name: 'ТЁМА', desc: 'Огонь и лед', price: 5000, plainIcon: '🧊', icon: '<span class="name-tema">ТЁМА</span>', rarity: 'RARE'},
+            {id: 'anim_clown', type:'avatar', name: 'Бешеный Клоун', desc: 'GIF аватарка', price: 1500, plainIcon: '🤡', icon: '<span class="anim-clown">🤡</span>', rarity: 'EPIC'},
+            {id: 'name_miron', type:'name', name: 'МИРОН', desc: 'GIF имя', price: 5000, plainIcon: 'МИРОН', icon: '<span class="anim-miron"><span class="anim-miron-text">МИРОН</span></span>', rarity: 'EPIC'}, 
+            {id: 'name_haha', type:'name', name: 'ХАХАХА', desc: 'GIF имя', price: 5000, plainIcon: 'ХАХАХА', icon: '<span class="anim-haha">ХАХАХА 😂</span>', rarity: 'EPIC'},
+            {id: 'name_mama', type:'name', name: 'МАМА', desc: 'Аватарка', price: 5000, plainIcon: 'МАМА', icon: '<span class="name-mama">МАМА</span>', rarity: 'RARE'},
+            {id: 'name_masha', type:'name', name: 'МАША', desc: 'Аватарка', price: 5000, plainIcon: 'МАША', icon: '<span class="name-masha">МАША</span>', rarity: 'RARE'},
+            {id: 'name_papa', type:'name', name: 'ПАПА', desc: 'Аватарка', price: 5000, plainIcon: 'ПАПА', icon: '<span class="name-papa">ПАПА</span>', rarity: 'RARE'},
+            {id: 'name_tema', type:'name', name: 'ТЁМА', desc: 'Аватарка', price: 5000, plainIcon: 'ТЁМА', icon: '<span class="name-tema">ТЁМА</span>', rarity: 'RARE'},
             {id: 'medal_top', type:'medal', name: 'TOP', desc: 'МЕДАЛЬ', price: 1000, plainIcon: '🏅', icon: '<span class="medal-badge medal-badge-large">TOP</span>', rarity: 'UNCOMMON'},
-            {id: 'medal_pro', type:'medal', name: 'PRO', desc: 'Про медалист', price: 2000, plainIcon: '🛡️', icon: '<span class="medal-badge medal-badge-large" style="border-color:#ff453a; background:linear-gradient(45deg, #8a0303, #ff453a);">PRO</span>', rarity: 'LEGENDARY'},
-            {id: 'bg_stars', type:'bg', name: 'Звездное Небо', desc: 'За 50 матчей', price: 0, plainIcon: '🌌', icon: '🌌', rarity: 'RARE'},
-            {id: 'bg_balloons', type:'bg', name: 'Шарики', desc: 'Анимация фона', price: 1500, plainIcon: '🎈', icon: '🎈', rarity: 'LEGENDARY'}
+            {id: 'medal_pro', type:'medal', name: 'PRO', desc: 'МЕДАЛЬ', price: 2000, plainIcon: '🛡️', icon: '<span class="medal-badge medal-badge-large" style="border-color:#ff453a; background:linear-gradient(45deg, #8a0303, #ff453a);">PRO</span>', rarity: 'LEGENDARY'},
+            {id: 'bg_stars', type:'bg', name: 'Звездное Небо', desc: 'ФОН', price: 0, plainIcon: '🌌', icon: '🌌', rarity: 'RARE'},
+            {id: 'bg_balloons', type:'bg', name: 'Шарики', desc: 'GIF ФОН', price: 1500, plainIcon: '🎈', icon: '🎈', rarity: 'LEGENDARY'}
         ];
 
         function getAvatarHTML(av) { 
@@ -510,7 +545,8 @@
                 db.ref('users/' + myId).once('value').then(snap => {
                     let d = snap.exists() ? snap.val() : {}; let tgName = tg.initDataUnsafe?.user?.first_name;
                     myName = d.name || vals['my_name'] || tgName || "Игрок"; myAvatar = d.avatar || vals['my_avatar'] || "😎"; myEqName = d.eqName || ''; myPinnedMedals = d.pMedals || []; globalCoins = d.coins !== undefined ? d.coins : (parseInt(vals['player_coins']) || 0); gamesPlayed = d.gamesPlayed || 0;
-                    
+                    aiStats = d.aiStats || { math: {w:0, l:0, d:0}, letters: {w:0, l:0, d:0}, acc: {w:0, l:0, d:0}, ttt: {w:0, l:0, d:0}, hidden: {w:0, l:0, d:0}, clk: {w:0, l:0, d:0} };
+
                     if(localStorage.getItem('eq_bg') === 'bg_stars') document.body.classList.add('star-bg');
                     if(localStorage.getItem('eq_bg') === 'bg_balloons') spawnBalloons();
 
@@ -522,14 +558,14 @@
                     db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); } });
                 });
 
+                // Исправлено: Скрытие клавы для ПК
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 if(!isMobile) {
                     document.body.classList.remove('require-portrait'); 
-                    document.getElementById('wdl-kb').style.display = 'none'; // Убираем экранную клаву для ПК
-                } else {
-                    document.body.classList.add('require-portrait');
+                    document.getElementById('wdl-kb').style.display = 'none';
                 }
 
+                // Исправлено: Ввод 5 букв с клавиатуры ноута
                 document.addEventListener('keydown', (e) => {
                     if(appState.game !== 'let5') return;
                     if(/^[А-Яа-яЁё]$/.test(e.key)) { wPress(e.key.toUpperCase()); }
@@ -551,8 +587,16 @@
             }
         }
 
-        function syncDBProfile() { db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins, gamesPlayed: gamesPlayed }); }
+        function syncDBProfile() { db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins, gamesPlayed: gamesPlayed, aiStats: aiStats }); }
         function addGamePlayed() { gamesPlayed++; syncDBProfile(); }
+        
+        function updateAiStat(gameCat, result) {
+            if(!aiStats[gameCat]) aiStats[gameCat] = {w:0, l:0, d:0};
+            if(result === 'win') aiStats[gameCat].w++;
+            else if(result === 'loss') aiStats[gameCat].l++;
+            else if(result === 'draw') aiStats[gameCat].d++;
+            syncDBProfile();
+        }
         
         function changeName() { 
             let n = prompt("Новый ник:"); 
@@ -560,9 +604,9 @@
             if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); myEqName = ''; try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} syncDBProfile(); checkAdminAccess(); updateMyProfileUI(); } 
         }
 
-        function checkAdminAccess() { let isDev = (myId === '8451'); document.getElementById('nav-admin').style.display = isDev ? 'flex' : 'none'; if(isDev) { db.ref('promos').on('value', snap => { const list = document.getElementById('dev-promo-list'); if(!list) return; list.innerHTML = ''; if(snap.exists()) { let data = snap.val(); let now=Date.now(); Object.keys(data).forEach(k => { if(data[k].exp>0 && now>data[k].exp) { db.ref('promos/'+k).remove(); return; } list.innerHTML += `<div class="list-item"><div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew} | Предметы: ${data[k].items?data[k].items.length:0}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">X</button></div>`; }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>'; }); } }
+        function checkAdminAccess() { let isDev = (myId === '8451' || myId === '1512'); document.getElementById('nav-admin').style.display = isDev ? 'flex' : 'none'; if(isDev) { db.ref('promos').on('value', snap => { const list = document.getElementById('dev-promo-list'); if(!list) return; list.innerHTML = ''; if(snap.exists()) { let data = snap.val(); let now=Date.now(); Object.keys(data).forEach(k => { if(data[k].exp>0 && now>data[k].exp) { db.ref('promos/'+k).remove(); return; } list.innerHTML += `<div class="list-item"><div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew} | Предметы: ${data[k].items?data[k].items.length:0}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">X</button></div>`; }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>'; }); } }
         
-        function updateMyProfileUI() { document.getElementById('my-avatar').innerHTML = getAvatarHTML(myAvatar); document.getElementById('my-name-display').innerHTML = getNameHTML(myName, myEqName) + ' ✏️'; document.getElementById('my-medals-display').innerHTML = getMedalsHTML(myPinnedMedals); if(appState.inLobby && lobbyPlayers.length>0){ let lp = lobbyPlayers.find(p=>p.id===myId); lp.avatar=myAvatar; lp.name=myName; lp.eqName=myEqName; lp.pMedals=myPinnedMedals; db.ref(`lobbies/${lobbyId}/players/${myId}`).update({avatar:myAvatar, name:myName, eqName:myEqName, pMedals:myPinnedMedals}); } }
+        function updateMyProfileUI() { document.getElementById('my-avatar').innerHTML = getAvatarHTML(myAvatar); document.getElementById('my-name-display').innerHTML = getNameHTML(myName, myEqName) + ' ✏️'; document.getElementById('my-medals-display').innerHTML = getMedalsHTML(myPinnedMedals); if(appState.inLobby && lobbyPlayers.length>0){ let lp = lobbyPlayers.find(p=>p.id===myId); if(lp) { lp.avatar=myAvatar; lp.name=myName; lp.eqName=myEqName; lp.pMedals=myPinnedMedals; db.ref(`lobbies/${lobbyId}/players/${myId}`).update({avatar:myAvatar, name:myName, eqName:myEqName, pMedals:myPinnedMedals}); } } }
         
         function renderShop() { 
             db.ref(`users/${myId}/inventory`).once('value').then(s => { 
@@ -573,13 +617,15 @@
                     let owned = inv[item.id] === true; 
                     let btnHTML = '';
                     if (item.id === 'bg_stars') {
-                        if(!owned) btnHTML = `<button class="btn btn-dark" style="font-size:12px; padding:8px;" disabled>${gamesPlayed}/50 ИГР</button>`;
-                        else btnHTML = `<button class="btn btn-gold" style="font-size:12px; padding:8px;" disabled>ОТКРЫТО</button>`;
+                        if(!owned) btnHTML = `<button class="btn btn-dark" style="font-size:14px; padding:10px;" disabled>${gamesPlayed}/50 ИГР</button>`;
+                        else btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" disabled>ОТКРЫТО</button>`;
                     } else {
-                        btnHTML = `<button class="btn btn-gold" style="font-size:12px; padding:8px;" ${owned ? 'disabled' : `onclick="buyItem('${item.id}', ${item.price})"`}>${owned ? 'КУПЛЕНО' : 'КУПИТЬ'}</button>`;
+                        btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" ${owned ? 'disabled' : `onclick="buyItem('${item.id}', ${item.price})"`}>${owned ? 'КУПЛЕНО' : 'КУПИТЬ'}</button>`;
                     }
                     let rBar = `<div class="shop-rarity-bar" style="background:${RARITIES[item.rarity]}">${item.rarity}</div>`;
-                    shopHTML += `<div class="shop-item-card ${owned ? 'bought' : ''}"><div style="font-size:40px; margin-bottom:5px;">${item.icon}</div><b style="font-size:12px;">${item.name}</b><span style="font-size:10px; color:gray;">${item.desc}</span>${rBar}<span style="color:var(--coin-col); font-weight:bold;">${item.price} 🪙</span>${btnHTML}</div>`; 
+                    // Исправлено: в магазине выводится plainIcon или текст без стилей!
+                    let plainDisp = item.type === 'name' ? `<div style="font-weight:bold; font-size:18px;">${item.plainIcon}</div>` : `<div style="font-size:50px;">${item.plainIcon}</div>`;
+                    shopHTML += `<div class="shop-item-card ${owned ? 'bought' : ''}"><div style="margin-bottom:10px; display:flex; justify-content:center; align-items:center; height:60px;">${plainDisp}</div><b style="font-size:14px;">${item.name}</b><span style="font-size:11px; color:gray; margin-top:5px;">${item.desc}</span>${rBar}<span style="color:var(--coin-col); font-weight:bold; font-size:16px; margin-bottom:10px;">${item.price} 🪙</span>${btnHTML}</div>`; 
                 }); 
                 document.getElementById('inv-shop').innerHTML = shopHTML; 
             }); 
@@ -603,8 +649,10 @@
                         if(item.type==='medal') eq = myPinnedMedals.includes(item.id); 
                         if(item.type==='bg') eq = (localStorage.getItem('eq_bg') === item.id);
                         
+                        let dispIcon = item.type === 'name' ? item.plainIcon : (item.plainIcon || item.icon);
+
                         html += `<div class="inv-item-card ${eq ? 'equipped' : ''}" onclick="openItemAction('${item.id}', '${item.type}', ${eq})">
-                            <div class="inv-item-icon">${item.plainIcon || item.icon}</div>
+                            <div class="inv-item-icon">${dispIcon}</div>
                             <div class="inv-item-name">${item.name}</div>
                             <div class="inv-rarity-line" style="background:${RARITIES[item.rarity]}"></div>
                         </div>`; 
@@ -619,7 +667,7 @@
         function openItemAction(id, type, isEquipped) {
             currentActionItem = {id, type};
             let item = SHOP_ITEMS.find(i=>i.id===id);
-            document.getElementById('action-modal-icon').innerHTML = item.plainIcon || item.icon;
+            document.getElementById('action-modal-icon').innerHTML = item.type==='name'? item.plainIcon : (item.plainIcon || item.icon);
             document.getElementById('action-modal-name').innerText = item.name;
             let eqBtn = document.getElementById('action-btn-equip');
             eqBtn.innerText = isEquipped ? (type==='medal'?'ОТКРЕПИТЬ':'СНЯТЬ') : (type==='medal'?'ЗАКРЕПИТЬ':'НАДЕТЬ');
@@ -665,10 +713,29 @@
                 }
             }
             syncDBProfile(); updateMyProfileUI(); renderInventory(); 
+            if(document.getElementById('medals-modal').classList.contains('hidden') === false) openMedalsModal(); // Refresh modal
         }
 
-        function openMedalsModal() { let ml = document.getElementById('medals-modal-list'); ml.innerHTML = ''; if(myPinnedMedals.length === 0) ml.innerHTML = '<p style="color:gray;text-align:center;">Нет закрепленных медалей</p>'; else { myPinnedMedals.forEach(m => { SHOP_ITEMS.forEach(si => { if(si.id===m) ml.innerHTML+=`<div class="inv-item-card" style="width:100px; height:120px; justify-content:flex-start;"><div style="font-size:30px; margin-top:10px; display:flex; justify-content:center;">${si.icon}</div><b style="font-size:10px; margin-top:10px;">${si.name}</b></div>`; }); }); } document.getElementById('medals-modal').classList.remove('hidden'); }
+        // Исправлено: В модалке медалей видны все медали, можно кликать чтобы закрепить/открепить
+        function openMedalsModal() { 
+            db.ref(`users/${myId}/inventory`).once('value').then(s => {
+                let inv = s.val() || {};
+                let ml = document.getElementById('medals-modal-list'); ml.innerHTML = ''; 
+                let ownedMedals = SHOP_ITEMS.filter(i => i.type === 'medal' && inv[i.id]);
+                
+                if(ownedMedals.length === 0) {
+                    ml.innerHTML = '<p style="color:gray;text-align:center;">У тебя нет медалей. Купи их в магазине!</p>'; 
+                } else { 
+                    ownedMedals.forEach(m => { 
+                        let isPinned = myPinnedMedals.includes(m.id);
+                        ml.innerHTML += `<div class="inv-item-card ${isPinned?'equipped':''}" style="width:100px; height:120px; justify-content:flex-start; cursor:pointer;" onclick="toggleEquip('${m.id}', 'medal')"><div style="font-size:30px; margin-top:10px; display:flex; justify-content:center;">${m.icon}</div><b style="font-size:10px; margin-top:10px;">${m.name}</b><div class="inv-rarity-line" style="background:${RARITIES[m.rarity]}"></div><div style="font-size:9px; margin-top:5px; color:${isPinned?'#34c759':'gray'};">${isPinned?'ЗАКРЕПЛЕНО':'ОТКРЕПЛЕНО'}</div></div>`; 
+                    }); 
+                } 
+                document.getElementById('medals-modal').classList.remove('hidden'); 
+            });
+        }
         function closeMedalsModal() { document.getElementById('medals-modal').classList.add('hidden'); }
+        
         function openAvatarModal() { const grid = document.getElementById('emoji-grid'); grid.innerHTML=''; EMOJIS.forEach(em => { let div=document.createElement('div'); div.className='emoji-item'; div.innerText=em; div.onclick=()=>{ myAvatar=em; syncDBProfile(); updateMyProfileUI(); closeAvatarModal(); renderInventory(); }; grid.appendChild(div); }); document.getElementById('avatar-modal').classList.remove('hidden'); }
         function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
         function updateCoinsUI() { document.getElementById('global-coins-val').innerText=globalCoins; }
@@ -677,13 +744,13 @@
         function switchSubTab(p, s, el) { el.parentElement.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll(`#tab-${p} .sub-tab-content`).forEach(c => c.classList.remove('active')); document.getElementById(`${p==='inv'?'inv':'adm'}-${s}`).classList.add('active'); }
         function switchMiniTab(id, el) { el.parentElement.querySelectorAll('.mini-tab-btn').forEach(b => b.classList.remove('active')); el.classList.add('active'); document.querySelectorAll('.mini-tab-content').forEach(c => { if(c.parentElement.contains(el)) c.classList.remove('active'); }); document.getElementById(id).classList.add('active'); }
 
-        // --- АДМИНКА (Без изменений) ---
+        // --- АДМИНКА ---
         let adminSelectedItems = []; let adminActiveContext = '';
         function openAdminItems(ctx) { 
             adminActiveContext = ctx; adminSelectedItems = []; let g = document.getElementById('admin-items-grid'); g.innerHTML=''; 
             SHOP_ITEMS.forEach(it => { 
                 let c = document.createElement('div'); c.className='inv-item-card'; c.style.cursor='pointer'; 
-                let pIcon = it.plainIcon || it.icon;
+                let pIcon = it.type==='name'? it.plainIcon : (it.plainIcon || it.icon);
                 c.innerHTML=`<div class="inv-item-icon">${pIcon}</div><div class="inv-item-name">${it.name}</div>`; 
                 c.onclick=() => { 
                     if(adminSelectedItems.includes(it.id)) { adminSelectedItems=adminSelectedItems.filter(i=>i!==it.id); c.classList.remove('equipped'); } 
@@ -696,8 +763,21 @@
         function closeAdminItemsModal() { document.getElementById('admin-items-modal').classList.add('hidden'); }
         function confirmAdminItems() { let t = adminSelectedItems.length > 0 ? `Выбрано: ${adminSelectedItems.length}` : ''; if(adminActiveContext==='give') document.getElementById('give-sel-items').innerText=t; if(adminActiveContext==='take') document.getElementById('take-sel-items').innerText=t; if(adminActiveContext==='promo') document.getElementById('promo-sel-items').innerText=t; closeAdminItemsModal(); }
 
-        function addAdmin() { let id = document.getElementById('dev-add-admin-id').value; if(!id) return; db.ref('admins/'+id).set(true); tg.showAlert('Добавлен!'); }
-        function removeAllAdmins() { db.ref('admins').once('value').then(snap=>{ if(snap.exists()){ let a=snap.val(); for(let k in a){ if(k!=='8451') db.ref('admins/'+k).remove(); } tg.showAlert('Все удалены'); } }); }
+        // Исправлено: Логика админов
+        function renderAdminList() {
+            db.ref('admins').once('value').then(s => {
+                let list = document.getElementById('admin-list-display'); list.innerHTML = '';
+                if(s.exists()) {
+                    Object.keys(s.val()).forEach(k => {
+                        list.innerHTML += `<div class="list-item"><b>${k}</b> <button class="btn btn-red" style="padding:5px;" onclick="removeSingleAdmin('${k}')">X</button></div>`;
+                    });
+                }
+            });
+        }
+        function addAdmin() { let id = document.getElementById('dev-add-admin-id').value; if(!id) return; db.ref('admins/'+id).set(true); tg.showAlert('Добавлен!'); renderAdminList(); }
+        function removeSingleAdmin(id) { if(id === myId) return tg.showAlert("Нельзя кикнуть самого себя!"); db.ref('admins/'+id).remove(); tg.showAlert('Удален!'); renderAdminList(); }
+        function removeAllAdmins() { db.ref('admins').once('value').then(snap=>{ if(snap.exists()){ let a=snap.val(); for(let k in a){ if(k!==myId) db.ref('admins/'+k).remove(); } tg.showAlert('Все удалены'); renderAdminList(); } }); }
+        
         function giveCoinsDev() { let id=document.getElementById('give-coin-id').value; let a=parseInt(document.getElementById('give-coin-amount').value)||0; if(!id) return; if(a>0) db.ref('users/'+id+'/coins').once('value').then(s=>{ db.ref('users/'+id+'/coins').set((s.val()||0)+a); }); adminSelectedItems.forEach(it => { db.ref('users/'+id+'/inventory/'+it).set(true); }); tg.showAlert('Выдано!'); }
         function takeCoinsDev() { let id=document.getElementById('take-coin-id').value; let a=parseInt(document.getElementById('take-coin-amount').value)||0; if(!id) return; if(a>0) db.ref('users/'+id+'/coins').once('value').then(s=>{ db.ref('users/'+id+'/coins').set(Math.max(0,(s.val()||0)-a)); }); adminSelectedItems.forEach(it => { db.ref('users/'+id+'/inventory/'+it).remove(); }); tg.showAlert('Забрано!'); }
         function createPromoDev() { let n=document.getElementById('promo-name').value.toUpperCase(); let a=parseInt(document.getElementById('promo-acts').value); let days=parseInt(document.getElementById('promo-days').value)||0; let r=parseInt(document.getElementById('promo-reward').value)||0; if(!n||isNaN(a)) return; let exp = days>0 ? Date.now()+(days*86400000) : 0; db.ref('promos/'+n).set({acts:a, rew:r, items:adminSelectedItems, exp:exp}); tg.showAlert('Промокод создан!'); }
@@ -709,7 +789,48 @@
         function renderFrReqs(reqs) { const l = document.getElementById('fr-reqs'); l.innerHTML=''; if(!reqs) return l.innerHTML='<p style="color:gray;text-align:center;">Нет заявок</p>'; Object.keys(reqs).forEach(id => { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div class="friend-row"><div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> <div>${getNameHTML(p.name, p.eqName)}</div></div><div><button class="btn btn-green" style="padding:5px;" onclick="acceptReq('${id}')">➕</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('users/${myId}/friend_reqs/${id}').remove()">➖</button></div>`; l.appendChild(d); } }); }); }
         function acceptReq(id) { db.ref(`users/${myId}/friend_reqs/${id}`).remove(); db.ref(`users/${myId}/friends/${id}`).set(true); db.ref(`users/${id}/friends/${myId}`).set(true); tg.showAlert("Друг добавлен!"); }
         
-        function openFriendModal(f) { activeFriend=f; document.getElementById('fm-avatar').innerHTML=getAvatarHTML(f.avatar); document.getElementById('fm-name-cont').innerHTML=getNameHTML(f.name, f.eqName); document.getElementById('fm-medals-cont').innerHTML=getMedalsHTML(f.pMedals); document.getElementById('fm-id').innerText=`ID: ${f.id}`; let a=document.getElementById('friend-actions'); a.innerHTML=''; if(appState.inLobby){ if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; } else { if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;cursor:not-allowed;">Создай лобби для ИИ</button>`; else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; } if(f.id!=='ИИ') { a.innerHTML+=`<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button><button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; } else { a.innerHTML+=`<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; } document.getElementById('friend-modal').classList.remove('hidden'); }
+        // Исправлено: Отображение профиля ИИ и Статистики
+        function openFriendModal(f) { 
+            activeFriend=f; 
+            document.getElementById('fm-avatar').innerHTML=getAvatarHTML(f.avatar); 
+            document.getElementById('fm-name-cont').innerHTML=getNameHTML(f.name, f.eqName); 
+            document.getElementById('fm-medals-cont').innerHTML=getMedalsHTML(f.pMedals); 
+            document.getElementById('fm-id').innerText=`ID: ${f.id}`; 
+            
+            let aiBlock = document.getElementById('fm-ai-stats');
+            if(f.id === 'ИИ') {
+                aiBlock.style.display = 'block';
+                let totalGames = (aiStats.math.w+aiStats.math.l+aiStats.math.d) + (aiStats.letters.w+aiStats.letters.l+aiStats.letters.d) + (aiStats.acc.w+aiStats.acc.l+aiStats.acc.d) + (aiStats.ttt.w+aiStats.ttt.l+aiStats.ttt.d) + (aiStats.hidden.w+aiStats.hidden.l+aiStats.hidden.d) + (aiStats.clk.w+aiStats.clk.l+aiStats.clk.d);
+                document.getElementById('ai-stats-table-content').innerHTML = `
+                    <tr><th>Режим</th><th>Я (Побед)</th><th>ИИ (Побед)</th><th>Ничья</th></tr>
+                    <tr><td>Математика</td><td>${aiStats.math.w}</td><td>${aiStats.math.l}</td><td>${aiStats.math.d}</td></tr>
+                    <tr><td>Буквы</td><td>${aiStats.letters.w}</td><td>${aiStats.letters.l}</td><td>${aiStats.letters.d}</td></tr>
+                    <tr><td>Меткость</td><td>${aiStats.acc.w}</td><td>${aiStats.acc.l}</td><td>${aiStats.acc.d}</td></tr>
+                    <tr><td>Поиск</td><td>${aiStats.hidden.w}</td><td>${aiStats.hidden.l}</td><td>${aiStats.hidden.d}</td></tr>
+                    <tr><td>Крестики</td><td>${aiStats.ttt.w}</td><td>${aiStats.ttt.l}</td><td>${aiStats.ttt.d}</td></tr>
+                    <tr><td>Кликер</td><td>${aiStats.clk.w}</td><td>${aiStats.clk.l}</td><td>${aiStats.clk.d}</td></tr>
+                    <tr><td colspan="4" style="background:#333; font-weight:bold;">Всего матчей: ${totalGames}</td></tr>
+                `;
+            } else {
+                aiBlock.style.display = 'none';
+            }
+
+            let a=document.getElementById('friend-actions'); a.innerHTML=''; 
+            if(appState.inLobby){ 
+                if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; 
+                else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; 
+            } else { 
+                if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;cursor:not-allowed;">Создай лобби для ИИ</button>`; 
+                else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; 
+            } 
+            if(f.id!=='ИИ') { 
+                a.innerHTML+=`<button class="btn btn-dark" onclick="tg.showAlert('Это и есть его профиль (основная информация)!')">Профиль</button>`;
+                a.innerHTML+=`<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button><button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`; 
+            } else { 
+                a.innerHTML+=`<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Закрыть</button>`; 
+            } 
+            document.getElementById('friend-modal').classList.remove('hidden'); 
+        }
         function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
         function removeFriend() { if(confirm(`Удалить?`)) { db.ref(`users/${myId}/friends/${activeFriend.id}`).remove(); db.ref(`users/${activeFriend.id}/friends/${myId}`).remove(); closeFriendModal(); } }
         
@@ -718,11 +839,24 @@
         function openInviteModal() { if(!isHost) return tg.showAlert("Только Хост!"); if(lobbyPlayers.length>=5) return tg.showAlert("Полно!"); let l=document.getElementById('invite-friends-list'); l.innerHTML=''; let a = friendsIds.filter(id=> !lobbyPlayers.some(p=>p.id===id)); if(a.length===0) l.innerHTML='<p style="color:gray;text-align:center;">Нет доступных</p>'; else a.forEach(id=>{ if(id==='ИИ'){ let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>🤖 ИИ</b><button class="btn btn-green" onclick="inviteBotLobby();closeInviteModal()">Выбрать</button>`; l.appendChild(d); } else { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div class="friend-row"><div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> <div>${getNameHTML(p.name, p.eqName)}</div></div><button class="btn btn-green" onclick="inviteRealFriend('${id}');closeInviteModal()">Выбрать</button>`; l.appendChild(d); } }); } }); document.getElementById('invite-modal').classList.remove('hidden'); }
         function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
         
-        function openLobby() { appState.inLobby=true; lobbyId=myId; isHost=true; lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}]; db.ref('lobbies/'+lobbyId).set({host:myId, game:'', status:'waiting', clickTime:15, players:{[myId]:{name:myName,avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}}}); listenLobby(); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; }
+        // Исправлено: OnDisconnect Firebase (если вылетает - лобби чистится)
+        function openLobby() { 
+            appState.inLobby=true; lobbyId=myId; isHost=true; 
+            lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}]; 
+            db.ref('lobbies/'+lobbyId).set({host:myId, game:'', status:'waiting', clickTime:15, players:{[myId]:{name:myName,avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}}}); 
+            
+            db.ref('lobbies/'+lobbyId).onDisconnect().remove();
+
+            listenLobby(); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; 
+        }
         
         function closeLobby() { 
             appState.inLobby=false; 
             if(lobbyRef) lobbyRef.off(); 
+            
+            db.ref('lobbies/'+lobbyId).onDisconnect().cancel();
+            db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().cancel();
+
             if(isHost) { 
                 let rem = lobbyPlayers.filter(p=>p.id!==myId && p.id!=='ИИ');
                 if(rem.length > 0) {
@@ -738,7 +872,15 @@
             document.getElementById('main-buttons-view').style.display='flex'; document.getElementById('view-lobby').style.display='none'; 
         }
         
-        function acceptLobbyInvite() { if(pendingInvite) { lobbyId = pendingInvite.lId; isHost = false; db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar, eqName:myEqName, pMedals:myPinnedMedals }); appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; } }
+        function acceptLobbyInvite() { 
+            if(pendingInvite) { 
+                lobbyId = pendingInvite.lId; isHost = false; 
+                db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ name: myName, avatar: myAvatar, eqName:myEqName, pMedals:myPinnedMedals }); 
+                db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
+
+                appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; 
+            } 
+        }
         function inviteBotLobby() { if(!isHost || lobbyPlayers.length>=5) return; closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set(SYSTEM_BOT); }
         function inviteRealFriend(id) { 
             if(lobbyPlayers.length>=5) return; 
@@ -746,16 +888,28 @@
             db.ref(`users/${id}/invite`).set({lId: lobbyId, host: rawName}); 
             tg.showAlert("Отправлено!"); closeFriendModal(); 
         }
-        function joinFriendLobby() { lobbyId=activeFriend.id; isHost=false; closeFriendModal(); db.ref('lobbies/'+lobbyId).once('value').then(s=>{ if(s.exists()){ db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name:myName, avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}); appState.inLobby=true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); } else tg.showAlert("Лобби нет!"); }); }
+        function joinFriendLobby() { 
+            lobbyId=activeFriend.id; isHost=false; closeFriendModal(); 
+            db.ref('lobbies/'+lobbyId).once('value').then(s=>{ 
+                if(s.exists()){ 
+                    db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name:myName, avatar:myAvatar, eqName:myEqName, pMedals:myPinnedMedals}); 
+                    db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
+                    appState.inLobby=true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); 
+                } else tg.showAlert("Лобби нет или хост вышел!"); 
+            }); 
+        }
         
         function listenLobby() { 
             if(lobbyRef) lobbyRef.off(); lobbyRef = db.ref('lobbies/'+lobbyId); 
             lobbyRef.on('value', snap => { 
-                if(!snap.exists()) { if(!isHost){tg.showAlert("Вас кикнули или лобби закрыто!"); closeLobby();} return; } 
+                if(!snap.exists()) { if(!isHost){tg.showAlert("Хост закрыл лобби!"); closeLobby();} return; } 
                 let d = snap.val(); 
                 if(!isHost && (!d.players || !d.players[myId])) { tg.showAlert("Вы удалены из лобби."); closeLobby(); return; }
                 
-                if (d.host === myId && !isHost) { isHost = true; } // Host migration
+                if (d.host === myId && !isHost) { 
+                    isHost = true; 
+                    db.ref(`lobbies/${lobbyId}`).onDisconnect().remove(); 
+                }
 
                 lobbyPlayers=[]; 
                 if(d.players && d.players[d.host]) { lobbyPlayers.push({id:d.host, ...d.players[d.host]}); } 
@@ -775,9 +929,12 @@
                         let t="", mx=-1, w=[]; 
                         Object.keys(d.clickScores).forEach(k=>{ let pf=lobbyPlayers.find(p=>p.id===k); let nm=getNameHTML(pf?.name, pf?.eqName); t+=`${nm}: <b>${d.clickScores[k]}</b><br>`; if(d.clickScores[k]>mx){mx=d.clickScores[k];w=[k];} else if(d.clickScores[k]===mx) w.push(k); }); 
                         
-                        if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); }
-                        else { let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a','⏱️',t); if(!isMyWin) addCoins(-10); } 
-                        
+                        if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('clk','draw'); }
+                        else { 
+                            let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a','⏱️',t); 
+                            if(!isMyWin) addCoins(-10); 
+                            if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('clk', isMyWin?'win':'loss');
+                        } 
                         db.ref(`lobbies/${lobbyId}/clickState`).set('ended'); 
                     } 
                 }
@@ -789,8 +946,12 @@
                         t += `${getNameHTML(pf?.name, pf?.eqName)}: ${m} ошиб.<br>`;
                         if(m < minMisses) { minMisses = m; w = [k]; } else if(m === minMisses) w.push(k);
                     });
-                    if(w.length > 1) showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t);
-                    else { let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a', '🎓', t); if(!isMyWin) addCoins(-10); }
+                    if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('letters','draw'); }
+                    else { 
+                        let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a', '🎓', t); 
+                        if(!isMyWin) addCoins(-10); 
+                        if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('letters', isMyWin?'win':'loss');
+                    }
                     if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('ended');
                 }
 
@@ -798,11 +959,15 @@
                     let minMisses = 999; let w = []; let t = "";
                     Object.keys(d.hiddenScores).forEach(k => {
                         let m = d.hiddenScores[k]; let pf = lobbyPlayers.find(p=>p.id===k);
-                        t += `${getNameHTML(pf?.name, pf?.eqName)}: ${m} ошиб.<br>`;
+                        t += `${getNameHTML(pf?.name, pf?.eqName)}: ${m} штраф.<br>`;
                         if(m < minMisses) { minMisses = m; w = [k]; } else if(m === minMisses) w.push(k);
                     });
-                    if(w.length > 1) showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t);
-                    else { let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a', '🕵️‍♂️', t); if(!isMyWin) addCoins(-10); }
+                    if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('hidden','draw'); }
+                    else { 
+                        let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a', '🕵️‍♂️', t); 
+                        if(!isMyWin) addCoins(-10); 
+                        if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('hidden', isMyWin?'win':'loss');
+                    }
                     if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('ended');
                 }
 
@@ -851,7 +1016,7 @@
             if(!isHost) return tg.showAlert("Только Хост!"); 
             if(!appState.selectedGameId) return tg.showAlert("Выбери режим!"); 
             
-            // Если крестики-нолики, обязательно сбрасываем старую доску
+            // Исправлено: Очистка доски КН перед каждой игрой
             if(appState.selectedGameId==='tictactoe' && lobbyPlayers.length>1) {
                 db.ref(`lobbies/${lobbyId}`).update({status:'playing', tttBoard:new Array(9).fill(''), tttTurn:0});
             } else if (lobbyPlayers.length>1) { 
@@ -913,7 +1078,9 @@
 
         function generateMathTask() {
             if(mathCorrect >= mathTotal) {
-                addCoins(15); showResult('УМНИЦА!', '#34c759', '🧮', '+15 🪙'); return;
+                addCoins(15); showResult('УМНИЦА!', '#34c759', '🧮', '+15 🪙'); 
+                if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('math','win');
+                return;
             }
             updateMathDots();
             
@@ -977,20 +1144,33 @@
         // ================= БУКВЫ И НОВЫЕ РЕЖИМЫ =================
         const ALPHABET = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ".split('');
         const BIG_WORD_LIST = ["ЯБЛОКО", "МАШИНА", "САМОЛЕТ", "ТЕЛЕФОН", "РОБОТ", "КРОКОДИЛ", "ВЕЛОСИПЕД", "КАРАНДАШ", "КОМПЬЮТЕР", "ШОКОЛАД", "ПИНГВИН", "КВАРТИРА", "ПРАЗДНИК", "ПРИРОДА", "КАСТРЮЛЯ", "ТЕЛЕВИЗОР", "КОСМОНАВТ", "ЭКСКАВАТОР", "ТРАКТОР", "ВЕРТОЛЕТ", "АВТОБУС", "ТРАМВАЙ", "ПОЕЗД", "МОРКОВЬ", "КАПУСТА", "КАРТОФЕЛЬ", "ЛУКОВИЦА", "ЗЕМЛЯНИКА", "КЛУБНИКА", "ВИНОГРАД", "АПЕЛЬСИН", "МАНДАРИН", "ЧЕРЕПАХА", "БЕГЕМОТ", "КЕНГУРУ", "ОБЕЗЬЯНА", "КРОВАТЬ", "ДИВАН", "СТУЛ", "КРЕСЛО", "ЗЕРКАЛО", "ПОДУШКА", "ОДЕЯЛО", "ОКНО", "ДВЕРЬ", "КРЫША", "ТРУБА", "ЗАБОР", "КАЛИТКА", "БАБОЧКА"];
-        const WORDLE_WORDS = ["АБЗАЦ","БАНКА","ВЕТВЬ","ГАЗОН","ДВЕРЬ","ЖИВОТ","ЗАМОК","КАБАН","ЛАМПА","МАГИЯ","НАРОД","ОКЕАН","ПАПКА","РАДИО","САЛАТ","ТАБЛО","УЛИЦА","ФАКЕЛ","ХАЛВА","ШАПКА"];
         
-        // ПРОСТЫЕ СЛОВА ДЛЯ 5-ЛЕТНЕГО БРАТА
+        // Исправлено: База слов для Wordle (часто употребляемые 5-буквенные слова)
+        const VALID_5_LETTER_WORDS = [
+            "АБЗАЦ","БАНКА","ВЕТВЬ","ГАЗОН","ДВЕРЬ","ЖИВОТ","ЗАМОК","КАБАН","ЛАМПА","МАГИЯ","НАРОД","ОКЕАН","ПАПКА","РАДИО","САЛАТ","ТАБЛО","УЛИЦА","ФАКЕЛ","ХАЛВА","ШАПКА",
+            "АГЕНТ","АЛЛЕЯ","АНГЕЛ","БАЗАР","БИЛЕТ","БИТВА","БРОВЬ","БУКВА","ВИДЕО","ВИЛКА","ВРАЧИ","ГЕРОЙ","ГЛИНА","ГОЛОС","ГРОЗА","ДАРИТ","ДИВАН","ДОЖДЬ","ДОМИК","ДРАМА",
+            "ЗАВОД","ЗЕРНО","ЗМЕЯТ","ИГРОК","ИСКРА","КАМИН","КАНАЛ","КАРТА","КАТЕР","КЕФИР","КЛАСС","КЛЮЧИ","КОВЕР","КОЛБА","КОНЕЦ","КОПИЯ","КОТЁЛ","КОШКА","КРЫСА","КУБИК",
+            "ЛАЗЕР","ЛИМОН","ЛОДКА","ЛОЖКА","МАРКА","МАСЛО","МЕТРО","МЕЧТА","МИНУС","МОТОР","МЫШКА","НАЛОГ","НОЖКИ","НОМЕР","ОАЗИС","ОЛЕНЬ","ОПЕРА","ОСЕНЬ","ОТЕЛЬ","ОТДЕЛ",
+            "ПАЛЕЦ","ПАРУС","ПЕСНЯ","ПИРАТ","ПЛИТА","ПЛОВЕЦ","ПЛЮСЫ","ПОЕЗД","ПОЛИС","ПОЧТА","ПРИЗЫ","ПУЛЬТ","ПЬЕСА","ПЯТКА","РАЗУМ","РЕБРО","РЕДИС","РОБОТ","РОМАН","РУЧКА",
+            "САХАР","СЕВЕР","СЕМЬЯ","СИРОП","СКАЗЫ","СКИФЫ","СЛОВО","СЛУХИ","СМЫСЛ","СОВЕТ","СОКОЛ","СОСНА","СПОРТ","СТАЛЬ","СТЕКЛО","СТОЛБ","СУДНО","СУПЕР","СУШКА","СЦЕНА",
+            "ТАЙНА","ТАКСИ","ТЕАТР","ТЕЛЕЦ","ТЕМА","ТЕННИС","ТЕПЛО","ТЕСТО","ТИРАЖ","ТОКАРЬ","ТОЛПА","ТОПОР","ТОЧКА","ТРАВА","ТРЕСТ","ТРУБА","ТУМАН","УГОЛЬ","УРОКИ","УСПЕХ",
+            "УТРОБ","ФАКИР","ФАУНА","ФИЗИК","ФИЛЬМ","ФОКУС","ФОНДЫ","ХАЛАТ","ХОЛОД","ХРАМЫ","ЦВЕТА","ЦЕНТР","ЦЕПИ","ЧАСЫ","ЧАШКА","ЧЕКОВ","ЧЕРЕП","ЧИПСЫ","ЧИТАТ","ШАРИК",
+            "ШКОЛА","ШТОРМ","ЩЕТКА","ЩИТКИ","ЭКРАН","ЭЛИТА","ЭПОХА","ЮНОША","ЮРИСТ","ЯБЛОК","ЯГОДА","ЯКОРЬ"
+        ];
+        
+        // Исправлено: Простые слова для 5-летнего брата
         const CONNECT_PAIRS = [
             {w:'КОТ',e:'🐈'}, {w:'МАМА',e:'👩'}, {w:'ПАПА',e:'👨'}, {w:'САДИК',e:'🏡'}, {w:'ДОМ',e:'🏠'},
             {w:'ШАР',e:'🎈'}, {w:'СОК',e:'🧃'}, {w:'СУП',e:'🥣'}, {w:'ЖУК',e:'🪲'}, {w:'ЛУК',e:'🧅'},
             {w:'НОС',e:'👃'}, {w:'РОТ',e:'👄'}, {w:'ГЛАЗ',e:'👁️'}, {w:'РУКА',e:'✋'}, {w:'НОГА',e:'🦶'},
-            {w:'МЯЧ',e:'⚽'}, {w:'ЛЕС',e:'🌲'}, {w:'МЕД',e:'🍯'}, {w:'СЫР',e:'🧀'}, {w:'ТОК',e:'⚡'}
+            {w:'МЯЧ',e:'⚽'}, {w:'ЛЕС',e:'🌲'}, {w:'МЕД',e:'🍯'}, {w:'СЫР',e:'🧀'}, {w:'ТОК',e:'⚡'},
+            {w:'КОМ',e:'⛄'}, {w:'СОН',e:'😴'}, {w:'КИТ',e:'🐳'}, {w:'ДЕД',e:'👴'}, {w:'ЗУБ',e:'🦷'}
         ];
 
         let letMode2Idx = 0; let let3TargetWord = '';
         let wdlTarget='', wdlRow=0, wdlCol=0, wdlGrid=[];
         
-        let cPairs = []; let cConnections = {}; let cActiveWord = null;
+        let cPairs = []; let cConnections = {}; let cActiveWord = null; let lastLet4Pairs = [];
 
         function makeDraggable(item, slotsParentId, onDropCallback) {
             let startX, startY, initX, initY, isDragging = false;
@@ -1037,13 +1217,13 @@
             } else if (m===5) { initWordle(); }
         }
 
-        function checkLet1() { let win=true; let slots=document.querySelectorAll('#let1-slots .math-slot'); slots.forEach(s=>{ if(!s.firstChild || s.firstChild.innerText!==s.dataset.expected) win=false; }); if(win) { addCoins(10); showResult('СУПЕР!','#34c759','🎓','+10 🪙'); } }
+        function checkLet1() { let win=true; let slots=document.querySelectorAll('#let1-slots .math-slot'); slots.forEach(s=>{ if(!s.firstChild || s.firstChild.innerText!==s.dataset.expected) win=false; }); if(win) { addCoins(10); showResult('СУПЕР!','#34c759','🎓','+10 🪙'); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','win'); } }
         
         function checkLet3Words() { 
             let val = document.getElementById('let3-input').value.toUpperCase().trim(); let target = let3TargetWord;
             let mistakes = Math.abs(val.length - target.length);
             for(let i=0; i<Math.min(val.length, target.length); i++){ if(val[i]!==target[i]) mistakes++; }
-            if(mistakes <= 2) { document.getElementById('let3-input').value=''; addCoins(10); showResult('ОТЛИЧНО!','#34c759','🎓','+10 🪙'); }
+            if(mistakes <= 2) { document.getElementById('let3-input').value=''; addCoins(10); showResult('ОТЛИЧНО!','#34c759','🎓','+10 🪙'); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','win'); }
             else tg.showAlert("Попробуй еще раз!");
         }
 
@@ -1071,11 +1251,11 @@
         function checkLet3() { 
             let c = document.getElementById('let3-canvas'); if(!c.hasDrawn) return tg.showAlert("Обведи букву!");
             
-            // Строгая проверка по пикселям
+            // Исправлено: Строгая проверка по пикселям
             let off = document.createElement('canvas'); off.width = c.width; off.height = c.height;
             let octx = off.getContext('2d');
             octx.font = `900 ${c.height*0.7}px sans-serif`; octx.textAlign='center'; octx.textBaseline='middle';
-            octx.lineWidth = 60; // Допустимая зона (очень жирная)
+            octx.lineWidth = 60; // Допустимая зона
             octx.strokeStyle = 'black';
             octx.strokeText(ALPHABET[letMode2Idx], c.width/2, c.height/2);
 
@@ -1086,28 +1266,34 @@
             let outOfBounds = 0; let totalDrawn = 0;
 
             for(let i=3; i<userData.length; i+=4) {
-                if(userData[i] > 10) { // Пиксель нарисован
+                if(userData[i] > 10) { 
                     totalDrawn++;
-                    if(maskData[i] < 10) outOfBounds++; // Нарисован за пределами маски
+                    if(maskData[i] < 10) outOfBounds++; 
                 }
             }
 
             if(totalDrawn < 100) return tg.showAlert("Слишком мало нарисовано!");
 
             if(outOfBounds / totalDrawn > 0.15) { // Больше 15% за контуром
-                tg.showAlert("Вылез за контур! Давай заново!");
+                tg.showAlert("Вылез за контур! Давай заново ЭТУ же букву!");
                 clearCanvas('let3-canvas');
                 return;
             }
 
-            letMode2Idx++; if(letMode2Idx >= ALPHABET.length) { addCoins(100); showResult('ВЕСЬ АЛФАВИТ!','#34c759','🎓','+100 🪙'); } else showLetter2(); 
+            letMode2Idx++; if(letMode2Idx >= ALPHABET.length) { addCoins(100); showResult('ВЕСЬ АЛФАВИТ!','#34c759','🎓','+100 🪙'); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','win'); } else showLetter2(); 
         }
 
         // === СОЕДИНИ СЛОВА ===
         function initConnectWords() {
             cConnections = {}; cActiveWord = null; window.let4ImFirst = false;
-            let shuffledPairs = [...CONNECT_PAIRS].sort(()=>Math.random()-0.5).slice(0,4);
+            
+            // Исправлено: Слова не повторяются подряд
+            let availablePairs = CONNECT_PAIRS.filter(p => !lastLet4Pairs.includes(p.w));
+            if(availablePairs.length < 4) availablePairs = CONNECT_PAIRS; // Защита, если все слова закончились
+
+            let shuffledPairs = [...availablePairs].sort(()=>Math.random()-0.5).slice(0,4);
             cPairs = shuffledPairs;
+            lastLet4Pairs = shuffledPairs.map(p => p.w); // Запоминаем текущие
             
             let picsHtml = ''; let wordsHtml = '';
             let wordsShuffled = [...shuffledPairs].sort(()=>Math.random()-0.5);
@@ -1192,7 +1378,7 @@
 
         // --- WORDLE (5 БУКВ) ---
         function initWordle() {
-            wdlTarget = WORDLE_WORDS[Math.floor(Math.random()*WORDLE_WORDS.length)]; wdlRow=0; wdlCol=0; wdlGrid = Array.from({length:6}, ()=>new Array(5).fill(''));
+            wdlTarget = VALID_5_LETTER_WORDS[Math.floor(Math.random()*VALID_5_LETTER_WORDS.length)]; wdlRow=0; wdlCol=0; wdlGrid = Array.from({length:6}, ()=>new Array(5).fill(''));
             let g = document.getElementById('wordle-grid'); g.innerHTML='';
             for(let i=0; i<6; i++) { let row=document.createElement('div'); row.className='wordle-row'; row.id='w-row-'+i; for(let j=0; j<5; j++) row.innerHTML+=`<div class="wordle-cell" id="w-${i}-${j}"></div>`; g.appendChild(row); }
             let kb = document.getElementById('wdl-kb'); kb.innerHTML='';
@@ -1209,7 +1395,14 @@
         function wBack() { if(wdlCol>0) { wdlCol--; wdlGrid[wdlRow][wdlCol]=''; document.getElementById(`w-${wdlRow}-${wdlCol}`).innerText=''; } }
         function wEnter() {
             if(wdlCol<5) return tg.showAlert("Слово слишком короткое!");
-            let guess = wdlGrid[wdlRow].join(''); let tArr = wdlTarget.split(''); let rArr = new Array(5).fill('w-absent');
+            let guess = wdlGrid[wdlRow].join(''); 
+            
+            // Исправлено: Проверка существования слова
+            if(!VALID_5_LETTER_WORDS.includes(guess)) {
+                return tg.showAlert("НЕТ ТАКОГО СЛОВА!");
+            }
+
+            let tArr = wdlTarget.split(''); let rArr = new Array(5).fill('w-absent');
             for(let i=0; i<5; i++){ if(guess[i]===tArr[i]) { rArr[i]='w-correct'; tArr[i]=null; } }
             for(let i=0; i<5; i++){ if(rArr[i]!=='w-correct' && tArr.includes(guess[i])) { rArr[i]='w-present'; tArr[tArr.indexOf(guess[i])]=null; } }
             for(let i=0; i<5; i++){ 
@@ -1221,17 +1414,53 @@
                     else if (rArr[i] === 'w-absent' && !kbKey.classList.contains('w-key-correct') && !kbKey.classList.contains('w-key-present')) kbKey.className = 'w-key w-key-absent';
                 }
             }
-            if(guess === wdlTarget) { addCoins(10); setTimeout(()=>showResult('УГАДАЛ!','#34c759','🎓','Слово: '+wdlTarget+'\n+10 🪙'), 500); }
-            else if(wdlRow===5) { setTimeout(()=>showResult('НЕ УГАДАЛ','#ff453a','🎓','Было слово: '+wdlTarget), 500); }
+            if(guess === wdlTarget) { addCoins(10); setTimeout(()=>showResult('УГАДАЛ!','#34c759','🎓','Слово: '+wdlTarget+'\n+10 🪙'), 500); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','win'); }
+            else if(wdlRow===5) { setTimeout(()=>showResult('НЕ УГАДАЛ','#ff453a','🎓','Было слово: '+wdlTarget), 500); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','loss'); }
             else { wdlRow++; wdlCol=0; }
         }
 
         // ================= ПРЯТКИ =================
         let hiddenFound=0, hiddenMisses=0, hiddenActive=false;
-        function initHiddenGame() { window.hiddenImFirst = false; document.getElementById('hidden-found').innerText='0'; const scene=document.getElementById('hidden-scene'); scene.innerHTML='<div class="sun-decor">☀️</div>'; for(let i=0;i<15;i++){ let tx=10+Math.random()*80; let ty=10+Math.random()*80; let item=document.createElement('div'); item.className='hidden-item'; item.innerText='💎'; item.style.left=tx+'%'; item.style.top=ty+'%'; item.style.zIndex='10'; item.onmousedown=(e)=>hitHiddenItem(e,item); item.ontouchstart=(e)=>{e.preventDefault(); hitHiddenItem(e,item);}; scene.appendChild(item); let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; d.style.left=(tx+(Math.random()*8-4))+'%'; d.style.top=(ty+(Math.random()*8-4))+'%'; d.style.zIndex='20'; scene.appendChild(d); } for(let i=0;i<20;i++){ let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; d.style.left=(10+Math.random()*80)+'%'; d.style.top=(10+Math.random()*80)+'%'; d.style.zIndex='20'; scene.appendChild(d); } setIsland(`Найди 15 кристаллов!`); hiddenFound=0; hiddenMisses=0; hiddenActive=false; }
-        function hitHiddenItem(e, el) { e.stopPropagation(); if(appState.isPaused || hiddenActive) return; el.remove(); hiddenFound++; document.getElementById('hidden-found').innerText=hiddenFound; setIsland('Найдено!','#34c759'); if(hiddenFound>=15) { if(lobbyPlayers.length>1){ if(!window.hiddenImFirst){ window.hiddenImFirst = true; setIsland('ЖДЕМ СОПЕРНИКА.....','#ffd60a'); document.getElementById('island-text').innerText='ЖДЕМ СОПЕРНИКА.....'; } db.ref(`lobbies/${lobbyId}/hiddenScores/${myId}`).set(hiddenMisses); } else { setTimeout(()=>showResult('Пройдено!','#34c759','🕵️‍♂️','Все найдено!'),500); } } }
+        function initHiddenGame() { 
+            window.hiddenImFirst = false; document.getElementById('hidden-found').innerText='0'; 
+            const scene=document.getElementById('hidden-scene'); scene.innerHTML='<div class="sun-decor">☀️</div>'; 
+            
+            for(let i=0;i<15;i++){ 
+                let tx=10+Math.random()*80; let ty=10+Math.random()*80; 
+                let item=document.createElement('div'); item.className='hidden-item'; item.innerText='💎'; item.style.left=tx+'%'; item.style.top=ty+'%'; item.style.zIndex='10'; 
+                item.onmousedown=(e)=>hitHiddenItem(e,item); item.ontouchstart=(e)=>{e.preventDefault(); hitHiddenItem(e,item);}; 
+                scene.appendChild(item); 
+                
+                // Декорация поверх алмаза
+                let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; 
+                d.style.left=(tx+(Math.random()*6-3))+'%'; d.style.top=(ty+(Math.random()*6-3))+'%'; d.style.zIndex='20'; 
+                scene.appendChild(d); 
+            } 
+            
+            // Еще случайные декорации
+            for(let i=0;i<25;i++){ 
+                let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; 
+                d.style.left=(10+Math.random()*80)+'%'; d.style.top=(10+Math.random()*80)+'%'; d.style.zIndex='20'; 
+                scene.appendChild(d); 
+            } 
+            setIsland(`Найди 15 кристаллов!`); hiddenFound=0; hiddenMisses=0; hiddenActive=false; 
+        }
+        function hitHiddenItem(e, el) { 
+            e.stopPropagation(); if(appState.isPaused || hiddenActive) return; 
+            el.remove(); hiddenFound++; document.getElementById('hidden-found').innerText=hiddenFound; setIsland('Найдено!','#34c759'); 
+            if(hiddenFound>=15) { 
+                if(lobbyPlayers.length>1){ 
+                    if(!window.hiddenImFirst){ window.hiddenImFirst = true; setIsland('ЖДЕМ СОПЕРНИКА.....','#ffd60a'); document.getElementById('island-text').innerText='ЖДЕМ СОПЕРНИКА.....'; } 
+                    db.ref(`lobbies/${lobbyId}/hiddenScores/${myId}`).set(hiddenMisses); 
+                } else { 
+                    setTimeout(()=>showResult('Пройдено!','#34c759','🕵️‍♂️','Все найдено!'),500); 
+                    if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('hidden','win');
+                } 
+            } 
+        }
         function missHiddenClick(e) { 
             if(appState.isPaused || hiddenActive) return; 
+            // Исправлено: Штрафная система (нельзя спамить рандомно)
             hiddenActive = true; hiddenMisses++; setIsland('Мимо! Штраф 1с','#ff453a'); 
             setTimeout(() => { hiddenActive = false; setIsland('Ищи дальше!','#fff'); }, 1000);
         }
@@ -1241,7 +1470,7 @@
         function changeClickTime(delta) { if(clickActive||appState.isPaused) return; if(!isHost) return tg.showAlert("Только Хост меняет время!"); let n = Math.max(5,Math.min(100,clickTimeSetting+delta)); db.ref(`lobbies/${lobbyId}/clickTime`).set(n); }
         function initClickerUI() { clicks=0; clickActive=false; clearInterval(clickInterval); document.getElementById('click-score').innerText=0; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; document.getElementById('clicker-controls').style.display='flex'; document.getElementById('click-btn').style.display='block'; document.getElementById('clk-btn-m').style.display = isHost?'block':'none'; document.getElementById('clk-btn-p').style.display = isHost?'block':'none'; document.getElementById('clk-msg').innerText = isHost?"Настрой время и ЖМИ!":"Жди запуска..."; setIsland(isHost?'Настраивай!':'Ожидание...'); }
         function doClickStart() { if(appState.isPaused) return; if(!clickActive) { if(isHost) db.ref(`lobbies/${lobbyId}/clickState`).set('playing'); else tg.showAlert("Жди хоста!"); } else { clicks++; document.getElementById('click-score').innerText=clicks; } }
-        function startClickerGame() { clickActive=true; clickTimeCurrent=clickTimeSetting; clicks=0; document.getElementById('click-score').innerText=0; document.getElementById('clicker-controls').style.display='none'; document.getElementById('clk-msg').innerText="ТАПАЙ!!!"; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; document.getElementById('click-btn').style.display='none'; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ db.ref(`lobbies/${lobbyId}/clickScores/${myId}`).set(clicks); setIsland("Ждем остальных..."); } else { let rew=Math.floor(clicks/20); addCoins(rew); showResult(`Счет: ${clicks}`,'#34c759','⏱️',`+${rew} 🪙`); } } },1000); }
+        function startClickerGame() { clickActive=true; clickTimeCurrent=clickTimeSetting; clicks=0; document.getElementById('click-score').innerText=0; document.getElementById('clicker-controls').style.display='none'; document.getElementById('clk-msg').innerText="ТАПАЙ!!!"; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; document.getElementById('click-btn').style.display='none'; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ db.ref(`lobbies/${lobbyId}/clickScores/${myId}`).set(clicks); setIsland("Ждем остальных..."); } else { let rew=Math.floor(clicks/20); addCoins(rew); showResult(`Счет: ${clicks}`,'#34c759','⏱️',`+${rew} 🪙`); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('clk','win'); } } },1000); }
 
         // ================= КРЕСТИКИ НОЛИКИ =================
         let tttBoard=[], tttTurnIdx=0, tttGameOver=false, tttSize=3, tttWinReq=3, tttRef=null; const TTT_SYMBOLS=['x','o','triangle','square','minus']; const TTT_CHARS={'x':'❌','o':'⭕','triangle':'🔺','square':'🔲','minus':'➖'}; const TTT_COLORS={'x':'#ff453a','o':'#32ade6','triangle':'#34c759','square':'#ffd60a','minus':'#af52de'};
@@ -1249,7 +1478,6 @@
             tttGameOver=false; tttTurnIdx=0; 
             if (isHost && (lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ' || lobbyPlayers.length>2)) {
                 let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=4;} else{tttSize=9;tttWinReq=5;}
-                // Доска сбрасывается в startLobbyGame
             } else if (lobbyPlayers.length<=1 || (lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ')) {
                 tttSize=3; tttWinReq=3; tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe();
                 if(lobbyPlayers.length>1&&lobbyPlayers[1].id==='ИИ') setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a');
@@ -1291,7 +1519,11 @@
         function checkDynamicWin(isOnline) { 
             let s=tttSize, req=tttWinReq; let winner=null; 
             for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } 
-            if(!winner && !tttBoard.includes('')){ tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); return true; }
+            if(!winner && !tttBoard.includes('')){ 
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); 
+                if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('ttt','draw');
+                return true; 
+            }
             if(winner){ 
                 tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
                 let isMyWin = false; let myIdx = lobbyPlayers.findIndex(p => p.id === myId); let winIdx = TTT_SYMBOLS.indexOf(winner);
@@ -1300,8 +1532,8 @@
                 let wName = "ИГРОК ПОБЕДИЛ!";
                 if(lobbyPlayers.length <= 1) { wName = `ПОБЕДИЛ ${TTT_CHARS[winner]}!`; } 
                 else {
-                    if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === TTT_SYMBOLS[1]) { wName = "ИИ ВЫИГРАЛ! -10 🪙"; isMyWin = false; addCoins(-10); }
-                    else if (isMyWin) { wName = "ПОБЕДА! +5 🪙"; addCoins(5); }
+                    if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === TTT_SYMBOLS[1]) { wName = "ИИ ВЫИГРАЛ! -10 🪙"; isMyWin = false; addCoins(-10); updateAiStat('ttt','loss'); }
+                    else if (isMyWin) { wName = "ПОБЕДА! +5 🪙"; addCoins(5); updateAiStat('ttt','win'); }
                     else { wName = (lobbyPlayers[winIdx] ? getNameHTML(lobbyPlayers[winIdx].name, lobbyPlayers[winIdx].eqName) : "ПОРАЖЕНИЕ!") + " -10 🪙"; addCoins(-10); }
                 }
                 
@@ -1310,7 +1542,7 @@
             } return false; 
         }
 
-        // ================= МЕТКОСТЬ =================
+        // ================= МЕТКОСТЬ (Ножи исправлены) =================
         let accRef=null, accLoc=false, accInt=null, accL3B=0, accL3T=0, accAiming=false;
         let accState = { l:1, turn:0, s:{}, k:[], l2Done:0, l3Done:0 };
 
@@ -1319,7 +1551,7 @@
             if(lobbyPlayers.length===0) lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar}];
             lobbyPlayers.forEach(p => accState.s[p.id] = 0);
             accLoc = (lobbyPlayers.length <= 1 || (lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ'));
-            window.accL3Started = false; clearInterval(accInt);
+            window.accL3Started = false; window.isKnifeFlying = false; clearInterval(accInt);
 
             if (!accLoc) {
                 if(accRef) accRef.off(); accRef = db.ref(`lobbies/${lobbyId}/accuracy`);
@@ -1341,7 +1573,9 @@
             
             if(accState.l === 1) { 
                 let spinner = document.getElementById('acc-t1');
-                spinner.innerHTML = ''; // Очищаем только ножи, сама мишень не удаляется
+                
+                // Удаляем старые мечи (только их), мишень продолжает крутиться без сброса анимации
+                spinner.querySelectorAll('.acc-stuck-knife').forEach(e => e.remove());
                 
                 accState.k.forEach(k => { 
                     let d = document.createElement('div'); 
@@ -1351,7 +1585,7 @@
                     spinner.appendChild(d); 
                 });
                 
-                document.getElementById('acc-ready-knife').style.display = isMyTurn ? 'block' : 'none';
+                document.getElementById('acc-ready-knife').style.display = isMyTurn && !window.isKnifeFlying ? 'block' : 'none';
                 setIsland(isMyTurn?'Тапни чтобы метнуть!':`Кидает ${lobbyPlayers[accState.turn].name}...`, isMyTurn?'#34c759':'#ffd60a');
                 
                 if ((isHost||accLoc) && lobbyPlayers[accState.turn]?.id==='ИИ') setTimeout(accBot1, 1000);
@@ -1461,8 +1695,10 @@
             if (winners.length > 1) {
                 let nms = winners.map(x=>getNameHTML(x.p.name, x.p.eqName)).join(" И ");
                 showResult(`НИЧЬЯ!\n${nms}`, '#ff9f0a', '🏆', `Счет: <b>${top}</b><br><br>${t}`);
+                if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('acc', 'draw');
             } else {
                 showResult(isMyWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ! -10 🪙", isMyWin ? '#34c759' : '#ff453a', isMyWin ? '🎯' : '❌', t);
+                if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('acc', isMyWin?'win':'loss');
             }
 
             if(lobbyPlayers.length>1) { if(!isMyWin) addCoins(-10); } 
