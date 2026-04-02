@@ -15,17 +15,13 @@
         body.bg-balloons { background: #1a1a2e !important; }
         .balloon-bg-item { position: fixed; bottom: -100px; font-size: 40px; animation: floatUp 10s linear infinite; z-index: 0; pointer-events: none; opacity: 0.6; }
         @keyframes floatUp { 0% { transform: translateY(0) translateX(0) rotate(0deg); } 100% { transform: translateY(-120vh) translateX(50px) rotate(20deg); } }
-        .inspect-profile-preview .balloon-bg-item { position: absolute !important; } /* Для осмотра */
         
         /* Исправлено: прозрачный фон для экранов игры */
         body.star-bg .game-screen, body.bg-balloons .game-screen { background: transparent !important; }
         #screen-game-math-1, #screen-game-math-2, #screen-game-math-3, #screen-game-letters-1, #screen-game-letters-2, #screen-game-letters-3, #screen-game-letters-4, #screen-game-letters-5, #screen-game-tictactoe, #screen-game-clicker { background: transparent; }
 
-        #orientation-warning { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:white; }
-        /* По умолчанию игра горизонтальная, предупреждаем в портретном режиме */
-        @media screen and (orientation: portrait) { body:not(.wordle-active) #orientation-warning { display: flex; } }
-        /* Для Wordle игра вертикальная, предупреждаем в ландшафтном режиме */
-        @media screen and (orientation: landscape) { body.wordle-active #orientation-warning { display: flex; } }
+        #wordle-orientation-warning { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:white; }
+        @media screen and (orientation: portrait) { #wordle-orientation-warning { display: flex; } }
 
         .glass{background:rgba(30,30,30,0.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 4px 15px rgba(0,0,0,0.5);}
         .overlay{position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2000;text-align:center;color:#fff;transition:0.3s;} .overlay.hidden{display:none!important;}
@@ -33,7 +29,7 @@
         .btn-red{background:#ff453a;} .btn-green{background:#34c759;} .btn-dark{background:#333;} .btn-gold{background:var(--coin-col);color:#000;}
         
         #app-container{display:flex;width:100vw;height:100vh;position:relative; z-index: 5;}
-        .nav-bar{width:var(--nav-w);background:var(--sidebar-bg);border-right:2px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;padding-top:20px;gap:20px;z-index:50;overflow-y:auto; flex-shrink: 0;}
+        .nav-bar{width:var(--nav-w);background:var(--sidebar-bg);border-right:2px solid #2a2a2a;display:flex;flex-direction:column;align-items:center;padding-top:20px;gap:20px;z-index:50;overflow-y:auto;}
         .nav-item{display:flex;flex-direction:column;align-items:center;cursor:pointer;opacity:0.5;transition:0.2s;width:100%;padding:10px 0;} .nav-item.active{opacity:1;filter:drop-shadow(0 0 8px #3390ec);color:#3390ec;background:rgba(51,144,236,0.1);border-left:3px solid #3390ec;}
         .nav-icon{font-size:26px;margin-bottom:5px;} .nav-text{font-size:9px;font-weight:bold;text-transform:uppercase;text-align:center;}
         .main-content{flex-grow:1;position:relative;overflow:hidden;}
@@ -49,11 +45,11 @@
         .list-item{display:flex;justify-content:space-between;align-items:center;background:#111;padding:12px;border-radius:12px;margin-bottom:10px;width:100%;box-sizing:border-box;} .list-item:active{background:#333;}
         .friend-row { display:flex; align-items:center; gap:10px; }
         
-        /* Исправлено: Монетки левее + z-index */
-        #global-coins { position: fixed; top: 15px; left: 100px; font-size: 20px; font-weight: bold; color: var(--coin-col); padding: 8px 15px; border-radius: 15px; z-index: 100; display: flex; align-items: center; gap: 5px; pointer-events: none; background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.12); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow:0 10px 30px rgba(0,0,0,0.35);}
+        /* Исправлено: Монетки левее */
+        #global-coins { position: fixed; top: 15px; left: 100px; font-size: 20px; font-weight: bold; color: var(--coin-col); padding: 8px 15px; border-radius: 15px; z-index: 9999; display: flex; align-items: center; gap: 5px; pointer-events: none; background: rgba(0,0,0,0.35); border:1px solid rgba(255,255,255,0.12); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow:0 10px 30px rgba(0,0,0,0.35);}
 
         /* ПРОФИЛЬ */
-        .profile-mega-box{background:var(--panel-bg);padding:30px;border-radius:20px;text-align:center;border:2px solid #444;width:90%;max-width:400px;box-shadow:0 10px 30px rgba(0,0,0,0.5);margin:0 auto; position:relative;}
+        .profile-mega-box{background:var(--panel-bg);padding:30px;border-radius:20px;text-align:center;border:2px solid #444;width:90%;max-width:500px;box-shadow:0 10px 30px rgba(0,0,0,0.5);margin:0 auto; position:relative;}
         .profile-avatar{font-size:80px;cursor:pointer;display:inline-block;padding:10px;background:rgba(255,255,255,0.05);border-radius:50%;}
         .profile-name-container{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:10px;margin-bottom:5px;flex-wrap:nowrap;}
         .profile-name{font-size:28px;font-weight:900;cursor:pointer;border-bottom:2px dashed transparent; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
@@ -79,7 +75,7 @@
         
         /* Исправлено: отдельное окно для игр (не видно фон лобби) */
         /* Исправлено: игры поверх звёзд/фона, без "замутнения" лобби */
-        #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:transparent;backdrop-filter:none;z-index:10000;overflow:hidden;}
+        #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:transparent;backdrop-filter:none;z-index:1000;overflow:hidden;}
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
         #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none; background:rgba(0,0,0,0.8);}
         #pause-btn{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:25px;border:2px solid #fff;font-size:20px;display:none;align-items:center;justify-content:center;z-index:1100;cursor:pointer;background:rgba(0,0,0,0.5);box-shadow:0 4px 10px rgba(0,0,0,0.5);}
