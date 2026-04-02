@@ -73,7 +73,8 @@
         .lobby-controls-bottom-right{position:absolute;bottom:0;right:0;display:flex;flex-direction:column;align-items:flex-end;gap:10px;}
         .play-btn{background:#34c759;color:#fff;border:none;border-radius:12px;padding:15px 50px;font-size:26px;font-weight:900;cursor:pointer;text-transform:uppercase;box-shadow:0 6px 0 #248a3d;}
         
-        #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:transparent;z-index:1000;}
+        /* Исправлено: отдельное окно для игр (не видно фон лобби) */
+        #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.65);backdrop-filter: blur(10px);z-index:1000;overflow:hidden;}
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
         #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none; background:rgba(0,0,0,0.8);}
         #pause-btn{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:25px;border:2px solid #fff;font-size:20px;display:none;align-items:center;justify-content:center;z-index:1100;cursor:pointer;background:rgba(0,0,0,0.5);box-shadow:0 4px 10px rgba(0,0,0,0.5);}
@@ -88,12 +89,12 @@
         .shop-item-card.selected { border-color:#34c759; box-shadow:0 0 15px rgba(52,199,89,0.5); }
         .shop-rarity-bar { width:100%; border-radius:3px; padding:3px 0; font-size:11px; font-weight:bold; color:#fff; margin:8px 0; text-transform:uppercase; text-shadow: 1px 1px 2px #000;}
 
-        /* Исправлено: Инвентарь плотнее (4 колонки), карточки больше */
-        .inv-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; width: 100%; justify-items: center; align-content: start; }
-        .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:10px; width:22vw; max-width:85px; height:100px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; position:relative; overflow:hidden;}
+        /* Исправлено: инвентарь крупнее и минимум 5 в строку */
+        .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; justify-items: stretch; align-content: start; }
+        .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:10px; width:100%; max-width:none; height:120px; padding:0 2px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; position:relative; overflow:hidden;}
         .inv-item-card.equipped { border-color:#34c759; box-shadow:0 0 10px rgba(52,199,89,0.5); }
-        .inv-item-icon { font-size:35px; margin-top:10px; display:flex; align-items:center; justify-content:center; }
-        .inv-item-name { font-size:10px; font-weight:normal; line-height:1.1; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:5px; padding: 0 4px;}
+        .inv-item-icon { font-size:60px; margin-top:6px; display:flex; align-items:center; justify-content:center; line-height:1; }
+        .inv-item-name { font-size:12px; font-weight:normal; line-height:1.1; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:6px; padding: 0 6px;}
         .inv-rarity-line { position: absolute; bottom: 0; left: 0; width: 100%; height: 6px; }
 
         /* АНИМАЦИИ ПРОФИЛЯ И НОВЫЕ ПРЕДМЕТЫ */
@@ -116,7 +117,7 @@
         .name-mama { color: #ff69b4; font-family: 'Comic Sans MS', cursive; text-shadow: 1px 1px 2px #ff1493; } .name-mama::before { content: '🌺 '; } .name-mama::after { content: ' 🌺'; }
         .name-masha { color: #b026ff; font-weight: bold; text-shadow: 0 0 10px #b026ff, 0 0 20px #ff00ff; } .name-masha::before { content: '✨ '; } .name-masha::after { content: ' ✨'; }
         .name-papa { color: #b0c4de; font-weight: 900; text-transform: uppercase; text-shadow: 2px 2px 0px #4682b4; } .name-papa::before { content: '🛡️ '; } .name-papa::after { content: ' 🔧'; }
-        .name-tema { background: url('https://www.transparenttextures.com/patterns/ice-pattern.png'), linear-gradient(to top, #ff4500, #ff8c00, #ffd700); -webkit-background-clip: text; color: transparent; font-weight: 900; text-shadow: 0px 0px 5px rgba(255, 69, 0, 0.5); position: relative; display:inline-block; }
+        .name-tema { background: url('https://www.transparenttextures.com/patterns/ice-pattern.png'), linear-gradient(to top, #ff4500, #ff8c00, #ffd700); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 900; text-shadow: 0px 0px 5px rgba(255, 69, 0, 0.5); position: relative; display:inline-block; }
         .name-tema::before { content: '🧊 '; -webkit-text-fill-color: initial; text-shadow:none;} .name-tema::after { content: ' 🔥'; -webkit-text-fill-color: initial; text-shadow:none;}
 
         /* МЕДАЛИ */
@@ -490,7 +491,7 @@
         const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', eqName: '', pMedals: [] }; 
         
         let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let aiStats = {};
-        let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null };
+        let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null };
         let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
 
         const GAME_NAMES = {
@@ -604,7 +605,54 @@
             if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); myEqName = ''; try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} syncDBProfile(); checkAdminAccess(); updateMyProfileUI(); } 
         }
 
-        function checkAdminAccess() { let isDev = (myId === '8451' || myId === '1512'); document.getElementById('nav-admin').style.display = isDev ? 'flex' : 'none'; if(isDev) { db.ref('promos').on('value', snap => { const list = document.getElementById('dev-promo-list'); if(!list) return; list.innerHTML = ''; if(snap.exists()) { let data = snap.val(); let now=Date.now(); Object.keys(data).forEach(k => { if(data[k].exp>0 && now>data[k].exp) { db.ref('promos/'+k).remove(); return; } list.innerHTML += `<div class="list-item"><div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew} | Предметы: ${data[k].items?data[k].items.length:0}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">X</button></div>`; }); } else list.innerHTML = '<p style="color:gray;">Нет промокодов</p>'; }); } }
+        function checkAdminAccess() {
+            let navEl = document.getElementById('nav-admin');
+            if(!navEl) return;
+
+            let isHardDev = (myId === '8451' || myId === '1512');
+
+            // Чтобы при повторных вызовах не накапливались слушатели Firebase
+            try {
+                if(appState.promosListener) db.ref('promos').off('value', appState.promosListener);
+            } catch(e) {}
+            appState.promosListener = null;
+
+            function setCanDev(canDev) {
+                navEl.style.display = canDev ? 'flex' : 'none';
+                const list = document.getElementById('dev-promo-list');
+                if(!list) return;
+
+                if(!canDev) {
+                    list.innerHTML = '';
+                    return;
+                }
+
+                appState.promosListener = snap => {
+                    list.innerHTML = '';
+                    if(snap.exists()) {
+                        let data = snap.val();
+                        let now = Date.now();
+                        Object.keys(data).forEach(k => {
+                            if(data[k].exp > 0 && now > data[k].exp) {
+                                db.ref('promos/' + k).remove();
+                                return;
+                            }
+                            list.innerHTML += `<div class="list-item"><div><b>${k}</b><br><span style="font-size:10px;color:gray;">Осталось: ${data[k].acts} | Награда: ${data[k].rew} | Предметы: ${data[k].items ? data[k].items.length : 0}</span></div><button class="btn btn-red" style="padding:5px 10px;font-size:12px;" onclick="db.ref('promos/${k}').remove()">X</button></div>`;
+                        });
+                    } else {
+                        list.innerHTML = '<p style="color:gray;">Нет промокодов</p>';
+                    }
+                };
+
+                db.ref('promos').on('value', appState.promosListener);
+            }
+
+            if(isHardDev) { setCanDev(true); return; }
+
+            db.ref(`admins/${myId}`).once('value')
+                .then(s => setCanDev(s.exists()))
+                .catch(() => setCanDev(false));
+        }
         
         function updateMyProfileUI() { document.getElementById('my-avatar').innerHTML = getAvatarHTML(myAvatar); document.getElementById('my-name-display').innerHTML = getNameHTML(myName, myEqName) + ' ✏️'; document.getElementById('my-medals-display').innerHTML = getMedalsHTML(myPinnedMedals); if(appState.inLobby && lobbyPlayers.length>0){ let lp = lobbyPlayers.find(p=>p.id===myId); if(lp) { lp.avatar=myAvatar; lp.name=myName; lp.eqName=myEqName; lp.pMedals=myPinnedMedals; db.ref(`lobbies/${lobbyId}/players/${myId}`).update({avatar:myAvatar, name:myName, eqName:myEqName, pMedals:myPinnedMedals}); } } }
         
@@ -1028,6 +1076,14 @@
         }
 
         function startLocalGameUI() { 
+            // Исправлено: прячем лобби, чтобы игры шли "в отдельном окне"
+            let vl = document.getElementById('view-lobby');
+            let mb = document.getElementById('main-buttons-view');
+            appState.prevViewLobbyDisplay = vl ? vl.style.display : '';
+            appState.prevMainButtonsDisplay = mb ? mb.style.display : '';
+            if(vl) vl.style.display = 'none';
+            if(mb) mb.style.display = 'none';
+
             appState.game = appState.selectedGameId; document.getElementById('game-container').style.display='block'; document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); 
             addGamePlayed();
             if(appState.game.startsWith('math')) { document.getElementById('pause-btn').style.display='flex'; startMathMode(parseInt(appState.game.replace('math',''))); } 
@@ -1042,6 +1098,18 @@
             document.body.classList.remove('require-portrait', 'allow-portrait');
             [1,2,3].forEach(i => { let el = document.getElementById('acc-area-'+i); if(el) el.style.display = 'none'; });
             document.getElementById('dynamic-island').style.display='none';
+
+            // Восстанавливаем лобби-верстку (если игрок всё ещё в лобби)
+            let vl = document.getElementById('view-lobby');
+            let mb = document.getElementById('main-buttons-view');
+            if(appState.inLobby) {
+                if(vl) vl.style.display = appState.prevViewLobbyDisplay || 'flex';
+                if(mb) mb.style.display = appState.prevMainButtonsDisplay || 'none';
+            } else {
+                if(vl) vl.style.display = 'none';
+                if(mb) mb.style.display = 'flex';
+            }
+
             if(isHost) {
                 db.ref(`lobbies/${lobbyId}/status`).set('waiting'); 
                 db.ref(`lobbies/${lobbyId}/let4Scores`).remove();
