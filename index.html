@@ -89,10 +89,10 @@
         .shop-item-card.bought { opacity:0.5; border-color:#222; filter:grayscale(100%); }
         .shop-item-card.equipped { border-color:#34c759; box-shadow:0 0 18px rgba(52,199,89,0.55), 0 10px 30px rgba(0,0,0,0.45); transform: translateY(-2px) scale(1.03); }
         .shop-item-card.selected { border-color:#34c759; box-shadow:0 0 15px rgba(52,199,89,0.5); }
-        .shop-rarity-bar { width:100%; border-radius:3px; padding:3px 0; font-size:11px; font-weight:bold; color:#fff; margin:8px 0; text-transform:uppercase; text-shadow: 1px 1px 2px #000; flex-shrink: 0;}
+        .shop-rarity-bar { width:100%; border-radius:3px; padding:3px 0; font-size:11px; font-weight:bold; color:#fff; margin:8px 0; text-transform:uppercase; text-shadow: 1px 1px 2px #000;}
 
         /* Исправлено: инвентарь крупнее и минимум 5 в строку */
-        .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px; width: 100%; justify-items: stretch; align-content: start; }
+        .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; width: 100%; justify-items: stretch; align-content: start; }
         .inv-item-card { background:#222; border:2px solid #3390ec; border-radius:10px; width:100%; max-width:none; height:120px; padding:0 2px; text-align:center; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; position:relative; overflow:hidden;}
         .inv-item-card.equipped { border-color:#34c759; box-shadow:0 0 18px rgba(52,199,89,0.55), 0 10px 30px rgba(0,0,0,0.45); transform: translateY(-2px) scale(1.03); }
         .inv-item-icon { font-size:60px; margin-top:6px; display:flex; align-items:center; justify-content:center; line-height:1; }
@@ -129,7 +129,7 @@
         .market-name-preview .name-papa::before, .market-name-preview .name-papa::after { content:'' !important; }
         .market-name-preview .name-tema::before, .market-name-preview .name-tema::after { content:'' !important; }
 
-        .inspect-profile-preview { background:#111; border-radius:18px; padding:22px 10px; border:2px solid #444; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.45); position:relative; overflow:hidden; min-height: 250px;}
+        .inspect-profile-preview { background:#111; border-radius:18px; padding:22px 10px; border:2px solid #444; text-align:center; box-shadow:0 10px 30px rgba(0,0,0,0.45); position:relative; overflow:hidden; }
         .preview-bg-star { background: url('https://www.transparenttextures.com/patterns/stardust.png'), linear-gradient(to bottom, #0f0c29, #302b63, #24243e) !important; }
         .preview-bg-balloons { background:#1a1a2e !important; }
         .inspect-avatar { font-size:80px; cursor:default; display:inline-block; padding:10px; background:rgba(255,255,255,0.05); border-radius:50%; }
@@ -167,11 +167,11 @@
         
         /* ПРЯТКИ: Меньше алмазы, больше декораций */
         #screen-game-hidden{background:linear-gradient(to bottom, #87CEEB, #e0f6ff); justify-content:flex-start; padding-top:40px; box-sizing:border-box;}
-        .hidden-scene{position:relative;width:95%;height:80vh;background:linear-gradient(to bottom, #87CEEB, #e0f6ff);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2); border:3px solid #555;} 
-        .hidden-item{position:absolute;font-size:1.5vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.4)); opacity:0.6; transition:transform 0.1s;} 
+        .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom, #87CEEB, #e0f6ff);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2); border:3px solid #555;} 
+        .hidden-item{position:absolute;font-size:1.5vh;transform:translate(-50%,-50%);cursor:pointer;z-index:10;filter:drop-shadow(0 2px 2px rgba(0,0,0,0.4)); opacity:0.4; transition:transform 0.1s;} 
         .hidden-item:active { transform:translate(-50%,-50%) scale(0.8); }
-        .scene-decor{position:absolute;font-size:5vh;transform:translate(-50%,-50%);z-index:20;pointer-events:none;opacity:0.95; filter:drop-shadow(0 5px 5px rgba(0,0,0,0.3));}
-        .sun-decor { position:absolute; top:20px; right:20px; font-size:6vh; animation:spin 10s linear infinite; pointer-events:none; z-index:5;}
+        .scene-decor{position:absolute;font-size:6vh;transform:translate(-50%,-50%);z-index:20;pointer-events:none;opacity:0.95; filter:drop-shadow(0 5px 5px rgba(0,0,0,0.3));}
+        .sun-decor { position:absolute; top:20px; right:20px; font-size:8vh; animation:spin 10s linear infinite; pointer-events:none; z-index:5;}
 
         .result-score-list { background:rgba(0,0,0,0.3); border-radius:10px; padding:15px; max-height:25vh; overflow-y:auto; text-align:left; font-size:18px; margin-top:10px; font-family:sans-serif; }
         
@@ -254,15 +254,15 @@
         .ai-stats-table th { background: #222; color: var(--coin-col); }
     </style>
 </head>
-<body class="">
-    <div id="orientation-warning"><h2>НЕЛЬЗЯ ИГРАТЬ В ВЕРТИКАЛЬНОМ РЕЖИМЕ 🔄<br><br>Поверни планшет горизонтально!</h2></div>
+<body>
+    <div id="wordle-orientation-warning"><h2>НЕЛЬЗЯ ИГРАТЬ В ВЕРТИКАЛЬНОМ РЕЖИМЕ 🔄<br><br>Поверни планшет горизонтально!</h2></div>
     <div id="top-notify" class="glass" onclick="acceptLobbyInvite()"><span>Тебя зовут в игру!</span></div>
     
     <div id="global-coins" class="glass">🪙 <span id="global-coins-val">0</span></div>
 
     <div id="app-container">
         <div class="nav-bar" id="nav-bar">
-            <div class="nav-item active" onclick="switchTab('profile', this); updateMyProfileUI(); renderMyProfileStats();"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
+            <div class="nav-item active" onclick="switchTab('profile', this); updateMyProfileUI();"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
             <div class="nav-item" onclick="switchTab('inv', this); renderShop(); renderInventory();"><div class="nav-icon">🎒</div><div class="nav-text">Инвентарь</div></div>
             <div class="nav-item" onclick="switchTab('friends', this)"><div class="nav-icon">👥</div><div class="nav-text">Друзья</div></div>
             <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this); renderAdminList();"><div class="nav-icon">👨‍💻</div><div class="nav-text">Разраб</div></div>
@@ -270,25 +270,13 @@
 
         <div class="main-content">
             <div id="tab-profile" class="tab-view active" style="position:relative;">
-                <div class="sub-tabs-header"><button class="sub-tab-btn active" onclick="switchSubTab('profile','main',this)">Общая статистика</button><button class="sub-tab-btn" onclick="switchSubTab('profile','ai',this)">Статистика с ИИ</button></div>
-                <div id="profile-main" class="sub-tab-content active" style="flex-direction: row; align-items: flex-start; gap: 20px; width: 100%; max-width: 800px; margin: 0 auto;">
-                    <div class="profile-mega-box" style="flex-shrink: 0; width: 280px; text-align: center; margin-top: 0;">
-                        <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
-                        <div class="profile-name-container">
-                            <div class="profile-name" id="my-name-display" onclick="changeName()">Игрок ✏️</div>
-                            <div id="my-medals-display" class="medals-container" onclick="openMedalsModal()"></div>
-                        </div>
-                        <div class="profile-id" id="my-id-display">ID: ...</div>
+                <div class="profile-mega-box" style="margin-top:40px;">
+                    <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
+                    <div class="profile-name-container">
+                        <div class="profile-name" id="my-name-display" onclick="changeName()">Игрок ✏️</div>
+                        <div id="my-medals-display" class="medals-container" onclick="openMedalsModal()"></div>
                     </div>
-                    <div id="my-stats-all" style="flex-grow: 1; padding-top: 20px;">
-                        <h3 style="color: var(--coin-col); margin-top: 0;">Статистика</h3>
-                        <p id="my-stats-time">Время в игре: ...</p>
-                        <div id="my-stats-kd-circle"></div>
-                        <table class="ai-stats-table" id="my-stats-all-table"></table>
-                    </div>
-                </div>
-                <div id="profile-ai" class="sub-tab-content" style="max-width: 600px; margin: 0 auto;">
-                    <table class="ai-stats-table" id="my-stats-ai-table"></table>
+                    <div class="profile-id" id="my-id-display">ID: ...</div>
                 </div>
             </div>
 
@@ -380,7 +368,7 @@
         <div class="game-screen" id="screen-game-letters-2">
             <h2 style="font-size:4vh;margin-bottom:10px;">Нарисуй букву!</h2>
             <div style="position:relative; width:40vh; height:40vh; display:flex; justify-content:center; align-items:center;">
-                <canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10; touch-action: none;"></canvas>
+                <canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10;"></canvas>
                 <div id="hand-tutor" style="position:absolute; font-size:8vh; z-index:20; pointer-events:none; animation: handDraw 2s infinite;">✍️</div>
             </div>
             <div style="margin-top:20px; display:flex; gap:20px;">
@@ -409,7 +397,7 @@
             </div>
         </div>
 
-        <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/45</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div></div>
+        <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div></div>
 
         <div class="game-screen" id="screen-game-tictactoe"><div class="board" id="ttt-board"></div></div>
         <div class="game-screen" id="screen-game-clicker"><h2 style="font-size:3vh;margin-bottom:10px;" id="clk-msg">Настрой время и ЖМИ!</h2><div class="clicker-setup" id="clicker-controls"><button class="round-btn" id="clk-btn-m" onclick="changeClickTime(-5)">◀</button><div id="click-time-val" style="font-size:28px;font-weight:bold;width:100px;text-align:center;">15 сек</div><button class="round-btn" id="clk-btn-p" onclick="changeClickTime(5)">▶</button></div><h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button></div>
@@ -525,29 +513,20 @@
     </div>
     
     <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)">
-        <div style="background:#1c1c1e;padding:20px;border-radius:20px;width:95vw;max-width:500px; max-height: 90vh; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
-            <div style="display:flex; gap:15px; align-items:center; margin-bottom: 15px; flex-shrink: 0;">
-                <div id="fm-avatar" class="dynamic-avatar" style="font-size:64px;">👤</div>
-                <div style="text-align:left;">
-                    <div id="fm-name-cont" style="font-size:24px; font-weight:bold;"></div>
-                    <div id="fm-medals-cont" class="medals-container" style="justify-content: flex-start;"></div>
-                    <p id="fm-id" style="color:gray; margin: 5px 0 0 0;">ID: 0000</p>
-                </div>
+        <div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px; max-height: 80vh; overflow-y:auto;" onclick="event.stopPropagation()">
+            <div style="font-size:50px;" id="fm-avatar" class="dynamic-avatar">👤</div>
+            <div id="fm-name-cont" class="friend-row" style="font-size:24px; font-weight:bold; margin-bottom:10px; justify-content:center;"></div>
+            <div id="fm-medals-cont" class="medals-container" style="margin-bottom:15px;"></div>
+            <p id="fm-id" style="color:gray;">ID: 0000</p>
+            <div id="fm-ai-stats" style="display:none; width:100%;">
+                <h4 style="margin:5px 0;">Статистика против ИИ</h4>
+                <table class="ai-stats-table" id="ai-stats-table-content"></table>
             </div>
-            <div class="sub-tabs-header" style="flex-shrink: 0;"><button id="fm-tab-btn-pvp" class="sub-tab-btn" onclick="switchSubTab('fm','pvp',this)">Игра с тобой</button><button id="fm-tab-btn-all" class="sub-tab-btn active" onclick="switchSubTab('fm','all',this)">Все игры</button><button id="fm-tab-btn-ai" class="sub-tab-btn" onclick="switchSubTab('fm','ai',this)">Игра с ИИ</button></div>
-            <div style="overflow-y: auto; flex-grow: 1;">
-                <div id="fm-pvp" class="sub-tab-content" style="padding: 10px;"><p style="color:gray">Скоро...</p></div>
-                <div id="fm-all" class="sub-tab-content active" style="padding: 10px;">
-                    <p id="fm-all-time">Время в игре: ...</p>
-                    <table class="ai-stats-table" id="fm-all-table"></table>
-                </div>
-                <div id="fm-ai" class="sub-tab-content" style="padding: 10px;"><table class="ai-stats-table" id="fm-ai-table"></table></div>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:10px; margin-top:15px; flex-shrink: 0;" id="friend-actions"></div>
+            <div style="display:flex;flex-direction:column;gap:10px; margin-top:15px;" id="friend-actions"></div>
         </div>
     </div>
     
-    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>
+    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>/
     <script>
         const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
         const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
@@ -642,13 +621,13 @@
                 // Исправлено: Скрытие клавы для ПК
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 if(!isMobile) {
-                    document.getElementById('orientation-warning').style.display = 'none';
+                    document.body.classList.remove('require-portrait'); 
                     document.getElementById('wdl-kb').style.display = 'none';
                 }
 
                 // Исправлено: Ввод 5 букв с клавиатуры ноута
                 document.addEventListener('keydown', (e) => {
-                    if(appState.game !== 'let5' || !document.body.classList.contains('wordle-active')) return;
+                    if(appState.game !== 'let5') return;
                     if(/^[А-Яа-яЁё]$/.test(e.key)) { wPress(e.key.toUpperCase()); }
                     if(e.key === 'Backspace') { wBack(); }
                     if(e.key === 'Enter') { wEnter(); }
@@ -665,24 +644,6 @@
                 b.style.left = Math.random()*100 + 'vw';
                 b.style.animationDelay = (Math.random()*10) + 's';
                 document.body.appendChild(b);
-            }
-        }
-
-        function spawnBalloonsInElement(container) {
-            container.querySelectorAll('.balloon-bg-item').forEach(e => e.remove());
-            if (!container.classList.contains('preview-bg-balloons')) return;
-
-            for(let i=0; i<5; i++) {
-                let b = document.createElement('div');
-                b.className='balloon-bg-item';
-                b.innerText='🎈';
-                b.style.left = (10 + Math.random()*80) + '%';
-                b.style.bottom = '-20px';
-                b.style.fontSize = '20px';
-                b.style.animation = `floatUp ${5 + Math.random()*5}s linear infinite`;
-                b.style.animationDelay = (Math.random()*5) + 's';
-                b.style.position = 'absolute'; // Важно для containment
-                container.appendChild(b);
             }
         }
 
@@ -762,26 +723,7 @@
             renderPromosList();
         }
         
-        function updateMyProfileUI() { 
-            document.getElementById('my-avatar').innerHTML = getAvatarHTML(myAvatar); 
-            document.getElementById('my-name-display').innerHTML = getNameHTML(myName, myEqName) + ' ✏️'; 
-            document.getElementById('my-medals-display').innerHTML = getMedalsHTML(myPinnedMedals); 
-            if(appState.inLobby && lobbyPlayers.length>0){ 
-                let lp = lobbyPlayers.find(p=>p.id===myId); 
-                if(lp) { 
-                    lp.avatar=myAvatar; lp.name=myName; lp.eqName=myEqName; lp.pMedals=myPinnedMedals; 
-                    db.ref(`lobbies/${lobbyId}/players/${myId}`).update({avatar:myAvatar, name:myName, eqName:myEqName, pMedals:myPinnedMedals}); 
-                } 
-            } 
-        }
-
-        function renderMyProfileStats() {
-            let hours = playTimeMs / 3600000;
-            document.getElementById('my-stats-time').innerText = `Время в игре: ${hours < 100 ? hours.toFixed(1) : Math.floor(hours)} ч.`;
-            renderTable(aiStats, 'my-stats-ai-table');
-            // Тут будет логика для общей статы, когда она появится в БД
-            document.getElementById('my-stats-all-table').innerHTML = `<tr><td>Общая статистика скоро появится...</td></tr>`;
-        }
+        function updateMyProfileUI() { document.getElementById('my-avatar').innerHTML = getAvatarHTML(myAvatar); document.getElementById('my-name-display').innerHTML = getNameHTML(myName, myEqName) + ' ✏️'; document.getElementById('my-medals-display').innerHTML = getMedalsHTML(myPinnedMedals); if(appState.inLobby && lobbyPlayers.length>0){ let lp = lobbyPlayers.find(p=>p.id===myId); if(lp) { lp.avatar=myAvatar; lp.name=myName; lp.eqName=myEqName; lp.pMedals=myPinnedMedals; db.ref(`lobbies/${lobbyId}/players/${myId}`).update({avatar:myAvatar, name:myName, eqName:myEqName, pMedals:myPinnedMedals}); } } }
         
         function renderShop() { 
             db.ref(`users/${myId}/inventory`).once('value').then(s => { 
@@ -844,9 +786,8 @@
             const modal = document.getElementById('inspect-modal');
             const previewWrap = document.getElementById('inspect-profile-preview');
             if(previewWrap) previewWrap.classList.remove('preview-bg-star', 'preview-bg-balloons');
-            previewWrap.querySelectorAll('.balloon-bg-item').forEach(e => e.remove());
             if(bgId === 'bg_stars') previewWrap.classList.add('preview-bg-star');
-            if(bgId === 'bg_balloons') { previewWrap.classList.add('preview-bg-balloons'); spawnBalloonsInElement(previewWrap); }
+            if(bgId === 'bg_balloons') previewWrap.classList.add('preview-bg-balloons');
 
             document.getElementById('inspect-avatar').innerHTML = getAvatarHTML(previewAvatar);
             document.getElementById('inspect-name').innerHTML = getNameHTML(myName, previewEqName);
@@ -879,16 +820,13 @@
                         if(item.type==='bg') eq = (localStorage.getItem('eq_bg') === item.id);
                         
                         let dispIcon = item.type === 'name' ? item.plainIcon : (item.plainIcon || item.icon);
-                        if (item.type === 'name') {
-                            dispIcon = `<div class="market-name-preview" style="font-size: 18px; display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 5px;">${getNameMarketPreviewHTML(item.id)}</div>`;
-                        }
 
                         html += `<div class="inv-item-card ${eq ? 'equipped' : ''}" onclick="openItemAction('${item.id}', '${item.type}', ${eq})">
                             <div class="inv-item-icon">${dispIcon}</div>
                             <div class="inv-item-name">${item.name}</div>
                             <div class="inv-rarity-line" style="background:${RARITIES[item.rarity]}"></div>
                         </div>`; 
-                    }
+                    } 
                 }); 
                 document.getElementById('inv-bag').innerHTML = '<div class="inv-grid" id="inv-grid-container"></div>';
                 document.getElementById('inv-grid-container').innerHTML = html; 
@@ -1007,13 +945,7 @@
             });
         }
         function addAdmin() { let id = document.getElementById('dev-add-admin-id').value; if(!id) return; db.ref('admins/'+id).set(true); tg.showAlert('Добавлен!'); renderAdminList(); }
-        function removeSingleAdmin(id) { 
-            if(id === myId) return tg.showAlert("Нельзя кикнуть самого себя!"); 
-            const isMyUserHardDev = (myId === '8451' || myId === '1512');
-            const isTargetHardDev = (id === '8451' || id === '1512');
-            if (isTargetHardDev && !isMyUserHardDev) return tg.showAlert("Нельзя удалить главного разработчика!");
-            db.ref('admins/'+id).remove(); tg.showAlert('Удален!'); renderAdminList(); 
-        }
+        function removeSingleAdmin(id) { if(id === myId) return tg.showAlert("Нельзя кикнуть самого себя!"); db.ref('admins/'+id).remove(); tg.showAlert('Удален!'); renderAdminList(); }
         function removeAllAdmins() { db.ref('admins').once('value').then(snap=>{ if(snap.exists()){ let a=snap.val(); for(let k in a){ if(k!==myId) db.ref('admins/'+k).remove(); } tg.showAlert('Все удалены'); renderAdminList(); } }); }
         
         function giveCoinsDev() { let id=document.getElementById('give-coin-id').value; let a=parseInt(document.getElementById('give-coin-amount').value)||0; if(!id) return; if(a>0) db.ref('users/'+id+'/coins').once('value').then(s=>{ db.ref('users/'+id+'/coins').set((s.val()||0)+a); }); adminSelectedItems.forEach(it => { db.ref('users/'+id+'/inventory/'+it).set(true); }); tg.showAlert('Выдано!'); }
@@ -1023,7 +955,7 @@
 
         // --- ДРУЗЬЯ И ЛОББИ ---
         function renderFriends() { const list = document.getElementById('fr-list'); list.innerHTML=''; friendsIds.forEach(id => { if(id==='ИИ') { let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div class="friend-row"><div style="font-size:30px;">🤖</div> <div><b>ИИ</b><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div></div>`; d.onclick=()=>openFriendModal(SYSTEM_BOT); list.appendChild(d); return; } db.ref('users/'+id).once('value').then(s => { if(s.exists()){ let p = s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div class="friend-row"><div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> <div>${getNameHTML(p.name, p.eqName)}<br><span style="font-size:10px;color:gray;">ID: ${id}</span></div></div>`; d.onclick=()=>openFriendModal({id:id, name:p.name||'Игрок', avatar:p.avatar, eqName:p.eqName, pMedals:p.pMedals}); list.appendChild(d); } }); }); }
-        function addFriendBtn() { let id=prompt("ID друга:"); if(id&&id!==myId){ if(friendsIds.includes(id)) return tg.showAlert("Уже в списке!"); db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ db.ref(`users/${id}/friend_reqs/${myId}`).set({name: myName, avatar: myAvatar}); tg.showAlert("Заявка отправлена!"); } else tg.showAlert("Не найден!"); }); } }
+        function addFriendBtn() { let id=prompt("ID друга:"); if(id&&id!==myId){ if(friendsIds.includes(id)) return tg.showAlert("Уже в списке!"); db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ db.ref(`users/${id}/friend_reqs/${myId}`).set(true); tg.showAlert("Заявка отправлена!"); } else tg.showAlert("Не найден!"); }); } }
         function renderFrReqs(reqs) { const l = document.getElementById('fr-reqs'); l.innerHTML=''; if(!reqs) return l.innerHTML='<p style="color:gray;text-align:center;">Нет заявок</p>'; Object.keys(reqs).forEach(id => { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div class="friend-row"><div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> <div>${getNameHTML(p.name, p.eqName)}</div></div><div><button class="btn btn-green" style="padding:5px;" onclick="acceptReq('${id}')">➕</button> <button class="btn btn-red" style="padding:5px;" onclick="db.ref('users/${myId}/friend_reqs/${id}').remove()">➖</button></div>`; l.appendChild(d); } }); }); }
         function acceptReq(id) { db.ref(`users/${myId}/friend_reqs/${id}`).remove(); db.ref(`users/${myId}/friends/${id}`).set(true); db.ref(`users/${id}/friends/${myId}`).set(true); tg.showAlert("Друг добавлен!"); }
         
@@ -1035,34 +967,28 @@
             document.getElementById('fm-medals-cont').innerHTML=getMedalsHTML(f.pMedals); 
             document.getElementById('fm-id').innerText=`ID: ${f.id}`; 
             
+            let aiBlock = document.getElementById('fm-ai-stats');
+            aiBlock.style.display = 'none';
+
             let a=document.getElementById('friend-actions'); a.innerHTML=''; 
 
-            // Пригласить / присоединиться
+            // 1) "Профиль" (самая первая кнопка)
+            a.innerHTML += `<button class="btn btn-dark" onclick="openProfileStatsModal('${f.id}')">Профиль</button>`;
+
+            // 2) Пригласить / присоединиться
             if(appState.inLobby){ 
-                if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить ИИ 🤖</button>`; 
+                if(f.id==='ИИ') a.innerHTML+=`<button class="btn btn-green" onclick="inviteBotLobby()">Пригласить 🤖</button>`; 
                 else a.innerHTML+=`<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; 
             } else { 
-                if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;cursor:not-allowed;">Создайте лобби</button>`; 
+                if(f.id==='ИИ') a.innerHTML+=`<button class="btn" style="background:#444;color:gray;cursor:not-allowed;">Создай лобби для ИИ</button>`; 
                 else a.innerHTML+=`<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; 
             } 
 
-            // Остальные действия
+            // 3) Остальные действия
             if(f.id!=='ИИ') { 
-                a.innerHTML += `<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button>`;
-            }
-            a.innerHTML += `<button class="btn btn-dark" onclick="closeFriendModal()">Закрыть</button>`;
-
-            // Логика для вкладок
-            if (f.id === 'ИИ') {
-                document.getElementById('fm-tab-btn-pvp').style.display = 'none';
-                document.getElementById('fm-tab-btn-all').style.display = 'none';
-                switchSubTab('fm', 'ai', document.getElementById('fm-tab-btn-ai'));
-                renderTable(aiStats, 'fm-ai-table');
+                a.innerHTML += `<button class="btn btn-red" onclick="removeFriend()">Удалить 🗑️</button><button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Отмена</button>`;
             } else { 
-                document.getElementById('fm-tab-btn-pvp').style.display = 'block';
-                document.getElementById('fm-tab-btn-all').style.display = 'block';
-                switchSubTab('fm', 'all', document.getElementById('fm-tab-btn-all'));
-                openProfileStatsModal(f.id); // Используем старую функцию для загрузки данных
+                a.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Закрыть</button>`;
             } 
 
             document.getElementById('friend-modal').classList.remove('hidden'); 
@@ -1070,10 +996,13 @@
 
         function openProfileStatsModal(targetId) {
             const modal = document.getElementById('profile-stats-modal');
-            const fmAllTable = document.getElementById('fm-all-table');
-            const fmAiTable = document.getElementById('fm-ai-table');
-            const fmAllTime = document.getElementById('fm-all-time');
+            const psTable = document.getElementById('ps-table');
+            const psSummary = document.getElementById('ps-summary');
+            const psAvatar = document.getElementById('ps-avatar');
+            const psName = document.getElementById('ps-name');
+            const psId = document.getElementById('ps-id');
 
+            modal.classList.remove('hidden');
 
             function renderTable(stats) {
                 let s = stats || {};
@@ -1091,7 +1020,7 @@
 
                 let kd = lossTotal > 0 ? (winsTotal / lossTotal) : winsTotal;
 
-                let tableHTML = `
+                psTable.innerHTML = `
                     <tr><th>Режим</th><th>Победы</th><th>Поражения</th><th>Ничья</th></tr>
                     <tr><td>Математика</td><td>${math.w}</td><td>${math.l}</td><td>${math.d}</td></tr>
                     <tr><td>Буквы</td><td>${letters.w}</td><td>${letters.l}</td><td>${letters.d}</td></tr>
@@ -1101,11 +1030,19 @@
                     <tr><td>Кликер</td><td>${clk.w}</td><td>${clk.l}</td><td>${clk.d}</td></tr>
                 `;
 
-                return tableHTML;
+                return {winsTotal, lossTotal, drawTotal, totalGames, kd};
             }
 
             // Бот: показываем именно ТВОЮ статистику против ИИ
             if(targetId === 'ИИ') {
+                let info = { name: 'ИИ', avatar: '🤖', eqName: '', playTimeMs: playTimeMs };
+                psAvatar.innerHTML = getAvatarHTML(info.avatar);
+                psName.innerHTML = getNameHTML(info.name, info.eqName);
+                psId.innerText = `ID: ИИ`;
+
+                let res = renderTable(aiStats);
+                let hours = (playTimeMs / 3600000);
+                psSummary.innerHTML = `Часы: ${hours.toFixed(1)} | Всего игр: ${res.totalGames} | К/Д: ${res.kd.toFixed(2)} (${res.winsTotal}/${res.lossTotal})`;
                 return;
             }
 
@@ -1120,10 +1057,13 @@
                     aiStats: d.aiStats || { math:{w:0,l:0,d:0}, letters:{w:0,l:0,d:0}, acc:{w:0,l:0,d:0}, ttt:{w:0,l:0,d:0}, hidden:{w:0,l:0,d:0}, clk:{w:0,l:0,d:0} }
                 };
 
+                psAvatar.innerHTML = getAvatarHTML(info.avatar);
+                psName.innerHTML = getNameHTML(info.name, info.eqName);
+                psId.innerText = `ID: ${targetId}`;
+
+                let res = renderTable(info.aiStats);
                 let hours = (info.playTimeMs / 3600000);
-                fmAllTime.innerText = `Время в игре: ${hours < 100 ? hours.toFixed(1) : Math.floor(hours)} ч.`;
-                fmAiTable.innerHTML = renderTable(info.aiStats);
-                fmAllTable.innerHTML = `<tr><td>Общая статистика скоро появится...</td></tr>`;
+                psSummary.innerHTML = `Часы: ${hours.toFixed(1)} | Всего игр: ${res.totalGames} | К/Д: ${res.kd.toFixed(2)} (${res.winsTotal}/${res.lossTotal})`;
             });
         }
 
@@ -1135,8 +1075,8 @@
         function removeFriend() { if(confirm(`Удалить?`)) { db.ref(`users/${myId}/friends/${activeFriend.id}`).remove(); db.ref(`users/${activeFriend.id}/friends/${myId}`).remove(); closeFriendModal(); } }
         
         function kickPlayer(id) { if(!isHost || id===myId) return; if(confirm("Удалить игрока из лобби?")) { db.ref(`lobbies/${lobbyId}/players/${id}`).remove(); } }
-        function renderLobbySlots() { const c = document.getElementById('lobby-slots-container'); c.innerHTML=''; for(let i=0;i<5;i++){ if(i<lobbyPlayers.length){ let p=lobbyPlayers[i]; c.innerHTML+=`<div class="square-slot ${p.id===lobbyId?'active-slot':''}" ${isHost && p.id!==myId ? `onclick="kickPlayer('${p.id}')" style="cursor:pointer;"` : ''}><div class="slot-avatar">${getAvatarHTML(p.avatar)}</div><div class="slot-name">${getNameHTML(p.name, p.eqName)}</div><div class="slot-status">${p.id===lobbyId?'Хост':(p.id.startsWith('ИИ')?'Бот':'Игрок')}</div></div>`; } else c.innerHTML+=`<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`; } }
-        function openInviteModal() { if(!isHost) return tg.showAlert("Только Хост!"); if(lobbyPlayers.length>=5) return tg.showAlert("Полно!"); let l=document.getElementById('invite-friends-list'); l.innerHTML=''; let a = friendsIds.filter(id=> id==='ИИ' || !lobbyPlayers.some(p=>p.id===id)); if(a.length===0) l.innerHTML='<p style="color:gray;text-align:center;">Нет доступных</p>'; else a.forEach(id=>{ if(id==='ИИ'){ let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>🤖 ИИ</b><button class="btn btn-green" onclick="inviteBotLobby()">Выбрать</button>`; l.appendChild(d); } else { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div class="friend-row"><div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> <div>${getNameHTML(p.name, p.eqName)}</div></div><button class="btn btn-green" onclick="inviteRealFriend('${id}');closeInviteModal()">Выбрать</button>`; l.appendChild(d); } }); } }); document.getElementById('invite-modal').classList.remove('hidden'); }
+        function renderLobbySlots() { const c = document.getElementById('lobby-slots-container'); c.innerHTML=''; for(let i=0;i<5;i++){ if(i<lobbyPlayers.length){ let p=lobbyPlayers[i]; c.innerHTML+=`<div class="square-slot ${i===0?'active-slot':''}" ${isHost && p.id!==myId ? `onclick="kickPlayer('${p.id}')" style="cursor:pointer;"` : ''}><div class="slot-avatar">${getAvatarHTML(p.avatar)}</div><div class="slot-name">${getNameHTML(p.name, p.eqName)}</div><div class="slot-status">${i===0?'Хост':(p.id==='ИИ'?'Бот':'Игрок')}</div></div>`; } else c.innerHTML+=`<div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()"><div class="slot-avatar">➕</div><div class="slot-name" style="color:gray;">Пригласить</div></div>`; } }
+        function openInviteModal() { if(!isHost) return tg.showAlert("Только Хост!"); if(lobbyPlayers.length>=5) return tg.showAlert("Полно!"); let l=document.getElementById('invite-friends-list'); l.innerHTML=''; let a = friendsIds.filter(id=> !lobbyPlayers.some(p=>p.id===id)); if(a.length===0) l.innerHTML='<p style="color:gray;text-align:center;">Нет доступных</p>'; else a.forEach(id=>{ if(id==='ИИ'){ let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<b>🤖 ИИ</b><button class="btn btn-green" onclick="inviteBotLobby();closeInviteModal()">Выбрать</button>`; l.appendChild(d); } else { db.ref('users/'+id).once('value').then(s=>{ if(s.exists()){ let p=s.val(); let d=document.createElement('div'); d.className='list-item'; d.innerHTML=`<div class="friend-row"><div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> <div>${getNameHTML(p.name, p.eqName)}</div></div><button class="btn btn-green" onclick="inviteRealFriend('${id}');closeInviteModal()">Выбрать</button>`; l.appendChild(d); } }); } }); document.getElementById('invite-modal').classList.remove('hidden'); }
         function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
         
         // Исправлено: OnDisconnect Firebase (если вылетает - лобби чистится)
@@ -1157,8 +1097,8 @@
             db.ref('lobbies/'+lobbyId).onDisconnect().cancel();
             db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().cancel();
 
-            if(isHost && lobbyPlayers.length > 1) { 
-                let rem = lobbyPlayers.filter(p=>p.id!==myId && !p.id.startsWith('ИИ'));
+            if(isHost) { 
+                let rem = lobbyPlayers.filter(p=>p.id!==myId && p.id!=='ИИ');
                 if(rem.length > 0) {
                     let newHost = rem[0].id;
                     db.ref(`lobbies/${lobbyId}/host`).set(newHost);
@@ -1181,17 +1121,7 @@
                 appState.inLobby = true; switchTab('friends', document.querySelectorAll('.nav-item')[2]); document.getElementById('main-buttons-view').style.display='none'; document.getElementById('view-lobby').style.display='flex'; listenLobby(); document.getElementById('top-notify').style.top='-100px'; pendingInvite=null; 
             } 
         }
-        function inviteBotLobby() { 
-            if(!isHost || lobbyPlayers.length>=5) return; 
-            closeFriendModal(); 
-            closeInviteModal();
-            
-            let i = 1;
-            while(lobbyPlayers.some(p => p.id === `ИИ${i}`)) { i++; }
-            let botId = `ИИ${i}`;
-            let botData = { name: botId, avatar: '🤖', eqName: '', pMedals: [] };
-            db.ref(`lobbies/${lobbyId}/players/${botId}`).set(botData);
-        }
+        function inviteBotLobby() { if(!isHost || lobbyPlayers.length>=5) return; closeFriendModal(); db.ref(`lobbies/${lobbyId}/players/ИИ`).set(SYSTEM_BOT); }
         function inviteRealFriend(id) { 
             if(lobbyPlayers.length>=5) return; 
             let rawName = myEqName ? SHOP_ITEMS.find(i=>i.id===myEqName)?.name || myName : myName;
@@ -1222,8 +1152,8 @@
                 }
 
                 lobbyPlayers=[]; 
-                if(d.players && d.players[d.host]) { lobbyPlayers.push({id:d.host, ...d.players[d.host]}); }
-                if(d.players) { Object.keys(d.players).sort().forEach(k=>{if(k!==d.host) lobbyPlayers.push({id:k, ...d.players[k]});}); }
+                if(d.players && d.players[d.host]) { lobbyPlayers.push({id:d.host, ...d.players[d.host]}); } 
+                if(d.players) { Object.keys(d.players).forEach(k=>{if(k!==d.host) lobbyPlayers.push({id:k, ...d.players[k]});}); } 
                 renderLobbySlots(); 
                 
                 if(d.game) { 
@@ -1234,49 +1164,49 @@
 
                 if(d.game === 'clicker') { 
                     if(d.clickTime && !clickActive) { clickTimeSetting = d.clickTime; document.getElementById('click-time-val').innerText = clickTimeSetting+' сек'; } 
-                    if(d.clickState === 'playing' && !clickActive) { startClickerGame(); }
-                    if(d.clickScores && Object.keys(d.clickScores).length === lobbyPlayers.filter(p=>!p.id.startsWith('ИИ')).length && d.clickState==='playing') { 
+                    if(d.clickState === 'playing' && !clickActive) { startClickerGame(); } 
+                    if(d.clickScores && Object.keys(d.clickScores).length === lobbyPlayers.filter(p=>p.id!=='ИИ').length && d.clickState==='playing') { 
                         let t="", mx=-1, w=[]; 
                         Object.keys(d.clickScores).forEach(k=>{ let pf=lobbyPlayers.find(p=>p.id===k); let nm=getNameHTML(pf?.name, pf?.eqName); t+=`${nm}: <b>${d.clickScores[k]}</b><br>`; if(d.clickScores[k]>mx){mx=d.clickScores[k];w=[k];} else if(d.clickScores[k]===mx) w.push(k); }); 
                         
-                        if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) updateAiStat('clk','draw'); }
+                        if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('clk','draw'); }
                         else { 
                             let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a','⏱️',t); 
                             if(!isMyWin) addCoins(-10); 
-                            if(lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) updateAiStat('clk', isMyWin?'win':'loss');
+                            if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('clk', isMyWin?'win':'loss');
                         } 
                         db.ref(`lobbies/${lobbyId}/clickState`).set('ended'); 
                     } 
                 }
 
-                if(d.let4Scores && Object.keys(d.let4Scores).length === lobbyPlayers.filter(p=>!p.id.startsWith('ИИ')).length && d.status === 'playing') {
+                if(d.let4Scores && Object.keys(d.let4Scores).length === lobbyPlayers.filter(p=>p.id!=='ИИ').length && d.status === 'playing') {
                     let minMisses = 999; let w = []; let t = "";
                     Object.keys(d.let4Scores).forEach(k => {
                         let m = d.let4Scores[k]; let pf = lobbyPlayers.find(p=>p.id===k);
                         t += `${getNameHTML(pf?.name, pf?.eqName)}: ${m} ошиб.<br>`;
                         if(m < minMisses) { minMisses = m; w = [k]; } else if(m === minMisses) w.push(k);
                     });
-                    if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) updateAiStat('letters','draw'); }
+                    if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('letters','draw'); }
                     else { 
                         let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a', '🎓', t); 
                         if(!isMyWin) addCoins(-10); 
-                        if(lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) updateAiStat('letters', isMyWin?'win':'loss');
+                        if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('letters', isMyWin?'win':'loss');
                     }
                     if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('ended');
                 }
 
-                if(d.hiddenScores && Object.keys(d.hiddenScores).length === lobbyPlayers.filter(p=>!p.id.startsWith('ИИ')).length && d.status === 'playing') {
+                if(d.hiddenScores && Object.keys(d.hiddenScores).length === lobbyPlayers.filter(p=>p.id!=='ИИ').length && d.status === 'playing') {
                     let minMisses = 999; let w = []; let t = "";
                     Object.keys(d.hiddenScores).forEach(k => {
                         let m = d.hiddenScores[k]; let pf = lobbyPlayers.find(p=>p.id===k);
                         t += `${getNameHTML(pf?.name, pf?.eqName)}: ${m} штраф.<br>`;
                         if(m < minMisses) { minMisses = m; w = [k]; } else if(m === minMisses) w.push(k);
                     });
-                    if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) updateAiStat('hidden','draw'); }
+                    if(w.length > 1) { showResult("НИЧЬЯ!", '#ff9f0a', '🤝', t); if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('hidden','draw'); }
                     else { 
                         let isMyWin = w.includes(myId); showResult(isMyWin?"ПОБЕДА!":"ПОРАЖЕНИЕ! -10 🪙", isMyWin?'#34c759':'#ff453a', '🕵️‍♂️', t); 
                         if(!isMyWin) addCoins(-10); 
-                        if(lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) updateAiStat('hidden', isMyWin?'win':'loss');
+                        if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('hidden', isMyWin?'win':'loss');
                     }
                     if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('ended');
                 }
@@ -1326,7 +1256,7 @@
             if(!appState.selectedGameId) return tg.showAlert("Выбери режим!"); 
             
             // Исправлено: Очистка доски КН перед каждой игрой
-            if(appState.selectedGameId==='tictactoe' && lobbyPlayers.length > 1 && lobbyPlayers.some(p => !p.id.startsWith('ИИ'))) {
+            if(appState.selectedGameId==='tictactoe' && lobbyPlayers.length>1) {
                 db.ref(`lobbies/${lobbyId}`).update({status:'playing', tttBoard:new Array(9).fill(''), tttTurn:0});
             } else if (lobbyPlayers.length>1) { 
                 if(appState.selectedGameId==='clicker') db.ref(`lobbies/${lobbyId}`).update({status:'playing', clickState:'waiting', clickScores:null}); 
@@ -1337,8 +1267,13 @@
         }
 
         function startLocalGameUI() { 
-            document.getElementById('app-container').style.display = 'none';
-            document.getElementById('global-coins').style.display = 'none';
+            // Исправлено: прячем лобби, чтобы игры шли "в отдельном окне"
+            let vl = document.getElementById('view-lobby');
+            let mb = document.getElementById('main-buttons-view');
+            appState.prevViewLobbyDisplay = vl ? vl.style.display : '';
+            appState.prevMainButtonsDisplay = mb ? mb.style.display : '';
+            if(vl) vl.style.display = 'none';
+            if(mb) mb.style.display = 'none';
 
             appState.gameStartTime = Date.now();
             appState.game = appState.selectedGameId; document.getElementById('game-container').style.display='block'; document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); 
@@ -1350,8 +1285,7 @@
         }
         function togglePause(p) { appState.isPaused=p; document.getElementById('pause-overlay').classList.toggle('hidden', !p); }
         function exitToLobby() { 
-            togglePause(false);
-            document.getElementById('app-container').style.display = 'flex'; document.getElementById('global-coins').style.display = 'flex';
+            togglePause(false); 
             document.getElementById('game-container').style.display='none'; 
             document.body.classList.remove('require-portrait', 'allow-portrait');
             [1,2,3].forEach(i => { let el = document.getElementById('acc-area-'+i); if(el) el.style.display = 'none'; });
@@ -1365,6 +1299,17 @@
                 db.ref(`users/${myId}/playTimeMs`).set(playTimeMs);
             }
 
+            // Восстанавливаем лобби-верстку (если игрок всё ещё в лобби)
+            let vl = document.getElementById('view-lobby');
+            let mb = document.getElementById('main-buttons-view');
+            if(appState.inLobby) {
+                if(vl) vl.style.display = appState.prevViewLobbyDisplay || 'flex';
+                if(mb) mb.style.display = appState.prevMainButtonsDisplay || 'none';
+            } else {
+                if(vl) vl.style.display = 'none';
+                if(mb) mb.style.display = 'flex';
+            }
+
             if(isHost) {
                 db.ref(`lobbies/${lobbyId}/status`).set('waiting'); 
                 db.ref(`lobbies/${lobbyId}/let4Scores`).remove();
@@ -1372,10 +1317,6 @@
                 db.ref(`lobbies/${lobbyId}/clickScores`).remove();
             }
             if(tttRef) tttRef.off(); if(accRef) accRef.off(); clearInterval(accInt); 
-            
-            document.body.classList.remove('wordle-active');
-            document.getElementById('orientation-warning').innerHTML = '<h2>НЕЛЬЗЯ ИГРАТЬ В ВЕРТИКАЛЬНОМ РЕЖИМЕ 🔄<br><br>Поверни планшет горизонтально!</h2>';
-
             document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); 
         }
         function setIsland(t, c='#fff') { let is = document.getElementById('dynamic-island'); document.getElementById('island-text').innerText=t; is.style.display='block'; is.style.border=`2px solid ${c}`; }
@@ -1405,8 +1346,8 @@
 
         function generateMathTask() {
             if(mathCorrect >= mathTotal) {
-                addCoins(15); showResult('УМНИЦА!', '#34c759', '🧮', '+15 🪙');
-                if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('math','win');
+                addCoins(15); showResult('УМНИЦА!', '#34c759', '🧮', '+15 🪙'); 
+                if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('math','win');
                 return;
             }
             updateMathDots();
@@ -1473,7 +1414,7 @@
         const BIG_WORD_LIST = ["ЯБЛОКО", "МАШИНА", "САМОЛЕТ", "ТЕЛЕФОН", "РОБОТ", "КРОКОДИЛ", "ВЕЛОСИПЕД", "КАРАНДАШ", "КОМПЬЮТЕР", "ШОКОЛАД", "ПИНГВИН", "КВАРТИРА", "ПРАЗДНИК", "ПРИРОДА", "КАСТРЮЛЯ", "ТЕЛЕВИЗОР", "КОСМОНАВТ", "ЭКСКАВАТОР", "ТРАКТОР", "ВЕРТОЛЕТ", "АВТОБУС", "ТРАМВАЙ", "ПОЕЗД", "МОРКОВЬ", "КАПУСТА", "КАРТОФЕЛЬ", "ЛУКОВИЦА", "ЗЕМЛЯНИКА", "КЛУБНИКА", "ВИНОГРАД", "АПЕЛЬСИН", "МАНДАРИН", "ЧЕРЕПАХА", "БЕГЕМОТ", "КЕНГУРУ", "ОБЕЗЬЯНА", "КРОВАТЬ", "ДИВАН", "СТУЛ", "КРЕСЛО", "ЗЕРКАЛО", "ПОДУШКА", "ОДЕЯЛО", "ОКНО", "ДВЕРЬ", "КРЫША", "ТРУБА", "ЗАБОР", "КАЛИТКА", "БАБОЧКА"];
         
         // Исправлено: База слов для Wordle (часто употребляемые 5-буквенные слова)
-        let VALID_5_LETTER_WORDS = [
+        const VALID_5_LETTER_WORDS = [
             "АБЗАЦ","БАНКА","ВЕТВЬ","ГАЗОН","ДВЕРЬ","ЖИВОТ","ЗАМОК","КАБАН","ЛАМПА","МАГИЯ","НАРОД","ОКЕАН","ПАПКА","РАДИО","САЛАТ","ТАБЛО","УЛИЦА","ФАКЕЛ","ХАЛВА","ШАПКА",
             "АГЕНТ","АЛЛЕЯ","АНГЕЛ","БАЗАР","БИЛЕТ","БИТВА","БРОВЬ","БУКВА","ВИДЕО","ВИЛКА","ВРАЧИ","ГЕРОЙ","ГЛИНА","ГОЛОС","ГРОЗА","ДАРИТ","ДИВАН","ДОЖДЬ","ДОМИК","ДРАМА",
             "ЗАВОД","ЗЕРНО","ЗМЕЯТ","ИГРОК","ИСКРА","КАМИН","КАНАЛ","КАРТА","КАТЕР","КЕФИР","КЛАСС","КЛЮЧИ","КОВЕР","КОЛБА","КОНЕЦ","КОПИЯ","КОТЁЛ","КОШКА","КРЫСА","КУБИК",
@@ -1481,8 +1422,8 @@
             "ПАЛЕЦ","ПАРУС","ПЕСНЯ","ПИРАТ","ПЛИТА","ПЛОВЕЦ","ПЛЮСЫ","ПОЕЗД","ПОЛИС","ПОЧТА","ПРИЗЫ","ПУЛЬТ","ПЬЕСА","ПЯТКА","РАЗУМ","РЕБРО","РЕДИС","РОБОТ","РОМАН","РУЧКА",
             "САХАР","СЕВЕР","СЕМЬЯ","СИРОП","СКАЗЫ","СКИФЫ","СЛОВО","СЛУХИ","СМЫСЛ","СОВЕТ","СОКОЛ","СОСНА","СПОРТ","СТАЛЬ","СТЕКЛО","СТОЛБ","СУДНО","СУПЕР","СУШКА","СЦЕНА",
             "ТАЙНА","ТАКСИ","ТЕАТР","ТЕЛЕЦ","ТЕМА","ТЕННИС","ТЕПЛО","ТЕСТО","ТИРАЖ","ТОКАРЬ","ТОЛПА","ТОПОР","ТОЧКА","ТРАВА","ТРЕСТ","ТРУБА","ТУМАН","УГОЛЬ","УРОКИ","УСПЕХ",
-            "УТРОБ","ФАКИР","ФАУНА","ФИЗИК","ФИЛЬМ","ФОКУС","ФОНДЫ","ХАЛАТ","ХОЛОД","ХРАМЫ","ЦВЕТА","ЦЕНТР","ЦЕПИ","ЧАСЫ","ЧАШКА","ЧЕКОВ","ЧЕРЕП","ЧИПСЫ","ЧИТАТ","ШАРИК","ШКОЛА","ШТОРМ","ЩЕТКА","ЩИТКИ","ЭКРАН","ЭЛИТА","ЭПОХА","ЮНОША","ЮРИСТ","ЯБЛОК","ЯГОДА","ЯКОРЬ",
-            "АКТЁР","АРБУЗ","АРХИВ","АФИША","БАЛЕТ","БАТОН","БЕРЕГ","БИЗНЕС","БОКАЛ","БОЛОТО","БОРЕЦ","БУКЕТ","БУМАГА","ВАГОН","ВЕСЛО","ВЗГЛЯД","ВОЗДУХ","ВОЛОС","ВХОД","ВЫБОР","ВЫХОД","ГАРАЖ","ГЛАВА","ГОРОД","ГОСТЬ","ГРАНИЦА","ГРИБ","ГРУППА","ГУСЬ","ДАТА","ДЕНЬГИ","ДЕТАЛЬ","ДОКТОР","ДОРОГА","ДРУГ","ДУБ","ЕДА","ЕНОТ","ЖАРА","ЖЕЛЕЗО","ЗАДАЧА","ЗАКОН","ЗАПАД","ЗАПАХ","ЗВЕЗДА","ЗВУК","ЗДАНИЕ","ЗЕМЛЯ","ЗНАК","ЗОЛОТО","ИДЕЯ","КАЧЕЛИ","КВАРТАЛ","КИНО","КНИГА","КОЖА","КОМАНДА","КОМНАТА","КОРОЛЬ","КОСТЬ","КОФЕ","КРАСКА","КРЕСЛО","КРОВЬ","КРУГ","КУСТ","ЛЁД","ЛЕС","ЛИСТ","ЛИЦО","ЛУНА","ЛУЧ","ЛЫЖИ","ЛЮБОВЬ","МАТЧ","МЕДВЕДЬ","МЕСТО","МЕСЯЦ","МЕТАЛЛ","МОЗГ","МОЛОКО","МОРЕ","МОСТ","МУЗЕЙ","МУЗЫКА","МЫЛО","МЫСЛЬ","МЯСО","НАУКА","НЕБО","НЕДЕЛЯ","НОГА","НОЧЬ","ОБЛАКО","ОБУВЬ","ОВОЩ","ОГОНЬ","ОДЕЖДА","ОЗЕРО","ОПЫТ","ОРЁЛ","ОРУЖИЕ","ОСТРОВ","ОЧКИ","ПАМЯТЬ","ПАРК","ПАРЕНЬ","ПАСПОРТ","ПЕНЬ","ПЕРЕЦ","ПЕЧЕНЬ","ПИВО","ПИСЬМО","ПЛАН","ПЛАНЕТА","ПЛЕЧО","ПЛОЩАДЬ","ПОБЕДА","ПОГОДА","ПОДАРОК","ПОЛ","ПОЛЕ","ПОМОЩЬ","ПОРЯДОК","ПОТОЛОК","ПОЧВА","ПРАВДА","ПРАВИЛО","ПРЕДМЕТ","ПРИЧИНА","ПРОБЛЕМА","ПРОДУКТ","ПРОЦЕСС","ПТИЦА","ПУТЬ","РАБОТА","РАЗГОВОР","РАЗМЕР","РАЙОН","РЕБЁНОК","РЕКА","РЕЧЬ","РИСУНОК","РОДИТЕЛИ","РОЗА","РОСТ","РЫБА","РЫНОК","РЯД","САД","СВЕТ","СВОБОДА","СЕКУНДА","СЕРДЦЕ","СЕРЕБРО","СИЛА","СИСТЕМА","СКОВОРОДА","СКОРОСТЬ","СЛЕЗА","СМЕРТЬ","СНЕГ","СОБАКА","СОЛДАТ","СОЛНЦЕ","СОЛЬ","СОН","СОСЕД","СПИНА","СПИСОК","СТЕПЕНЬ","СТЕНА","СТИХИ","СТОЛ","СТОРОНА","СТРАНА","СТРАХ","СТРОКА","СТУДЕНТ","СЧАСТЬЕ","СЧЁТ","СЫН","ТАЛАНТ","ТАНЕЦ","ТАРЕЛКА","ТВОРЧЕСТВО","ТЕКСТ","ТЕЛО","ТЕМПЕРАТУРА","ТЕНЬ","ТЕОРИЯ","ТИП","ТОВАР","ТОЛК","ТРАНСПОРТ","ТРЕНЕР","ТРУД","ТУРИСТ","ТЫСЯЧА","УГОЛ","УДАР","УДОВОЛЬСТВИЕ","УЛЫБКА","УМ","УРОВЕНЬ","УСЛОВИЕ","УТКА","УХО","УЧЁНЫЙ","УЧИТЕЛЬ","ФАКТ","ФАНТАЗИЯ","ФИГУРА","ФРУКТ","ФУТБОЛ","ХЛЕБ","ХОД","ЦВЕТ","ЦЕЛЬ","ЦЕНА","ЦЕРКОВЬ","ЧАЙ","ЧАСТЬ","ЧЕЛОВЕК","ЧЕРЕДА","ЧИСЛО","ЧЛЕН","ЧУВСТВО","ШАГ","ШАНС","ШЕЯ","ШКАФ","ШУМ","ЩЕКА","ЭКЗАМЕН","ЭНЕРГИЯ","ЭФФЕКТ","ЮГ","ЯЗЫК","ЯЙЦО"
+            "УТРОБ","ФАКИР","ФАУНА","ФИЗИК","ФИЛЬМ","ФОКУС","ФОНДЫ","ХАЛАТ","ХОЛОД","ХРАМЫ","ЦВЕТА","ЦЕНТР","ЦЕПИ","ЧАСЫ","ЧАШКА","ЧЕКОВ","ЧЕРЕП","ЧИПСЫ","ЧИТАТ","ШАРИК",
+            "ШКОЛА","ШТОРМ","ЩЕТКА","ЩИТКИ","ЭКРАН","ЭЛИТА","ЭПОХА","ЮНОША","ЮРИСТ","ЯБЛОК","ЯГОДА","ЯКОРЬ"
         ];
         
         // Исправлено: Простые слова для 5-летнего брата
@@ -1533,15 +1474,15 @@
             if(m===1) {
                 let start = Math.floor(Math.random()*(ALPHABET.length-5)); let seq = ALPHABET.slice(start, start+5);
                 let shuf = [...seq].sort(()=>Math.random()-0.5);
-                let sP = document.getElementById('let1-slots'); let iP = document.getElementById('let1-items'); if(!sP || !iP) return; sP.innerHTML=''; iP.innerHTML='';
+                let sP = document.getElementById('let1-slots'); let iP = document.getElementById('let1-items'); sP.innerHTML=''; iP.innerHTML='';
                 for(let i=0; i<5; i++){
                     sP.innerHTML += `<div class="math-slot" data-expected="${seq[i]}"></div>`;
                     let item = document.createElement('div'); item.className='math-drag-item'; item.innerText=shuf[i]; item.dataset.originId='let1-items'; iP.appendChild(item); makeDraggable(item, 'let1-slots', checkLet1);
                 }
-            } else if (m===2) { letMode2Idx = 0; setTimeout(()=>setupDrawing('let3-canvas'), 100); setTimeout(()=>showLetter2(), 150);
+            } else if (m===2) { letMode2Idx = 0; setTimeout(()=>setupDrawing('let3-canvas', true), 100); setTimeout(()=>showLetter2(), 150);
             } else if (m===3) { let3TargetWord = BIG_WORD_LIST[Math.floor(Math.random()*BIG_WORD_LIST.length)]; document.getElementById('let3-word').innerText = let3TargetWord; document.getElementById('let3-input').value='';
-            } else if (m===4) { initConnectWords(); } 
-            else if (m===5) { document.body.classList.add('wordle-active'); document.getElementById('orientation-warning').innerHTML = '<h2>Для игры в 5 БУКВ поверните устройство ВЕРТИКАЛЬНО 🔄</h2>'; initWordle(); }
+            } else if (m===4) { initConnectWords();
+            } else if (m===5) { initWordle(); }
         }
 
         function checkLet1() { let win=true; let slots=document.querySelectorAll('#let1-slots .math-slot'); slots.forEach(s=>{ if(!s.firstChild || s.firstChild.innerText!==s.dataset.expected) win=false; }); if(win) { addCoins(10); showResult('СУПЕР!','#34c759','🎓','+10 🪙'); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','win'); } }
@@ -1550,14 +1491,14 @@
             let val = document.getElementById('let3-input').value.toUpperCase().trim(); let target = let3TargetWord;
             let mistakes = Math.abs(val.length - target.length);
             for(let i=0; i<Math.min(val.length, target.length); i++){ if(val[i]!==target[i]) mistakes++; }
-            if(mistakes <= 2) { document.getElementById('let3-input').value=''; addCoins(10); showResult('ОТЛИЧНО!','#34c759','🎓','+10 🪙'); if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('letters','win'); }
+            if(mistakes <= 2) { document.getElementById('let3-input').value=''; addCoins(10); showResult('ОТЛИЧНО!','#34c759','🎓','+10 🪙'); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','win'); }
             else tg.showAlert("Попробуй еще раз!");
         }
 
         // === РИСУЙ БУКВУ (СТРОГАЯ ПРОВЕРКА) ===
-        function setupDrawing(id) {
+        function setupDrawing(id, useHint) {
             let c = document.getElementById(id); let rect = c.parentElement.getBoundingClientRect(); c.width=rect.width; c.height=rect.height;
-            let ctx = c.getContext('2d', { willReadFrequently: true }); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn = false;
+            let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn = false;
             let isD=false;
             c.onmousedown=c.ontouchstart=(e)=>{ 
                 document.getElementById('hand-tutor').style.display = 'none'; 
@@ -1571,8 +1512,8 @@
         function showLetter2() { 
             let c = document.getElementById('let3-canvas'); let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn=false;
             document.getElementById('hand-tutor').style.display = 'block'; 
-            ctx.font = `900 ${c.height*0.7}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
-            ctx.setLineDash([15, 15]); ctx.strokeStyle='rgba(200,200,200,0.5)'; ctx.lineWidth=10; // Уменьшили толщину
+            ctx.font = `900 ${c.height*0.7}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; 
+            ctx.setLineDash([20, 20]); ctx.strokeStyle='rgba(200,200,200,0.5)'; ctx.lineWidth=15; // Увеличили толщину трафарета
             ctx.strokeText(ALPHABET[letMode2Idx], c.width/2, c.height/2); ctx.setLineDash([]);
         }
         function checkLet3() { 
@@ -1581,7 +1522,7 @@
             // Исправлено: Строгая проверка по пикселям
             let off = document.createElement('canvas'); off.width = c.width; off.height = c.height;
             let octx = off.getContext('2d');
-            octx.font = `900 ${c.height*0.7}px sans-serif`; octx.textAlign='center'; octx.textBaseline='middle'; octx.textBaseline = 'middle';
+            octx.font = `900 ${c.height*0.7}px sans-serif`; octx.textAlign='center'; octx.textBaseline='middle';
             octx.lineWidth = 60; // Допустимая зона
             octx.strokeStyle = 'black';
             octx.strokeText(ALPHABET[letMode2Idx], c.width/2, c.height/2);
@@ -1607,7 +1548,7 @@
                 return;
             }
 
-            letMode2Idx++; if(letMode2Idx >= ALPHABET.length) { addCoins(100); showResult('ВЕСЬ АЛФАВИТ!','#34c759','🎓','+100 🪙'); if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('letters','win'); } else showLetter2(); 
+            letMode2Idx++; if(letMode2Idx >= ALPHABET.length) { addCoins(100); showResult('ВЕСЬ АЛФАВИТ!','#34c759','🎓','+100 🪙'); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','win'); } else showLetter2(); 
         }
 
         // === СОЕДИНИ СЛОВА ===
@@ -1698,7 +1639,7 @@
                 if(!window.let4ImFirst) { window.let4ImFirst = true; setIsland('ЖДЕМ СОПЕРНИКА.....','#ffd60a'); document.getElementById('island-text').innerText='ЖДЕМ СОПЕРНИКА.....'; }
                 db.ref(`lobbies/${lobbyId}/let4Scores/${myId}`).set(errors);
             } else {
-                if(errors === 0) { addCoins(15); setTimeout(()=>showResult('ПОБЕДА!','#34c759','🎓','Ошибок: 0\n+15 🪙'), 800); if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('letters','win'); }
+                if(errors === 0) { addCoins(15); setTimeout(()=>showResult('ПОБЕДА!','#34c759','🎓','Ошибок: 0\n+15 🪙'), 800); }
                 else { tg.showAlert(`Ошибок: ${errors}. Исправь красные!`); setTimeout(drawConnectLines, 500); }
             }
         }
@@ -1706,9 +1647,7 @@
         // --- WORDLE (5 БУКВ) ---
         function initWordle() {
             wdlTarget = VALID_5_LETTER_WORDS[Math.floor(Math.random()*VALID_5_LETTER_WORDS.length)]; wdlRow=0; wdlCol=0; wdlGrid = Array.from({length:6}, ()=>new Array(5).fill(''));
-            let g = document.getElementById('wordle-grid'); if(!g) return; g.innerHTML='';
-            // Сброс клавиатуры
-            document.querySelectorAll('.w-key').forEach(k => k.className = 'w-key');
+            let g = document.getElementById('wordle-grid'); g.innerHTML='';
             for(let i=0; i<6; i++) { let row=document.createElement('div'); row.className='wordle-row'; row.id='w-row-'+i; for(let j=0; j<5; j++) row.innerHTML+=`<div class="wordle-cell" id="w-${i}-${j}"></div>`; g.appendChild(row); }
             let kb = document.getElementById('wdl-kb'); kb.innerHTML='';
             let layouts = ["ЙЦУКЕНГШЩЗХ", "ФЫВАПРОЛДЖЭ", "ЯЧСМИТЬБЮ"];
@@ -1727,7 +1666,7 @@
             let guess = wdlGrid[wdlRow].join(''); 
             
             // Исправлено: Проверка существования слова
-            if(!VALID_5_LETTER_WORDS.includes(guess.toUpperCase())) {
+            if(!VALID_5_LETTER_WORDS.includes(guess)) {
                 return tg.showAlert("НЕТ ТАКОГО СЛОВА!");
             }
 
@@ -1743,49 +1682,47 @@
                     else if (rArr[i] === 'w-absent' && !kbKey.classList.contains('w-key-correct') && !kbKey.classList.contains('w-key-present')) kbKey.className = 'w-key w-key-absent';
                 }
             }
-            if(guess === wdlTarget) { addCoins(10); setTimeout(()=>showResult('УГАДАЛ!','#34c759','🎓','Слово: '+wdlTarget+'\n+10 🪙'), 500); if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('letters','win'); }
-            else if(wdlRow===5) { setTimeout(()=>showResult('НЕ УГАДАЛ','#ff453a','🎓','Было слово: '+wdlTarget), 500); if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('letters','loss'); }
+            if(guess === wdlTarget) { addCoins(10); setTimeout(()=>showResult('УГАДАЛ!','#34c759','🎓','Слово: '+wdlTarget+'\n+10 🪙'), 500); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','win'); }
+            else if(wdlRow===5) { setTimeout(()=>showResult('НЕ УГАДАЛ','#ff453a','🎓','Было слово: '+wdlTarget), 500); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('letters','loss'); }
             else { wdlRow++; wdlCol=0; }
         }
 
         // ================= ПРЯТКИ =================
         let hiddenFound=0, hiddenMisses=0, hiddenActive=false;
         function initHiddenGame() { 
-            window.hiddenImFirst = false; document.getElementById('hidden-found').innerText='0';
+            window.hiddenImFirst = false; document.getElementById('hidden-found').innerText='0'; 
             const scene=document.getElementById('hidden-scene'); scene.innerHTML='<div class="sun-decor">☀️</div>'; 
             
-            for(let i=0;i<45;i++){ 
+            for(let i=0;i<15;i++){ 
                 let tx=10+Math.random()*80; let ty=10+Math.random()*80; 
                 let item=document.createElement('div'); item.className='hidden-item'; item.innerText='💎'; item.style.left=tx+'%'; item.style.top=ty+'%'; item.style.zIndex='10'; 
                 item.onmousedown=(e)=>hitHiddenItem(e,item); item.ontouchstart=(e)=>{e.preventDefault(); hitHiddenItem(e,item);}; 
                 scene.appendChild(item); 
                 
                 // Декорация поверх алмаза
-                if (Math.random() > 0.3) { // Не для каждого алмаза
-                    let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; 
-                    d.style.left=(tx+(Math.random()*4-2))+'%'; d.style.top=(ty+(Math.random()*4-2))+'%'; d.style.zIndex='20'; 
-                    scene.appendChild(d); 
-                }
+                let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; 
+                d.style.left=(tx+(Math.random()*6-3))+'%'; d.style.top=(ty+(Math.random()*6-3))+'%'; d.style.zIndex='20'; 
+                scene.appendChild(d); 
             } 
             
             // Еще случайные декорации
-            for(let i=0;i<40;i++){ 
+            for(let i=0;i<25;i++){ 
                 let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; 
                 d.style.left=(10+Math.random()*80)+'%'; d.style.top=(10+Math.random()*80)+'%'; d.style.zIndex='20'; 
                 scene.appendChild(d); 
             } 
-            setIsland(`Найди 45 кристаллов!`); hiddenFound=0; hiddenMisses=0; hiddenActive=false; 
+            setIsland(`Найди 15 кристаллов!`); hiddenFound=0; hiddenMisses=0; hiddenActive=false; 
         }
         function hitHiddenItem(e, el) { 
             e.stopPropagation(); if(appState.isPaused || hiddenActive) return; 
-            el.remove(); hiddenFound++; document.getElementById('hidden-found').innerText=hiddenFound; setIsland('Найдено! '+hiddenFound+'/45','#34c759'); 
-            if(hiddenFound>=45) { 
+            el.remove(); hiddenFound++; document.getElementById('hidden-found').innerText=hiddenFound; setIsland('Найдено!','#34c759'); 
+            if(hiddenFound>=15) { 
                 if(lobbyPlayers.length>1){ 
                     if(!window.hiddenImFirst){ window.hiddenImFirst = true; setIsland('ЖДЕМ СОПЕРНИКА.....','#ffd60a'); document.getElementById('island-text').innerText='ЖДЕМ СОПЕРНИКА.....'; } 
                     db.ref(`lobbies/${lobbyId}/hiddenScores/${myId}`).set(hiddenMisses); 
                 } else { 
-                    setTimeout(()=>showResult('Пройдено!','#34c759','🕵️‍♂️','Все найдено!'),500);
-                    if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('hidden','win');
+                    setTimeout(()=>showResult('Пройдено!','#34c759','🕵️‍♂️','Все найдено!'),500); 
+                    if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('hidden','win');
                 } 
             } 
         }
@@ -1802,19 +1739,19 @@
         function initClickerUI() { clicks=0; clickActive=false; clearInterval(clickInterval); document.getElementById('click-score').innerText=0; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; document.getElementById('clicker-controls').style.display='flex'; document.getElementById('click-btn').style.display='block'; document.getElementById('clk-btn-m').style.display = isHost?'block':'none'; document.getElementById('clk-btn-p').style.display = isHost?'block':'none'; document.getElementById('clk-msg').innerText = isHost?"Настрой время и ЖМИ!":"Жди запуска..."; setIsland(isHost?'Настраивай!':'Ожидание...'); }
         function doClickStart() { if(appState.isPaused) return; if(!clickActive) { if(isHost) db.ref(`lobbies/${lobbyId}/clickState`).set('playing'); else tg.showAlert("Жди хоста!"); } else { clicks++; document.getElementById('click-score').innerText=clicks; } }
         function startClickerGame() { clickActive=true; clickTimeCurrent=clickTimeSetting; clicks=0; document.getElementById('click-score').innerText=0; document.getElementById('clicker-controls').style.display='none'; document.getElementById('clk-msg').innerText="ТАПАЙ!!!"; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; document.getElementById('click-btn').style.display='none'; if(lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ'){ db.ref(`lobbies/${lobbyId}/clickScores/${myId}`).set(clicks); setIsland("Ждем остальных..."); } else { let rew=Math.floor(clicks/20); addCoins(rew); showResult(`Счет: ${clicks}`,'#34c759','⏱️',`+${rew} 🪙`); if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('clk','win'); } } },1000); }
-        
+
         // ================= КРЕСТИКИ НОЛИКИ =================
         let tttBoard=[], tttTurnIdx=0, tttGameOver=false, tttSize=3, tttWinReq=3, tttRef=null; const TTT_SYMBOLS=['x','o','triangle','square','minus']; const TTT_CHARS={'x':'❌','o':'⭕','triangle':'🔺','square':'🔲','minus':'➖'}; const TTT_COLORS={'x':'#ff453a','o':'#32ade6','triangle':'#34c759','square':'#ffd60a','minus':'#af52de'};
         function initTicTacToe() { 
             tttGameOver=false; tttTurnIdx=0; 
-            if (isHost && lobbyPlayers.some(p => !p.id.startsWith('ИИ') && p.id !== myId)) { // Если есть другие реальные игроки
+            if (isHost && (lobbyPlayers.length>1 && lobbyPlayers[1].id!=='ИИ' || lobbyPlayers.length>2)) {
                 let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=4;} else{tttSize=9;tttWinReq=5;}
-            } else { // Соло или с ботами
+            } else if (lobbyPlayers.length<=1 || (lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ')) {
                 tttSize=3; tttWinReq=3; tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe();
-                setIsland('Твой ход! (❌)', '#34c759');
+                if(lobbyPlayers.length>1&&lobbyPlayers[1].id==='ИИ') setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a');
             }
 
-            if(lobbyPlayers.length > 1 && lobbyPlayers.some(p => !p.id.startsWith('ИИ') && p.id !== myId)){ 
+            if(lobbyPlayers.length>1 && (lobbyPlayers[1].id!=='ИИ' || lobbyPlayers.length>2)){ 
                 if(tttRef) tttRef.off(); tttRef=db.ref(`lobbies/${lobbyId}`); 
                 tttRef.on('value', snap=>{ 
                     if(!snap.exists()||snap.val().status!=='playing') return; let data=snap.val(); 
@@ -1822,7 +1759,7 @@
                     tttBoard=data.tttBoard||new Array(tttSize*tttSize).fill(''); tttTurnIdx=data.tttTurn||0; 
                     if(checkDynamicWin(true)) return; renderTicTacToe(); 
                     let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); setIsland(tttTurnIdx===myIdx?"ТВОЙ ХОД!":`ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); 
-                    if(isHost && lobbyPlayers[tttTurnIdx]?.id.startsWith('ИИ')) { setTimeout(makeBotDynamicMoveFirebase, 800); } 
+                    if(isHost && lobbyPlayers[tttTurnIdx].id === 'ИИ') { setTimeout(makeBotDynamicMoveFirebase, 800); } 
                 }); 
             } 
         }
@@ -1841,11 +1778,9 @@
         function makeLocalBotMove() { if (tttGameOver || appState.isPaused) return; let move = findBestTTTMove(tttBoard, 'o', 'x'); if(move !== -1) { tttBoard[move]='o'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=0; setIsland("ТВОЙ ХОД!",'#34c759'); } }
         function moveTicTacToe(i) { 
             if(tttGameOver||tttBoard[i]||appState.isPaused) return; 
-            if(lobbyPlayers.length > 1 && lobbyPlayers.some(p => !p.id.startsWith('ИИ') && p.id !== myId)) { // Онлайн мультиплеер
-                let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); if(tttTurnIdx!==myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`); tttBoard[i]=TTT_SYMBOLS[myIdx]; let next=(tttTurnIdx+1)%lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({tttBoard:tttBoard, tttTurn:next});
-            } else { // Соло или с ботом
-                if(tttTurnIdx!==0) return; tttBoard[i]='x'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=1; setIsland("ИИ ДУМАЕТ...",'#ffd60a'); setTimeout(makeLocalBotMove,800);
-            }
+            if(lobbyPlayers.length<=1){ tttBoard[i]=TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=(tttTurnIdx+1)%2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); } 
+            else if(lobbyPlayers.length===2&&lobbyPlayers[1].id==='ИИ'){ if(tttTurnIdx!==0) return; tttBoard[i]='x'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=1; setIsland("ИИ ДУМАЕТ...",'#ffd60a'); setTimeout(makeLocalBotMove,800); } 
+            else { let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); if(tttTurnIdx!==myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`); tttBoard[i]=TTT_SYMBOLS[myIdx]; let next=(tttTurnIdx+1)%lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({tttBoard:tttBoard, tttTurn:next}); } 
         }
         function makeBotDynamicMoveFirebase() { if (tttGameOver || appState.isPaused) return; db.ref(`lobbies/${lobbyId}`).once('value').then(snap => { let data = snap.val(); if(!data || data.status !== 'playing') return; let b = data.tttBoard; let turn = data.tttTurn; if (lobbyPlayers[turn].id !== 'ИИ') return; let oppIdx = (turn - 1 + lobbyPlayers.length) % lobbyPlayers.length; let move = findBestTTTMove(b, TTT_SYMBOLS[turn], TTT_SYMBOLS[oppIdx]); if(move !== -1) { b[move] = TTT_SYMBOLS[turn]; let nextTurn = (turn + 1) % lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({ tttBoard: b, tttTurn: nextTurn }); } }); }
         
@@ -1853,20 +1788,20 @@
             let s=tttSize, req=tttWinReq; let winner=null; 
             for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } 
             if(!winner && !tttBoard.includes('')){ 
-                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300);
-                if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('ttt','draw');
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); 
+                if(lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ') updateAiStat('ttt','draw');
                 return true; 
             }
             if(winner){ 
                 tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
                 let isMyWin = false; let myIdx = lobbyPlayers.findIndex(p => p.id === myId); let winIdx = TTT_SYMBOLS.indexOf(winner);
-                if (lobbyPlayers.length <= 1 || !isOnline) isMyWin = (winner === 'x'); else if (winIdx === myIdx) isMyWin = true;
+                if (lobbyPlayers.length <= 1) isMyWin = true; else if (winIdx === myIdx) isMyWin = true;
                 
                 let wName = "ИГРОК ПОБЕДИЛ!";
                 if(lobbyPlayers.length <= 1) { wName = `ПОБЕДИЛ ${TTT_CHARS[winner]}!`; } 
                 else {
-                    if(!isMyWin && lobbyPlayers.some(p => p.id.startsWith('ИИ'))) { wName = "ИИ ВЫИГРАЛ! -10 🪙"; addCoins(-10); updateAiStat('ttt','loss'); }
-                    else if (isMyWin) { wName = "ПОБЕДА! +5 🪙"; addCoins(5); if(lobbyPlayers.some(p => p.id.startsWith('ИИ'))) updateAiStat('ttt','win'); }
+                    if(lobbyPlayers.length === 2 && lobbyPlayers[1].id === 'ИИ' && winner === TTT_SYMBOLS[1]) { wName = "ИИ ВЫИГРАЛ! -10 🪙"; isMyWin = false; addCoins(-10); updateAiStat('ttt','loss'); }
+                    else if (isMyWin) { wName = "ПОБЕДА! +5 🪙"; addCoins(5); updateAiStat('ttt','win'); }
                     else { wName = (lobbyPlayers[winIdx] ? getNameHTML(lobbyPlayers[winIdx].name, lobbyPlayers[winIdx].eqName) : "ПОРАЖЕНИЕ!") + " -10 🪙"; addCoins(-10); }
                 }
                 
@@ -1881,7 +1816,7 @@
 
         function initAccuracy(level) {
             accState = { l:level, turn:0, s:{}, k:[], l2Done:0, l3Done:0 };
-            if(lobbyPlayers.length===0) lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar, eqName: myEqName, pMedals: myPinnedMedals}];
+            if(lobbyPlayers.length===0) lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar}];
             lobbyPlayers.forEach(p => accState.s[p.id] = 0);
             accLoc = (lobbyPlayers.length <= 1 || (lobbyPlayers.length===2 && lobbyPlayers[1].id==='ИИ'));
             window.accL3Started = false; window.isKnifeFlying = false; clearInterval(accInt);
@@ -1921,7 +1856,7 @@
                 document.getElementById('acc-ready-knife').style.display = isMyTurn && !window.isKnifeFlying ? 'block' : 'none';
                 setIsland(isMyTurn?'Тапни чтобы метнуть!':`Кидает ${lobbyPlayers[accState.turn].name}...`, isMyTurn?'#34c759':'#ffd60a');
                 
-                if ((isHost||accLoc) && lobbyPlayers[accState.turn]?.id.startsWith('ИИ')) setTimeout(accBot1, 1000);
+                if ((isHost||accLoc) && lobbyPlayers[accState.turn]?.id==='ИИ') setTimeout(accBot1, 1000);
             } else if (accState.l === 2) { 
                 document.getElementById('acc-frog').style.display = 'block';
                 setIsland(isMyTurn?'Тапни чтобы лягушка прыгнула!':`Прыгает ${lobbyPlayers[accState.turn].name}...`, isMyTurn?'#34c759':'#ffd60a');
@@ -1930,7 +1865,7 @@
                 document.getElementById('acc-area-3').style.pointerEvents = isMyTurn ? 'auto' : 'none';
                 setIsland(isMyTurn?'Сбивай уток!':`Стреляет ${lobbyPlayers[accState.turn].name}...`, isMyTurn?'#34c759':'#ffd60a');
                 if (isMyTurn && !window.accL3Started) accStart3();
-                if ((isHost||accLoc) && lobbyPlayers[accState.turn]?.id.startsWith('ИИ')) setTimeout(accBot3, 1000);
+                if ((isHost||accLoc) && lobbyPlayers[accState.turn]?.id==='ИИ') setTimeout(accBot3, 1000);
             }
         }
 
@@ -2025,13 +1960,13 @@
             
             let t = ""; sorted.forEach(x => t += `${getNameHTML(x.p.name, x.p.eqName)} - <b>${x.s}</b><br>`);
 
-            if (winners.length > 1 && winners.length < lobbyPlayers.length) {
+            if (winners.length > 1) {
                 let nms = winners.map(x=>getNameHTML(x.p.name, x.p.eqName)).join(" И ");
                 showResult(`НИЧЬЯ!\n${nms}`, '#ff9f0a', '🏆', `Счет: <b>${top}</b><br><br>${t}`);
-                if(lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) updateAiStat('acc', 'draw');
+                if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('acc', 'draw');
             } else {
                 showResult(isMyWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ! -10 🪙", isMyWin ? '#34c759' : '#ff453a', isMyWin ? '🎯' : '❌', t);
-                if(lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) updateAiStat('acc', isMyWin?'win':'loss');
+                if(lobbyPlayers.some(p=>p.id==='ИИ')) updateAiStat('acc', isMyWin?'win':'loss');
             }
 
             if(lobbyPlayers.length>1) { if(!isMyWin) addCoins(-10); } 
