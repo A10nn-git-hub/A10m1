@@ -238,7 +238,7 @@
     <div id="global-coins" class="glass">🪙 <span id="global-coins-val">0</span></div>
 
     <div id="app-container">
-      <div class="nav-bar" id="nav-bar">
+<div class="nav-bar" id="nav-bar">
             <div class="nav-item active" onclick="switchTab('profile', this); updateMyProfileUI();"><div class="nav-icon">👤</div><div class="nav-text">Профиль</div></div>
             <div class="nav-item" onclick="switchTab('inv', this); renderShop(); renderInventory();"><div class="nav-icon">🎒</div><div class="nav-text">Инвентарь</div></div>
             <div class="nav-item" onclick="switchTab('friends', this)"><div class="nav-icon">👥</div><div class="nav-text">Друзья</div></div>
@@ -435,7 +435,7 @@
             <div id="r3-results" style="margin-top:20px; font-size:2vh; display:flex; flex-direction:column; align-items:center; width:90%; height:30vh; overflow-y:auto; background:rgba(0,0,0,0.3); border-radius:10px; padding:10px;"></div>
         </div>
     </div>
-    <div id="item-action-modal" class="overlay glass hidden" onclick="closeItemAction()">
+<div id="item-action-modal" class="overlay glass hidden" onclick="closeItemAction()">
         <div style="background:#1c1c1e;padding:20px;border-radius:15px;width:250px;text-align:center;border:2px solid #444;" onclick="event.stopPropagation()">
             <div id="action-modal-icon" style="font-size:60px; margin-bottom:10px;"></div>
             <h3 id="action-modal-name" style="margin:0 0 20px 0;"></h3>
@@ -1597,7 +1597,7 @@
             wordsShuffled.forEach((w, i) => { wordsHtml += `<div class="connect-word-box" id="cword-${w.w}" onclick="connectWordClick('${w.w}')">${w.w}</div>`; });
             
             document.getElementById('connect-pics').innerHTML = picsHtml; document.getElementById('connect-words').innerHTML = wordsHtml; setTimeout(drawConnectLines,
-                                                                                                                                                     50);
+        50);
         }
         function connectWordClick(wordStr) { document.querySelectorAll('.connect-word-box').forEach(el=>el.classList.remove('active')); if(cActiveWord === wordStr) { cActiveWord = null; return; } cActiveWord = wordStr; document.getElementById('cword-'+wordStr).classList.add('active'); }
         function connectPicClick(picIdx) {
