@@ -380,49 +380,89 @@
     <div id="game-container">
         <div id="dynamic-island" class="glass"><span id="island-text">...</span></div>
         <div id="pause-btn" class="glass" onclick="togglePause(true)">⏸</div>
+
         <div class="game-screen" id="screen-game-math-1"><div class="math-progress-container" id="math-prog-1"></div><div class="math-equation"><span id="math1-q"></span><div class="math-input-box" id="math1-ans">?</div></div><div class="math-numpad"><button class="math-num-btn" onclick="math1Input(1)">1</button><button class="math-num-btn" onclick="math1Input(2)">2</button><button class="math-num-btn" onclick="math1Input(3)">3</button><button class="math-num-btn" onclick="math1Input(4)">4</button><button class="math-num-btn" onclick="math1Input(5)">5</button><button class="math-num-btn" onclick="math1Input(6)">6</button><button class="math-num-btn" onclick="math1Input(7)">7</button><button class="math-num-btn" onclick="math1Input(8)">8</button><button class="math-num-btn" onclick="math1Input(9)">9</button><button class="math-num-btn" onclick="math1Input(0)">0</button></div></div>
         <div class="game-screen" id="screen-game-math-2"><div class="math-progress-container" id="math-prog-2"></div><div class="math-equation"><span id="math2-q"></span></div><div class="math-cards-grid" id="math2-cards"></div></div>
-        <div class="game-screen" id="screen-game-math-3"><div class="math-progress-container" id="math-prog-3"></div><h2 style="font-size:4vh;margin-bottom:20px;">Расставь по порядку!</h2><div class="math-sort-slots" id="math3-slots"></div><div class="math-sort-items" id="math3-items"></div></div>
+        <div class="game-screen" id="screen-game-math-3"><div class="math-progress-container" id="math-prog-3"></div><h2 style="font-size:4vh;margin-bottom:20px;">Расставь по порядку!</h2><div class="math-sort-slots" id="math3-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:90%;"></div><div class="math-sort-items" id="math3-items"></div></div>
+
         <div class="game-screen" id="screen-game-letters-1"><h2 style="font-size:4vh;margin-bottom:20px;">Алфавит по порядку!</h2><div class="math-sort-slots" id="let1-slots"></div><div class="math-sort-items" id="let1-items"></div></div>
         <div class="game-screen" id="screen-game-letters-2">
             <h2 style="font-size:4vh;margin-bottom:10px;">Нарисуй букву!</h2>
-            <div style="position:relative; width:40vh; height:40vh;">
+            <div style="position:relative; width:40vh; height:40vh; display:flex; justify-content:center; align-items:center;">
                 <canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10;"></canvas>
                 <div id="hand-tutor" style="position:absolute; font-size:8vh; z-index:20; pointer-events:none; animation: handDraw 2s infinite;">✍️</div>
             </div>
-            <div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button><button class="btn btn-green" onclick="checkLet3()">✅ ГОТОВО</button></div>
+            <div style="margin-top:20px; display:flex; gap:20px;">
+                <button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button>
+                <button class="btn btn-green" id="let3-ok-btn" onclick="checkLet3()">✅ ГОТОВО</button>
+            </div>
         </div>
-        <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let3-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let3-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;"><div style="margin-top:20px;"><button class="btn btn-green" onclick="checkLet3Words()">✅ ПРОВЕРИТЬ</button></div></div>
+        <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let3-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let3-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;" oninput="this.value = this.value.toUpperCase();" autocapitalize="characters" autocomplete="off"><div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-green" onclick="checkLet3Words()">✅ ПРОВЕРИТЬ</button></div></div>
         <div class="game-screen" id="screen-game-letters-4">
             <h2 style="font-size:4vh;margin-bottom:10px;">Соедини картинку со словом!</h2>
             <div style="position:relative; width:90%; height:55vh;" id="connect-game-area">
                 <canvas id="connect-lines" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;"></canvas>
-                <div id="connect-pics" style="position:absolute; top:5%; width:100%; display:flex; justify-content:space-around;"></div>
-                <div id="connect-words" style="position:absolute; bottom:5%; width:100%; display:flex; justify-content:space-around; flex-wrap:wrap; gap:10px;"></div>
+                <div id="connect-pics" style="position:absolute; top:5%; width:100%; display:flex; justify-content:space-around; z-index:20;"></div>
+                <div id="connect-words" style="position:absolute; bottom:5%; width:100%; display:flex; justify-content:space-around; z-index:20; flex-wrap:wrap; gap:10px;"></div>
             </div>
             <button class="btn btn-green" onclick="checkLet4Connect()" style="margin-top:20px; font-size:24px; padding:15px 40px;">ГОТОВО!</button>
         </div>
         <div class="game-screen" id="screen-game-letters-5">
             <h2 style="font-size:4vh;margin-bottom:10px;">5 БУКВ</h2>
-            <div class="wordle-main"><div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div><div id="wdl-kb"></div></div>
+            <div class="wordle-main">
+                <div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div>
+                <div id="wdl-kb"></div>
+            </div>
         </div>
-        <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)"></div></div>
+
+        <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div></div>
+
         <div class="game-screen" id="screen-game-tictactoe"><div class="board" id="ttt-board"></div></div>
-        <div class="game-screen" id="screen-game-clicker"><h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button></div>
+        <div class="game-screen" id="screen-game-clicker"><h2 style="font-size:3vh;margin-bottom:10px;" id="clk-msg">Настрой время и ЖМИ!</h2><div class="clicker-setup" id="clicker-controls"><button class="round-btn" id="clk-btn-m" onclick="changeClickTime(-5)">◀</button><div id="click-time-val" style="font-size:28px;font-weight:bold;width:100px;text-align:center;">15 сек</div><button class="round-btn" id="clk-btn-p" onclick="changeClickTime(5)">▶</button></div><h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button></div>
+
         <div class="game-screen" id="screen-game-accuracy">
-            <div id="acc-area-1" style="width:100%; height:100%; display:none; background:#222; position:relative;" onmousedown="accThrowKnifeClick()">
-                <div id="acc-t1" class="acc-target-spin"></div>
-                <div id="acc-ready-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%);"><div class="acc-big-sword"></div></div>
-                <div id="acc-flying-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); display:none;"><div class="acc-big-sword"></div></div>
+            <h2 id="acc-header" style="position:absolute; top:10px; font-size:4vh; font-weight:bold; z-index:100; color:#fff;">Меткость</h2>
+            <div id="acc-scores-display" style="position:absolute; top:70px; right:10px; background:rgba(0,0,0,0.6); padding:10px; border-radius:10px; z-index:100; font-size:2vh; color:#fff; text-align:right;"></div>
+            
+            <div id="acc-area-1" style="width:100%; height:100%; display:none; background:#222; position:relative;" onmousedown="accThrowKnifeClick()" ontouchstart="accThrowKnifeClick()">
+                <div id="acc-t1-rotator" style="width:100%; height:100%; position:absolute;">
+                    <div id="acc-t1" class="acc-target-spin"></div>
+                </div>
+                <div id="acc-ready-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); z-index:20;">
+                    <div class="acc-big-sword"></div>
+                </div>
+                <div id="acc-flying-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); display:none; z-index:15;">
+                    <div class="acc-big-sword"></div>
+                </div>
             </div>
-            <div id="acc-area-2" style="width:100%; height:100%; display:none; position:relative;" onmousedown="accTriggerFrogClick()">
-                <div id="acc-t2" class="acc-anim-t2 acc-target-frog"></div>
-                <div id="acc-frog" style="font-size:10vh; position:absolute; bottom:10%; left:50%; transform:translateX(-50%);">🐸</div>
+
+            <div id="acc-area-2" style="width:100%; height:100%; display:none; background:#2e7d32; position:relative;" onmousedown="accTriggerFrogClick()" ontouchstart="accTriggerFrogClick()">
+                <div id="acc-t2" class="acc-anim-t2 acc-target-frog" style="position:absolute; top:20%; left:-100px;"></div>
+                <div id="acc-frog" style="font-size:10vh; position:absolute; bottom:10%; left:50%; transform:translateX(-50%); z-index:10; pointer-events:none;">🐸</div>
+                <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:#fff; pointer-events:none;">Тапни чтобы лягушка прыгнула!</div>
             </div>
-            <div id="acc-area-3" style="width:100%; height:100%; display:none; position:relative;">
-                <div id="acc-bird" class="acc-anim-bird">🦆</div>
-                <div id="acc-shoot-zone" style="position:absolute; bottom:0; width:100%; height:40%;" onmousedown="accAimStart(event)"></div>
+
+            <div id="acc-area-3" style="width:100%; height:100%; display:none; background:#87CEEB; position:relative;">
+                <div id="acc-bird" class="acc-anim-bird" style="font-size:8vh; position:absolute; top:15%; left:-100px;">🦆</div>
+                <div id="acc-dash" class="acc-dash-line" style="display:none; height:100%;"></div>
+                <div style="position:absolute; bottom:0; width:100%; height:40%; background:transparent; z-index:20;" id="acc-shoot-zone" onmousedown="accAimStart(event)" ontouchstart="accAimStart(event)"></div>
+                <div id="acc-flying-bullet" style="width:10px; height:20px; background:black; border-radius:5px; position:absolute; display:none; z-index:15; left:50%; margin-left:-5px;"></div>
+                <div style="position:absolute; bottom:20px; color:#333; font-weight:bold; width:100%; text-align:center; font-size:3vh; pointer-events:none; z-index:10;">Осталось: <span id="acc-timer">30</span>с | Сбито: <span id="acc-b-count">0</span>/3<br><span style="font-size:2vh;">Удерживай внизу чтобы прицелиться. Отпусти - выстрел!</span></div>
             </div>
+        </div>
+
+        <div class="game-screen" id="screen-game-react1">
+            <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r1-time">60</span>с | Сбито: <span id="r1-score">0</span>/100</div>
+            <div id="r1-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
+        </div>
+        <div class="game-screen" id="screen-game-react2">
+            <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r2-time">45</span>с | Сбито: <span id="r2-score">0</span></div>
+            <div id="r2-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
+        </div>
+        <div class="game-screen" id="screen-game-react3">
+            <h2 id="r3-status" style="font-size:4vh; margin-bottom:20px;">Готовься...</h2>
+            <button id="r3-btn" style="width:25vh; height:25vh; border-radius:50%; background:gray; border:10px solid #222; outline:none; box-shadow:0 10px 30px rgba(0,0,0,0.8); cursor:pointer;" onmousedown="r3Click(event)" ontouchstart="r3Click(event)"></button>
+            <div id="r3-results" style="margin-top:20px; font-size:2vh; display:flex; flex-direction:column; align-items:center; width:90%; height:30vh; overflow-y:auto; background:rgba(0,0,0,0.3); border-radius:10px; padding:10px;"></div>
         </div>
     </div>
 
@@ -443,6 +483,103 @@
         </div>
         <button class="btn btn-red" id="btn-close-box" style="margin-top:10px;" onclick="closeBoxModal()">ЗАКРЫТЬ</button>
     </div>
+
+    <div id="item-action-modal" class="overlay glass hidden" onclick="closeItemAction()">
+        <div style="background:#1c1c1e;padding:20px;border-radius:15px;width:250px;text-align:center;border:2px solid #444;" onclick="event.stopPropagation()">
+            <div id="action-modal-icon" style="font-size:60px; margin-bottom:10px;"></div>
+            <h3 id="action-modal-name" style="margin:0 0 20px 0;"></h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <button id="action-btn-equip" class="btn btn-green">ПРИМЕНИТЬ</button>
+                <button id="action-btn-sell" class="btn btn-red" onclick="sellCurrentItem()">ПРОДАТЬ</button>
+                <button class="btn btn-dark" onclick="closeItemAction()">ОТМЕНА</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="so2-mode-modal" class="overlay hidden" style="background:rgba(0,0,0,0.9); z-index:2500;">
+        <div class="so2-modal">
+            <div class="so2-left">
+                <div class="so2-card" onclick="selectSO2Category('math', this)"><div style="font-size:30px;">🧮</div><b>МАТЕМАТИКА</b></div>
+                <div class="so2-card" onclick="selectSO2Category('letters', this)"><div style="font-size:30px;">🅰️</div><b>БУКВЫ</b></div>
+                <div class="so2-card" onclick="selectSO2Category('accuracy', this)"><div style="font-size:30px;">🎯</div><b>МЕТКОСТЬ</b></div>
+                <div class="so2-card" onclick="setPendingSO2Game('hidden', '🔎 Поиск', this)"><div style="font-size:30px;">🔎</div><b>ПОИСК</b></div>
+                <div class="so2-card" onclick="setPendingSO2Game('tictactoe', '❌⭕ Крестики', this)"><div style="font-size:30px;">❌⭕</div><b>КРЕСТИКИ</b></div>
+                <div class="so2-card" onclick="setPendingSO2Game('clicker', '⏱️ Кликер', this)"><div style="font-size:30px;">⏱️</div><b>КЛИКЕР</b></div>
+                <div class="so2-card" onclick="selectSO2Category('react', this)"><div style="font-size:30px;">⚡</div><b>РЕАКЦИЯ</b></div>
+            </div>
+            <div class="so2-right" id="so2-submodes">
+                <h2 style="color:gray; width:100%; text-align:center; margin-top:40%;">ВЫБЕРИТЕ КАТЕГОРИЮ СЛЕВА</h2>
+            </div>
+        </div>
+        <div style="position:absolute; bottom:20px; right:20px; display:flex; gap:10px; align-items:center;">
+            <div id="ttt-bot-diff" style="display:none; margin-right:20px;">
+                <b style="color:var(--coin-col);">Сложность ИИ:</b>
+                <select id="ttt-bot-select" class="styled-input" style="padding:10px; margin-left:10px; font-size:16px;">
+                    <option value="easy">ЛЕГКО (Рандом)</option>
+                    <option value="medium" selected>СРЕДНЕ</option>
+                    <option value="hard">ПРОФИ (Без шансов)</option>
+                </select>
+            </div>
+            <button class="btn btn-red" style="font-size:20px; padding:15px 30px;" onclick="closeSO2ModeSelect()">НАЗАД</button>
+            <button class="btn btn-green" style="font-size:20px; padding:15px 30px;" onclick="confirmSO2Mode()">ДАЛЕЕ</button>
+        </div>
+    </div>
+
+    <div id="admin-items-modal" class="overlay glass hidden" onclick="closeAdminItemsModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:90%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2 style="color:var(--coin-col);">Выберите предметы</h2><div id="admin-items-grid" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; overflow-y:auto; flex-grow:1; padding:10px;"></div><button class="btn btn-green" style="margin-top:15px;" onclick="confirmAdminItems()">ГОТОВО</button></div></div>
+    <div id="avatar-modal" class="overlay glass hidden" onclick="closeAvatarModal()"><div style="background:#111;padding:20px;border-radius:20px;width:80%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2>Выбери аватар</h2><div class="emoji-grid" id="emoji-grid"></div><button class="btn btn-red" onclick="closeAvatarModal()">Закрыть</button></div></div>
+    <div id="pause-overlay" class="overlay glass hidden"><h2>ПАУЗА ⏸️</h2><div style="width:300px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button><button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button></div></div>
+    <div id="result-overlay" class="overlay hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text" style="font-size:5vh;">Победа!</h2><div id="result-subtext" class="result-score-list"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff; margin-top:20px;" onclick="closeResult()">В Лобби</button></div>
+    <div id="medals-modal" class="overlay glass hidden" onclick="closeMedalsModal()"><div style="background:#222;padding:30px;border-radius:20px;width:350px;border:2px solid var(--coin-col);" onclick="event.stopPropagation()"><h2 style="color:var(--coin-col); margin-top:0;">Мои медали</h2><div id="medals-modal-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:5px; max-height:40vh; overflow-y:auto; margin-bottom:20px;"></div><button class="btn btn-red" style="width:100%;" onclick="closeMedalsModal()">Закрыть</button></div></div>
+
+    <div id="inspect-modal" class="overlay glass hidden" onclick="closeInspectModal(event)">
+        <div style="background:#1c1c1e;padding:25px;border-radius:20px;width:320px;max-width:90vw;border:2px solid var(--coin-col);" onclick="event.stopPropagation()">
+            <h2 style="margin-top:0;color:var(--coin-col); text-align:center;">Осмотр</h2>
+            <div id="inspect-profile-preview" class="inspect-profile-preview">
+                <div id="inspect-avatar" class="inspect-avatar">👤</div>
+                <div style="margin-top:10px;">
+                    <div id="inspect-name" class="profile-name" style="font-size:28px; cursor:default; border-bottom:none;"></div>
+                    <div id="inspect-medals" class="medals-container" style="margin-top:10px;"></div>
+                </div>
+            </div>
+        </div>
+        <button id="inspect-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:3000;padding:15px 20px;font-size:18px;" onclick="closeInspectModal(event)">✖</button>
+    </div>
+
+    <div id="profile-stats-modal" class="overlay glass hidden" onclick="closeProfileStatsModal(event)" style="z-index: 5000;">
+        <div style="background:#1c1c1e;padding:25px;border-radius:20px;width:600px;max-width:95vw;border:2px solid var(--coin-col); max-height:85vh; display:flex; flex-direction:row; gap:20px;" onclick="event.stopPropagation()">
+            
+            <div style="width: 35%; border-right: 2px solid #444; padding-right: 15px; display:flex; flex-direction:column; align-items:center;">
+                <div id="ps-avatar" class="inspect-avatar" style="font-size:64px; margin-bottom: 10px;"></div>
+                <div id="ps-name" style="font-size:24px;font-weight:900;line-height:1.2; text-align:center; width:100%; overflow:hidden; text-overflow:ellipsis;"></div>
+                <div id="ps-id" style="color:#888;font-family:monospace;margin-top:5px;"></div>
+            </div>
+            
+            <div style="width: 65%; display:flex; flex-direction:column; overflow-y:auto;">
+                <div class="mini-tabs-header" style="flex-wrap:wrap;">
+                    <button class="mini-tab-btn active" id="ps-tab-btn-you" onclick="switchMiniTab('ps-tab-you', this)">ИГРА С ТОБОЙ</button>
+                    <button class="mini-tab-btn" id="ps-tab-btn-all" onclick="switchMiniTab('ps-tab-all', this)">ВСЕ ИГРЫ</button>
+                    <button class="mini-tab-btn" id="ps-tab-btn-ai" onclick="switchMiniTab('ps-tab-ai', this)">ИГРА С ИИ</button>
+                </div>
+                <div id="ps-tab-you" class="mini-tab-content active" style="width:100%;"></div>
+                <div id="ps-tab-all" class="mini-tab-content" style="width:100%;"></div>
+                <div id="ps-tab-ai" class="mini-tab-content" style="width:100%;"></div>
+            </div>
+            
+        </div>
+        <button id="profile-stats-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:5000;padding:15px 20px;font-size:18px;" onclick="closeProfileStatsModal(event)">✖</button>
+    </div>
+    
+    <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)">
+        <div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px; max-height: 80vh; overflow-y:auto;" onclick="event.stopPropagation()">
+            <div style="font-size:50px;" id="fm-avatar" class="dynamic-avatar">👤</div>
+            <div id="fm-name-cont" class="friend-row" style="font-size:24px; font-weight:bold; margin-bottom:10px; justify-content:center;"></div>
+            <div id="fm-medals-cont" class="medals-container" style="margin-bottom:15px;"></div>
+            <p id="fm-id" style="color:gray;">ID: 0000</p>
+            <div style="display:flex;flex-direction:column;gap:10px; margin-top:15px;" id="friend-actions"></div>
+        </div>
+    </div>
+    
+    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>
     <script>
         const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
         const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
@@ -456,7 +593,7 @@
         
         let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
         let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
-        let aiDifficulty = 'medium'; let currentOpenedBoxId = null;
+        let aiDifficulty = 'medium'; let currentOpenedBoxId = null; let activeFriend = null;
 
         const GAME_NAMES = {
             'math1': 'МАТЕМАТИКА [ОТВЕТ]', 'math2': 'МАТЕМАТИКА [КАРТОЧКИ]', 'math3': 'МАТЕМАТИКА [ПОРЯДОК]',
@@ -850,7 +987,7 @@
                     let randomItemId = pool[Math.floor(Math.random()*pool.length)];
                     itemsList.push(randomItemId);
                     let shopItem = SHOP_ITEMS.find(x => x.id === randomItemId);
-                    let pIcon = shopItem.type==='name'? shopItem.plainIcon : (shopItem.plainIcon || shopItem.icon);
+                    let pIcon = shopItem.type==='name'? shopItem.plainIcon : (shopItem.plainIcon || item.icon);
                     track.innerHTML += `<div class="roulette-item"><div style="font-size:40px;">${pIcon}</div><div style="font-size:10px; margin-top:10px; text-align:center;">${shopItem.name}</div></div>`;
                 }
 
@@ -1499,7 +1636,7 @@
             if(!isHost) return tg.showAlert("Только Хост!"); 
             if(!appState.selectedGameId) return tg.showAlert("Выбери режим!"); 
             
-            db.ref(`lobbies/${lobbyId}/status`).set('playing'); 
+            db.ref(`lobbies/${lobbyId}`).update({status:'playing'}); 
 
             if(appState.selectedGameId==='tictactoe' && lobbyPlayers.length>1) {
                 let pCount=lobbyPlayers.length; let sz=3; let wR=3;
