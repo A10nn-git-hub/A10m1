@@ -287,7 +287,7 @@
                 <div id="inv-shop" class="sub-tab-content" style="flex-direction:row; flex-wrap:wrap; justify-content:center; gap:20px; padding-top:20px;"></div>
                 <div id="inv-promo" class="sub-tab-content"><h2>Промокод</h2><input type="text" inputmode="text" id="promo-input" class="styled-input"><button class="btn btn-green" onclick="redeemPromo()">ПРИМЕНИТЬ</button></div>
             </div>
-<div id="tab-friends" class="tab-view" style="flex-direction: row; gap:20px;">
+            <div id="tab-friends" class="tab-view" style="flex-direction: row; gap:20px;">
                 <div class="friends-list-panel">
                     <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><h3 style="margin:0;">Друзья</h3><button class="btn btn-dark" style="padding:5px 10px;font-size:12px;" onclick="addFriendBtn()">+ Добавить</button></div>
                     <div class="mini-tabs-header" style="margin-bottom:10px;"><button class="mini-tab-btn active" onclick="switchMiniTab('fr-list',this)">Список</button><button class="mini-tab-btn" style="position:relative;" onclick="switchMiniTab('fr-reqs',this)">Заявки <span id="fr-badge" class="badge">0</span></button></div>
@@ -443,7 +443,7 @@
         </div>
         <button class="btn btn-red" id="btn-close-box" style="margin-top:10px;" onclick="closeBoxModal()">ЗАКРЫТЬ</button>
     </div>
-<script>
+    <script>
         const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
         const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
         firebase.initializeApp(firebaseConfig); const db = firebase.database();
