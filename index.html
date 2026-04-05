@@ -311,7 +311,12 @@
             
             <div id="tab-admin" class="tab-view" style="flex-direction: column;">
                 <h2 style="text-align:center; color:var(--coin-col); margin-top:0;">Панель Разработчика</h2>
-                <div class="sub-tabs-header"><button class="sub-tab-btn active" onclick="switchSubTab('admin','admins',this)">АДМИНЫ</button><button class="sub-tab-btn" onclick="switchSubTab('admin','coins',this)">ИГРОКИ</button><button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОД</button><button class="sub-tab-btn" onclick="switchSubTab('admin','beta',this)">БЕТА</button></div>
+                <div class="sub-tabs-header">
+                    <button class="sub-tab-btn active" onclick="switchSubTab('admin','admins',this)">АДМИНЫ</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('admin','coins',this)">ИГРОКИ</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОД</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('admin','beta',this)">БЕТА</button>
+                </div>
                 
                 <div id="adm-admins" class="sub-tab-content active">
                     <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('adm-add',this)">ДОБАВИТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('adm-rem',this)">УДАЛИТЬ</button></div>
@@ -357,18 +362,17 @@
                         <input type="text" id="ban-id-input" class="styled-input" placeholder="ID игрока">
                         <button class="btn btn-red" onclick="banPlayer()">ЗАБАНИТЬ</button>
                         <hr style="width:100%; border-color:#444; margin:15px 0;">
-                        <div id="ban-list" style="width:100%; max-height:200px; overflow-y:auto; margin-bottom:10px;"></div>
+                        <h4 style="margin:5px 0;">Список забаненных:</h4>
+                        <div id="ban-list" style="width:100%; max-height:150px; overflow-y:auto; margin-bottom:10px; background:#111; padding:5px; border-radius:10px;"></div>
                         <button class="btn btn-red" style="width:100%;" onclick="banAllPlayers()">ЗАБАНИТЬ ВСЕХ</button>
                     </div>
                     <div id="beta-unban" class="mini-tab-content" style="width:100%; max-width:400px;">
                         <input type="text" id="unban-id-input" class="styled-input" placeholder="ID игрока">
                         <button class="btn btn-green" onclick="unbanPlayer()">РАЗБАНИТЬ</button>
                         <hr style="width:100%; border-color:#444; margin:15px 0;">
-                        <div id="unban-list" style="width:100%; max-height:200px; overflow-y:auto; margin-bottom:10px;"></div>
                         <button class="btn btn-green" style="width:100%;" onclick="unbanAllPlayers()">РАЗБАНИТЬ ВСЕХ</button>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -376,205 +380,70 @@
     <div id="game-container">
         <div id="dynamic-island" class="glass"><span id="island-text">...</span></div>
         <div id="pause-btn" class="glass" onclick="togglePause(true)">⏸</div>
-
         <div class="game-screen" id="screen-game-math-1"><div class="math-progress-container" id="math-prog-1"></div><div class="math-equation"><span id="math1-q"></span><div class="math-input-box" id="math1-ans">?</div></div><div class="math-numpad"><button class="math-num-btn" onclick="math1Input(1)">1</button><button class="math-num-btn" onclick="math1Input(2)">2</button><button class="math-num-btn" onclick="math1Input(3)">3</button><button class="math-num-btn" onclick="math1Input(4)">4</button><button class="math-num-btn" onclick="math1Input(5)">5</button><button class="math-num-btn" onclick="math1Input(6)">6</button><button class="math-num-btn" onclick="math1Input(7)">7</button><button class="math-num-btn" onclick="math1Input(8)">8</button><button class="math-num-btn" onclick="math1Input(9)">9</button><button class="math-num-btn" onclick="math1Input(0)">0</button></div></div>
         <div class="game-screen" id="screen-game-math-2"><div class="math-progress-container" id="math-prog-2"></div><div class="math-equation"><span id="math2-q"></span></div><div class="math-cards-grid" id="math2-cards"></div></div>
-        <div class="game-screen" id="screen-game-math-3"><div class="math-progress-container" id="math-prog-3"></div><h2 style="font-size:4vh;margin-bottom:20px;">Расставь по порядку!</h2><div class="math-sort-slots" id="math3-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:90%;"></div><div class="math-sort-items" id="math3-items"></div></div>
-
+        <div class="game-screen" id="screen-game-math-3"><div class="math-progress-container" id="math-prog-3"></div><h2 style="font-size:4vh;margin-bottom:20px;">Расставь по порядку!</h2><div class="math-sort-slots" id="math3-slots"></div><div class="math-sort-items" id="math3-items"></div></div>
         <div class="game-screen" id="screen-game-letters-1"><h2 style="font-size:4vh;margin-bottom:20px;">Алфавит по порядку!</h2><div class="math-sort-slots" id="let1-slots"></div><div class="math-sort-items" id="let1-items"></div></div>
-        
         <div class="game-screen" id="screen-game-letters-2">
             <h2 style="font-size:4vh;margin-bottom:10px;">Нарисуй букву!</h2>
-            <div style="position:relative; width:40vh; height:40vh; display:flex; justify-content:center; align-items:center;">
+            <div style="position:relative; width:40vh; height:40vh;">
                 <canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10;"></canvas>
                 <div id="hand-tutor" style="position:absolute; font-size:8vh; z-index:20; pointer-events:none; animation: handDraw 2s infinite;">✍️</div>
             </div>
-            <div style="margin-top:20px; display:flex; gap:20px;">
-                <button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button>
-                <button class="btn btn-green" id="let3-ok-btn" onclick="checkLet3()">✅ ГОТОВО</button>
-            </div>
+            <div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button><button class="btn btn-green" onclick="checkLet3()">✅ ГОТОВО</button></div>
         </div>
-        
-        <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let3-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let3-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;" oninput="this.value = this.value.toUpperCase();" autocapitalize="characters" autocomplete="off"><div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-green" onclick="checkLet3Words()">✅ ПРОВЕРИТЬ</button></div></div>
-        
+        <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let3-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let3-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;"><div style="margin-top:20px;"><button class="btn btn-green" onclick="checkLet3Words()">✅ ПРОВЕРИТЬ</button></div></div>
         <div class="game-screen" id="screen-game-letters-4">
             <h2 style="font-size:4vh;margin-bottom:10px;">Соедини картинку со словом!</h2>
             <div style="position:relative; width:90%; height:55vh;" id="connect-game-area">
                 <canvas id="connect-lines" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;"></canvas>
-                <div id="connect-pics" style="position:absolute; top:5%; width:100%; display:flex; justify-content:space-around; z-index:20;"></div>
-                <div id="connect-words" style="position:absolute; bottom:5%; width:100%; display:flex; justify-content:space-around; z-index:20; flex-wrap:wrap; gap:10px;"></div>
+                <div id="connect-pics" style="position:absolute; top:5%; width:100%; display:flex; justify-content:space-around;"></div>
+                <div id="connect-words" style="position:absolute; bottom:5%; width:100%; display:flex; justify-content:space-around; flex-wrap:wrap; gap:10px;"></div>
             </div>
             <button class="btn btn-green" onclick="checkLet4Connect()" style="margin-top:20px; font-size:24px; padding:15px 40px;">ГОТОВО!</button>
         </div>
-        
         <div class="game-screen" id="screen-game-letters-5">
             <h2 style="font-size:4vh;margin-bottom:10px;">5 БУКВ</h2>
-            <div class="wordle-main">
-                <div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div>
-                <div id="wdl-kb"></div>
-            </div>
+            <div class="wordle-main"><div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div><div id="wdl-kb"></div></div>
         </div>
-
-        <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div></div>
-
+        <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)"></div></div>
         <div class="game-screen" id="screen-game-tictactoe"><div class="board" id="ttt-board"></div></div>
-        <div class="game-screen" id="screen-game-clicker"><h2 style="font-size:3vh;margin-bottom:10px;" id="clk-msg">Настрой время и ЖМИ!</h2><div class="clicker-setup" id="clicker-controls"><button class="round-btn" id="clk-btn-m" onclick="changeClickTime(-5)">◀</button><div id="click-time-val" style="font-size:28px;font-weight:bold;width:100px;text-align:center;">15 сек</div><button class="round-btn" id="clk-btn-p" onclick="changeClickTime(5)">▶</button></div><h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button></div>
-
+        <div class="game-screen" id="screen-game-clicker"><h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button></div>
         <div class="game-screen" id="screen-game-accuracy">
-            <h2 id="acc-header" style="position:absolute; top:10px; font-size:4vh; font-weight:bold; z-index:100; color:#fff;">Меткость</h2>
-            <div id="acc-scores-display" style="position:absolute; top:70px; right:10px; background:rgba(0,0,0,0.6); padding:10px; border-radius:10px; z-index:100; font-size:2vh; color:#fff; text-align:right;"></div>
-            
-            <div id="acc-area-1" style="width:100%; height:100%; display:none; background:#222; position:relative;" onmousedown="accThrowKnifeClick()" ontouchstart="accThrowKnifeClick()">
-                <div id="acc-t1-rotator" style="width:100%; height:100%; position:absolute;">
-                    <div id="acc-t1" class="acc-target-spin"></div>
-                </div>
-                <div id="acc-ready-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); z-index:20;">
-                    <div class="acc-big-sword"></div>
-                </div>
-                <div id="acc-flying-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); display:none; z-index:15;">
-                    <div class="acc-big-sword"></div>
-                </div>
+            <div id="acc-area-1" style="width:100%; height:100%; display:none; background:#222; position:relative;" onmousedown="accThrowKnifeClick()">
+                <div id="acc-t1" class="acc-target-spin"></div>
+                <div id="acc-ready-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%);"><div class="acc-big-sword"></div></div>
+                <div id="acc-flying-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); display:none;"><div class="acc-big-sword"></div></div>
             </div>
-
-            <div id="acc-area-2" style="width:100%; height:100%; display:none; background:#2e7d32; position:relative;" onmousedown="accTriggerFrogClick()" ontouchstart="accTriggerFrogClick()">
-                <div id="acc-t2" class="acc-anim-t2 acc-target-frog" style="position:absolute; top:20%; left:-100px;"></div>
-                <div id="acc-frog" style="font-size:10vh; position:absolute; bottom:10%; left:50%; transform:translateX(-50%); z-index:10; pointer-events:none;">🐸</div>
-                <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:#fff; pointer-events:none;">Тапни чтобы лягушка прыгнула!</div>
+            <div id="acc-area-2" style="width:100%; height:100%; display:none; position:relative;" onmousedown="accTriggerFrogClick()">
+                <div id="acc-t2" class="acc-anim-t2 acc-target-frog"></div>
+                <div id="acc-frog" style="font-size:10vh; position:absolute; bottom:10%; left:50%; transform:translateX(-50%);">🐸</div>
             </div>
-
-            <div id="acc-area-3" style="width:100%; height:100%; display:none; background:#87CEEB; position:relative;">
-                <div id="acc-bird" class="acc-anim-bird" style="font-size:8vh; position:absolute; top:15%; left:-100px;">🦆</div>
-                <div id="acc-dash" class="acc-dash-line" style="display:none; height:100%;"></div>
-                <div style="position:absolute; bottom:0; width:100%; height:40%; background:transparent; z-index:20;" id="acc-shoot-zone" onmousedown="accAimStart(event)" ontouchstart="accAimStart(event)"></div>
-                <div id="acc-flying-bullet" style="width:10px; height:20px; background:black; border-radius:5px; position:absolute; display:none; z-index:15; left:50%; margin-left:-5px;"></div>
-                <div style="position:absolute; bottom:20px; color:#333; font-weight:bold; width:100%; text-align:center; font-size:3vh; pointer-events:none; z-index:10;">Осталось: <span id="acc-timer">30</span>с | Сбито: <span id="acc-b-count">0</span>/3<br><span style="font-size:2vh;">Удерживай внизу чтобы прицелиться. Отпусти - выстрел!</span></div>
+            <div id="acc-area-3" style="width:100%; height:100%; display:none; position:relative;">
+                <div id="acc-bird" class="acc-anim-bird">🦆</div>
+                <div id="acc-shoot-zone" style="position:absolute; bottom:0; width:100%; height:40%;" onmousedown="accAimStart(event)"></div>
             </div>
-        </div>
-
-        <div class="game-screen" id="screen-game-react1">
-            <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r1-time">60</span>с | Сбито: <span id="r1-score">0</span>/100</div>
-            <div id="r1-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
-        </div>
-        <div class="game-screen" id="screen-game-react2">
-            <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r2-time">45</span>с | Сбито: <span id="r2-score">0</span></div>
-            <div id="r2-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
-        </div>
-        <div class="game-screen" id="screen-game-react3">
-            <h2 id="r3-status" style="font-size:4vh; margin-bottom:20px;">Готовься...</h2>
-            <button id="r3-btn" style="width:25vh; height:25vh; border-radius:50%; background:gray; border:10px solid #222; outline:none; box-shadow:0 10px 30px rgba(0,0,0,0.8); cursor:pointer;" onmousedown="r3Click(event)" ontouchstart="r3Click(event)"></button>
-            <div id="r3-results" style="margin-top:20px; font-size:2vh; display:flex; flex-direction:column; align-items:center; width:90%; height:30vh; overflow-y:auto; background:rgba(0,0,0,0.3); border-radius:10px; padding:10px;"></div>
         </div>
     </div>
 
     <div id="box-roulette-modal" class="overlay glass hidden" onclick="event.stopPropagation()">
-        <h2 style="color:var(--coin-col); margin-bottom: 20px;">ОТКРЫТИЕ БОКСА</h2>
-        <div class="roulette-wrapper" style="margin-bottom: 20px;">
+        <h2 style="color:var(--coin-col); margin-bottom: 10px;">ОТКРЫТИЕ БОКСА</h2>
+        <div class="roulette-wrapper" style="margin-bottom: 20px; height: 160px;">
             <div class="roulette-center-line"></div>
-            <div class="roulette-track" id="roulette-track"></div>
+            <div class="roulette-track" id="roulette-track">
+                <div style="width:120px; height:100%; border-right:2px solid #333;"></div>
+                <div style="width:120px; height:100%; border-right:2px solid #333;"></div>
+                <div style="width:120px; height:100%; border-right:2px solid #333;"></div>
+            </div>
         </div>
-        <button class="btn btn-gold" id="btn-start-roulette" style="font-size:24px; padding:15px 40px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(255, 214, 10, 0.4);" onclick="startBoxRoulette()">ОТКРЫТЬ</button>
-        <h3 style="color:gray; font-size:14px;">СОДЕРЖИМОЕ БОКСА:</h3>
-        <div id="box-contents-preview" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-height:30vh; overflow-y:auto; width:90%; max-width:600px; padding:10px;"></div>
-        <button class="btn btn-red" id="btn-close-box" style="margin-top:20px; width: 200px;" onclick="closeBoxModal()">ЗАКРЫТЬ</button>
+        <button class="btn btn-gold" id="btn-start-roulette" style="font-size:24px; padding:15px 50px; margin-bottom: 20px;" onclick="startBoxRoulette()">ОТКРЫТЬ</button>
+        <div style="width:90%; border-top:1px solid #444; padding-top:15px; text-align:center;">
+            <h4 style="color:gray; margin-bottom:10px;">ВОЗМОЖНЫЕ ПРЕДМЕТЫ:</h4>
+            <div id="box-contents-preview" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-height:25vh; overflow-y:auto; padding:5px;"></div>
+        </div>
+        <button class="btn btn-red" id="btn-close-box" style="margin-top:10px;" onclick="closeBoxModal()">ЗАКРЫТЬ</button>
     </div>
-
-    <div id="item-action-modal" class="overlay glass hidden" onclick="closeItemAction()">
-        <div style="background:#1c1c1e;padding:20px;border-radius:15px;width:250px;text-align:center;border:2px solid #444;" onclick="event.stopPropagation()">
-            <div id="action-modal-icon" style="font-size:60px; margin-bottom:10px;"></div>
-            <h3 id="action-modal-name" style="margin:0 0 20px 0;"></h3>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-                <button id="action-btn-equip" class="btn btn-green">ПРИМЕНИТЬ</button>
-                <button id="action-btn-sell" class="btn btn-red" onclick="sellCurrentItem()">ПРОДАТЬ</button>
-                <button class="btn btn-dark" onclick="closeItemAction()">ОТМЕНА</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="so2-mode-modal" class="overlay hidden" style="background:rgba(0,0,0,0.9); z-index:2500;">
-        <div class="so2-modal">
-            <div class="so2-left">
-                <div class="so2-card" onclick="selectSO2Category('math', this)"><div style="font-size:30px;">🧮</div><b>МАТЕМАТИКА</b></div>
-                <div class="so2-card" onclick="selectSO2Category('letters', this)"><div style="font-size:30px;">🅰️</div><b>БУКВЫ</b></div>
-                <div class="so2-card" onclick="selectSO2Category('accuracy', this)"><div style="font-size:30px;">🎯</div><b>МЕТКОСТЬ</b></div>
-                <div class="so2-card" onclick="setPendingSO2Game('hidden', '🔎 Поиск', this)"><div style="font-size:30px;">🔎</div><b>ПОИСК</b></div>
-                <div class="so2-card" onclick="setPendingSO2Game('tictactoe', '❌⭕ Крестики', this)"><div style="font-size:30px;">❌⭕</div><b>КРЕСТИКИ</b></div>
-                <div class="so2-card" onclick="setPendingSO2Game('clicker', '⏱️ Кликер', this)"><div style="font-size:30px;">⏱️</div><b>КЛИКЕР</b></div>
-                <div class="so2-card" onclick="selectSO2Category('react', this)"><div style="font-size:30px;">⚡</div><b>РЕАКЦИЯ</b></div>
-            </div>
-            <div class="so2-right" id="so2-submodes">
-                <h2 style="color:gray; width:100%; text-align:center; margin-top:40%;">ВЫБЕРИТЕ КАТЕГОРИЮ СЛЕВА</h2>
-            </div>
-        </div>
-        <div style="position:absolute; bottom:20px; right:20px; display:flex; gap:10px; align-items:center;">
-            <div id="ttt-bot-diff" style="display:none; margin-right:20px;">
-                <b style="color:var(--coin-col);">Сложность ИИ:</b>
-                <select id="ttt-bot-select" class="styled-input" style="padding:10px; margin-left:10px; font-size:16px;">
-                    <option value="easy">ЛЕГКО (Рандом)</option>
-                    <option value="medium" selected>СРЕДНЕ</option>
-                    <option value="hard">ПРОФИ (Без шансов)</option>
-                </select>
-            </div>
-            <button class="btn btn-red" style="font-size:20px; padding:15px 30px;" onclick="closeSO2ModeSelect()">НАЗАД</button>
-            <button class="btn btn-green" style="font-size:20px; padding:15px 30px;" onclick="confirmSO2Mode()">ДАЛЕЕ</button>
-        </div>
-    </div>
-
-    <div id="admin-items-modal" class="overlay glass hidden" onclick="closeAdminItemsModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:90%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2 style="color:var(--coin-col);">Выберите предметы</h2><div id="admin-items-grid" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; overflow-y:auto; flex-grow:1; padding:10px;"></div><button class="btn btn-green" style="margin-top:15px;" onclick="confirmAdminItems()">ГОТОВО</button></div></div>
-    <div id="avatar-modal" class="overlay glass hidden" onclick="closeAvatarModal()"><div style="background:#111;padding:20px;border-radius:20px;width:80%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2>Выбери аватар</h2><div class="emoji-grid" id="emoji-grid"></div><button class="btn btn-red" onclick="closeAvatarModal()">Закрыть</button></div></div>
-    <div id="pause-overlay" class="overlay glass hidden"><h2>ПАУЗА ⏸️</h2><div style="width:300px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button><button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button></div></div>
-    <div id="result-overlay" class="overlay hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text" style="font-size:5vh;">Победа!</h2><div id="result-subtext" class="result-score-list"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff; margin-top:20px;" onclick="closeResult()">В Лобби</button></div>
-    <div id="medals-modal" class="overlay glass hidden" onclick="closeMedalsModal()"><div style="background:#222;padding:30px;border-radius:20px;width:350px;border:2px solid var(--coin-col);" onclick="event.stopPropagation()"><h2 style="color:var(--coin-col); margin-top:0;">Мои медали</h2><div id="medals-modal-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:5px; max-height:40vh; overflow-y:auto; margin-bottom:20px;"></div><button class="btn btn-red" style="width:100%;" onclick="closeMedalsModal()">Закрыть</button></div></div>
-
-    <div id="inspect-modal" class="overlay glass hidden" onclick="closeInspectModal(event)">
-        <div style="background:#1c1c1e;padding:25px;border-radius:20px;width:320px;max-width:90vw;border:2px solid var(--coin-col);" onclick="event.stopPropagation()">
-            <h2 style="margin-top:0;color:var(--coin-col); text-align:center;">Осмотр</h2>
-            <div id="inspect-profile-preview" class="inspect-profile-preview">
-                <div id="inspect-avatar" class="inspect-avatar">👤</div>
-                <div style="margin-top:10px;">
-                    <div id="inspect-name" class="profile-name" style="font-size:28px; cursor:default; border-bottom:none;"></div>
-                    <div id="inspect-medals" class="medals-container" style="margin-top:10px;"></div>
-                </div>
-            </div>
-        </div>
-        <button id="inspect-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:3000;padding:15px 20px;font-size:18px;" onclick="closeInspectModal(event)">✖</button>
-    </div>
-
-    <div id="profile-stats-modal" class="overlay glass hidden" onclick="closeProfileStatsModal(event)" style="z-index: 5000;">
-        <div style="background:#1c1c1e;padding:25px;border-radius:20px;width:600px;max-width:95vw;border:2px solid var(--coin-col); max-height:85vh; display:flex; flex-direction:row; gap:20px;" onclick="event.stopPropagation()">
-            
-            <div style="width: 35%; border-right: 2px solid #444; padding-right: 15px; display:flex; flex-direction:column; align-items:center;">
-                <div id="ps-avatar" class="inspect-avatar" style="font-size:64px; margin-bottom: 10px;"></div>
-                <div id="ps-name" style="font-size:24px;font-weight:900;line-height:1.2; text-align:center; width:100%; overflow:hidden; text-overflow:ellipsis;"></div>
-                <div id="ps-id" style="color:#888;font-family:monospace;margin-top:5px;"></div>
-            </div>
-            
-            <div style="width: 65%; display:flex; flex-direction:column; overflow-y:auto;">
-                <div class="mini-tabs-header" style="flex-wrap:wrap;">
-                    <button class="mini-tab-btn active" id="ps-tab-btn-you" onclick="switchMiniTab('ps-tab-you', this)">ИГРА С ТОБОЙ</button>
-                    <button class="mini-tab-btn" id="ps-tab-btn-all" onclick="switchMiniTab('ps-tab-all', this)">ВСЕ ИГРЫ</button>
-                    <button class="mini-tab-btn" id="ps-tab-btn-ai" onclick="switchMiniTab('ps-tab-ai', this)">ИГРА С ИИ</button>
-                </div>
-                <div id="ps-tab-you" class="mini-tab-content active" style="width:100%;"></div>
-                <div id="ps-tab-all" class="mini-tab-content" style="width:100%;"></div>
-                <div id="ps-tab-ai" class="mini-tab-content" style="width:100%;"></div>
-            </div>
-            
-        </div>
-        <button id="profile-stats-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:5000;padding:15px 20px;font-size:18px;" onclick="closeProfileStatsModal(event)">✖</button>
-    </div>
-    
-    <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)">
-        <div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px; max-height: 80vh; overflow-y:auto;" onclick="event.stopPropagation()">
-            <div style="font-size:50px;" id="fm-avatar" class="dynamic-avatar">👤</div>
-            <div id="fm-name-cont" class="friend-row" style="font-size:24px; font-weight:bold; margin-bottom:10px; justify-content:center;"></div>
-            <div id="fm-medals-cont" class="medals-container" style="margin-bottom:15px;"></div>
-            <p id="fm-id" style="color:gray;">ID: 0000</p>
-            <div style="display:flex;flex-direction:column;gap:10px; margin-top:15px;" id="friend-actions"></div>
-        </div>
-    </div>
-    
-    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>
-    <script>
+<script>
         const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
         const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
         firebase.initializeApp(firebaseConfig); const db = firebase.database();
@@ -583,388 +452,11 @@
 
         const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', eqName: '', pMedals: [] }; 
         
-        let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {};
-        let pvpStats = {}; 
+        let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; 
         
         let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
         let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
-        let aiDifficulty = 'medium'; 
-        let aiCounter = 1; 
-        let currentOpenedBoxId = null;
-
-        const GAME_NAMES = {
-            'math1': 'МАТЕМАТИКА [ОТВЕТ]', 'math2': 'МАТЕМАТИКА [КАРТОЧКИ]', 'math3': 'МАТЕМАТИКА [ПОРЯДОК]',
-            'let1': 'БУКВЫ [АБВ]', 'let2': 'БУКВЫ [РИСУЙ]', 'let3': 'БУКВЫ [СЛОВО]', 'let4': 'БУКВЫ [СОЕДИНИ]', 'let5': 'БУКВЫ [5 БУКВ]',
-            'acc1': 'МЕТКОСТЬ [НОЖИ]', 'acc2': 'МЕТКОСТЬ [ЛЯГУШКА]', 'acc3': 'МЕТКОСТЬ [УТКИ]',
-            'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР',
-            'react1': 'РЕАКЦИЯ [ТОЧНОСТЬ]', 'react2': 'РЕАКЦИЯ [СКОРОСТЬ]', 'react3': 'РЕАКЦИЯ [КНОПКА]'
-        };
-
-        const RARITIES = { 'UNCOMMON': '#32ade6', 'RARE': '#007aff', 'EPIC': '#af52de', 'LEGENDARY': '#ff1493', 'ARCANE': '#ff3b30', 'NAMELESS': '#ffcc00' };
-
-        const SHOP_ITEMS = [ 
-            {id: 'box_chameleon', type:'box', name: 'Chameleon Box', desc: 'Случайное имя или медаль', price: 1000, plainIcon: '🎁', icon: '🎁', rarity: 'LEGENDARY'},
-            {id: 'box_upgrade', type:'box', name: 'Upgrade Box', desc: 'Случайный аватар или фон', price: 1000, plainIcon: '📦', icon: '📦', rarity: 'LEGENDARY'},
-            {id: 'gif_poop', type:'avatar', name: 'Живая какашка', desc: 'GIF аватарка', price: 500, plainIcon: '💩', icon: '<span class="anim-poop">💩</span>', rarity: 'EPIC'}, 
-            {id: 'anim_clown', type:'avatar', name: 'Бешеный Клоун', desc: 'GIF аватарка', price: 1500, plainIcon: '🤡', icon: '<span class="anim-clown">🤡</span>', rarity: 'EPIC'},
-            {id: 'avatar_cross', type:'avatar', name: 'Красный крест', desc: 'Аватарка', price: 1000, plainIcon: '<span style="color:#ff453a;font-weight:900;">❌</span>', icon: '<span style="color:#ff453a;font-weight:900;">❌</span>', rarity: 'UNCOMMON'},
-            {id: 'name_miron', type:'name', name: 'МИРОН', desc: 'GIF имя', price: 800, plainIcon: '<span style="color:#ff453a;">МИРОН</span>', icon: '<span class="anim-miron"><span class="anim-miron-text">МИРОН</span></span>', rarity: 'EPIC'}, 
-            {id: 'name_haha', type:'name', name: 'ХАХАХА', desc: 'GIF имя', price: 800, plainIcon: '<span style="color:#ffcc00;">ХАХАХА</span>', icon: '<span class="anim-haha">ХАХАХА 😂</span>', rarity: 'EPIC'},
-            {id: 'name_mama', type:'name', name: 'МАМА', desc: 'Имя', price: 800, plainIcon: '<span style="color:#ff69b4;">МАМА</span>', icon: '<span class="name-mama">МАМА</span>', rarity: 'RARE'},
-            {id: 'name_masha', type:'name', name: 'МАША', desc: 'Имя', price: 800, plainIcon: '<span style="color:#b026ff;">МАША</span>', icon: '<span class="name-masha">МАША</span>', rarity: 'RARE'},
-            {id: 'name_papa', type:'name', name: 'ПАПА', desc: 'Имя', price: 800, plainIcon: '<span style="color:#b0c4de;">ПАПА</span>', icon: '<span class="name-papa">ПАПА</span>', rarity: 'RARE'},
-            {id: 'name_tema', type:'name', name: 'ТЁМА', desc: 'Имя', price: 800, plainIcon: '<span style="color:#ff4500;">ТЁМА</span>', icon: '<span class="name-tema">ТЁМА</span>', rarity: 'RARE'},
-            {id: 'medal_top', type:'medal', name: 'TOP', desc: 'МЕДАЛЬ', price: 1500, plainIcon: '🏅', icon: '<span class="medal-badge medal-badge-large">TOP</span>', rarity: 'UNCOMMON'},
-            {id: 'medal_pro', type:'medal', name: 'PRO', desc: 'МЕДАЛЬ', price: 1500, plainIcon: '🛡️', icon: '<span class="medal-badge medal-badge-large" style="border-color:#ff453a; background:linear-gradient(45deg, #8a0303, #ff453a);">PRO</span>', rarity: 'LEGENDARY'},
-            {id: 'bg_stars', type:'bg', name: 'Звездное Небо', desc: 'ФОН', price: 1000, plainIcon: '🌌', icon: '🌌', rarity: 'RARE'},
-            {id: 'bg_balloons', type:'bg', name: 'Шарики', desc: 'GIF ФОН', price: 1500, plainIcon: '🎈', icon: '🎈', rarity: 'LEGENDARY'}
-        ];
-
-        function getAvatarHTML(av) { 
-            if(av === 'gif_poop') return '<span class="anim-poop">💩</span>';
-            if(av === 'anim_clown') return '<span class="anim-clown">🤡</span>';
-            if(av === 'avatar_cross') return '<span style="color:#ff453a;font-weight:900; filter: drop-shadow(0 2px 6px rgba(255,69,58,0.45));">❌</span>';
-            return av || '👤'; 
-        }
-        function getNameHTML(n, eq) { 
-            if(eq === 'name_miron') return '<span class="anim-miron"><span class="anim-miron-text">МИРОН</span></span>';
-            if(eq === 'name_haha') return '<span class="anim-haha">ХАХАХА 😂</span>';
-            if(eq === 'name_mama') return '<span class="name-mama">МАМА</span>';
-            if(eq === 'name_masha') return '<span class="name-masha">МАША</span>';
-            if(eq === 'name_papa') return '<span class="name-papa">ПАПА</span>';
-            if(eq === 'name_tema') return '<span class="name-tema">ТЁМА</span>';
-            return n || 'Игрок'; 
-        }
-        function getNameMarketPreviewHTML(eq) {
-            if(eq === 'name_miron') return `<span class="anim-miron"><span class="anim-miron-text">МИРОН</span></span>`;
-            if(eq === 'name_haha') return `<span class="anim-haha" style="animation:none;">ХАХАХА</span>`;
-            if(eq === 'name_mama') return `<span class="name-mama">МАМА</span>`;
-            if(eq === 'name_masha') return `<span class="name-masha">МАША</span>`;
-            if(eq === 'name_papa') return `<span class="name-papa">ПАПА</span>`;
-            if(eq === 'name_tema') return `<span class="name-tema">ТЁМА</span>`;
-            return 'Игрок';
-        }
-        function getMedalsHTML(arr) { if(!arr || !arr.length) return ''; let res=''; arr.forEach(m=>{if(m==='medal_top') res+='<span class="medal-badge">TOP</span>'; if(m==='medal_pro') res+='<span class="medal-badge" style="border-color:#ff453a; background:linear-gradient(45deg, #8a0303, #ff453a);">PRO</span>';}); return res; }
-        
-        const VALID_5_LETTER_WORDS = [
-            "АБЗАЦ","БАНКА","ВЕТВЬ","ГАЗОН","ДВЕРЬ","ЖИВОТ","ЗАМОК","КАБАН","ЛАМПА","МАГИЯ","НАРОД","ОКЕАН","ПАПКА","РАДИО","САЛАТ","ТАБЛО","УЛИЦА","ФАКЕЛ","ХАЛВА","ШАПКА",
-            "АГЕНТ","АЛЛЕЯ","АНГЕЛ","БАЗАР","БИЛЕТ","БИТВА","БРОВЬ","БУКВА","ВИДЕО","ВИЛКА","ВРАЧИ","ГЕРОЙ","ГЛИНА","ГОЛОС","ГРОЗА","ДАРИТ","ДИВАН","ДОЖДЬ","ДОМИК","ДРАМА",
-            "ЗАВОД","ЗЕРНО","ЗМЕЯТ","ИГРОК","ИСКРА","КАМИН","КАНАЛ","КАРТА","КАТЕР","КЕФИР","КЛАСС","КЛЮЧИ","КОВЕР","КОЛБА","КОНЕЦ","КОПИЯ","КОТЁЛ","КОШКА","КРЫСА","КУБИК",
-            "ЛАЗЕР","ЛИМОН","ЛОДКА","ЛОЖКА","МАРКА","МАСЛО","МЕТРО","МЕЧТА","МИНУС","МОТОР","МЫШКА","НАЛОГ","НОЖКИ","НОМЕР","ОАЗИС","ОЛЕНЬ","ОПЕРА","ОСЕНЬ","ОТЕЛЬ","ОТДЕЛ",
-            "ПАЛЕЦ","ПАРУС","ПЕСНЯ","ПИРАТ","ПЛИТА","ПЛОВЕЦ","ПЛЮСЫ","ПОЕЗД","ПОЛИС","ПОЧТА","ПРИЗЫ","ПУЛЬТ","ПЬЕСА","ПЯТКА","РАЗУМ","РЕБРО","РЕДИС","РОБОТ","РОМАН","РУЧКА",
-            "САХАР","СЕВЕР","СЕМЬЯ","СИРОП","СКАЗЫ","СКИФЫ","СЛОВО","СЛУХИ","СМЫСЛ","СОВЕТ","СОКОЛ","СОСНА","СПОРТ","СТАЛЬ","СТЕКЛО","СТОЛБ","СУДНО","СУПЕР","СУШКА","СЦЕНА",
-            "ТАЙНА","ТАКСИ","ТЕАТР","ТЕЛЕЦ","ТЕМА","ТЕННИС","ТЕПЛО","ТЕСТО","ТИРАЖ","ТОКАРЬ","ТОЛПА","ТОПОР","ТОЧКА","ТРАВА","ТРЕСТ","ТРУБА","ТУМАН","УГОЛЬ","УРОКИ","УСПЕХ",
-            "УТРОБ","ФАКИР","ФАУНА","ФИЗИК","ФИЛЬМ","ФОКУС","ФОНДЫ","ХАЛАТ","ХОЛОД","ХРАМЫ","ЦВЕТА","ЦЕНТР","ЦЕПИ","ЧАСЫ","ЧАШКА","ЧЕКОВ","ЧЕРЕП","ЧИПСЫ","ЧИТАТ","ШАРИК",
-            "ШКОЛА","ШТОРМ","ЩЕТКА","ЩИТКИ","ЭКРАН","ЭЛИТА","ЭПОХА","ЮНОША","ЮРИСТ","ЯБЛОК","ЯГОДА","ЯКОРЬ","АБОРТ","АВТОР","АДРЕС","АКТЕР","АКТИВ","АЛМАЗ","АРБУЗ","АРЕНА",
-            "АРХИВ","БАГАЖ","БАРДА","БАШНЯ","БЕДРО","БЕЛОК","БЕРЕГ","БИРЖА","БЛАНК","БЛЮДО","БОГАТ","БОКАЛ","БОМБА","БОНУС","БОРЩИ","БОЧКА","БРАТЬ","БРЕНД","БУБЕН","БУКЕТ",
-            "БУЛКА","БУДКА","ВАГОН","ВАЛИК","ВАННА","ВАФЛЯ","ВЕДРО","ВЕНИК","ВЕСНА","ВЕТЕР","ВЕЧЕР","ВЗГЛЯ","ВЗНОС","ВЗРЫВ","ВИЗИТ","ВИННА","ВИСОК","ВКЛАД","ВКУСЫ","ВЛАГА",
-            "ВОЖДЬ","ВОКАЛ","ВОЛНА","ВОЛОС","ВОРОН","ВОРОТ","ВРАГИ","ВРЕМЯ","ВЫБОР","ВЫВОД","ВЫЗОВ","ВЫХОД","ГАРАЖ","ГЕНИЙ","ГИМНС","ГЛАВА","ГЛОБУ","ГЛУБЬ","ГЛЯНЬ","ГНОМЫ",
-            "ГОРОД","ГОСТЬ","ГРАНЬ","ГРАФА","ГРИБЫ","ГРУДЬ","ГРУЗЫ","ГРУПП","ГУБАХ","ГУДОК","ДВОРЫ","ДЕБЮТ","ДЕДОК","ДЕКАН","ДЕМОН","ДЕТАЛ","ДЖИНС","ДИЕТА","ДЛИНА","ДОБРО",
-            "ДОЛГИ","ДОЛЯХ
-<div id="tab-friends" class="tab-view" style="flex-direction: row; gap:20px;">
-                <div class="friends-list-panel">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><h3 style="margin:0;">Друзья</h3><button class="btn btn-dark" style="padding:5px 10px;font-size:12px;" onclick="addFriendBtn()">+ Добавить</button></div>
-                    <div class="mini-tabs-header" style="margin-bottom:10px;"><button class="mini-tab-btn active" onclick="switchMiniTab('fr-list',this)">Список</button><button class="mini-tab-btn" style="position:relative;" onclick="switchMiniTab('fr-reqs',this)">Заявки <span id="fr-badge" class="badge">0</span></button></div>
-                    <div id="fr-list" class="mini-tab-content active" style="overflow-y:auto;flex-grow:1;width:100%;"></div>
-                    <div id="fr-reqs" class="mini-tab-content" style="overflow-y:auto;flex-grow:1;width:100%;"></div>
-                </div>
-                <div class="lobby-buttons-panel" id="main-buttons-view">
-                    <button class="mega-btn mega-create" onclick="openLobby()">Создать Лобби</button>
-                    <button class="mega-btn mega-custom" onclick="tg.showAlert('В разработке!')">Кастомное Лобби</button>
-                </div>
-                <div id="view-lobby">
-                    <button class="btn btn-dark" style="position:absolute;top:-10px;right:0;z-index:5;" onclick="closeLobby()">Выйти 🚪</button>
-                    <div class="lobby-slots-container" id="lobby-slots-container"></div>
-                    <div class="lobby-controls-bottom-right">
-                        <div class="mode-text" id="selected-mode-text" style="font-size:18px; font-weight:bold;">Режим не выбран</div>
-                        <button class="btn btn-dark" onclick="openSO2ModeSelect()">Выбрать режим 📋</button>
-                        <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()">ИГРАТЬ!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="tab-admin" class="tab-view" style="flex-direction: column;">
-                <h2 style="text-align:center; color:var(--coin-col); margin-top:0;">Панель Разработчика</h2>
-                <div class="sub-tabs-header"><button class="sub-tab-btn active" onclick="switchSubTab('admin','admins',this)">АДМИНЫ</button><button class="sub-tab-btn" onclick="switchSubTab('admin','coins',this)">ИГРОКИ</button><button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОД</button><button class="sub-tab-btn" onclick="switchSubTab('admin','beta',this)">БЕТА</button></div>
-                
-                <div id="adm-admins" class="sub-tab-content active">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('adm-add',this)">ДОБАВИТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('adm-rem',this)">УДАЛИТЬ</button></div>
-                    <div id="adm-add" class="mini-tab-content active">
-                        <input type="text" inputmode="numeric" id="dev-add-admin-id" class="styled-input" placeholder="ID игрока">
-                        <button class="btn btn-green" onclick="addAdmin()">Сделать админом</button>
-                    </div>
-                    <div id="adm-rem" class="mini-tab-content" style="width:100%; max-width:400px;">
-                        <div id="admin-list-display" style="max-height: 200px; overflow-y:auto; margin-bottom:15px; width:100%;"></div>
-                        <button class="btn btn-red" onclick="removeAllAdmins()">УДАЛИТЬ ВСЕХ (кроме себя)</button>
-                    </div>
-                </div>
-
-                <div id="adm-coins" class="sub-tab-content">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('c-give',this)">ВЫДАТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('c-take',this)">ЗАБРАТЬ</button></div>
-                    <div id="c-give" class="mini-tab-content active">
-                        <input type="text" inputmode="numeric" id="give-coin-id" class="styled-input" placeholder="ID игрока">
-                        <div style="display:flex; width:80%; gap:10px;"><input type="number" id="give-coin-amount" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('give')">ВЫБРАТЬ</button></div>
-                        <p id="give-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-green" onclick="giveCoinsDev()">ОТПРАВИТЬ</button>
-                    </div>
-                    <div id="c-take" class="mini-tab-content">
-                        <input type="text" inputmode="numeric" id="take-coin-id" class="styled-input" placeholder="ID игрока">
-                        <div style="display:flex; width:80%; gap:10px;"><input type="number" id="take-coin-amount" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('take')">ВЫБРАТЬ</button></div>
-                        <p id="take-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-red" onclick="takeCoinsDev()">ИЗЪЯТЬ</button>
-                    </div>
-                </div>
-                
-                <div id="adm-promos" class="sub-tab-content">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('promo-create', this)">СОЗДАТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('promo-active', this)">АКТИВНЫЕ</button></div>
-                    <div id="promo-create" class="mini-tab-content active">
-                        <input type="text" id="promo-name" class="styled-input" placeholder="Код промокода">
-                        <input type="number" id="promo-acts" class="styled-input" placeholder="Активаций">
-                        <input type="number" id="promo-days" class="styled-input" placeholder="Активно ... дней (необяз)">
-                        <div style="display:flex; width:80%; gap:10px;"><input type="number" id="promo-reward" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('promo')">ВЫБРАТЬ</button></div>
-                        <p id="promo-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-gold" onclick="createPromoDev()">СОЗДАТЬ</button>
-                    </div>
-                    <div id="promo-active" class="mini-tab-content" style="max-height:30vh;overflow-y:auto;width:350px;"><div id="dev-promo-list" style="width:100%;"></div></div>
-                </div>
-                
-                <div id="adm-beta" class="sub-tab-content">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('beta-ban',this)">БАН</button><button class="mini-tab-btn" onclick="switchMiniTab('beta-unban',this)">РАЗБАН</button></div>
-                    <div id="beta-ban" class="mini-tab-content active" style="width:100%; max-width:400px;">
-                        <input type="text" id="ban-id-input" class="styled-input" placeholder="ID игрока">
-                        <button class="btn btn-red" onclick="banPlayer()">ЗАБАНИТЬ</button>
-                        <hr style="width:100%; border-color:#444; margin:15px 0;">
-                        <div id="ban-list" style="width:100%; max-height:200px; overflow-y:auto; margin-bottom:10px;"></div>
-                        <button class="btn btn-red" style="width:100%;" onclick="banAllPlayers()">ЗАБАНИТЬ ВСЕХ</button>
-                    </div>
-                    <div id="beta-unban" class="mini-tab-content" style="width:100%; max-width:400px;">
-                        <input type="text" id="unban-id-input" class="styled-input" placeholder="ID игрока">
-                        <button class="btn btn-green" onclick="unbanPlayer()">РАЗБАНИТЬ</button>
-                        <hr style="width:100%; border-color:#444; margin:15px 0;">
-                        <div id="unban-list" style="width:100%; max-height:200px; overflow-y:auto; margin-bottom:10px;"></div>
-                        <button class="btn btn-green" style="width:100%;" onclick="unbanAllPlayers()">РАЗБАНИТЬ ВСЕХ</button>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-    </div>
-
-    <div id="game-container">
-        <div id="dynamic-island" class="glass"><span id="island-text">...</span></div>
-        <div id="pause-btn" class="glass" onclick="togglePause(true)">⏸</div>
-
-        <div class="game-screen" id="screen-game-math-1"><div class="math-progress-container" id="math-prog-1"></div><div class="math-equation"><span id="math1-q"></span><div class="math-input-box" id="math1-ans">?</div></div><div class="math-numpad"><button class="math-num-btn" onclick="math1Input(1)">1</button><button class="math-num-btn" onclick="math1Input(2)">2</button><button class="math-num-btn" onclick="math1Input(3)">3</button><button class="math-num-btn" onclick="math1Input(4)">4</button><button class="math-num-btn" onclick="math1Input(5)">5</button><button class="math-num-btn" onclick="math1Input(6)">6</button><button class="math-num-btn" onclick="math1Input(7)">7</button><button class="math-num-btn" onclick="math1Input(8)">8</button><button class="math-num-btn" onclick="math1Input(9)">9</button><button class="math-num-btn" onclick="math1Input(0)">0</button></div></div>
-        <div class="game-screen" id="screen-game-math-2"><div class="math-progress-container" id="math-prog-2"></div><div class="math-equation"><span id="math2-q"></span></div><div class="math-cards-grid" id="math2-cards"></div></div>
-        <div class="game-screen" id="screen-game-math-3"><div class="math-progress-container" id="math-prog-3"></div><h2 style="font-size:4vh;margin-bottom:20px;">Расставь по порядку!</h2><div class="math-sort-slots" id="math3-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:90%;"></div><div class="math-sort-items" id="math3-items"></div></div>
-
-        <div class="game-screen" id="screen-game-letters-1"><h2 style="font-size:4vh;margin-bottom:20px;">Алфавит по порядку!</h2><div class="math-sort-slots" id="let1-slots"></div><div class="math-sort-items" id="let1-items"></div></div>
-        
-        <div class="game-screen" id="screen-game-letters-2">
-            <h2 style="font-size:4vh;margin-bottom:10px;">Нарисуй букву!</h2>
-            <div style="position:relative; width:40vh; height:40vh; display:flex; justify-content:center; align-items:center;">
-                <canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10;"></canvas>
-                <div id="hand-tutor" style="position:absolute; font-size:8vh; z-index:20; pointer-events:none; animation: handDraw 2s infinite;">✍️</div>
-            </div>
-            <div style="margin-top:20px; display:flex; gap:20px;">
-                <button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button>
-                <button class="btn btn-green" id="let3-ok-btn" onclick="checkLet3()">✅ ГОТОВО</button>
-            </div>
-        </div>
-        
-        <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let3-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let3-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;" oninput="this.value = this.value.toUpperCase();" autocapitalize="characters" autocomplete="off"><div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-green" onclick="checkLet3Words()">✅ ПРОВЕРИТЬ</button></div></div>
-        
-        <div class="game-screen" id="screen-game-letters-4">
-            <h2 style="font-size:4vh;margin-bottom:10px;">Соедини картинку со словом!</h2>
-            <div style="position:relative; width:90%; height:55vh;" id="connect-game-area">
-                <canvas id="connect-lines" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;"></canvas>
-                <div id="connect-pics" style="position:absolute; top:5%; width:100%; display:flex; justify-content:space-around; z-index:20;"></div>
-                <div id="connect-words" style="position:absolute; bottom:5%; width:100%; display:flex; justify-content:space-around; z-index:20; flex-wrap:wrap; gap:10px;"></div>
-            </div>
-            <button class="btn btn-green" onclick="checkLet4Connect()" style="margin-top:20px; font-size:24px; padding:15px 40px;">ГОТОВО!</button>
-        </div>
-        
-        <div class="game-screen" id="screen-game-letters-5">
-            <h2 style="font-size:4vh;margin-bottom:10px;">5 БУКВ</h2>
-            <div class="wordle-main">
-                <div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div>
-                <div id="wdl-kb"></div>
-            </div>
-        </div>
-
-        <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div></div>
-
-        <div class="game-screen" id="screen-game-tictactoe"><div class="board" id="ttt-board"></div></div>
-        <div class="game-screen" id="screen-game-clicker"><h2 style="font-size:3vh;margin-bottom:10px;" id="clk-msg">Настрой время и ЖМИ!</h2><div class="clicker-setup" id="clicker-controls"><button class="round-btn" id="clk-btn-m" onclick="changeClickTime(-5)">◀</button><div id="click-time-val" style="font-size:28px;font-weight:bold;width:100px;text-align:center;">15 сек</div><button class="round-btn" id="clk-btn-p" onclick="changeClickTime(5)">▶</button></div><h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button></div>
-
-        <div class="game-screen" id="screen-game-accuracy">
-            <h2 id="acc-header" style="position:absolute; top:10px; font-size:4vh; font-weight:bold; z-index:100; color:#fff;">Меткость</h2>
-            <div id="acc-scores-display" style="position:absolute; top:70px; right:10px; background:rgba(0,0,0,0.6); padding:10px; border-radius:10px; z-index:100; font-size:2vh; color:#fff; text-align:right;"></div>
-            
-            <div id="acc-area-1" style="width:100%; height:100%; display:none; background:#222; position:relative;" onmousedown="accThrowKnifeClick()" ontouchstart="accThrowKnifeClick()">
-                <div id="acc-t1-rotator" style="width:100%; height:100%; position:absolute;">
-                    <div id="acc-t1" class="acc-target-spin"></div>
-                </div>
-                <div id="acc-ready-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); z-index:20;">
-                    <div class="acc-big-sword"></div>
-                </div>
-                <div id="acc-flying-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); display:none; z-index:15;">
-                    <div class="acc-big-sword"></div>
-                </div>
-            </div>
-
-            <div id="acc-area-2" style="width:100%; height:100%; display:none; background:#2e7d32; position:relative;" onmousedown="accTriggerFrogClick()" ontouchstart="accTriggerFrogClick()">
-                <div id="acc-t2" class="acc-anim-t2 acc-target-frog" style="position:absolute; top:20%; left:-100px;"></div>
-                <div id="acc-frog" style="font-size:10vh; position:absolute; bottom:10%; left:50%; transform:translateX(-50%); z-index:10; pointer-events:none;">🐸</div>
-                <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:#fff; pointer-events:none;">Тапни чтобы лягушка прыгнула!</div>
-            </div>
-
-            <div id="acc-area-3" style="width:100%; height:100%; display:none; background:#87CEEB; position:relative;">
-                <div id="acc-bird" class="acc-anim-bird" style="font-size:8vh; position:absolute; top:15%; left:-100px;">🦆</div>
-                <div id="acc-dash" class="acc-dash-line" style="display:none; height:100%;"></div>
-                <div style="position:absolute; bottom:0; width:100%; height:40%; background:transparent; z-index:20;" id="acc-shoot-zone" onmousedown="accAimStart(event)" ontouchstart="accAimStart(event)"></div>
-                <div id="acc-flying-bullet" style="width:10px; height:20px; background:black; border-radius:5px; position:absolute; display:none; z-index:15; left:50%; margin-left:-5px;"></div>
-                <div style="position:absolute; bottom:20px; color:#333; font-weight:bold; width:100%; text-align:center; font-size:3vh; pointer-events:none; z-index:10;">Осталось: <span id="acc-timer">30</span>с | Сбито: <span id="acc-b-count">0</span>/3<br><span style="font-size:2vh;">Удерживай внизу чтобы прицелиться. Отпусти - выстрел!</span></div>
-            </div>
-        </div>
-
-        <div class="game-screen" id="screen-game-react1">
-            <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r1-time">60</span>с | Сбито: <span id="r1-score">0</span>/100</div>
-            <div id="r1-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
-        </div>
-        <div class="game-screen" id="screen-game-react2">
-            <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r2-time">45</span>с | Сбито: <span id="r2-score">0</span></div>
-            <div id="r2-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
-        </div>
-        <div class="game-screen" id="screen-game-react3">
-            <h2 id="r3-status" style="font-size:4vh; margin-bottom:20px;">Готовься...</h2>
-            <button id="r3-btn" style="width:25vh; height:25vh; border-radius:50%; background:gray; border:10px solid #222; outline:none; box-shadow:0 10px 30px rgba(0,0,0,0.8); cursor:pointer;" onmousedown="r3Click(event)" ontouchstart="r3Click(event)"></button>
-            <div id="r3-results" style="margin-top:20px; font-size:2vh; display:flex; flex-direction:column; align-items:center; width:90%; height:30vh; overflow-y:auto; background:rgba(0,0,0,0.3); border-radius:10px; padding:10px;"></div>
-        </div>
-    </div>
-
-    <div id="box-roulette-modal" class="overlay glass hidden" onclick="event.stopPropagation()">
-        <h2 style="color:var(--coin-col); margin-bottom: 20px;">ОТКРЫТИЕ БОКСА</h2>
-        <div class="roulette-wrapper" style="margin-bottom: 20px;">
-            <div class="roulette-center-line"></div>
-            <div class="roulette-track" id="roulette-track"></div>
-        </div>
-        <button class="btn btn-gold" id="btn-start-roulette" style="font-size:24px; padding:15px 40px; margin-bottom: 20px; box-shadow: 0 5px 15px rgba(255, 214, 10, 0.4);" onclick="startBoxRoulette()">ОТКРЫТЬ</button>
-        <h3 style="color:gray; font-size:14px;">СОДЕРЖИМОЕ БОКСА:</h3>
-        <div id="box-contents-preview" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; max-height:30vh; overflow-y:auto; width:90%; max-width:600px; padding:10px;"></div>
-        <button class="btn btn-red" id="btn-close-box" style="margin-top:20px; width: 200px;" onclick="closeBoxModal()">ЗАКРЫТЬ</button>
-    </div>
-
-    <div id="item-action-modal" class="overlay glass hidden" onclick="closeItemAction()">
-        <div style="background:#1c1c1e;padding:20px;border-radius:15px;width:250px;text-align:center;border:2px solid #444;" onclick="event.stopPropagation()">
-            <div id="action-modal-icon" style="font-size:60px; margin-bottom:10px;"></div>
-            <h3 id="action-modal-name" style="margin:0 0 20px 0;"></h3>
-            <div style="display:flex;flex-direction:column;gap:10px;">
-                <button id="action-btn-equip" class="btn btn-green">ПРИМЕНИТЬ</button>
-                <button id="action-btn-sell" class="btn btn-red" onclick="sellCurrentItem()">ПРОДАТЬ</button>
-                <button class="btn btn-dark" onclick="closeItemAction()">ОТМЕНА</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="so2-mode-modal" class="overlay hidden" style="background:rgba(0,0,0,0.9); z-index:2500;">
-        <div class="so2-modal">
-            <div class="so2-left">
-                <div class="so2-card" onclick="selectSO2Category('math', this)"><div style="font-size:30px;">🧮</div><b>МАТЕМАТИКА</b></div>
-                <div class="so2-card" onclick="selectSO2Category('letters', this)"><div style="font-size:30px;">🅰️</div><b>БУКВЫ</b></div>
-                <div class="so2-card" onclick="selectSO2Category('accuracy', this)"><div style="font-size:30px;">🎯</div><b>МЕТКОСТЬ</b></div>
-                <div class="so2-card" onclick="setPendingSO2Game('hidden', '🔎 Поиск', this)"><div style="font-size:30px;">🔎</div><b>ПОИСК</b></div>
-                <div class="so2-card" onclick="setPendingSO2Game('tictactoe', '❌⭕ Крестики', this)"><div style="font-size:30px;">❌⭕</div><b>КРЕСТИКИ</b></div>
-                <div class="so2-card" onclick="setPendingSO2Game('clicker', '⏱️ Кликер', this)"><div style="font-size:30px;">⏱️</div><b>КЛИКЕР</b></div>
-                <div class="so2-card" onclick="selectSO2Category('react', this)"><div style="font-size:30px;">⚡</div><b>РЕАКЦИЯ</b></div>
-            </div>
-            <div class="so2-right" id="so2-submodes">
-                <h2 style="color:gray; width:100%; text-align:center; margin-top:40%;">ВЫБЕРИТЕ КАТЕГОРИЮ СЛЕВА</h2>
-            </div>
-        </div>
-        <div style="position:absolute; bottom:20px; right:20px; display:flex; gap:10px; align-items:center;">
-            <div id="ttt-bot-diff" style="display:none; margin-right:20px;">
-                <b style="color:var(--coin-col);">Сложность ИИ:</b>
-                <select id="ttt-bot-select" class="styled-input" style="padding:10px; margin-left:10px; font-size:16px;">
-                    <option value="easy">ЛЕГКО (Рандом)</option>
-                    <option value="medium" selected>СРЕДНЕ</option>
-                    <option value="hard">ПРОФИ (Без шансов)</option>
-                </select>
-            </div>
-            <button class="btn btn-red" style="font-size:20px; padding:15px 30px;" onclick="closeSO2ModeSelect()">НАЗАД</button>
-            <button class="btn btn-green" style="font-size:20px; padding:15px 30px;" onclick="confirmSO2Mode()">ДАЛЕЕ</button>
-        </div>
-    </div>
-
-    <div id="admin-items-modal" class="overlay glass hidden" onclick="closeAdminItemsModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:90%;max-width:600px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2 style="color:var(--coin-col);">Выберите предметы</h2><div id="admin-items-grid" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; overflow-y:auto; flex-grow:1; padding:10px;"></div><button class="btn btn-green" style="margin-top:15px;" onclick="confirmAdminItems()">ГОТОВО</button></div></div>
-    <div id="avatar-modal" class="overlay glass hidden" onclick="closeAvatarModal()"><div style="background:#111;padding:20px;border-radius:20px;width:80%;max-width:500px;max-height:80vh;display:flex;flex-direction:column;" onclick="event.stopPropagation()"><h2>Выбери аватар</h2><div class="emoji-grid" id="emoji-grid"></div><button class="btn btn-red" onclick="closeAvatarModal()">Закрыть</button></div></div>
-    <div id="pause-overlay" class="overlay glass hidden"><h2>ПАУЗА ⏸️</h2><div style="width:300px;display:flex;flex-direction:column;gap:10px;"><button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button><button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button></div></div>
-    <div id="result-overlay" class="overlay hidden"><div id="result-emoji" style="font-size:80px;">🏆</div><h2 id="result-text" style="font-size:5vh;">Победа!</h2><div id="result-subtext" class="result-score-list"></div><button class="btn btn-dark" style="width:200px;padding:15px;border:2px solid #fff; margin-top:20px;" onclick="closeResult()">В Лобби</button></div>
-    <div id="medals-modal" class="overlay glass hidden" onclick="closeMedalsModal()"><div style="background:#222;padding:30px;border-radius:20px;width:350px;border:2px solid var(--coin-col);" onclick="event.stopPropagation()"><h2 style="color:var(--coin-col); margin-top:0;">Мои медали</h2><div id="medals-modal-list" style="display:flex; flex-wrap:wrap; justify-content:center; gap:5px; max-height:40vh; overflow-y:auto; margin-bottom:20px;"></div><button class="btn btn-red" style="width:100%;" onclick="closeMedalsModal()">Закрыть</button></div></div>
-
-    <div id="inspect-modal" class="overlay glass hidden" onclick="closeInspectModal(event)">
-        <div style="background:#1c1c1e;padding:25px;border-radius:20px;width:320px;max-width:90vw;border:2px solid var(--coin-col);" onclick="event.stopPropagation()">
-            <h2 style="margin-top:0;color:var(--coin-col); text-align:center;">Осмотр</h2>
-            <div id="inspect-profile-preview" class="inspect-profile-preview">
-                <div id="inspect-avatar" class="inspect-avatar">👤</div>
-                <div style="margin-top:10px;">
-                    <div id="inspect-name" class="profile-name" style="font-size:28px; cursor:default; border-bottom:none;"></div>
-                    <div id="inspect-medals" class="medals-container" style="margin-top:10px;"></div>
-                </div>
-            </div>
-        </div>
-        <button id="inspect-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:3000;padding:15px 20px;font-size:18px;" onclick="closeInspectModal(event)">✖</button>
-    </div>
-
-    <div id="profile-stats-modal" class="overlay glass hidden" onclick="closeProfileStatsModal(event)" style="z-index: 5000;">
-        <div style="background:#1c1c1e;padding:25px;border-radius:20px;width:600px;max-width:95vw;border:2px solid var(--coin-col); max-height:85vh; display:flex; flex-direction:row; gap:20px;" onclick="event.stopPropagation()">
-            
-            <div style="width: 35%; border-right: 2px solid #444; padding-right: 15px; display:flex; flex-direction:column; align-items:center;">
-                <div id="ps-avatar" class="inspect-avatar" style="font-size:64px; margin-bottom: 10px;"></div>
-                <div id="ps-name" style="font-size:24px;font-weight:900;line-height:1.2; text-align:center; width:100%; overflow:hidden; text-overflow:ellipsis;"></div>
-                <div id="ps-id" style="color:#888;font-family:monospace;margin-top:5px;"></div>
-            </div>
-            
-            <div style="width: 65%; display:flex; flex-direction:column; overflow-y:auto;">
-                <div class="mini-tabs-header" style="flex-wrap:wrap;">
-                    <button class="mini-tab-btn active" id="ps-tab-btn-you" onclick="switchMiniTab('ps-tab-you', this)">ИГРА С ТОБОЙ</button>
-                    <button class="mini-tab-btn" id="ps-tab-btn-all" onclick="switchMiniTab('ps-tab-all', this)">ВСЕ ИГРЫ</button>
-                    <button class="mini-tab-btn" id="ps-tab-btn-ai" onclick="switchMiniTab('ps-tab-ai', this)">ИГРА С ИИ</button>
-                </div>
-                <div id="ps-tab-you" class="mini-tab-content active" style="width:100%;"></div>
-                <div id="ps-tab-all" class="mini-tab-content" style="width:100%;"></div>
-                <div id="ps-tab-ai" class="mini-tab-content" style="width:100%;"></div>
-            </div>
-            
-        </div>
-        <button id="profile-stats-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:5000;padding:15px 20px;font-size:18px;" onclick="closeProfileStatsModal(event)">✖</button>
-    </div>
-    
-    <div id="friend-modal" class="overlay glass hidden" onclick="closeFriendModal(event)">
-        <div style="background:#1c1c1e;padding:30px;border-radius:20px;width:300px; max-height: 80vh; overflow-y:auto;" onclick="event.stopPropagation()">
-            <div style="font-size:50px;" id="fm-avatar" class="dynamic-avatar">👤</div>
-            <div id="fm-name-cont" class="friend-row" style="font-size:24px; font-weight:bold; margin-bottom:10px; justify-content:center;"></div>
-            <div id="fm-medals-cont" class="medals-container" style="margin-bottom:15px;"></div>
-            <p id="fm-id" style="color:gray;">ID: 0000</p>
-            <div style="display:flex;flex-direction:column;gap:10px; margin-top:15px;" id="friend-actions"></div>
-        </div>
-    </div>
-    
-    <div id="invite-modal" class="overlay glass hidden" onclick="closeInviteModal()"><div style="background:var(--panel-bg);padding:20px;border-radius:20px;width:300px;border:2px solid #444;" onclick="event.stopPropagation()"><h2 style="margin-top:0;">Пригласить друга</h2><div id="invite-friends-list"></div><button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button></div></div>
-    <script>
-        const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
-        const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
-        firebase.initializeApp(firebaseConfig); const db = firebase.database();
-        
-        let EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
-
-        const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', eqName: '', pMedals: [] }; 
-        
-        let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {};
-        let pvpStats = {}; 
-        
-        let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
-        let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
-        let aiDifficulty = 'medium'; 
-        let aiCounter = 1; 
-        let currentOpenedBoxId = null;
+        let aiDifficulty = 'medium'; let currentOpenedBoxId = null;
 
         const GAME_NAMES = {
             'math1': 'МАТЕМАТИКА [ОТВЕТ]', 'math2': 'МАТЕМАТИКА [КАРТОЧКИ]', 'math3': 'МАТЕМАТИКА [ПОРЯДОК]',
@@ -1133,7 +625,8 @@
             }
             try { tg.CloudStorage.getKeys((err, keys) => { if (err || !keys || keys.length === 0) return startData({}); tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); }); }); } catch(e) { startData({}); } setTimeout(() => startData({}), 1000);
         } initApp();
-function spawnBalloons() {
+
+        function spawnBalloons() {
             document.body.classList.add('bg-balloons');
             for(let i=0; i<15; i++) {
                 let b = document.createElement('div');
@@ -1305,7 +798,8 @@ function spawnBalloons() {
             let pool = getBoxPool(boxId);
             document.getElementById('box-roulette-modal').classList.remove('hidden');
             let track = document.getElementById('roulette-track');
-            track.innerHTML = ''; track.style.transition = 'none'; track.style.transform = 'translateX(0px)';
+            track.innerHTML = '<div style="width:120px; height:100%; border-right:2px solid #333;"></div><div style="width:120px; height:100%; border-right:2px solid #333;"></div><div style="width:120px; height:100%; border-right:2px solid #333;"></div>';
+            track.style.transition = 'none'; track.style.transform = 'translateX(0px)';
             document.getElementById('btn-start-roulette').style.display = 'block';
             document.getElementById('btn-close-box').style.display = 'block';
 
@@ -2255,4 +1749,473 @@ function spawnBalloons() {
                 if(!window.let4ImFirst) { window.let4ImFirst = true; setIsland('ЖДЕМ СОПЕРНИКА.....','#ffd60a'); document.getElementById('island-text').innerText='ЖДЕМ СОПЕРНИКА.....'; }
                 db.ref(`lobbies/${lobbyId}/let4Scores/${myId}`).set(errors);
             } else {
-                if(errors === 0) { addCoins(15); setTimeout(()=>showResult('ПОБЕДА!','#34c759','🎓','Ошибок: 0\n+15 🪙'), 800); lobbyPlayers.forEach(p => { if(p.id!==my
+                if(errors === 0) { addCoins(15); setTimeout(()=>showResult('ПОБЕДА!','#34c759','🎓','Ошибок: 0\n+15 🪙'), 800); lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'letters', 'win'); }); }
+                else { tg.showAlert(`Ошибок: ${errors}. Исправь красные!`); setTimeout(drawConnectLines, 500); }
+            }
+        }
+
+        function initWordle() {
+            wdlTarget = VALID_5_LETTER_WORDS[Math.floor(Math.random()*VALID_5_LETTER_WORDS.length)]; wdlRow=0; wdlCol=0; wdlGrid = Array.from({length:6}, ()=>new Array(5).fill(''));
+            let g = document.getElementById('wordle-grid'); g.innerHTML='';
+            for(let i=0; i<6; i++) { let row=document.createElement('div'); row.className='wordle-row'; row.id='w-row-'+i; for(let j=0; j<5; j++) row.innerHTML+=`<div class="wordle-cell" id="w-${i}-${j}"></div>`; g.appendChild(row); }
+            let kb = document.getElementById('wdl-kb'); kb.innerHTML=''; let layouts = ["ЙЦУКЕНГШЩЗХ", "ФЫВАПРОЛДЖЭ", "ЯЧСМИТЬБЮ"];
+            layouts.forEach((rowStr, i) => {
+                let rDiv = document.createElement('div'); rDiv.className = 'wdl-kb-row';
+                if(i===2) { rDiv.innerHTML += `<div class="w-key action" onclick="wEnter()">ВВОД</div>`; }
+                rowStr.split('').forEach(l=>{ rDiv.innerHTML += `<div class="w-key" id="wk-${l}" onclick="wPress('${l}')">${l}</div>`; });
+                if(i===2) { rDiv.innerHTML += `<div class="w-key action" onclick="wBack()">⌫</div>`; } kb.appendChild(rDiv);
+            });
+        }
+        function wPress(l) { if(wdlCol<5 && wdlRow<6) { wdlGrid[wdlRow][wdlCol]=l; document.getElementById(`w-${wdlRow}-${wdlCol}`).innerText=l; wdlCol++; } }
+        function wBack() { if(wdlCol>0) { wdlCol--; wdlGrid[wdlRow][wdlCol]=''; document.getElementById(`w-${wdlRow}-${wdlCol}`).innerText=''; } }
+        function wEnter() {
+            if(wdlCol<5) return tg.showAlert("Слово слишком короткое!");
+            let guess = wdlGrid[wdlRow].join(''); 
+            if(!VALID_5_LETTER_WORDS.includes(guess)) return tg.showAlert("НЕТ ТАКОГО СЛОВА!");
+
+            let tArr = wdlTarget.split(''); let rArr = new Array(5).fill('w-absent');
+            for(let i=0; i<5; i++){ if(guess[i]===tArr[i]) { rArr[i]='w-correct'; tArr[i]=null; } }
+            for(let i=0; i<5; i++){ if(rArr[i]!=='w-correct' && tArr.includes(guess[i])) { rArr[i]='w-present'; tArr[tArr.indexOf(guess[i])]=null; } }
+            for(let i=0; i<5; i++){ 
+                let c = document.getElementById(`w-${wdlRow}-${i}`); c.classList.add(rArr[i]); 
+                let kbKey = document.getElementById(`wk-${guess[i]}`);
+                if (kbKey) {
+                    if (rArr[i] === 'w-correct') kbKey.className = 'w-key w-key-correct';
+                    else if (rArr[i] === 'w-present' && !kbKey.classList.contains('w-key-correct')) kbKey.className = 'w-key w-key-present';
+                    else if (rArr[i] === 'w-absent' && !kbKey.classList.contains('w-key-correct') && !kbKey.classList.contains('w-key-present')) kbKey.className = 'w-key w-key-absent';
+                }
+            }
+            if(guess === wdlTarget) { addCoins(10); setTimeout(()=>showResult('УГАДАЛ!','#34c759','🎓','Слово: '+wdlTarget+'\n+10 🪙'), 500); lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'letters', 'win'); }); }
+            else if(wdlRow===5) { setTimeout(()=>showResult('НЕ УГАДАЛ','#ff453a','🎓','Было слово: '+wdlTarget), 500); lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'letters', 'loss'); }); }
+            else { wdlRow++; wdlCol=0; }
+        }
+
+        let hiddenFound=0, hiddenMisses=0, hiddenActive=false;
+        function initHiddenGame() { 
+            window.hiddenImFirst = false; document.getElementById('hidden-found').innerText='0'; 
+            const scene=document.getElementById('hidden-scene'); scene.innerHTML='<div class="sun-decor">☀️</div>'; 
+            
+            for(let i=0;i<15;i++){ 
+                let tx=5+Math.random()*90; let ty=5+Math.random()*90; 
+                let item=document.createElement('div'); item.className='hidden-item'; item.innerText='💎'; item.style.left=tx+'%'; item.style.top=ty+'%'; item.style.zIndex='10'; 
+                item.onmousedown=(e)=>hitHiddenItem(e,item); item.ontouchstart=(e)=>{e.preventDefault(); hitHiddenItem(e,item);}; 
+                scene.appendChild(item); 
+                
+                let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; 
+                d.style.left=(tx+(Math.random()*6-3))+'%'; d.style.top=(ty+(Math.random()*6-3))+'%'; d.style.zIndex='20'; 
+                scene.appendChild(d); 
+            } 
+            
+            for(let i=0;i<25;i++){ 
+                let d=document.createElement('div'); d.className='scene-decor'; d.innerText=['🌲','☁️','🍄','🌿','🍂','🍁'][Math.floor(Math.random()*6)]; 
+                d.style.left=(5+Math.random()*90)+'%'; d.style.top=(5+Math.random()*90)+'%'; d.style.zIndex='20'; scene.appendChild(d); 
+            } 
+            setIsland(`Найди 15 кристаллов!`); hiddenFound=0; hiddenMisses=0; hiddenActive=false; 
+        }
+        function hitHiddenItem(e, el) { 
+            e.stopPropagation(); if(appState.isPaused || hiddenActive) return; 
+            el.remove(); hiddenFound++; document.getElementById('hidden-found').innerText=hiddenFound; setIsland('Найдено!','#34c759'); 
+            if(hiddenFound>=15) { 
+                if(lobbyPlayers.length>1 && !lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ'))){ 
+                    if(!window.hiddenImFirst){ window.hiddenImFirst = true; setIsland('ЖДЕМ СОПЕРНИКА.....','#ffd60a'); document.getElementById('island-text').innerText='ЖДЕМ СОПЕРНИКА.....'; } 
+                    db.ref(`lobbies/${lobbyId}/hiddenScores/${myId}`).set(hiddenMisses); 
+                } else { 
+                    setTimeout(()=>showResult('Пройдено!','#34c759','🕵️‍♂️','Все найдено!'),500); 
+                    lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'hidden', 'win'); });
+                } 
+            } 
+        }
+        function missHiddenClick(e) { 
+            if(appState.isPaused || hiddenActive) return; 
+            hiddenActive = true; hiddenMisses++; setIsland('Мимо! Штраф 1с','#ff453a'); 
+            setTimeout(() => { hiddenActive = false; setIsland('Ищи дальше!','#fff'); }, 1000);
+        }
+
+        let clicks=0, clickTimeSetting=15, clickTimeCurrent=0, clickInterval, clickActive=false;
+        function changeClickTime(delta) { if(clickActive||appState.isPaused) return; if(!isHost) return tg.showAlert("Только Хост меняет время!"); let n = Math.max(5,Math.min(100,clickTimeSetting+delta)); db.ref(`lobbies/${lobbyId}/clickTime`).set(n); }
+        function initClickerUI() { clicks=0; clickActive=false; clearInterval(clickInterval); document.getElementById('click-score').innerText=0; document.getElementById('click-time-val').innerText=`${clickTimeSetting} сек`; document.getElementById('clicker-controls').style.display='flex'; document.getElementById('click-btn').style.display='block'; document.getElementById('clk-btn-m').style.display = isHost?'block':'none'; document.getElementById('clk-btn-p').style.display = isHost?'block':'none'; document.getElementById('clk-msg').innerText = isHost?"Настрой время и ЖМИ!":"Жди запуска..."; setIsland(isHost?'Настраивай!':'Ожидание...'); }
+        function doClickStart() { if(appState.isPaused) return; if(!clickActive) { if(isHost) db.ref(`lobbies/${lobbyId}/clickState`).set('playing'); else tg.showAlert("Жди хоста!"); } else { clicks++; document.getElementById('click-score').innerText=clicks; } }
+        function startClickerGame() { clickActive=true; clickTimeCurrent=clickTimeSetting; clicks=0; document.getElementById('click-score').innerText=0; document.getElementById('clicker-controls').style.display='none'; document.getElementById('clk-msg').innerText="ТАПАЙ!!!"; clickInterval=setInterval(()=>{ if(appState.isPaused) return; clickTimeCurrent--; setIsland(`Время: ${clickTimeCurrent} сек`); if(clickTimeCurrent<=0){ clearInterval(clickInterval); clickActive=false; document.getElementById('click-btn').style.display='none'; if(lobbyPlayers.length>1 && !lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ'))){ db.ref(`lobbies/${lobbyId}/clickScores/${myId}`).set(clicks); setIsland("Ждем остальных..."); } else { let rew=Math.floor(clicks/20); addCoins(rew); showResult(`Счет: ${clicks}`,'#34c759','⏱️',`+${rew} 🪙`); lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'clk', 'win'); }); } } },1000); }
+
+        let tttBoard=[], tttTurnIdx=0, tttGameOver=false, tttSize=3, tttWinReq=3, tttRef=null; const TTT_SYMBOLS=['x','o','triangle','square','circle_solid']; const TTT_CHARS={'x':'❌','o':'⭕','triangle':'🔺','square':'🔲','circle_solid':'🔴'}; const TTT_COLORS={'x':'#ff453a','o':'#32ade6','triangle':'#34c759','square':'#ffd60a','circle_solid':'#af52de'};
+        function initTicTacToe() { 
+            tttGameOver=false; tttTurnIdx=0; 
+            if (isHost && lobbyPlayers.length>1 && !lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ'))) {
+                let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; 
+                if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=5;} else{tttSize=9;tttWinReq=6;}
+            } else if (lobbyPlayers.length<=1 || lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ'))) {
+                tttSize=3; tttWinReq=3; tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe();
+                if(lobbyPlayers.length>1) setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a');
+            }
+
+            if(lobbyPlayers.length>1 && !lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ'))){ 
+                if(tttRef) tttRef.off(); tttRef=db.ref(`lobbies/${lobbyId}`); 
+                tttRef.on('value', snap=>{ 
+                    if(!snap.exists()||snap.val().status!=='playing') return; let data=snap.val(); 
+                    tttSize = data.tttSize || 3; tttWinReq = data.tttWinReq || 3;
+                    tttBoard=data.tttBoard||new Array(tttSize*tttSize).fill(''); tttTurnIdx=data.tttTurn||0; 
+                    if(checkDynamicWin(true)) return; renderTicTacToe(); 
+                    let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); setIsland(tttTurnIdx===myIdx?"ТВОЙ ХОД!":`ХОДИТ ${lobbyPlayers[tttTurnIdx].name}...`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); 
+                    if(isHost && lobbyPlayers[tttTurnIdx].id.startsWith('ИИ')) { setTimeout(makeBotDynamicMoveFirebase, 800); } 
+                }); 
+            } 
+        }
+        function renderTicTacToe() { document.getElementById('ttt-board').style.gridTemplateColumns=`repeat(${tttSize}, 1fr)`; document.getElementById('ttt-board').style.gridTemplateRows=`repeat(${tttSize}, 1fr)`; const b=document.getElementById('ttt-board'); b.innerHTML=''; let fSize=Math.max(3, 12-tttSize)+'vh'; tttBoard.forEach((cell,i)=>{ let div=document.createElement('div'); div.className=`cell ${cell}`; div.innerText=cell?TTT_CHARS[cell]:''; div.style.fontSize=fSize; div.onclick=()=>moveTicTacToe(i); b.appendChild(div); }); }
+
+        function findBestTTTMove(b, botS, oppS) { 
+            let s=tttSize, r=tttWinReq; 
+            function cw(bd, sym) { for(let y=0;y<s;y++)for(let x=0;x<s;x++){ if(bd[y*s+x]!==sym)continue; if(x<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[y*s+x+i]!==sym)w=0; if(w)return 1; } if(y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x]!==sym)w=0; if(w)return 1; } if(x<=s-r&&y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x+i]!==sym)w=0; if(w)return 1; } if(x>=r-1&&y<=s-r){ let w=1; for(let i=1;i<r;i++)if(bd[(y+i)*s+x-i]!==sym)w=0; if(w)return 1; } } return 0; } 
+            
+            let empty=[]; b.forEach((x,i)=>{if(!x)empty.push(i);});
+            if(empty.length===0) return -1;
+
+            if (aiDifficulty === 'easy') { return empty[Math.floor(Math.random()*empty.length)]; }
+            if (aiDifficulty === 'medium') { if(Math.random() < 0.5) return empty[Math.floor(Math.random()*empty.length)]; }
+
+            for(let i=0;i<b.length;i++){ if(!b[i]){ b[i]=botS; if(cw(b,botS)){b[i]='';return i;} b[i]=''; } } 
+            for(let i=0;i<b.length;i++){ if(!b[i]){ b[i]=oppS; if(cw(b,oppS)){b[i]='';return i;} b[i]=''; } } 
+            
+            if(aiDifficulty === 'hard') {
+                let c=Math.floor((s*s)/2); if(!b[c]) return c; 
+                let corners = [0, s-1, (s-1)*s, s*s-1]; let avCorners = corners.filter(ci => !b[ci]);
+                if(avCorners.length>0) return avCorners[Math.floor(Math.random()*avCorners.length)];
+            }
+            return empty[Math.floor(Math.random()*empty.length)]; 
+        }
+
+        function makeLocalBotMove() { 
+            if (tttGameOver || appState.isPaused) return; 
+            let move = findBestTTTMove(tttBoard, 'o', 'x'); 
+            if(move !== -1) { tttBoard[move]='o'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=0; setIsland("ТВОЙ ХОД!",'#34c759'); } 
+        }
+        function moveTicTacToe(i) { 
+            if(tttGameOver||tttBoard[i]||appState.isPaused) return; 
+            if(lobbyPlayers.length<=1){ tttBoard[i]=TTT_SYMBOLS[tttTurnIdx]; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=(tttTurnIdx+1)%2; setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); } 
+            else if(lobbyPlayers.length===2&&lobbyPlayers[1].id.startsWith('ИИ')){ if(tttTurnIdx!==0) return; tttBoard[i]='x'; renderTicTacToe(); if(checkDynamicWin(false)) return; tttTurnIdx=1; setIsland("ИИ ДУМАЕТ...",'#ffd60a'); setTimeout(makeLocalBotMove,800); } 
+            else { let myIdx=lobbyPlayers.findIndex(p=>p.id===myId); if(tttTurnIdx!==myIdx) return tg.showAlert(`Сейчас ходит ${lobbyPlayers[tttTurnIdx].name}!`); tttBoard[i]=TTT_SYMBOLS[myIdx]; let next=(tttTurnIdx+1)%lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({tttBoard:tttBoard, tttTurn:next}); } 
+        }
+        function makeBotDynamicMoveFirebase() { 
+            if (tttGameOver || appState.isPaused) return; 
+            db.ref(`lobbies/${lobbyId}`).once('value').then(snap => { 
+                let data = snap.val(); if(!data || data.status !== 'playing') return; let b = data.tttBoard; let turn = data.tttTurn; 
+                if (!lobbyPlayers[turn].id.startsWith('ИИ')) return; 
+                let oppIdx = (turn - 1 + lobbyPlayers.length) % lobbyPlayers.length; let move = findBestTTTMove(b, TTT_SYMBOLS[turn], TTT_SYMBOLS[oppIdx]); 
+                if(move !== -1) { b[move] = TTT_SYMBOLS[turn]; let nextTurn = (turn + 1) % lobbyPlayers.length; db.ref(`lobbies/${lobbyId}`).update({ tttBoard: b, tttTurn: nextTurn }); } 
+            }); 
+        }
+
+        function checkDynamicWin(isOnline) { 
+            let s=tttSize, req=tttWinReq; let winner=null; 
+            for(let r=0;r<s;r++){ for(let c=0;c<s;c++){ let sym=tttBoard[r*s+c]; if(!sym) continue; if(c<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[r*s+c+i]!==sym) w=false; if(w) winner=sym; } if(r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c]!==sym) w=false; if(w) winner=sym; } if(c<=s-req && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c+i]!==sym) w=false; if(w) winner=sym; } if(c>=req-1 && r<=s-req){ let w=true; for(let i=1;i<req;i++) if(tttBoard[(r+i)*s+c-i]!==sym) w=false; if(w) winner=sym; } } } 
+            if(!winner && !tttBoard.includes('')){ 
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); setTimeout(()=>showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); 
+                lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'ttt', 'draw'); });
+                return true; 
+            }
+            if(winner){ 
+                tttGameOver=true; if(isOnline&&tttRef) tttRef.off(); 
+                let isMyWin = false; let myIdx = lobbyPlayers.findIndex(p => p.id === myId); let winIdx = TTT_SYMBOLS.indexOf(winner);
+                if (lobbyPlayers.length <= 1) isMyWin = true; else if (winIdx === myIdx) isMyWin = true;
+                
+                let wName = "ИГРОК ПОБЕДИЛ!";
+                if(lobbyPlayers.length <= 1) { wName = `ПОБЕДИЛ ${TTT_CHARS[winner]}!`; } 
+                else {
+                    if(lobbyPlayers.length === 2 && lobbyPlayers[1].id.startsWith('ИИ') && winner === TTT_SYMBOLS[1]) { wName = "ИИ ВЫИГРАЛ! -10 🪙"; isMyWin = false; addCoins(-10); lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'ttt', 'loss'); }); }
+                    else if (isMyWin) { wName = "ПОБЕДА! +5 🪙"; addCoins(5); lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'ttt', 'win'); }); }
+                    else { wName = (lobbyPlayers[winIdx] ? getNameHTML(lobbyPlayers[winIdx].name, lobbyPlayers[winIdx].eqName) : "ПОРАЖЕНИЕ!") + " -10 🪙"; addCoins(-10); lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'ttt', 'loss'); }); }
+                }
+                
+                let bg = isMyWin ? '#34c759' : '#ff453a'; if (lobbyPlayers.length <= 1) bg = TTT_COLORS[winner];
+                setTimeout(()=>showResult(wName, bg, TTT_CHARS[winner]), 300); return true; 
+            } return false; 
+        }
+
+        let accRef=null, accLoc=false, accInt=null, accL3B=0, accL3T=0, accAiming=false;
+        let accState = { l:1, turn:0, s:{}, k:[], l2Done:0, l3Done:0 };
+
+        function initAccuracy(level) {
+            accState = { l:level, turn:0, s:{}, k:[], l2Done:0, l3Done:0 };
+            if(lobbyPlayers.length===0) lobbyPlayers=[{id:myId, name:myName, avatar:myAvatar}];
+            lobbyPlayers.forEach(p => accState.s[p.id] = 0);
+            accLoc = (lobbyPlayers.length <= 1 || lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ')));
+            window.accL3Started = false; window.isKnifeFlying = false; clearInterval(accInt);
+
+            if (!accLoc) {
+                if(accRef) accRef.off(); accRef = db.ref(`lobbies/${lobbyId}/accuracy`);
+                if(isHost) accRef.set(accState);
+                accRef.on('value', snap => { if(!snap.exists()) return; accState=snap.val(); if(!accState.s)accState.s={}; if(!accState.k)accState.k=[]; renderAcc(); });
+            } else { renderAcc(); }
+        }
+
+        function renderAcc() {
+            if(appState.isPaused) return;
+            [1,2,3].forEach(i => { let el = document.getElementById('acc-area-'+i); if(el) el.style.display = (i===accState.l ? 'block' : 'none'); });
+            let modeNames = ['Ножи', 'Лягушка', 'Утки'];
+            document.getElementById('acc-header').innerText = `Меткость: ${modeNames[accState.l-1]}`;
+            
+            let sd = ""; lobbyPlayers.forEach(p => sd += `<b>${accState.s[p.id]||0}</b> - ${getNameHTML(p.name, p.eqName)}<br>`);
+            document.getElementById('acc-scores-display').innerHTML = sd;
+
+            let mIdx = lobbyPlayers.findIndex(p=>p.id===myId); let isMyTurn = (accState.turn === mIdx);
+            
+            if(accState.l === 1) { 
+                let spinner = document.getElementById('acc-t1');
+                let currentKnives = spinner.querySelectorAll('.acc-stuck-knife').length;
+                if (currentKnives < accState.k.length) {
+                    for(let i = currentKnives; i < accState.k.length; i++) {
+                        let k = accState.k[i];
+                        let d = document.createElement('div'); d.className = 'acc-stuck-knife'; d.style.transform = `translate(-50%, 0) rotate(${k.a}deg)`; d.innerHTML = '<div class="acc-big-sword" style="top: 8vh; bottom: auto;"></div>'; spinner.appendChild(d); 
+                    }
+                } else if (currentKnives > accState.k.length) {
+                    spinner.querySelectorAll('.acc-stuck-knife').forEach(e => e.remove());
+                }
+                
+                document.getElementById('acc-ready-knife').style.display = isMyTurn && !window.isKnifeFlying ? 'block' : 'none';
+                setIsland(isMyTurn?'Тапни чтобы метнуть!':`Кидает ${lobbyPlayers[accState.turn].name}...`, isMyTurn?'#34c759':'#ffd60a');
+                
+                if ((isHost||accLoc) && lobbyPlayers[accState.turn]?.id.startsWith('ИИ')) setTimeout(accBot1, 1000);
+            } else if (accState.l === 2) { 
+                document.getElementById('acc-frog').style.display = 'block';
+                setIsland(isMyTurn?'Тапни чтобы лягушка прыгнула!':`Прыгает ${lobbyPlayers[accState.turn].name}...`, isMyTurn?'#34c759':'#ffd60a');
+                if ((isHost||accLoc) && lobbyPlayers[accState.turn]?.id.startsWith('ИИ')) setTimeout(accBot2, 1000);
+            } else if (accState.l === 3) { 
+                document.getElementById('acc-area-3').style.pointerEvents = isMyTurn ? 'auto' : 'none';
+                setIsland(isMyTurn?'Сбивай уток!':`Стреляет ${lobbyPlayers[accState.turn].name}...`, isMyTurn?'#34c759':'#ffd60a');
+                if (isMyTurn && !window.accL3Started) accStart3();
+                if ((isHost||accLoc) && lobbyPlayers[accState.turn]?.id.startsWith('ИИ')) setTimeout(accBot3, 1000);
+            }
+        }
+
+        function syncAcc() { if(accLoc) renderAcc(); else accRef.set(accState); }
+
+        function accThrowKnifeClick() {
+            let mIdx = lobbyPlayers.findIndex(p=>p.id===myId); if(accState.turn !== mIdx) return;
+            if (window.isKnifeFlying) return; window.isKnifeFlying = true;
+            let fly = document.getElementById('acc-flying-knife'); let ready = document.getElementById('acc-ready-knife');
+            ready.style.display = 'none'; fly.style.display = 'block'; fly.style.bottom = '5vh'; 
+            
+            void fly.offsetWidth; 
+            fly.style.transition = 'bottom 0.25s ease-in'; fly.style.bottom = '65vh'; 
+            
+            setTimeout(() => {
+                fly.style.display = 'none'; fly.style.transition = 'none'; fly.style.bottom = '5vh'; ready.style.display = 'block'; window.isKnifeFlying = false;
+                let currentRot = ((Date.now() % 3000) / 3000) * 360; let hitAngle = (360 - currentRot) % 360; 
+                let collision = accState.k.some(k => Math.abs(k.a - hitAngle) < 15 || Math.abs(k.a - hitAngle) > 345);
+                if(collision) { tg.showAlert("Дзинь! Попал в меч!"); accAdv1(); } else { accState.k.push({a: hitAngle, c: 'silver'}); accState.s[myId] = (accState.s[myId]||0)+1; accAdv1(); }
+            }, 250);
+        }
+        function accAdv1() { let kTotal = Math.floor(12 / lobbyPlayers.length) * lobbyPlayers.length; accState.turn = (accState.turn + 1) % lobbyPlayers.length; if(accState.k.length >= kTotal) { finishAcc(); } else { syncAcc(); } }
+
+        function accTriggerFrogClick() {
+            if(accState.turn !== lobbyPlayers.findIndex(p=>p.id===myId)) return;
+            let fr = document.getElementById('acc-frog'); fr.style.animation = 'acc-frog-jump 0.5s ease-out';
+            setTimeout(() => {
+                let t = document.getElementById('acc-t2').getBoundingClientRect(); let f = fr.getBoundingClientRect();
+                let hit = !(f.right < t.left || f.left > t.right || f.bottom < t.top || f.top > t.bottom); 
+                if(hit) { accState.s[myId] = (accState.s[myId]||0)+1; tg.showAlert("Попал!"); } else tg.showAlert("Мимо!");
+            }, 250);
+            setTimeout(() => {
+                fr.style.animation = 'none'; accState.l2Done++; accState.turn = (accState.turn+1)%lobbyPlayers.length;
+                if(accState.l2Done >= lobbyPlayers.length) { finishAcc(); } else { syncAcc(); }
+            }, 500); 
+        }
+
+        function accAimStart(e) { if(accState.turn !== lobbyPlayers.findIndex(p=>p.id===myId) || accL3B >= 3) return; accAiming = true; document.getElementById('acc-dash').style.display = 'block'; document.onmouseup = accAimRelease; document.ontouchend = accAimRelease; }
+        function accAimRelease() {
+            if(!accAiming) return; accAiming = false; document.getElementById('acc-dash').style.display = 'none'; document.onmouseup = null; document.ontouchend = null;
+            let b = document.getElementById('acc-flying-bullet'); b.style.display = 'block'; b.style.bottom = '0';
+            setTimeout(() => {
+                b.style.transition = 'bottom 0.4s linear'; b.style.bottom = '100%';
+                setTimeout(() => {
+                    b.style.display = 'none'; b.style.transition = 'none'; b.style.bottom = '0';
+                    let bird = document.getElementById('acc-bird').getBoundingClientRect(); let w = window.innerWidth; let tL = bird.left; let tR = bird.right;
+                    if(w/2 >= tL && w/2 <= tR) { accState.s[myId] = (accState.s[myId]||0)+1; tg.showAlert("Сбил!"); accL3B++; document.getElementById('acc-b-count').innerText=accL3B; let br = document.getElementById('acc-bird'); br.style.display='none'; setTimeout(()=>br.style.display='block', 1000); }
+                }, 400);
+            }, 10);
+        }
+        function accStart3() { window.accL3Started = true; accL3B = 0; accL3T = 30; document.getElementById('acc-b-count').innerText='0'; accInt = setInterval(()=>{ accL3T--; document.getElementById('acc-timer').innerText = accL3T; if(accL3T <= 0 || accL3B >= 3) { clearInterval(accInt); window.accL3Started = false; accState.l3Done++; accState.turn = (accState.turn+1)%lobbyPlayers.length; if(accState.l3Done >= lobbyPlayers.length) finishAcc(); else syncAcc(); } }, 1000); }
+
+        function accBot1() { let botId = lobbyPlayers[accState.turn].id; accState.k.push({a: Math.random()*360, c: 'silver'}); accState.s[botId]=(accState.s[botId]||0)+1; accAdv1(); }
+        function accBot2() { let botId = lobbyPlayers[accState.turn].id; accState.s[botId]=(accState.s[botId]||0)+(Math.random()>0.3?1:0); accState.l2Done++; accState.turn=(accState.turn+1)%lobbyPlayers.length; if(accState.l2Done>=lobbyPlayers.length){finishAcc();} else {syncAcc();} }
+        function accBot3() { let botId = lobbyPlayers[accState.turn].id; accState.s[botId]=(accState.s[botId]||0)+Math.floor(Math.random()*3)+1; accState.l3Done++; accState.turn=(accState.turn+1)%lobbyPlayers.length; if(accState.l3Done>=lobbyPlayers.length) finishAcc(); else syncAcc(); }
+
+        function finishAcc() {
+            let sorted = [...lobbyPlayers].map(p => ({p:p, s:accState.s[p.id]||0})).sort((a,b)=>b.s-a.s);
+            let top = sorted[0].s; let winners = sorted.filter(x=>x.s === top);
+            let isMyWin = winners.some(x=>x.p.id === myId);
+            
+            let t = ""; sorted.forEach(x => t += `${getNameHTML(x.p.name, x.p.eqName)} - <b>${x.s}</b><br>`);
+
+            if (winners.length > 1) {
+                let nms = winners.map(x=>getNameHTML(x.p.name, x.p.eqName)).join(" И ");
+                showResult(`НИЧЬЯ!\n${nms}`, '#ff9f0a', '🏆', `Счет: <b>${top}</b><br><br>${t}`);
+                lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'acc', 'draw'); });
+            } else {
+                showResult(isMyWin ? "ПОБЕДА!" : "ПОРАЖЕНИЕ! -10 🪙", isMyWin ? '#34c759' : '#ff453a', isMyWin ? '🎯' : '❌', t);
+                lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'acc', isMyWin?'win':'loss'); });
+            }
+
+            if(lobbyPlayers.length>1) { if(!isMyWin) addCoins(-10); } 
+            if(!accLoc && isHost) db.ref(`lobbies/${lobbyId}/status`).set('ended');
+        }
+
+        let rInt1, rInt2, react3Timeout, react3StartTm = 0, react3Attempts = 0, react3Times = [], react3State = 'wait';
+        let r1Time = 60, r1Score = 0, r1Max = 100, r1Spawned = 0;
+        let r2Time = 45, r2Score = 0;
+
+        function calcReactCoins(score, mode) {
+            if(mode === 1 || mode === 2) {
+                return Math.floor(score / 10);
+            } else {
+                let s = score / 1000;
+                if(s <= 1.0) return 10;
+                if(s <= 2.0) return 5;
+                if(s <= 3.0) return 3;
+                if(s <= 4.0) return 2;
+                return 1;
+            }
+        }
+
+        function finishReact(mode, finalScore) {
+            let isTimeMode = (mode === 3);
+            if(lobbyPlayers.length > 1 && !lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ'))) {
+                db.ref(`lobbies/${lobbyId}/reactScores/${myId}`).set(finalScore);
+                setIsland("Ждем остальных...");
+            } else {
+                let coins = calcReactCoins(finalScore, mode);
+                addCoins(coins);
+                let txt = isTimeMode ? `Среднее время: ${(finalScore/1000).toFixed(3)}с` : `Счет: ${finalScore}`;
+                showResult('ИГРА ОКОНЧЕНА!', '#34c759', '⚡', `${txt}<br>+${coins} 🪙`);
+                lobbyPlayers.forEach(p => { if(p.id!==myId) updatePvpStat(p.id, 'react', 'win'); });
+            }
+        }
+
+        function spawnBalloon(areaId, mode) {
+            let area = document.getElementById(areaId);
+            let b = document.createElement('div');
+            b.className = 'react-balloon';
+            b.innerText = ['🎈','🎯','🔴','🔵','🟢'][Math.floor(Math.random()*5)];
+            b.style.left = (10 + Math.random()*80) + '%';
+            b.style.top = (10 + Math.random()*80) + '%';
+            b.style.animation = `balloonSpawn ${mode===1 ? '3s' : '1.5s'} ease-in-out forwards`;
+            
+            b.onmousedown = b.ontouchstart = (e) => {
+                e.preventDefault(); e.stopPropagation();
+                if(appState.isPaused) return;
+                b.remove();
+                if(mode===1) { r1Score++; document.getElementById('r1-score').innerText = r1Score; }
+                if(mode===2) { r2Score++; document.getElementById('r2-score').innerText = r2Score; }
+            };
+            area.appendChild(b);
+            setTimeout(() => { if(b.parentElement) b.remove(); }, mode===1 ? 3000 : 1500);
+        }
+
+        function initReact1() {
+            r1Time = 60; r1Score = 0; r1Spawned = 0;
+            document.getElementById('r1-time').innerText = r1Time;
+            document.getElementById('r1-score').innerText = r1Score;
+            document.getElementById('r1-area').innerHTML = '';
+            setIsland("Лопай шарики!", "#34c759");
+            rInt1 = setInterval(() => {
+                if(appState.isPaused) return;
+                r1Time--; document.getElementById('r1-time').innerText = r1Time;
+                if(r1Time <= 0) { clearInterval(rInt1); return finishReact(1, r1Score); }
+                
+                let spawnCount = 1 + Math.floor((60 - r1Time) / 10);
+                for(let i=0; i<spawnCount; i++) {
+                    if(r1Spawned >= r1Max) break;
+                    spawnBalloon('r1-area', 1);
+                    r1Spawned++;
+                }
+            }, 1000);
+        }
+
+        function initReact2() {
+            r2Time = 45; r2Score = 0;
+            document.getElementById('r2-time').innerText = r2Time;
+            document.getElementById('r2-score').innerText = r2Score;
+            document.getElementById('r2-area').innerHTML = '';
+            setIsland("Лопай как можно быстрее!", "#ff9f0a");
+            let spawnRate = 800;
+            function spawnLoop() {
+                if(appState.isPaused) { setTimeout(spawnLoop, spawnRate); return; }
+                if(r2Time <= 0) return;
+                spawnBalloon('r2-area', 2);
+                spawnRate = Math.max(200, spawnRate - 15);
+                setTimeout(spawnLoop, spawnRate);
+            }
+            spawnLoop();
+            rInt2 = setInterval(() => {
+                if(appState.isPaused) return;
+                r2Time--; document.getElementById('r2-time').innerText = r2Time;
+                if(r2Time <= 0) { clearInterval(rInt2); finishReact(2, r2Score); }
+            }, 1000);
+        }
+
+        function updateR3Log(ms, isFalse) {
+            let log = document.getElementById('r3-results');
+            let div = document.createElement('div');
+            div.innerHTML = `Попытка ${react3Attempts}: <b>${isFalse ? '<span style="color:#ff453a;">ФАЛЬСТАРТ (5с)</span>' : '<span style="color:#34c759;">'+(ms/1000).toFixed(3) + ' сек</span>'}</b>`;
+            log.prepend(div);
+        }
+
+        function nextR3Turn() {
+            if(react3Attempts >= 10) {
+                let avg = react3Times.reduce((a,b)=>a+b, 0) / 10;
+                return finishReact(3, avg);
+            }
+            react3State = 'wait';
+            document.getElementById('r3-btn').style.background = '#ff453a'; 
+            document.getElementById('r3-status').innerText = `Попытка ${react3Attempts+1}/10. Жди желтый!`;
+            
+            let delay = 2000 + Math.random() * 13000; 
+            react3Timeout = setTimeout(() => {
+                if(appState.isPaused) { nextR3Turn(); return; }
+                react3State = 'go';
+                document.getElementById('r3-btn').style.background = '#ffd60a';
+                react3StartTm = Date.now();
+            }, delay);
+        }
+
+        function r3Click(e) {
+            e.preventDefault(); e.stopPropagation();
+            if(appState.isPaused) return;
+            if(react3State === 'wait') {
+                clearTimeout(react3Timeout);
+                document.getElementById('r3-status').innerText = 'Фальстарт! Штраф +5 сек.';
+                react3Times.push(5000); 
+                react3Attempts++;
+                updateR3Log(5000, true);
+                react3State = 'done';
+                setTimeout(nextR3Turn, 1000);
+            } else if (react3State === 'go') {
+                react3State = 'done';
+                let timeMs = Date.now() - react3StartTm;
+                react3Times.push(timeMs);
+                react3Attempts++;
+                document.getElementById('r3-status').innerText = `Твое время: ${(timeMs/1000).toFixed(3)} с!`;
+                updateR3Log(timeMs, false);
+                setTimeout(nextR3Turn, 1000);
+            }
+        }
+
+        function initReact3() {
+            react3Attempts = 0; react3Times = []; react3State = 'wait';
+            document.getElementById('r3-results').innerHTML = '';
+            document.getElementById('r3-btn').style.background = 'gray';
+            document.getElementById('r3-status').innerText = 'Готовься...';
+            setIsland("Жми желтую кнопку!", "#fff");
+            nextR3Turn();
+        }
+
+        function initReact(mode) {
+            clearInterval(rInt1); clearInterval(rInt2); clearTimeout(react3Timeout);
+            document.querySelectorAll('[id^="screen-game-react"]').forEach(e=>e.classList.remove('active'));
+            document.getElementById('screen-game-react'+mode).classList.add('active');
+            if(mode===1) initReact1();
+            if(mode===2) initReact2();
+            if(mode===3) initReact3();
+        }
+    </script>
+</body>
+</html>
