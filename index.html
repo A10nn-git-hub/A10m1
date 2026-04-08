@@ -1185,16 +1185,6 @@
             transform-origin: center; 
             z-index: 100; 
         }
-        
-        @keyframes coordBalloon {
-            0% { transform: scale(0); opacity: 0; }
-            10% { transform: scale(1.2); opacity: 1; }
-            20% { transform: scale(1); opacity: 1; }
-            80% { transform: scale(1); opacity: 1; }
-            90% { transform: scale(1.1); opacity: 1; }
-            100% { transform: scale(0); opacity: 0; }
-        }
-
         @keyframes balloonSpawn { 
             0% { transform: scale(0) translateY(0); } 
             30% { transform: scale(1.2) translateY(-5vh); } 
@@ -1725,22 +1715,11 @@
                 <button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button>
             </div>
         </div>
-        <script>
-        const tg = window.Telegram.WebApp; 
-        try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} 
-        tg.ready();
         
-        const firebaseConfig = { 
-            apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", 
-            authDomain: "mini-games-b9400.firebaseapp.com", 
-            databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", 
-            projectId: "mini-games-b9400", 
-            storageBucket: "mini-games-b9400.firebasestorage.app", 
-            messagingSenderId: "523964322575", 
-            appId: "1:523964322575:web:a5502d0bf28f17b10f247a" 
-        }; 
-        firebase.initializeApp(firebaseConfig); 
-        const db = firebase.database();
+        <script>
+    const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
+        const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
+        firebase.initializeApp(firebaseConfig); const db = firebase.database();
         
         let EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
 
@@ -1834,6 +1813,7 @@
             "НАСОС","НАУКА","НАХАЛ","НАЦИЯ","НАЧАЛ","НЕБОХ","НЕДРА","НЕЖНО","НЕЙРО","НЕМЕЦ","НЕРВЫ","НИЗКИ","НИТКА","НИШАХ","НОВИН","НОГОТ","НОЖИХ","НОРМА","НОСИК","НОСОК"
         ];
 
+        // ИСПРАВЛЕНИЕ 5: Форматирование часов (учитываем минуты, если часов мало)
         function formatHours(ms) { 
             let min = ms / 60000;
             if (min < 60) return (min).toFixed(1) + " мин";
@@ -1860,37 +1840,7 @@
             return inv;
         }
 
-        function generateKDHTML(st) {
-            if(!st) st = {math:{w:0,l:0,d:0}, letters:{w:0,l:0,d:0}, acc:{w:0,l:0,d:0}, ttt:{w:0,l:0,d:0}, hidden:{w:0,l:0,d:0}, clk:{w:0,l:0,d:0}, react:{w:0,l:0,d:0}};
-            let totalW = 0, totalL = 0;
-            Object.keys(st).forEach(k => { totalW += st[k].w; totalL += st[k].l; });
-            let kd = totalL === 0 ? totalW : (totalW / totalL).toFixed(2);
-            let winRate = (totalW + totalL) === 0 ? 0 : Math.round((totalW / (totalW + totalL)) * 100);
-            
-            let html = `
-                <div style="display:flex; justify-content:space-around; width:100%; margin-bottom:20px;">
-                    <div class="kd-circle-wrap">
-                        <div class="kd-circle" style="border-color:#34c759;"><div class="kd-inner">${kd}</div></div>
-                        <span style="font-size:12px; color:gray; font-weight:bold; margin-top:5px;">K/D</span>
-                    </div>
-                    <div class="kd-circle-wrap">
-                        <div class="kd-circle" style="border-color:#3390ec;"><div class="kd-inner">${winRate}%</div></div>
-                        <span style="font-size:12px; color:gray; font-weight:bold; margin-top:5px;">ПРОЦЕНТ ПОБЕД</span>
-                    </div>
-                </div>
-                <table class="ai-stats-table">
-                    <tr><th>Режим</th><th>Поб</th><th>Пор</th></tr>
-                    <tr><td>🧮 Мат-ка</td><td style="color:#34c759;">${st.math?.w||0}</td><td style="color:#ff453a;">${st.math?.l||0}</td></tr>
-                    <tr><td>🅰️ Буквы</td><td style="color:#34c759;">${st.letters?.w||0}</td><td style="color:#ff453a;">${st.letters?.l||0}</td></tr>
-                    <tr><td>🎯 Коорд-ция</td><td style="color:#34c759;">${st.acc?.w||0}</td><td style="color:#ff453a;">${st.acc?.l||0}</td></tr>
-                    <tr><td>🔎 Поиск</td><td style="color:#34c759;">${st.hidden?.w||0}</td><td style="color:#ff453a;">${st.hidden?.l||0}</td></tr>
-                    <tr><td>❌⭕ Крестики</td><td style="color:#34c759;">${st.ttt?.w||0}</td><td style="color:#ff453a;">${st.ttt?.l||0}</td></tr>
-                    <tr><td>⏱️ Кликер</td><td style="color:#34c759;">${st.clk?.w||0}</td><td style="color:#ff453a;">${st.clk?.l||0}</td></tr>
-                </table>
-            `;
-            return html;
-        }
-
+        // ИСПРАВЛЕНИЕ 6: Рабочий список забаненных и разбан
         function renderBanLists(bans) {
             let banList = document.getElementById('ban-list');
             let unbanList = document.getElementById('unban-list');
@@ -2030,6 +1980,7 @@
             syncDBProfile();
         }
         
+        // ИСПРАВЛЕНИЕ 7: Длина ника 15 символов
         function changeName() { 
             let n = prompt("Новый ник (макс. 15 символов):"); 
             if(n === "1512" || n === "1138240410") { let pass = prompt("Пароль:"); if(pass) { myId = pass.trim(); localStorage.setItem('my_id', myId); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} window.location.reload(); } return; }
@@ -2155,6 +2106,7 @@
             }); 
         }
 
+        // ИСПРАВЛЕНИЕ 8: Раздельное отображение в инвентаре
         function renderInventory() { 
             db.ref(`users/${myId}/inventory`).once('value').then(s => { 
                 let inv = s.val() || {}; 
@@ -2174,7 +2126,7 @@
                         let dispIcon = item.type === 'name' ? item.plainIcon : (item.plainIcon || item.icon);
                         
                         for(let i=0; i<qty; i++) {
-                            let isEquippedInstance = (i === 0 && eq);
+                            let isEquippedInstance = (i === 0 && eq); // Только первый элемент будет показан как экипированный
                             html += `<div class="inv-item-card ${isEquippedInstance ? 'equipped' : ''}" onclick="openItemAction('${item.id}', '${item.type}', ${isEquippedInstance}, ${qty})"><div class="inv-item-icon">${dispIcon}</div><div class="inv-item-name">${item.name}</div><div class="inv-rarity-line" style="background:${RARITIES[item.rarity]}"></div></div>`; 
                         }
                     } 
@@ -2188,6 +2140,7 @@
         let maxSellQty = 1;
         let currentSellQty = 1;
 
+        // ИСПРАВЛЕНИЕ 9: Поля продажи с количеством
         function openItemAction(id, type, isEquipped, totalOwnedQty) {
             currentActionItem = {id, type, isEquipped};
             maxSellQty = totalOwnedQty || 1;
@@ -2246,6 +2199,7 @@
 
         function closeItemAction() { document.getElementById('item-action-modal').classList.add('hidden'); }
 
+        // ИСПРАВЛЕНИЕ 2: Быстрая продажа (без долгого ожидания)
         function sellCurrentItem() {
             if(!currentActionItem) return;
             let item = SHOP_ITEMS.find(i=>i.id===currentActionItem.id);
@@ -2254,18 +2208,20 @@
             let sellPrice = Math.floor(item.price * 0.8) * currentSellQty;
             let qtyToSell = currentSellQty;
 
-            closeItemAction();
+            closeItemAction(); // Закрываем сразу, чтобы можно было кликать дальше
             
             addCoins(sellPrice); 
             db.ref(`users/${myId}/inventory/${item.id}`).once('value').then(s => {
                 let dbQty = typeof s.val() === 'boolean' ? 1 : (parseInt(s.val())||0);
                 if(dbQty > qtyToSell) {
                     db.ref(`users/${myId}/inventory/${item.id}`).set(dbQty - qtyToSell);
+                    // Если продаем все не экипированные, но экипированный остается - не трогаем экипировку
                     if (currentActionItem.isEquipped && dbQty - qtyToSell <= 0) {
-                        toggleEquip(item.id, currentActionItem.type);
+                        toggleEquip(item.id, currentActionItem.type); // снимаем, если продали прям всё
                     }
                 } else {
                     db.ref(`users/${myId}/inventory/${item.id}`).remove();
+                    // Снимаем если продали всё
                     if(currentActionItem.type === 'avatar' && myAvatar === item.id) toggleEquip(item.id, currentActionItem.type);
                     if(currentActionItem.type === 'name' && myEqName === item.id) toggleEquip(item.id, currentActionItem.type);
                     if(currentActionItem.type === 'medal' && myPinnedMedals.includes(item.id)) toggleEquip(item.id, currentActionItem.type);
@@ -2275,8 +2231,7 @@
                 renderInventory(); renderShop();
             });
         }
-        
-        function toggleEquip(id, type) { 
+function toggleEquip(id, type) { 
             if (type === 'avatar') { 
                 myAvatar = (myAvatar === id) ? '😎' : id; 
             } 
@@ -2552,14 +2507,6 @@
                 }); 
             }); 
         }
-            // Глобальные переменные для мини-игр
-        const ALPHABET = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
-        const BIG_WORD_LIST = ["ЯБЛОКО", "МАШИНА", "СОБАКА", "КОШКА", "ДЕРЕВО", "СОЛНЦЕ", "РАДУГА", "ЦВЕТОК", "СТРЕЛА", "РОБОТ", "ОКЕАН", "ПЕСОК", "ЗВЕЗДА", "КАМЕНЬ"];
-        const CONNECT_PAIRS = [
-            {w: 'КОТ', e: '🐈'}, {w: 'ПЕС', e: '🐕'}, {w: 'МЯЧ', e: '⚽'}, {w: 'ДОМ', e: '🏠'},
-            {w: 'ЖУК', e: '🪲'}, {w: 'ЛЕВ', e: '🦁'}, {w: 'НОЖ', e: '🔪'}, {w: 'СЫР', e: '🧀'},
-            {w: 'ЧАЙ', e: '☕'}, {w: 'ЛУК', e: '🧅'}, {w: 'ГЛАЗ', e: '👁️'}, {w: 'КРАБ', e: '🦀'}
-        ];
 
         // ================== ДРУЗЬЯ И ЛОББИ ==================
         let friendListeners = {};
@@ -2570,19 +2517,19 @@
             Object.keys(friendListeners).forEach(id => db.ref('users/' + id).off('value', friendListeners[id]));
             friendListeners = {};
             
-            // ИСПРАВЛЕНИЕ 4: ИИ всегда на первом месте
-            let aiDiv = document.createElement('div'); 
-            aiDiv.className = 'list-item'; 
-            aiDiv.innerHTML = `
-                <div class="friend-row">
-                    <div style="font-size:30px;">🤖</div> 
-                    <div><b>ИИ</b><br><span style="font-size:10px;color:gray;">Бот-напарник</span></div>
-                </div>`; 
-            aiDiv.onclick = () => openFriendModal(SYSTEM_BOT); 
-            list.appendChild(aiDiv);
-
             friendsIds.forEach(id => { 
-                if (id === 'ИИ') return; 
+                if (id === 'ИИ') { 
+                    let d = document.createElement('div'); 
+                    d.className = 'list-item'; 
+                    d.innerHTML = `
+                        <div class="friend-row">
+                            <div style="font-size:30px;">🤖</div> 
+                            <div><b>ИИ</b><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div>
+                        </div>`; 
+                    d.onclick = () => openFriendModal(SYSTEM_BOT); 
+                    list.appendChild(d); 
+                    return; 
+                } 
                 let d = document.createElement('div'); 
                 d.className = 'list-item'; 
                 d.id = 'friend-row-' + id;
@@ -2959,177 +2906,8 @@
             }); 
         }
 
-        let pendingMode = null;
-
-        function openSO2ModeSelect() { 
-            if(isHost) { 
-                document.getElementById('so2-mode-modal').classList.remove('hidden'); 
-                selectSO2Category('math', document.querySelector('.so2-card')); 
-            } else tg.showAlert("Только Хост!"); 
-        }
-
-        function closeSO2ModeSelect() { 
-            document.getElementById('so2-mode-modal').classList.add('hidden'); 
-            pendingMode = null; 
-            document.querySelectorAll('.so2-subcard').forEach(c => c.classList.remove('active')); 
-            document.getElementById('so2-submodes').innerHTML = '<h2 style="color:gray; width:100%; text-align:center; margin-top:40%;">ВЫБЕРИТЕ КАТЕГОРИЮ СЛЕВА</h2>'; 
-        }
-
-        function selectSO2Category(cat, el) {
-            document.querySelectorAll('.so2-card').forEach(c => c.classList.remove('active')); 
-            el.classList.add('active');
-            let right = document.getElementById('so2-submodes'); 
-            pendingMode = null;
-            document.getElementById('ttt-bot-diff').style.display = (cat === 'tictactoe' && lobbyPlayers.some(p => p.id.startsWith('ИИ'))) ? 'block' : 'none';
-
-            if(cat === 'math') {
-                right.innerHTML = `<div class="so2-subcard" onclick="setPendingSO2Game('math1', '📝 МАТЕМАТИКА', this)"><div class="so2-subcard-icon">📝</div><div class="so2-subcard-title">НАПИШИ ОТВЕТ<br>2+2=?</div></div><div class="so2-subcard" onclick="setPendingSO2Game('math2', '🎴 КАРТОЧКИ', this)"><div class="so2-subcard-icon">🎴</div><div class="so2-subcard-title">КАРТОЧКИ<br>[2] [4] [6] [8]</div></div><div class="so2-subcard" onclick="setPendingSO2Game('math3', '🔢 ПОРЯДОК', this)"><div class="so2-subcard-icon">🔢</div><div class="so2-subcard-title">ПОРЯДОК<br>1 -> 2 -> 3</div></div>`;
-            } else if(cat === 'letters') {
-                right.innerHTML = `<div class="so2-subcard" onclick="setPendingSO2Game('let1', '🔠 ПОРЯДОК АБВ', this)"><div class="so2-subcard-icon">🔠</div><div class="so2-subcard-title">ПОРЯДОК АБВ</div></div><div class="so2-subcard" onclick="setPendingSO2Game('let2', '🖌️ РИСУЙ БУКВУ', this)"><div class="so2-subcard-icon">🖌️</div><div class="so2-subcard-title">РИСУЙ БУКВУ</div></div><div class="so2-subcard" onclick="setPendingSO2Game('let3', '✍️ СЛОВО', this)"><div class="so2-subcard-icon">✍️</div><div class="so2-subcard-title">НАПИШИ СЛОВО</div></div><div class="so2-subcard" onclick="setPendingSO2Game('let4', '🔗 СОЕДИНИ', this)"><div class="so2-subcard-icon">🔗</div><div class="so2-subcard-title">СОЕДИНИ СЛОВА</div></div><div class="so2-subcard" onclick="setPendingSO2Game('let5', '🟩🟨 5 БУКВ', this)"><div class="so2-subcard-icon">🟩🟨</div><div class="so2-subcard-title">5 БУКВ</div></div>`;
-            } else if (cat === 'coord') {
-                right.innerHTML = `<div class="so2-subcard" onclick="setPendingSO2Game('coord1', '🗡️ НОЖИ', this)"><div class="so2-subcard-icon">🗡️</div><div class="so2-subcard-title">НОЖИ</div></div><div class="so2-subcard" onclick="setPendingSO2Game('coord2', '🐸 ЛЯГУШКА', this)"><div class="so2-subcard-icon">🐸</div><div class="so2-subcard-title">ЛЯГУШКА</div></div><div class="so2-subcard" onclick="setPendingSO2Game('coord3', '🎈 ШАРИКИ', this)"><div class="so2-subcard-icon">🎈</div><div class="so2-subcard-title">ШАРИКИ</div></div><div class="so2-subcard" onclick="setPendingSO2Game('coord4', '🔴 КНОПКА', this)"><div class="so2-subcard-icon">🔴</div><div class="so2-subcard-title">КНОПКА</div></div>`;
-            } else {
-                right.innerHTML = '';
-                if(cat === 'hidden') pendingMode = 'hidden';
-                if(cat === 'tictactoe') pendingMode = 'tictactoe';
-                if(cat === 'clicker') pendingMode = 'clicker';
-                if(cat === 'br') pendingMode = 'br';
-            }
-        }
-
-        function setPendingSO2Game(id, title, el) { 
-            pendingMode = id; 
-            if(el) { 
-                document.querySelectorAll('.so2-subcard').forEach(c => c.classList.remove('active')); 
-                el.classList.add('active'); 
-            } 
-        }
-
-        function confirmSO2Mode() { 
-            if(pendingMode) { 
-                if(pendingMode === 'tictactoe') aiDifficulty = document.getElementById('ttt-bot-select').value;
-                db.ref(`lobbies/${lobbyId}/game`).set(pendingMode); 
-                closeSO2ModeSelect(); 
-            } else {
-                tg.showAlert("Выберите режим или подрежим!"); 
-            }
-        }
-
-        function startLobbyGame() { 
-            if(!isHost) return tg.showAlert("Только Хост!"); 
-            if(!appState.selectedGameId) return tg.showAlert("Выбери режим!"); 
-            db.ref(`lobbies/${lobbyId}`).update({status:'playing'}); 
-            
-            if(appState.selectedGameId === 'tictactoe' && lobbyPlayers.length > 1) {
-                let pCount = lobbyPlayers.length; 
-                let sz = 3; 
-                let wR = 3;
-                if (pCount === 3) { sz = 5; wR = 4; } 
-                else if (pCount === 4) { sz = 7; wR = 5; } 
-                else if (pCount === 5) { sz = 9; wR = 6; }
-                db.ref(`lobbies/${lobbyId}`).update({status:'playing', tttBoard: new Array(sz*sz).fill(''), tttTurn: 0, tttSize: sz, tttWinReq: wR});
-            } else if (appState.selectedGameId === 'clicker' && lobbyPlayers.length > 1) { 
-                db.ref(`lobbies/${lobbyId}`).update({status:'playing', clickState:'waiting', clickScores: null}); 
-            }
-        }
-
-        function startLocalGameUI() { 
-            let vl = document.getElementById('view-lobby'); 
-            let mb = document.getElementById('main-buttons-view');
-            appState.prevViewLobbyDisplay = vl ? vl.style.display : ''; 
-            appState.prevMainButtonsDisplay = mb ? mb.style.display : '';
-            if(vl) vl.style.display = 'none'; 
-            if(mb) mb.style.display = 'none';
-
-            appState.gameStartTime = Date.now(); 
-            appState.game = appState.selectedGameId; 
-            
-            if(appState.game === 'let5') document.body.classList.add('let5-active'); 
-            else document.body.classList.remove('let5-active');
-
-            document.getElementById('game-container').style.display = 'block'; 
-            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active')); 
-            
-            addGamePlayed();
-            document.getElementById('pause-btn').style.display = 'flex';
-            
-            if(appState.game.startsWith('math')) { startMathMode(parseInt(appState.game.replace('math',''))); } 
-            else if(appState.game.startsWith('let')) { startLettersMode(parseInt(appState.game.replace('let',''))); } 
-            else if(appState.game.startsWith('coord')) { document.getElementById('screen-game-coord').classList.add('active'); initCoord(parseInt(appState.game.replace('coord',''))); }
-            else if(appState.game === 'tictactoe') { document.getElementById('screen-game-tictactoe').classList.add('active'); initTicTacToe(); }
-            else if(appState.game === 'clicker') { document.getElementById('screen-game-clicker').classList.add('active'); initClickerUI(); }
-            else if(appState.game === 'hidden') { document.getElementById('screen-game-hidden').classList.add('active'); initHiddenGame(); }
-            else if(appState.game === 'br') { document.getElementById('screen-game-br').classList.add('active'); initBR(); }
-        }
-
-        function togglePause(p) { 
-            appState.isPaused = p; 
-            document.getElementById('pause-overlay').classList.toggle('hidden', !p); 
-        }
-
-        function exitToLobby() { 
-            togglePause(false); 
-            document.getElementById('game-container').style.display = 'none'; 
-            document.body.classList.remove('let5-active');
-            
-            [1, 2, 3, 4].forEach(i => { 
-                let el = document.getElementById('coord-area-' + i); 
-                if(el) el.style.display = 'none'; 
-            });
-            document.getElementById('dynamic-island').style.display = 'none';
-            
-            if(appState.gameStartTime) { 
-                let ms = Math.max(0, Date.now() - appState.gameStartTime); 
-                playTimeMs += ms; 
-                appState.gameStartTime = null; 
-                syncDBProfile(); 
-            }
-            
-            let vl = document.getElementById('view-lobby'); 
-            let mb = document.getElementById('main-buttons-view');
-            if(appState.inLobby) { 
-                if(vl) vl.style.display = appState.prevViewLobbyDisplay || 'flex'; 
-                if(mb) mb.style.display = appState.prevMainButtonsDisplay || 'none'; 
-            } else { 
-                if(vl) vl.style.display = 'none'; 
-                if(mb) mb.style.display = 'flex'; 
-            }
-
-            if(isHost) { 
-                db.ref(`lobbies/${lobbyId}/status`).set('waiting'); 
-                db.ref(`lobbies/${lobbyId}/let4Scores`).remove(); 
-                db.ref(`lobbies/${lobbyId}/hiddenScores`).remove(); 
-                db.ref(`lobbies/${lobbyId}/clickScores`).remove();
-                db.ref(`lobbies/${lobbyId}/reactScores`).remove();
-            }
-            
-            if(tttRef) { tttRef.off(); tttRef = null; } 
-            if(accRef) accRef.off(); 
-            clearInterval(accInt); 
-            clearInterval(rInt1); 
-            clearTimeout(react3Timeout); 
-            stopBR();
-            
-            document.querySelectorAll('.game-screen').forEach(s => s.classList.remove('active')); 
-        }
-
-        function showResult(t, bg, em, htmlSub = '') { 
-            document.getElementById('dynamic-island').style.display = 'none'; 
-            document.getElementById('pause-btn').style.display = 'none'; 
-            let ov = document.getElementById('result-overlay'); 
-            ov.style.backgroundColor = bg; 
-            document.getElementById('result-text').innerText = t; 
-            document.getElementById('result-emoji').innerText = em; 
-            document.getElementById('result-subtext').innerHTML = htmlSub; 
-            ov.classList.remove('hidden'); 
-        }
-
-        function closeResult() { 
-            document.getElementById('result-overlay').classList.add('hidden'); 
-            exitToLobby(); 
-        }
-
         // ================== МИНИ-ИГРЫ ==================
+
         function makeDraggable(item, slotsParentId, onDropCallback) {
             let startX, startY, initX, initY, isDragging = false;
             
@@ -3976,7 +3754,6 @@
                 setIsland('Тапни чтобы лягушка прыгнула!', '#34c759');
                 
             } else if (coordState.l === 3) {
-                // ИСПРАВЛЕНИЕ 2: ШАРИКИ 60 СЕК + УВЕЛИЧЕНИЕ
                 coordState.rTime = 60; 
                 coordState.rScore = 0; 
                 document.getElementById('r1-time').innerText = 60; 
@@ -3994,18 +3771,7 @@
                         showResult(`Счет: ${coordState.rScore}`, '#34c759', '🎈', `+${Math.floor(coordState.rScore / 5)} 🪙`); 
                         addCoins(Math.floor(coordState.rScore / 5));
                     } else { 
-                        let spawnCount = 1;
-                        if (coordState.rTime <= 50) spawnCount = 2;
-                        if (coordState.rTime <= 40) spawnCount = 3;
-                        if (coordState.rTime <= 30) spawnCount = 4;
-                        if (coordState.rTime <= 20) spawnCount = 5;
-                        if (coordState.rTime <= 10) spawnCount = 6;
-
-                        if (Math.random() > 0.3) {
-                            for(let i=0; i<spawnCount; i++) {
-                                setTimeout(() => spawnBalloon('r1-area', 1, coordState), Math.random() * 500);
-                            }
-                        } 
+                        if (Math.random() > 0.4) spawnBalloon('r1-area', 1, coordState); 
                     } 
                 }, 1000);
                 
@@ -4088,7 +3854,7 @@
             b.innerText = ['🎈', '🎯', '🔴', '🔵', '🟢'][Math.floor(Math.random() * 5)]; 
             b.style.left = (10 + Math.random() * 80) + '%'; 
             b.style.top = (10 + Math.random() * 80) + '%'; 
-            b.style.animation = `coordBalloon 3s ease-in-out forwards`; 
+            b.style.animation = `balloonSpawn 3s ease-in-out forwards`; 
             
             b.onmousedown = b.ontouchstart = (e) => { 
                 e.preventDefault(); 
@@ -4149,7 +3915,7 @@
             }
         }
 
-        // ================== ВЫЖИВАНИЕ (BATTLE ROYALE) 2.5D ==================
+        // ================== ВЫЖИВАНИЕ (BATTLE ROYALE) ==================
         let br = { active: false, myP: null, bots: [], bullets: [], zone: {x: 1000, y: 1000, r: 2000}, loop: null, kills: 0 };
         const BR_SIZE = 2000; 
         const BR_PLAYER_R = 20;
@@ -4235,44 +4001,6 @@
             e.preventDefault(); 
             e.stopPropagation(); 
             isShooting = false; 
-        }
-
-        function drawEntity(ctx, x, y, radius, angle, color, hp) {
-            // Shadow (2.5D effect)
-            ctx.fillStyle = 'rgba(0,0,0,0.4)';
-            ctx.beginPath();
-            ctx.arc(x - 5, y + 10, radius, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Gun/Sword
-            ctx.strokeStyle = '#222';
-            ctx.lineWidth = 6;
-            ctx.beginPath();
-            ctx.moveTo(x, y);
-            ctx.lineTo(x + Math.cos(angle) * 35, y + Math.sin(angle) * 35);
-            ctx.stroke();
-            
-            // Body with gradient (2.5D effect)
-            let grad = ctx.createRadialGradient(x-5, y-5, radius/4, x, y, radius);
-            grad.addColorStop(0, '#fff');
-            grad.addColorStop(0.3, color);
-            grad.addColorStop(1, '#111');
-            
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(x, y, radius, 0, Math.PI * 2);
-            ctx.fill();
-            
-            // Outline
-            ctx.strokeStyle = '#000';
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // HP Bar
-            ctx.fillStyle = '#111';
-            ctx.fillRect(x - 20, y - 35, 40, 6);
-            ctx.fillStyle = '#34c759';
-            ctx.fillRect(x - 20, y - 35, 40 * (hp / 100), 6);
         }
 
         function brLoop() {
@@ -4383,7 +4111,7 @@
             br.bots = br.bots.filter(b => b.hp > 0);
             br.zone.r = Math.max(50, br.zone.r - 0.2); 
 
-            // Render Graphics 2.5D
+            // Render Graphics
             let c = document.getElementById('br-canvas'); 
             let ctx = c.getContext('2d');
             ctx.clearRect(0, 0, c.width, c.height);
@@ -4410,21 +4138,45 @@
             ctx.fillStyle = 'rgba(255,0,0,0.1)'; 
             ctx.fill();
 
-            // Draw Bots
-            br.bots.forEach(b => drawEntity(ctx, b.x, b.y, BR_PLAYER_R, b.a, '#ff453a', b.hp));
+            br.bots.forEach(b => {
+                ctx.fillStyle = '#ff453a'; 
+                ctx.beginPath(); 
+                ctx.arc(b.x, b.y, BR_PLAYER_R, 0, Math.PI * 2); 
+                ctx.fill();
+                ctx.strokeStyle = 'black'; 
+                ctx.lineWidth = 3; 
+                ctx.beginPath(); 
+                ctx.moveTo(b.x, b.y); 
+                ctx.lineTo(b.x + Math.cos(b.a) * 30, b.y + Math.sin(b.a) * 30); 
+                ctx.stroke();
+                ctx.fillStyle = '#111'; 
+                ctx.fillRect(b.x - 20, b.y - 30, 40, 6); 
+                ctx.fillStyle = '#34c759'; 
+                ctx.fillRect(b.x - 20, b.y - 30, 40 * (b.hp / 100), 6);
+            });
 
-            // Draw Player
-            if (br.myP.hp > 0) drawEntity(ctx, br.myP.x, br.myP.y, BR_PLAYER_R, br.myP.a, '#3390ec', br.myP.hp);
+            if (br.myP.hp > 0) {
+                ctx.fillStyle = '#3390ec'; 
+                ctx.beginPath(); 
+                ctx.arc(br.myP.x, br.myP.y, BR_PLAYER_R, 0, Math.PI * 2); 
+                ctx.fill();
+                ctx.strokeStyle = 'black'; 
+                ctx.lineWidth = 4; 
+                ctx.beginPath(); 
+                ctx.moveTo(br.myP.x, br.myP.y); 
+                ctx.lineTo(br.myP.x + Math.cos(br.myP.a) * 35, br.myP.y + Math.sin(br.myP.a) * 35); 
+                ctx.stroke();
+                ctx.fillStyle = '#111'; 
+                ctx.fillRect(br.myP.x - 20, br.myP.y - 30, 40, 6); 
+                ctx.fillStyle = '#34c759'; 
+                ctx.fillRect(br.myP.x - 20, br.myP.y - 30, 40 * (br.myP.hp / 100), 6);
+            }
 
-            // Draw Bullets (Glowing)
+            ctx.fillStyle = '#ffd60a';
             br.bullets.forEach(bul => { 
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = '#ffd60a';
-                ctx.fillStyle = '#ffffff';
                 ctx.beginPath(); 
                 ctx.arc(bul.x, bul.y, 4, 0, Math.PI * 2); 
                 ctx.fill(); 
-                ctx.shadowBlur = 0;
             });
 
             ctx.restore();
@@ -4459,76 +4211,6 @@
         function stopBR() { 
             br.active = false; 
             cancelAnimationFrame(br.loop); 
-        }
-
-        // ================== ОТКРЫТИЕ БОКСОВ (РУЛЕТКА) ==================
-        function openBoxPre(boxId) {
-            currentOpenedBoxId = boxId;
-            let preview = document.getElementById('box-contents-preview');
-            preview.innerHTML = '';
-            
-            let possible = SHOP_ITEMS.filter(i => i.type !== 'box' && i.type !== 'case');
-            possible.sort(() => Math.random() - 0.5).slice(0, 10).forEach(it => {
-                let pIcon = it.type === 'name' ? it.plainIcon : (it.plainIcon || it.icon);
-                preview.innerHTML += `<div style="padding:5px; background:#111; border-radius:5px; border:1px solid ${RARITIES[it.rarity]}">${pIcon}</div>`;
-            });
-            document.getElementById('box-roulette-modal').classList.remove('hidden');
-        }
-
-        function startBoxRoulette() {
-            let btn = document.getElementById('btn-start-roulette');
-            btn.disabled = true;
-            btn.innerText = 'КРУТИМ...';
-
-            let track = document.getElementById('roulette-track');
-            track.innerHTML = '';
-            track.style.transition = 'none';
-            track.style.transform = 'translateX(0)';
-
-            let possible = SHOP_ITEMS.filter(i => i.type !== 'box' && i.type !== 'case');
-            let itemsCount = 30;
-            let winIndex = 25;
-            let winItem = possible[Math.floor(Math.random() * possible.length)];
-
-            for(let i=0; i<itemsCount; i++) {
-                let it = (i === winIndex) ? winItem : possible[Math.floor(Math.random() * possible.length)];
-                let div = document.createElement('div');
-                div.className = 'roulette-item';
-                let pIcon = it.type === 'name' ? it.plainIcon : (it.plainIcon || it.icon);
-                div.innerHTML = `<div style="font-size:40px;">${pIcon}</div><div style="font-size:10px; margin-top:5px; color:${RARITIES[it.rarity]}">${it.rarity}</div>`;
-                track.appendChild(div);
-            }
-
-            setTimeout(() => {
-                let itemWidth = 120;
-                let offset = (winIndex * itemWidth) - (document.querySelector('.roulette-wrapper').offsetWidth / 2) + (itemWidth / 2);
-                offset += (Math.random() * 80 - 40); 
-
-                track.style.transition = 'transform 4s cubic-bezier(0.1, 0.8, 0.1, 1)';
-                track.style.transform = `translateX(-${offset}px)`;
-
-                setTimeout(() => {
-                    db.ref(`users/${myId}/inventory/${currentOpenedBoxId}`).once('value').then(s => {
-                        let qty = parseInt(s.val()) || 0;
-                        if(qty > 1) db.ref(`users/${myId}/inventory/${currentOpenedBoxId}`).set(qty - 1);
-                        else db.ref(`users/${myId}/inventory/${currentOpenedBoxId}`).remove();
-
-                        db.ref(`users/${myId}/inventory/${winItem.id}`).once('value').then(qs => {
-                            db.ref(`users/${myId}/inventory/${winItem.id}`).set((parseInt(qs.val())||0) + 1);
-                            tg.showAlert(`ВЫПАЛО: ${winItem.name}!`);
-                            btn.disabled = false;
-                            btn.innerText = 'ОТКРЫТЬ';
-                            renderInventory();
-                            renderShop();
-                            closeBoxModal();
-                        });
-                    });
-                }, 4200);
-            }, 50);
-        }
-
-        function closeBoxModal() {
-            document.getElementById('box-roulette-modal').classList.add('hidden');
         }
 
     </script>
