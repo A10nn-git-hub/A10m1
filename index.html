@@ -16,13 +16,15 @@
         .balloon-bg-item { position: fixed; bottom: -100px; font-size: 40px; animation: floatUp 10s linear infinite; z-index: 0; pointer-events: none; opacity: 0.6; }
         @keyframes floatUp { 0% { transform: translateY(0) translateX(0) rotate(0deg); } 100% { transform: translateY(-120vh) translateX(50px) rotate(20deg); } }
         
-        body.star-bg .game-screen, body.bg-balloons .game-screen { background: transparent !important; }
-        #screen-game-math-1, #screen-game-math-2, #screen-game-math-3, #screen-game-letters-1, #screen-game-letters-2, #screen-game-letters-3, #screen-game-letters-4, #screen-game-letters-5, #screen-game-tictactoe, #screen-game-clicker { background: transparent; }
+        /* ИСПРАВЛЕНИЕ 1: Фоны применяются корректно, игры с жестким фоном (поиск) не ломаются */
+        body.star-bg .game-screen, body.bg-balloons .game-screen { background: transparent; }
+        #screen-game-hidden { background: linear-gradient(to bottom, #87CEEB, #e0f6ff) !important; justify-content:flex-start; padding-top:40px; box-sizing:border-box; }
         body.bg-balloons #game-container { background: transparent !important; }
 
         #orientation-warning { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.95); z-index:99999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:white; }
-        @media screen and (orientation: portrait) { body:not(.let5-active) #orientation-warning { display: flex; } }
-        @media screen and (orientation: landscape) { body.let5-active #orientation-warning { display: flex; } }
+        /* ИСПРАВЛЕНИЕ 4: Предупреждение об ориентации только для мобильных устройств (класс is-mobile добавляется в JS) */
+        @media screen and (orientation: portrait) { body.is-mobile:not(.let5-active) #orientation-warning { display: flex; } }
+        @media screen and (orientation: landscape) { body.is-mobile.let5-active #orientation-warning { display: flex; } }
 
         #beta-ban-overlay { display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.98); z-index:999999; flex-direction:column; align-items:center; justify-content:center; text-align:center; color:white; }
 
@@ -79,7 +81,7 @@
         #game-container{display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:var(--bg);z-index:1000;overflow:hidden;}
         
         .game-screen{display:none;width:100%;height:100%;flex-direction:column;justify-content:center;align-items:center;position:relative;} .game-screen.active{display:flex;}
-        #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none; background:rgba(0,0,0,0.8);}
+        #dynamic-island{color:#fff;padding:10px 20px;border-radius:30px;font-weight:bold;font-size:14px;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:1100;display:none;pointer-events:none; background:rgba(0,0,0,0.8); transition: opacity 0.3s;}
         #pause-btn{position:fixed;bottom:20px;right:20px;width:50px;height:50px;border-radius:25px;border:2px solid #fff;font-size:20px;display:none;align-items:center;justify-content:center;z-index:1100;cursor:pointer;background:rgba(0,0,0,0.5);box-shadow:0 4px 10px rgba(0,0,0,0.5);}
         
         .styled-input{padding:15px;border-radius:10px;border:2px solid #444;background:#111;color:#fff;font-size:18px;width:80%;margin-bottom:10px; text-align:left; direction:ltr; unicode-bidi:isolate;}
@@ -166,9 +168,9 @@
 
         .shake{animation:shake 0.4s;} @keyframes shake{0%{transform:translateX(0);} 25%{transform:translateX(-10px);} 50%{transform:translateX(10px);} 75%{transform:translateX(-10px);} 100%{transform:translateX(0);}}
         
-        #screen-game-hidden{background:linear-gradient(to bottom, #87CEEB, #e0f6ff); justify-content:flex-start; padding-top:40px; box-sizing:border-box;}
         .hidden-scene{position:relative;width:90%;height:75vh;background:linear-gradient(to bottom, #87CEEB, #e0f6ff);border-radius:15px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.2); border:3px solid #555;} 
-        .hidden-item{position:absolute;font-size:6vh; transform:translate(-50%,-50%);cursor:pointer;z-index:10; filter:drop-shadow(0 0 10px rgba(0,255,255,0.9)); transition:transform 0.1s;} 
+        /* ИСПРАВЛЕНИЕ 7: Снижение яркости кристаллов */
+        .hidden-item{position:absolute;font-size:6vh; transform:translate(-50%,-50%);cursor:pointer;z-index:10; filter:drop-shadow(0 0 10px rgba(0,255,255,0.9)); transition:transform 0.1s; opacity: 0.85;} 
         .hidden-item:active { transform:translate(-50%,-50%) scale(0.8); }
         .scene-decor{position:absolute;font-size:6vh;transform:translate(-50%,-50%);z-index:20;pointer-events:none;opacity:0.95; filter:drop-shadow(0 5px 5px rgba(0,0,0,0.3));}
         .sun-decor { position:absolute; top:20px; right:20px; font-size:8vh; animation:spin 10s linear infinite; pointer-events:none; z-index:5;}
@@ -215,8 +217,9 @@
         .w-key-present { background: #fff !important; color: #000 !important; }
         .w-key-absent { background: #222 !important; color: #666 !important; }
 
-        #invite-friends-list { display:flex; flex-direction:row; gap:10px; overflow-x:auto; max-height:none; padding-bottom:10px; }
-        #invite-friends-list .list-item { min-width:130px; flex-direction:column; justify-content:center; text-align:center; }
+        /* ИСПРАВЛЕНИЕ 10: Список приглашений вертикальный */
+        #invite-friends-list { display:flex; flex-direction:column; gap:10px; overflow-y:auto; max-height:40vh; padding-bottom:10px; }
+        #invite-friends-list .list-item { width:100%; flex-direction:row; justify-content:space-between; text-align:left; align-items:center; }
         
         .ai-stats-table { width: 100%; margin-top: 15px; border-collapse: collapse; text-align: center; }
         .ai-stats-table th, .ai-stats-table td { border: 1px solid #444; padding: 8px; }
@@ -255,218 +258,216 @@
             <div class="nav-item" onclick="switchTab('friends', this)"><div class="nav-icon">👥</div><div class="nav-text">Друзья</div></div>
             <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this); renderAdminList();"><div class="nav-icon">👨‍💻</div><div class="nav-text">Разраб</div></div>
         </div>
-
         <div class="main-content">
-            <div id="tab-profile" class="tab-view active">
-                <div class="profile-layout-container">
-                    <div class="profile-left-col">
-                        <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
-                        <div class="profile-name-container">
-                            <div class="profile-name" id="my-name-display" onclick="changeName()">Игрок ✏️</div>
-                            <div id="my-medals-display" class="medals-container" onclick="openMedalsModal()"></div>
+                <div id="tab-profile" class="tab-view active">
+                    <div class="profile-layout-container">
+                        <div class="profile-left-col">
+                            <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
+                            <div class="profile-name-container">
+                                <div class="profile-name" id="my-name-display" onclick="changeName()">Игрок ✏️</div>
+                                <div id="my-medals-display" class="medals-container" onclick="openMedalsModal()"></div>
+                            </div>
+                            <div class="profile-id" id="my-id-display">ID: ...</div>
                         </div>
-                        <div class="profile-id" id="my-id-display">ID: ...</div>
+                        
+                        <div class="profile-right-col">
+                            <div class="mini-tabs-header">
+                                <button class="mini-tab-btn active" onclick="switchMiniTab('my-stats-all', this)">ОБЩАЯ СТАТИСТИКА</button>
+                                <button class="mini-tab-btn" id="my-tab-btn-ai" onclick="switchMiniTab('my-stats-ai', this)">С ИИ</button>
+                            </div>
+                            <div id="my-stats-all" class="mini-tab-content active" style="width:100%;"></div>
+                            <div id="my-stats-ai" class="mini-tab-content" style="width:100%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="tab-inv" class="tab-view" style="flex-direction: column;">
+                    <div class="sub-tabs-header"><button class="sub-tab-btn active" onclick="switchSubTab('inv','bag',this); renderInventory();">Инвентарь</button><button class="sub-tab-btn" onclick="switchSubTab('inv','shop',this); renderShop();">Магазин</button><button class="sub-tab-btn" onclick="switchSubTab('inv','promo',this)">Промокоды</button></div>
+                    <div id="inv-bag" class="sub-tab-content active" style="padding-top:20px;">
+                        <div class="inv-grid" id="inv-grid-container"></div>
+                    </div>
+                    <div id="inv-shop" class="sub-tab-content" style="flex-direction:row; flex-wrap:wrap; justify-content:center; gap:20px; padding-top:20px;"></div>
+                    <div id="inv-promo" class="sub-tab-content"><h2>Промокод</h2><input type="text" inputmode="text" id="promo-input" class="styled-input"><button class="btn btn-green" onclick="redeemPromo()">ПРИМЕНИТЬ</button></div>
+                </div>
+                <div id="tab-friends" class="tab-view" style="flex-direction: row; gap:20px;">
+                    <div class="friends-list-panel">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><h3 style="margin:0;">Друзья</h3><button class="btn btn-dark" style="padding:5px 10px;font-size:12px;" onclick="addFriendBtn()">+ Добавить</button></div>
+                        <div class="mini-tabs-header" style="margin-bottom:10px;"><button class="mini-tab-btn active" onclick="switchMiniTab('fr-list',this)">Список</button><button class="mini-tab-btn" style="position:relative;" onclick="switchMiniTab('fr-reqs',this)">Заявки <span id="fr-badge" class="badge">0</span></button></div>
+                        <div id="fr-list" class="mini-tab-content active" style="overflow-y:auto;flex-grow:1;width:100%;"></div>
+                        <div id="fr-reqs" class="mini-tab-content" style="overflow-y:auto;flex-grow:1;width:100%;"></div>
+                    </div>
+                    <div class="lobby-buttons-panel" id="main-buttons-view">
+                        <button class="mega-btn mega-create" onclick="openLobby()">Создать Лобби</button>
+                        <button class="mega-btn mega-custom" onclick="tg.showAlert('В разработке!')">Кастомное Лобби</button>
+                    </div>
+                    <div id="view-lobby">
+                        <button class="btn btn-dark" style="position:absolute;top:-10px;right:0;z-index:5;" onclick="closeLobby()">Выйти 🚪</button>
+                        <div class="lobby-slots-container" id="lobby-slots-container"></div>
+                        <div class="lobby-controls-bottom-right">
+                            <div class="mode-text" id="selected-mode-text" style="font-size:18px; font-weight:bold;">Режим не выбран</div>
+                            <button class="btn btn-dark" onclick="openSO2ModeSelect()">Выбрать режим 📋</button>
+                            <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()">ИГРАТЬ!</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="tab-admin" class="tab-view" style="flex-direction: column;">
+                    <h2 style="text-align:center; color:var(--coin-col); margin-top:0;">Панель Разработчика</h2>
+                    <div class="sub-tabs-header">
+                        <button class="sub-tab-btn active" onclick="switchSubTab('admin','admins',this)">АДМИНЫ</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('admin','coins',this)">ИГРОКИ</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОД</button>
+                        <button class="sub-tab-btn" onclick="switchSubTab('admin','beta',this)">БЕТА</button>
                     </div>
                     
-                    <div class="profile-right-col">
-                        <div class="mini-tabs-header">
-                            <button class="mini-tab-btn active" onclick="switchMiniTab('my-stats-all', this)">ОБЩАЯ СТАТИСТИКА</button>
-                            <button class="mini-tab-btn" id="my-tab-btn-ai" onclick="switchMiniTab('my-stats-ai', this)">С ИИ</button>
+                    <div id="adm-admins" class="sub-tab-content active">
+                        <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('adm-add',this)">ДОБАВИТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('adm-rem',this)">УДАЛИТЬ</button></div>
+                        <div id="adm-add" class="mini-tab-content active">
+                            <input type="text" inputmode="numeric" id="dev-add-admin-id" class="styled-input" placeholder="ID игрока">
+                            <button class="btn btn-green" onclick="addAdmin()">Сделать админом</button>
                         </div>
-                        <div id="my-stats-all" class="mini-tab-content active" style="width:100%;"></div>
-                        <div id="my-stats-ai" class="mini-tab-content" style="width:100%;"></div>
+                        <div id="adm-rem" class="mini-tab-content" style="width:100%; max-width:400px;">
+                            <div id="admin-list-display" style="max-height: 200px; overflow-y:auto; margin-bottom:15px; width:100%;"></div>
+                            <button class="btn btn-red" onclick="removeAllAdmins()">УДАЛИТЬ ВСЕХ (кроме себя)</button>
+                        </div>
                     </div>
+
+                    <div id="adm-coins" class="sub-tab-content">
+                        <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('c-give',this)">ВЫДАТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('c-take',this)">ЗАБРАТЬ</button></div>
+                        <div id="c-give" class="mini-tab-content active">
+                            <input type="text" inputmode="numeric" id="give-coin-id" class="styled-input" placeholder="ID игрока">
+                            <div style="display:flex; width:80%; gap:10px;"><input type="number" id="give-coin-amount" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('give')">ВЫБРАТЬ</button></div>
+                            <p id="give-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-green" onclick="giveCoinsDev()">ОТПРАВИТЬ</button>
+                        </div>
+                        <div id="c-take" class="mini-tab-content">
+                            <input type="text" inputmode="numeric" id="take-coin-id" class="styled-input" placeholder="ID игрока">
+                            <div style="display:flex; width:80%; gap:10px;"><input type="number" id="take-coin-amount" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('take')">ВЫБРАТЬ</button></div>
+                            <p id="take-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-red" onclick="takeCoinsDev()">ИЗЪЯТЬ</button>
+                        </div>
+                    </div>
+                    
+                    <div id="adm-promos" class="sub-tab-content">
+                        <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('promo-create', this)">СОЗДАТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('promo-active', this)">АКТИВНЫЕ</button></div>
+                        <div id="promo-create" class="mini-tab-content active">
+                            <input type="text" id="promo-name" class="styled-input" placeholder="Код промокода">
+                            <input type="number" id="promo-acts" class="styled-input" placeholder="Активаций">
+                            <input type="number" id="promo-days" class="styled-input" placeholder="Активно ... дней (необяз)">
+                            <div style="display:flex; width:80%; gap:10px;"><input type="number" id="promo-reward" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('promo')">ВЫБРАТЬ</button></div>
+                            <p id="promo-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-gold" onclick="createPromoDev()">СОЗДАТЬ</button>
+                        </div>
+                        <div id="promo-active" class="mini-tab-content" style="max-height:30vh;overflow-y:auto;width:350px;"><div id="dev-promo-list" style="width:100%;"></div></div>
+                    </div>
+                    
+                    <div id="adm-beta" class="sub-tab-content">
+                        <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('beta-ban',this)">БАН</button><button class="mini-tab-btn" onclick="switchMiniTab('beta-unban',this)">РАЗБАН</button></div>
+                        <div id="beta-ban" class="mini-tab-content active" style="width:100%; max-width:400px;">
+                            <input type="text" id="ban-id-input" class="styled-input" placeholder="ID игрока">
+                            <button class="btn btn-red" onclick="banPlayer()">ЗАБАНИТЬ</button>
+                            <hr style="width:100%; border-color:#444; margin:15px 0;">
+                            <h4 style="margin:5px 0;">Список забаненных:</h4>
+                            <div id="ban-list" style="width:100%; max-height:150px; overflow-y:auto; margin-bottom:10px; background:#111; padding:5px; border-radius:10px;"></div>
+                            <button class="btn btn-red" style="width:100%;" onclick="banAllPlayers()">ЗАБАНИТЬ ВСЕХ</button>
+                        </div>
+                        <div id="beta-unban" class="mini-tab-content" style="width:100%; max-width:400px;">
+                            <input type="text" id="unban-id-input" class="styled-input" placeholder="ID игрока">
+                            <button class="btn btn-green" onclick="unbanPlayer()">РАЗБАНИТЬ</button>
+                            <hr style="width:100%; border-color:#444; margin:15px 0;">
+                            <button class="btn btn-green" style="width:100%;" onclick="unbanAllPlayers()">РАЗБАНИТЬ ВСЕХ</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-container">
+            <div id="dynamic-island" class="glass"><span id="island-text">...</span></div>
+            <div id="pause-btn" class="glass" onclick="togglePause(true)">⏸</div>
+
+            <div class="game-screen" id="screen-game-math-1"><div class="math-progress-container" id="math-prog-1"></div><div class="math-equation"><span id="math1-q"></span><div class="math-input-box" id="math1-ans">?</div></div><div class="math-numpad"><button class="math-num-btn" onclick="math1Input(1)">1</button><button class="math-num-btn" onclick="math1Input(2)">2</button><button class="math-num-btn" onclick="math1Input(3)">3</button><button class="math-num-btn" onclick="math1Input(4)">4</button><button class="math-num-btn" onclick="math1Input(5)">5</button><button class="math-num-btn" onclick="math1Input(6)">6</button><button class="math-num-btn" onclick="math1Input(7)">7</button><button class="math-num-btn" onclick="math1Input(8)">8</button><button class="math-num-btn" onclick="math1Input(9)">9</button><button class="math-num-btn" onclick="math1Input(0)">0</button></div></div>
+            <div class="game-screen" id="screen-game-math-2"><div class="math-progress-container" id="math-prog-2"></div><div class="math-equation"><span id="math2-q"></span></div><div class="math-cards-grid" id="math2-cards"></div></div>
+            <div class="game-screen" id="screen-game-math-3"><h2 style="font-size:4vh;margin-bottom:20px;">Расставь по порядку!</h2><div class="math-sort-slots" id="math3-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:90%;"></div><div class="math-sort-items" id="math3-items"></div></div>
+
+            <div class="game-screen" id="screen-game-letters-1"><h2 style="font-size:4vh;margin-bottom:20px;">Алфавит по порядку!</h2><div class="math-sort-slots" id="let1-slots"></div><div class="math-sort-items" id="let1-items"></div></div>
+            <div class="game-screen" id="screen-game-letters-2">
+                <h2 style="font-size:4vh;margin-bottom:10px;">Нарисуй букву!</h2>
+                <div style="position:relative; width:40vh; height:40vh; display:flex; justify-content:center; align-items:center;">
+                    <canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10;"></canvas>
+                    <div id="hand-tutor" style="position:absolute; font-size:8vh; z-index:20; pointer-events:none; animation: handDraw 2s infinite;">✍️</div>
+                </div>
+                <div style="margin-top:20px; display:flex; gap:20px;">
+                    <button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button>
+                    <button class="btn btn-green" id="let3-ok-btn" onclick="checkLet3()">✅ ГОТОВО</button>
+                </div>
+            </div>
+            <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let3-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let3-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;" oninput="this.value = this.value.toUpperCase();" autocapitalize="characters" autocomplete="off"><div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-green" onclick="checkLet3Words()">✅ ПРОВЕРИТЬ</button></div></div>
+            <div class="game-screen" id="screen-game-letters-4">
+                <h2 style="font-size:4vh;margin-bottom:10px;">Соедини картинку со словом!</h2>
+                <div style="position:relative; width:90%; height:55vh;" id="connect-game-area">
+                    <canvas id="connect-lines" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;"></canvas>
+                    <div id="connect-pics" style="position:absolute; top:5%; width:100%; display:flex; justify-content:space-around; z-index:20;"></div>
+                    <div id="connect-words" style="position:absolute; bottom:5%; width:100%; display:flex; justify-content:space-around; z-index:20; flex-wrap:wrap; gap:10px;"></div>
+                </div>
+                <button class="btn btn-green" onclick="checkLet4Connect()" style="margin-top:20px; font-size:24px; padding:15px 40px;">ГОТОВО!</button>
+            </div>
+            <div class="game-screen" id="screen-game-letters-5">
+                <h2 style="font-size:4vh;margin-bottom:10px;">5 БУКВ</h2>
+                <div class="wordle-main">
+                    <div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div>
+                    <div id="wdl-kb"></div>
                 </div>
             </div>
 
-            <div id="tab-inv" class="tab-view" style="flex-direction: column;">
-                <div class="sub-tabs-header"><button class="sub-tab-btn active" onclick="switchSubTab('inv','bag',this); renderInventory();">Инвентарь</button><button class="sub-tab-btn" onclick="switchSubTab('inv','shop',this); renderShop();">Магазин</button><button class="sub-tab-btn" onclick="switchSubTab('inv','promo',this)">Промокоды</button></div>
-                <div id="inv-bag" class="sub-tab-content active" style="padding-top:20px;">
-                    <div class="inv-grid" id="inv-grid-container"></div>
-                </div>
-                <div id="inv-shop" class="sub-tab-content" style="flex-direction:row; flex-wrap:wrap; justify-content:center; gap:20px; padding-top:20px;"></div>
-                <div id="inv-promo" class="sub-tab-content"><h2>Промокод</h2><input type="text" inputmode="text" id="promo-input" class="styled-input"><button class="btn btn-green" onclick="redeemPromo()">ПРИМЕНИТЬ</button></div>
-            </div>
-            <div id="tab-friends" class="tab-view" style="flex-direction: row; gap:20px;">
-                <div class="friends-list-panel">
-                    <div style="display:flex;justify-content:space-between;margin-bottom:10px;"><h3 style="margin:0;">Друзья</h3><button class="btn btn-dark" style="padding:5px 10px;font-size:12px;" onclick="addFriendBtn()">+ Добавить</button></div>
-                    <div class="mini-tabs-header" style="margin-bottom:10px;"><button class="mini-tab-btn active" onclick="switchMiniTab('fr-list',this)">Список</button><button class="mini-tab-btn" style="position:relative;" onclick="switchMiniTab('fr-reqs',this)">Заявки <span id="fr-badge" class="badge">0</span></button></div>
-                    <div id="fr-list" class="mini-tab-content active" style="overflow-y:auto;flex-grow:1;width:100%;"></div>
-                    <div id="fr-reqs" class="mini-tab-content" style="overflow-y:auto;flex-grow:1;width:100%;"></div>
-                </div>
-                <div class="lobby-buttons-panel" id="main-buttons-view">
-                    <button class="mega-btn mega-create" onclick="openLobby()">Создать Лобби</button>
-                    <button class="mega-btn mega-custom" onclick="tg.showAlert('В разработке!')">Кастомное Лобби</button>
-                </div>
-                <div id="view-lobby">
-                    <button class="btn btn-dark" style="position:absolute;top:-10px;right:0;z-index:5;" onclick="closeLobby()">Выйти 🚪</button>
-                    <div class="lobby-slots-container" id="lobby-slots-container"></div>
-                    <div class="lobby-controls-bottom-right">
-                        <div class="mode-text" id="selected-mode-text" style="font-size:18px; font-weight:bold;">Режим не выбран</div>
-                        <button class="btn btn-dark" onclick="openSO2ModeSelect()">Выбрать режим 📋</button>
-                        <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()">ИГРАТЬ!</button>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="tab-admin" class="tab-view" style="flex-direction: column;">
-                <h2 style="text-align:center; color:var(--coin-col); margin-top:0;">Панель Разработчика</h2>
-                <div class="sub-tabs-header">
-                    <button class="sub-tab-btn active" onclick="switchSubTab('admin','admins',this)">АДМИНЫ</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('admin','coins',this)">ИГРОКИ</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОД</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('admin','beta',this)">БЕТА</button>
-                </div>
+            <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div></div>
+
+            <div class="game-screen" id="screen-game-tictactoe"><div class="board" id="ttt-board"></div></div>
+            <div class="game-screen" id="screen-game-clicker"><h2 style="font-size:3vh;margin-bottom:10px;" id="clk-msg">Настрой время и ЖМИ!</h2><div class="clicker-setup" id="clicker-controls"><button class="round-btn" id="clk-btn-m" onclick="changeClickTime(-5)">◀</button><div id="click-time-val" style="font-size:28px;font-weight:bold;width:100px;text-align:center;">15 сек</div><button class="round-btn" id="clk-btn-p" onclick="changeClickTime(5)">▶</button></div><h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button></div>
+
+            <div class="game-screen" id="screen-game-accuracy">
+                <h2 id="acc-header" style="position:absolute; top:10px; font-size:4vh; font-weight:bold; z-index:100; color:#fff;">Меткость</h2>
+                <div id="acc-scores-display" style="position:absolute; top:70px; right:10px; background:rgba(0,0,0,0.6); padding:10px; border-radius:10px; z-index:100; font-size:2vh; color:#fff; text-align:right;"></div>
                 
-                <div id="adm-admins" class="sub-tab-content active">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('adm-add',this)">ДОБАВИТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('adm-rem',this)">УДАЛИТЬ</button></div>
-                    <div id="adm-add" class="mini-tab-content active">
-                        <input type="text" inputmode="numeric" id="dev-add-admin-id" class="styled-input" placeholder="ID игрока">
-                        <button class="btn btn-green" onclick="addAdmin()">Сделать админом</button>
+                <div id="acc-area-1" style="width:100%; height:100%; display:none; background:#222; position:relative;" onmousedown="accThrowKnifeClick()" ontouchstart="accThrowKnifeClick()">
+                    <div id="acc-t1-rotator" style="width:100%; height:100%; position:absolute;">
+                        <div id="acc-t1" class="acc-target-spin"></div>
                     </div>
-                    <div id="adm-rem" class="mini-tab-content" style="width:100%; max-width:400px;">
-                        <div id="admin-list-display" style="max-height: 200px; overflow-y:auto; margin-bottom:15px; width:100%;"></div>
-                        <button class="btn btn-red" onclick="removeAllAdmins()">УДАЛИТЬ ВСЕХ (кроме себя)</button>
+                    <div id="acc-ready-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); z-index:20;">
+                        <div class="acc-big-sword"></div>
                     </div>
-                </div>
-
-                <div id="adm-coins" class="sub-tab-content">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('c-give',this)">ВЫДАТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('c-take',this)">ЗАБРАТЬ</button></div>
-                    <div id="c-give" class="mini-tab-content active">
-                        <input type="text" inputmode="numeric" id="give-coin-id" class="styled-input" placeholder="ID игрока">
-                        <div style="display:flex; width:80%; gap:10px;"><input type="number" id="give-coin-amount" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('give')">ВЫБРАТЬ</button></div>
-                        <p id="give-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-green" onclick="giveCoinsDev()">ОТПРАВИТЬ</button>
-                    </div>
-                    <div id="c-take" class="mini-tab-content">
-                        <input type="text" inputmode="numeric" id="take-coin-id" class="styled-input" placeholder="ID игрока">
-                        <div style="display:flex; width:80%; gap:10px;"><input type="number" id="take-coin-amount" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('take')">ВЫБРАТЬ</button></div>
-                        <p id="take-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-red" onclick="takeCoinsDev()">ИЗЪЯТЬ</button>
+                    <div id="acc-flying-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); display:none; z-index:15;">
+                        <div class="acc-big-sword"></div>
                     </div>
                 </div>
-                
-                <div id="adm-promos" class="sub-tab-content">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('promo-create', this)">СОЗДАТЬ</button><button class="mini-tab-btn" onclick="switchMiniTab('promo-active', this)">АКТИВНЫЕ</button></div>
-                    <div id="promo-create" class="mini-tab-content active">
-                        <input type="text" id="promo-name" class="styled-input" placeholder="Код промокода">
-                        <input type="number" id="promo-acts" class="styled-input" placeholder="Активаций">
-                        <input type="number" id="promo-days" class="styled-input" placeholder="Активно ... дней (необяз)">
-                        <div style="display:flex; width:80%; gap:10px;"><input type="number" id="promo-reward" class="styled-input" style="width:100%;" placeholder="Монеты"><button class="btn btn-dark" onclick="openAdminItems('promo')">ВЫБРАТЬ</button></div>
-                        <p id="promo-sel-items" style="color:gray;font-size:12px;"></p><button class="btn btn-gold" onclick="createPromoDev()">СОЗДАТЬ</button>
-                    </div>
-                    <div id="promo-active" class="mini-tab-content" style="max-height:30vh;overflow-y:auto;width:350px;"><div id="dev-promo-list" style="width:100%;"></div></div>
+
+                <div id="acc-area-2" style="width:100%; height:100%; display:none; background:#2e7d32; position:relative;" onmousedown="accTriggerFrogClick()" ontouchstart="accTriggerFrogClick()">
+                    <div id="acc-t2" class="acc-anim-t2 acc-target-frog" style="position:absolute; top:20%; left:-100px;"></div>
+                    <div id="acc-frog" style="font-size:10vh; position:absolute; bottom:10%; left:50%; transform:translateX(-50%); z-index:10; pointer-events:none;">🐸</div>
+                    <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:#fff; pointer-events:none;">Тапни чтобы лягушка прыгнула!</div>
                 </div>
-                
-                <div id="adm-beta" class="sub-tab-content">
-                    <div class="mini-tabs-header"><button class="mini-tab-btn active" onclick="switchMiniTab('beta-ban',this)">БАН</button><button class="mini-tab-btn" onclick="switchMiniTab('beta-unban',this)">РАЗБАН</button></div>
-                    <div id="beta-ban" class="mini-tab-content active" style="width:100%; max-width:400px;">
-                        <input type="text" id="ban-id-input" class="styled-input" placeholder="ID игрока">
-                        <button class="btn btn-red" onclick="banPlayer()">ЗАБАНИТЬ</button>
-                        <hr style="width:100%; border-color:#444; margin:15px 0;">
-                        <h4 style="margin:5px 0;">Список забаненных:</h4>
-                        <div id="ban-list" style="width:100%; max-height:150px; overflow-y:auto; margin-bottom:10px; background:#111; padding:5px; border-radius:10px;"></div>
-                        <button class="btn btn-red" style="width:100%;" onclick="banAllPlayers()">ЗАБАНИТЬ ВСЕХ</button>
-                    </div>
-                    <div id="beta-unban" class="mini-tab-content" style="width:100%; max-width:400px;">
-                        <input type="text" id="unban-id-input" class="styled-input" placeholder="ID игрока">
-                        <button class="btn btn-green" onclick="unbanPlayer()">РАЗБАНИТЬ</button>
-                        <hr style="width:100%; border-color:#444; margin:15px 0;">
-                        <button class="btn btn-green" style="width:100%;" onclick="unbanAllPlayers()">РАЗБАНИТЬ ВСЕХ</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <div id="game-container">
-        <div id="dynamic-island" class="glass"><span id="island-text">...</span></div>
-        <div id="pause-btn" class="glass" onclick="togglePause(true)">⏸</div>
-
-        <div class="game-screen" id="screen-game-math-1"><div class="math-progress-container" id="math-prog-1"></div><div class="math-equation"><span id="math1-q"></span><div class="math-input-box" id="math1-ans">?</div></div><div class="math-numpad"><button class="math-num-btn" onclick="math1Input(1)">1</button><button class="math-num-btn" onclick="math1Input(2)">2</button><button class="math-num-btn" onclick="math1Input(3)">3</button><button class="math-num-btn" onclick="math1Input(4)">4</button><button class="math-num-btn" onclick="math1Input(5)">5</button><button class="math-num-btn" onclick="math1Input(6)">6</button><button class="math-num-btn" onclick="math1Input(7)">7</button><button class="math-num-btn" onclick="math1Input(8)">8</button><button class="math-num-btn" onclick="math1Input(9)">9</button><button class="math-num-btn" onclick="math1Input(0)">0</button></div></div>
-        <div class="game-screen" id="screen-game-math-2"><div class="math-progress-container" id="math-prog-2"></div><div class="math-equation"><span id="math2-q"></span></div><div class="math-cards-grid" id="math2-cards"></div></div>
-        <div class="game-screen" id="screen-game-math-3"><div class="math-progress-container" id="math-prog-3"></div><h2 style="font-size:4vh;margin-bottom:20px;">Расставь по порядку!</h2><div class="math-sort-slots" id="math3-slots" style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;width:90%;"></div><div class="math-sort-items" id="math3-items"></div></div>
-
-        <div class="game-screen" id="screen-game-letters-1"><h2 style="font-size:4vh;margin-bottom:20px;">Алфавит по порядку!</h2><div class="math-sort-slots" id="let1-slots"></div><div class="math-sort-items" id="let1-items"></div></div>
-        <div class="game-screen" id="screen-game-letters-2">
-            <h2 style="font-size:4vh;margin-bottom:10px;">Нарисуй букву!</h2>
-            <div style="position:relative; width:40vh; height:40vh; display:flex; justify-content:center; align-items:center;">
-                <canvas id="let3-canvas" class="draw-canvas" style="width:40vh; height:40vh; position:absolute; z-index:10;"></canvas>
-                <div id="hand-tutor" style="position:absolute; font-size:8vh; z-index:20; pointer-events:none; animation: handDraw 2s infinite;">✍️</div>
-            </div>
-            <div style="margin-top:20px; display:flex; gap:20px;">
-                <button class="btn btn-red" onclick="clearCanvas('let3-canvas')">Очистить</button>
-                <button class="btn btn-green" id="let3-ok-btn" onclick="checkLet3()">✅ ГОТОВО</button>
-            </div>
-        </div>
-        <div class="game-screen" id="screen-game-letters-3"><h2 style="font-size:4vh;margin-bottom:10px;">Напиши: <span id="let3-word" style="color:var(--coin-col);"></span></h2><input type="text" id="let3-input" class="styled-input" style="text-transform:uppercase; font-size:4vh; text-align:center;" oninput="this.value = this.value.toUpperCase();" autocapitalize="characters" autocomplete="off"><div style="margin-top:20px; display:flex; gap:20px;"><button class="btn btn-green" onclick="checkLet3Words()">✅ ПРОВЕРИТЬ</button></div></div>
-        <div class="game-screen" id="screen-game-letters-4">
-            <h2 style="font-size:4vh;margin-bottom:10px;">Соедини картинку со словом!</h2>
-            <div style="position:relative; width:90%; height:55vh;" id="connect-game-area">
-                <canvas id="connect-lines" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:10;"></canvas>
-                <div id="connect-pics" style="position:absolute; top:5%; width:100%; display:flex; justify-content:space-around; z-index:20;"></div>
-                <div id="connect-words" style="position:absolute; bottom:5%; width:100%; display:flex; justify-content:space-around; z-index:20; flex-wrap:wrap; gap:10px;"></div>
-            </div>
-            <button class="btn btn-green" onclick="checkLet4Connect()" style="margin-top:20px; font-size:24px; padding:15px 40px;">ГОТОВО!</button>
-        </div>
-        <div class="game-screen" id="screen-game-letters-5">
-            <h2 style="font-size:4vh;margin-bottom:10px;">5 БУКВ</h2>
-            <div class="wordle-main">
-                <div id="wordle-grid" style="display:flex;flex-direction:column;gap:5px;"></div>
-                <div id="wdl-kb"></div>
-            </div>
-        </div>
-
-        <div class="game-screen" id="screen-game-hidden"><div style="display:flex;justify-content:space-between;width:90%;font-size:20px;margin-bottom:10px;"><div>КРИСТАЛЛ: <span id="hidden-found">0</span>/15</div></div><div class="hidden-scene" id="hidden-scene" onmousedown="missHiddenClick(event)" ontouchstart="missHiddenClick(event)"></div></div>
-
-        <div class="game-screen" id="screen-game-tictactoe"><div class="board" id="ttt-board"></div></div>
-        <div class="game-screen" id="screen-game-clicker"><h2 style="font-size:3vh;margin-bottom:10px;" id="clk-msg">Настрой время и ЖМИ!</h2><div class="clicker-setup" id="clicker-controls"><button class="round-btn" id="clk-btn-m" onclick="changeClickTime(-5)">◀</button><div id="click-time-val" style="font-size:28px;font-weight:bold;width:100px;text-align:center;">15 сек</div><button class="round-btn" id="clk-btn-p" onclick="changeClickTime(5)">▶</button></div><h1 id="click-score" style="font-size:10vh;">0</h1><button class="giant-click-btn" id="click-btn" onclick="doClickStart()">ЖМИ!</button></div>
-
-        <div class="game-screen" id="screen-game-accuracy">
-            <h2 id="acc-header" style="position:absolute; top:10px; font-size:4vh; font-weight:bold; z-index:100; color:#fff;">Меткость</h2>
-            <div id="acc-scores-display" style="position:absolute; top:70px; right:10px; background:rgba(0,0,0,0.6); padding:10px; border-radius:10px; z-index:100; font-size:2vh; color:#fff; text-align:right;"></div>
-            
-            <div id="acc-area-1" style="width:100%; height:100%; display:none; background:#222; position:relative;" onmousedown="accThrowKnifeClick()" ontouchstart="accThrowKnifeClick()">
-                <div id="acc-t1-rotator" style="width:100%; height:100%; position:absolute;">
-                    <div id="acc-t1" class="acc-target-spin"></div>
-                </div>
-                <div id="acc-ready-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); z-index:20;">
-                    <div class="acc-big-sword"></div>
-                </div>
-                <div id="acc-flying-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); display:none; z-index:15;">
-                    <div class="acc-big-sword"></div>
+                <div id="acc-area-3" style="width:100%; height:100%; display:none; background:#87CEEB; position:relative;">
+                    <div id="acc-bird" class="acc-anim-bird" style="font-size:8vh; position:absolute; top:15%; left:-100px;">🦆</div>
+                    <div id="acc-dash" class="acc-dash-line" style="display:none; height:100%;"></div>
+                    <div style="position:absolute; bottom:0; width:100%; height:40%; background:transparent; z-index:20;" id="acc-shoot-zone" onmousedown="accAimStart(event)" ontouchstart="accAimStart(event)"></div>
+                    <div id="acc-flying-bullet" style="width:10px; height:20px; background:black; border-radius:5px; position:absolute; display:none; z-index:15; left:50%; margin-left:-5px;"></div>
+                    <div style="position:absolute; bottom:20px; color:#333; font-weight:bold; width:100%; text-align:center; font-size:3vh; pointer-events:none; z-index:10;">Осталось: <span id="acc-timer">30</span>с | Сбито: <span id="acc-b-count">0</span>/3<br><span style="font-size:2vh;">Удерживай внизу чтобы прицелиться. Отпусти - выстрел!</span></div>
                 </div>
             </div>
 
-            <div id="acc-area-2" style="width:100%; height:100%; display:none; background:#2e7d32; position:relative;" onmousedown="accTriggerFrogClick()" ontouchstart="accTriggerFrogClick()">
-                <div id="acc-t2" class="acc-anim-t2 acc-target-frog" style="position:absolute; top:20%; left:-100px;"></div>
-                <div id="acc-frog" style="font-size:10vh; position:absolute; bottom:10%; left:50%; transform:translateX(-50%); z-index:10; pointer-events:none;">🐸</div>
-                <div style="position:absolute; bottom:20px; width:100%; text-align:center; color:#fff; pointer-events:none;">Тапни чтобы лягушка прыгнула!</div>
+            <div class="game-screen" id="screen-game-react1">
+                <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r1-time">60</span>с | Сбито: <span id="r1-score">0</span>/100</div>
+                <div id="r1-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
             </div>
-
-            <div id="acc-area-3" style="width:100%; height:100%; display:none; background:#87CEEB; position:relative;">
-                <div id="acc-bird" class="acc-anim-bird" style="font-size:8vh; position:absolute; top:15%; left:-100px;">🦆</div>
-                <div id="acc-dash" class="acc-dash-line" style="display:none; height:100%;"></div>
-                <div style="position:absolute; bottom:0; width:100%; height:40%; background:transparent; z-index:20;" id="acc-shoot-zone" onmousedown="accAimStart(event)" ontouchstart="accAimStart(event)"></div>
-                <div id="acc-flying-bullet" style="width:10px; height:20px; background:black; border-radius:5px; position:absolute; display:none; z-index:15; left:50%; margin-left:-5px;"></div>
-                <div style="position:absolute; bottom:20px; color:#333; font-weight:bold; width:100%; text-align:center; font-size:3vh; pointer-events:none; z-index:10;">Осталось: <span id="acc-timer">30</span>с | Сбито: <span id="acc-b-count">0</span>/3<br><span style="font-size:2vh;">Удерживай внизу чтобы прицелиться. Отпусти - выстрел!</span></div>
+            <div class="game-screen" id="screen-game-react2">
+                <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r2-time">45</span>с | Сбито: <span id="r2-score">0</span></div>
+                <div id="r2-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
+            </div>
+            <div class="game-screen" id="screen-game-react3">
+                <h2 id="r3-status" style="font-size:4vh; margin-bottom:20px;">Готовься...</h2>
+                <button id="r3-btn" style="width:25vh; height:25vh; border-radius:50%; background:gray; border:10px solid #222; outline:none; box-shadow:0 10px 30px rgba(0,0,0,0.8); cursor:pointer;" onmousedown="r3Click(event)" ontouchstart="r3Click(event)"></button>
+                <div id="r3-results" style="margin-top:20px; font-size:2vh; display:flex; flex-direction:column; align-items:center; width:90%; height:30vh; overflow-y:auto; background:rgba(0,0,0,0.3); border-radius:10px; padding:10px;"></div>
             </div>
         </div>
-
-        <div class="game-screen" id="screen-game-react1">
-            <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r1-time">60</span>с | Сбито: <span id="r1-score">0</span>/100</div>
-            <div id="r1-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
-        </div>
-        <div class="game-screen" id="screen-game-react2">
-            <div style="position:absolute; top:20px; font-size:3vh; font-weight:bold; color:white; width:100%; text-align:center; z-index:50;">Осталось: <span id="r2-time">45</span>с | Сбито: <span id="r2-score">0</span></div>
-            <div id="r2-area" style="width:100%; height:80vh; position:absolute; top:10vh; overflow:hidden;"></div>
-        </div>
-        <div class="game-screen" id="screen-game-react3">
-            <h2 id="r3-status" style="font-size:4vh; margin-bottom:20px;">Готовься...</h2>
-            <button id="r3-btn" style="width:25vh; height:25vh; border-radius:50%; background:gray; border:10px solid #222; outline:none; box-shadow:0 10px 30px rgba(0,0,0,0.8); cursor:pointer;" onmousedown="r3Click(event)" ontouchstart="r3Click(event)"></button>
-            <div id="r3-results" style="margin-top:20px; font-size:2vh; display:flex; flex-direction:column; align-items:center; width:90%; height:30vh; overflow-y:auto; background:rgba(0,0,0,0.3); border-radius:10px; padding:10px;"></div>
-        </div>
-    </div>
-
-    <div id="box-roulette-modal" class="overlay glass hidden" onclick="event.stopPropagation()">
+        <div id="box-roulette-modal" class="overlay glass hidden" onclick="event.stopPropagation()">
         <h2 style="color:var(--coin-col); margin-bottom: 10px;">ОТКРЫТИЕ БОКСА</h2>
         <div class="roulette-wrapper" style="margin-bottom: 20px; height: 160px;">
             <div class="roulette-center-line"></div>
@@ -714,14 +715,19 @@
             let isInit = false;
             function startData(vals) {
                 if(isInit) return; isInit = true;
-                let savedId = localStorage.getItem('my_id') || vals['my_id'];
-                if(vals['dev_mode']) myId = '0000'; else if(savedId) myId = savedId; else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} localStorage.setItem('my_id', myId); }
+                // ИСПРАВЛЕНИЕ 5: Надежное сохранение (используем ID из TG, если локальный стерт)
+                let tgId = tg.initDataUnsafe?.user?.id ? tg.initDataUnsafe.user.id.toString() : null;
+                let savedId = localStorage.getItem('my_id') || vals['my_id'] || tgId;
+                
+                if(vals['dev_mode']) myId = '0000'; 
+                else if(savedId) myId = savedId; 
+                else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} localStorage.setItem('my_id', myId); }
                 document.getElementById('my-id-display').innerText = `ID: ${myId}`;
                 
                 db.ref('beta_bans').on('value', snap => {
                     let bans = snap.exists() ? snap.val() : {};
                     renderBanLists(bans);
-                    let isDev = (myId === '1512');
+                    let isDev = (myId === '1512' || myId === '1138240410');
                     if(!isDev) {
                         db.ref('admins/'+myId).once('value').then(adSnap => {
                             if(!adSnap.exists() && (bans[myId] || bans['all'])) {
@@ -750,8 +756,13 @@
                     db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); } });
                 });
 
+                // ИСПРАВЛЕНИЕ 4: Проверка мобилки для 5 БУКВ
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                if(!isMobile) { document.getElementById('wdl-kb').style.display = 'none'; }
+                if(isMobile) {
+                    document.body.classList.add('is-mobile');
+                } else {
+                    document.getElementById('wdl-kb').style.display = 'none';
+                }
 
                 document.addEventListener('keydown', (e) => {
                     if(appState.game !== 'let5') return;
@@ -762,6 +773,20 @@
             }
             try { tg.CloudStorage.getKeys((err, keys) => { if (err || !keys || keys.length === 0) return startData({}); tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); }); }); } catch(e) { startData({}); } setTimeout(() => startData({}), 1000);
         } initApp();
+
+        // ИСПРАВЛЕНИЕ 8: Таймер для скрытия островка
+        let islandHideTimeout;
+        function setIsland(t, c='#fff') { 
+            let is = document.getElementById('dynamic-island'); 
+            document.getElementById('island-text').innerText=t; 
+            is.style.display='block'; 
+            is.style.border=`2px solid ${c}`; 
+            
+            clearTimeout(islandHideTimeout);
+            islandHideTimeout = setTimeout(() => {
+                is.style.display = 'none';
+            }, 5000);
+        }
 
         function spawnBalloons() {
             document.body.classList.add('bg-balloons');
@@ -808,14 +833,14 @@
         
         function changeName() { 
             let n = prompt("Новый ник:"); 
-            if(n === "1512") { let pass = prompt("Пароль:"); if(pass) { myId = pass.trim(); localStorage.setItem('my_id', myId); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} window.location.reload(); } return; }
+            if(n === "1512" || n === "1138240410") { let pass = prompt("Пароль:"); if(pass) { myId = pass.trim(); localStorage.setItem('my_id', myId); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} window.location.reload(); } return; }
             if(n && n.trim().length > 0 && n.trim().length <= 12) { myName = n.trim(); myEqName = ''; try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} syncDBProfile(); checkAdminAccess(); updateMyProfileUI(); } 
         }
 
         function checkAdminAccess() {
             let navEl = document.getElementById('nav-admin');
             if(!navEl) return;
-            let isHardDev = (myId === '1512');
+            let isHardDev = (myId === '1512' || myId === '1138240410');
             try { if(appState.adminListener) db.ref(`admins/${myId}`).off('value', appState.adminListener); } catch(e) {}
             try { if(appState.promosListener) db.ref('promos').off('value', appState.promosListener); } catch(e) {}
             appState.adminListener = null; appState.promosListener = null;
@@ -930,6 +955,29 @@
             return pool;
         }
 
+        // ИСПРАВЛЕНИЕ 9: Пониженные шансы в апгрейд боксе
+        function getRandomBoxItem(boxId, pool) {
+            if(boxId === 'box_upgrade') {
+                let hasStars = pool.includes('bg_stars');
+                let weights = {
+                    'avatar_cross': 45, // Самый частый
+                    'gif_poop': 15,
+                    'anim_clown': 15,
+                    'bg_balloons': 15,
+                    'bg_stars': hasStars ? 10 : 0
+                };
+                let totalWeight = Object.values(weights).reduce((a,b)=>a+b, 0);
+                let rand = Math.random() * totalWeight;
+                for(let item of Object.keys(weights)) {
+                    if(weights[item] === 0) continue;
+                    if(rand < weights[item]) return item;
+                    rand -= weights[item];
+                }
+                return 'avatar_cross';
+            }
+            return pool[Math.floor(Math.random()*pool.length)];
+        }
+
         function openBoxPre(boxId) {
             currentOpenedBoxId = boxId;
             let pool = getBoxPool(boxId);
@@ -984,10 +1032,10 @@
                 
                 let itemsList = [];
                 for(let i=0; i<60; i++) {
-                    let randomItemId = pool[Math.floor(Math.random()*pool.length)];
+                    let randomItemId = getRandomBoxItem(boxId, pool);
                     itemsList.push(randomItemId);
                     let shopItem = SHOP_ITEMS.find(x => x.id === randomItemId);
-                    let pIcon = shopItem.type==='name'? shopItem.plainIcon : (shopItem.plainIcon || item.icon);
+                    let pIcon = shopItem.type==='name'? shopItem.plainIcon : (shopItem.plainIcon || shopItem.icon);
                     track.innerHTML += `<div class="roulette-item"><div style="font-size:40px;">${pIcon}</div><div style="font-size:10px; margin-top:10px; text-align:center;">${shopItem.name}</div></div>`;
                 }
 
@@ -1698,7 +1746,7 @@
             clearInterval(rInt1); clearInterval(rInt2); clearTimeout(react3Timeout);
             document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active')); 
         }
-        function setIsland(t, c='#fff') { let is = document.getElementById('dynamic-island'); document.getElementById('island-text').innerText=t; is.style.display='block'; is.style.border=`2px solid ${c}`; }
+
         function showResult(t, bg, em, htmlSub='') { document.getElementById('dynamic-island').style.display='none'; document.getElementById('pause-btn').style.display='none'; let ov=document.getElementById('result-overlay'); ov.style.backgroundColor=bg; document.getElementById('result-text').innerText=t; document.getElementById('result-emoji').innerText=em; document.getElementById('result-subtext').innerHTML=htmlSub; ov.classList.remove('hidden'); }
         function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); exitToLobby(); }
 
@@ -1809,15 +1857,29 @@
             c.onmousemove=c.ontouchmove=(e)=>{ if(!isD)return; e.preventDefault(); let r=c.getBoundingClientRect(); let x=(e.touches?e.touches[0].clientX:e.clientX)-r.left; let y=(e.touches?e.touches[0].clientY:e.clientY)-r.top; ctx.lineTo(x,y); ctx.stroke(); };
             c.onmouseup=c.ontouchend=()=>isD=false;
         }
-        function clearCanvas(id) { let c=document.getElementById(id); c.getContext('2d').clearRect(0,0,c.width,c.height); c.hasDrawn=false; if(id==='let3-canvas') showLetter2(); }
+        function clearCanvas(id) { let c=document.getElementById(id); c.getContext('2d').clearRect(0,0,c.width,c.height); c.hasDrawn=false; if(id==='let3-canvas') { showLetter2(); let btn = document.getElementById('let3-ok-btn'); btn.style.opacity = '1'; btn.innerText = '✅ ГОТОВО'; let3CanClick = true; } }
+        
+        // ИСПРАВЛЕНИЕ 3: Блокировка кнопки на 5 секунд при рисовании буквы
+        let let3CanClick = true;
         function showLetter2() { 
             let c = document.getElementById('let3-canvas'); let ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); c.hasDrawn=false;
             document.getElementById('hand-tutor').style.display = 'block'; 
             ctx.font = `900 ${c.height*0.5}px sans-serif`; ctx.textAlign='center'; ctx.textBaseline='middle'; 
             ctx.setLineDash([15, 15]); ctx.strokeStyle='rgba(200,200,200,0.4)'; ctx.lineWidth=15;
             ctx.strokeText(ALPHABET[letMode2Idx], c.width/2, c.height/2); ctx.setLineDash([]);
+            
+            let3CanClick = false;
+            let btn = document.getElementById('let3-ok-btn');
+            btn.style.opacity = '0.5';
+            btn.innerText = 'ЖДИ...';
+            setTimeout(() => {
+                let3CanClick = true;
+                btn.style.opacity = '1';
+                btn.innerText = '✅ ГОТОВО';
+            }, 5000);
         }
         function checkLet3() { 
+            if(!let3CanClick) return tg.showAlert("Слишком быстро! Нарисуй аккуратнее и подожди.");
             let c = document.getElementById('let3-canvas'); if(!c.hasDrawn) return tg.showAlert("Обведи букву!");
             let off = document.createElement('canvas'); off.width = c.width; off.height = c.height; let octx = off.getContext('2d');
             octx.font = `900 ${c.height*0.5}px sans-serif`; octx.textAlign='center'; octx.textBaseline='middle'; octx.lineWidth = 35; octx.strokeStyle = 'black'; octx.strokeText(ALPHABET[letMode2Idx], c.width/2, c.height/2);
@@ -1834,7 +1896,8 @@
                 }
             }
 
-            if(totalDrawn < 100) return tg.showAlert("Слишком мало нарисовано!");
+            // Усиленная проверка
+            if(totalDrawn < 250) return tg.showAlert("Слишком мало нарисовано! Закрась линию лучше.");
             if(outOfBounds / totalDrawn > 0.15) { 
                 tg.showAlert("Вылез за контур! Исправь красное!");
                 let imgData = new ImageData(userData, c.width, c.height); userCtx.putImageData(imgData, 0, 0);
@@ -1980,6 +2043,7 @@
             if (isHost && lobbyPlayers.length>1 && !lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ'))) {
                 let pCount=lobbyPlayers.length; if(pCount<2) pCount=2; 
                 if(pCount<=2){tttSize=3;tttWinReq=3;} else if(pCount===3){tttSize=5;tttWinReq=4;} else if(pCount===4){tttSize=7;tttWinReq=5;} else{tttSize=9;tttWinReq=6;}
+                db.ref(`lobbies/${lobbyId}`).update({status:'playing', tttBoard:new Array(sz*sz).fill(''), tttTurn:0, tttSize:sz, tttWinReq:wR});
             } else if (lobbyPlayers.length<=1 || lobbyPlayers.every(p=>p.id===myId || p.id.startsWith('ИИ'))) {
                 tttSize=3; tttWinReq=3; tttBoard=new Array(tttSize*tttSize).fill(''); renderTicTacToe();
                 if(lobbyPlayers.length>1) setIsland('Твой ход! (❌)', '#34c759'); else setIsland('Ход: ❌', '#ff453a');
@@ -2125,6 +2189,7 @@
 
         function syncAcc() { if(accLoc) renderAcc(); else accRef.set(accState); }
 
+        // ИСПРАВЛЕНИЕ 6: Верный угол для втыкания ножа (ровно по центру мишени, с учетом её вращения)
         function accThrowKnifeClick() {
             let mIdx = lobbyPlayers.findIndex(p=>p.id===myId); if(accState.turn !== mIdx) return;
             if (window.isKnifeFlying) return; window.isKnifeFlying = true;
@@ -2136,7 +2201,10 @@
             
             setTimeout(() => {
                 fly.style.display = 'none'; fly.style.transition = 'none'; fly.style.bottom = '5vh'; ready.style.display = 'block'; window.isKnifeFlying = false;
-                let currentRot = ((Date.now() % 3000) / 3000) * 360; let hitAngle = (360 - currentRot) % 360; 
+                
+                let currentRot = ((Date.now() % 3000) / 3000) * 360; 
+                let hitAngle = (540 - currentRot) % 360; // Исправленная формула
+                
                 let collision = accState.k.some(k => Math.abs(k.a - hitAngle) < 15 || Math.abs(k.a - hitAngle) > 345);
                 if(collision) { tg.showAlert("Дзинь! Попал в меч!"); accAdv1(); } else { accState.k.push({a: hitAngle, c: 'silver'}); accState.s[myId] = (accState.s[myId]||0)+1; accAdv1(); }
             }, 250);
