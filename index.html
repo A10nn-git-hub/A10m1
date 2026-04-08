@@ -1192,7 +1192,7 @@
             100% { transform: scale(0) translateY(-15vh); opacity: 0; } 
         }
     </style>
-    </head>
+</head>
 <body>
     <div id="orientation-warning">
         <h2 id="orient-warn-text">ПОВЕРНИ УСТРОЙСТВО 🔄<br><br>Правильная ориентация экрана обязательна!</h2>
@@ -1717,7 +1717,7 @@
         </div>
         
         <script>
-            const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
+    const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
         const firebaseConfig = { apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg", authDomain: "mini-games-b9400.firebaseapp.com", databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app", projectId: "mini-games-b9400", storageBucket: "mini-games-b9400.firebasestorage.app", messagingSenderId: "523964322575", appId: "1:523964322575:web:a5502d0bf28f17b10f247a" }; 
         firebase.initializeApp(firebaseConfig); const db = firebase.database();
         
@@ -2231,7 +2231,7 @@
                 renderInventory(); renderShop();
             });
         }
-            function toggleEquip(id, type) { 
+function toggleEquip(id, type) { 
             if (type === 'avatar') { 
                 myAvatar = (myAvatar === id) ? '😎' : id; 
             } 
