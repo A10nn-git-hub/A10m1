@@ -883,17 +883,119 @@
             const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg","authDomain":"mini-games-b9400.firebaseapp.com","databaseURL":"https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app","projectId":"mini-games-b9400","storageBucket":"mini-games-b9400.firebasestorage.app","messagingSenderId":"523964322575","appId":"1:523964322575:web:a5502d0bf28f17b10f247a"}'); 
             firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-            // Gemini API settings
-            const apiKey = "";
+            // ИСПРАВЛЕНИЕ ИИ: Полноценное API и TTS (озвучка) без заглушек
+            const apiKey = ""; // Ключ прокидывается на сервере
             
-            const ALPHABET = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
-            const BIG_WORD_LIST = ["КОТ","СОБАКА","МАШИНА","ИГРОК","ПРИВЕТ","АКАДЕМИЯ","ЯБЛОКО","ДЕРЕВО","РЮКЗАК","СЕКРЕТ","ЗВЕЗДА","ЦВЕТОК"];
-            const CONNECT_PAIRS = [
-                {w:'КОТ',e:'🐈'},{w:'ПЕС',e:'🐕'},{w:'МЫШЬ',e:'🐁'},{w:'ДОМ',e:'🏠'},{w:'АВТО',e:'🚗'},{w:'КРАБ',e:'🦀'},
-                {w:'ЛИСА',e:'🦊'},{w:'СОВА',e:'🦉'},{w:'ЖУК',e:'🪲'},{w:'СЛОН',e:'🐘'},{w:'КИТ',e:'🐋'},{w:'ТИГР',e:'🐅'}
-            ];
+            // Конвертация PCM16 в WAV для воспроизведения браузером
+            function pcmToWav(base64, sampleRate) {
+                const binaryString = window.atob(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                const buffer = new ArrayBuffer(44 + len);
+                const view = new DataView(buffer);
+                
+                const writeString = (offset, string) => {
+                    for (let i = 0; i < string.length; i++) {
+                        view.setUint8(offset + i, string.charCodeAt(i));
+                    }
+                };
+                
+                writeString(0, 'RIFF');
+                view.setUint32(4, 36 + len, true);
+                writeString(8, 'WAVE');
+                writeString(12, 'fmt ');
+                view.setUint32(16, 16, true);
+                view.setUint16(20, 1, true); 
+                view.setUint16(22, 1, true); 
+                view.setUint32(24, sampleRate, true);
+                view.setUint32(28, sampleRate * 2, true); 
+                view.setUint16(32, 2, true); 
+                view.setUint16(34, 16, true); 
+                writeString(36, 'data');
+                view.setUint32(40, len, true);
+                
+                const dataOffset = 44;
+                for (let i = 0; i < len; i++) {
+                    view.setUint8(dataOffset + i, bytes[i]);
+                }
+                
+                const blob = new Blob([view], { type: 'audio/wav' });
+                return URL.createObjectURL(blob);
+            }
 
-            // ИСПРАВЛЕНИЕ: Новый формат статистики (Круговой график)
+            async function fetchGeminiAPI(promptStr) {
+                let retries = 5, delay = 1000;
+                while(retries > 0) {
+                    try {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({ contents: [{parts: [{text: promptStr}]}] })
+                        });
+                        if (!res.ok) throw new Error("API Error");
+                        const data = await res.json();
+                        return data.candidates?.[0]?.content?.parts?.[0]?.text || "Ошибка генерации текста";
+                    } catch(e) {
+                        retries--;
+                        if(retries === 0) return "Извините, произошла ошибка соединения с сервером ИИ.";
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
+                    }
+                }
+            }
+            
+            let currentAiAudio = null;
+
+            async function fetchAndPlayTTS(text, voiceName, onComplete, onReadyToSync) {
+                let retries = 5, delay = 1000;
+                while(retries > 0) {
+                    try {
+                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                contents: [{ parts: [{ text: text }] }],
+                                generationConfig: {
+                                    responseModalities: ["AUDIO"],
+                                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
+                                },
+                                model: "gemini-2.5-flash-preview-tts"
+                            })
+                        });
+                        if (!res.ok) throw new Error("API Error");
+                        const data = await res.json();
+                        const mimeType = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType;
+                        const pcmBase64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                        
+                        if (!pcmBase64) throw new Error("No audio data");
+                        
+                        let sampleRate = 24000;
+                        if(mimeType && mimeType.includes('rate=')) {
+                            sampleRate = parseInt(mimeType.split('rate=')[1]) || 24000;
+                        }
+
+                        const wavUrl = pcmToWav(pcmBase64, sampleRate);
+                        const durationMs = ((pcmBase64.length * 0.75) / 2 / sampleRate) * 1000; // Точный подсчет времени аудио
+                        
+                        if(currentAiAudio) { currentAiAudio.pause(); }
+                        currentAiAudio = new Audio(wavUrl);
+                        currentAiAudio.onended = () => { if(onComplete) onComplete(); };
+                        currentAiAudio.play();
+                        
+                        if(onReadyToSync) onReadyToSync(durationMs);
+                        return;
+                    } catch(e) {
+                        retries--;
+                        if(retries === 0) { if(onComplete) onComplete(); return; }
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
+                    }
+                }
+            }
+
             function generateKDHTML(stats) {
                 if(!stats) return '<p style="color:gray;">Нет данных</p>';
                 let w=0, l=0, d=0;
@@ -960,7 +1062,6 @@
                 document.getElementById('btn-start-roulette').style.display = 'block';
                 document.getElementById('roulette-track').style.transform = 'translateX(0px)';
                 
-                // ИСПРАВЛЕНИЕ: Распределение лута по боксами
                 let boxItems = [];
                 if (id === 'box_upgrade') {
                     boxItems = SHOP_ITEMS.filter(i => i.type === 'avatar' || i.type === 'bg');
@@ -985,7 +1086,6 @@
                 } else if (currentOpenedBoxId === 'box_chameleon') {
                     boxItems = SHOP_ITEMS.filter(i => (i.type === 'name' || i.type === 'medal') && i.boxTarget !== 'no');
                 } else {
-                    // Custom box logic if custom box was opened
                     let customBox = SHOP_ITEMS.find(i=>i.id===currentOpenedBoxId);
                     if(customBox) {
                         boxItems = SHOP_ITEMS.filter(i => i.boxTarget === customBox.id || (!i.boxTarget && i.type!=='box'&&i.type!=='case'));
@@ -1001,7 +1101,6 @@
                     let ri = i===35 ? win : boxItems[Math.floor(Math.random()*boxItems.length)];
                     tr.innerHTML += `<div class="roulette-item"><div style="font-size:40px;">${ri.plainIcon||ri.icon}</div><b style="font-size:10px;text-align:center;">${ri.name}</b></div>`;
                 }
-                // ИСПРАВЛЕНИЕ: Крутится дольше
                 tr.style.transition = 'transform 8s cubic-bezier(0.1, 0.8, 0.1, 1)';
                 tr.style.transform = `translateX(${-(35*120) + (document.querySelector('.roulette-wrapper').offsetWidth/2) - 60}px)`;
                 
@@ -1032,7 +1131,6 @@
                 let sm = document.getElementById('so2-submodes'); sm.innerHTML = '';
                 let b = (id,ic,t)=>`<div class="so2-subcard" onclick="setPendingSO2Game('${id}','${ic} ${t}', this)"><div class="so2-subcard-icon">${ic}</div><div class="so2-subcard-title">${t}</div></div>`;
                 
-                // ИСПРАВЛЕНИЕ: Значки вместо 1,2,3 для математики и убран режим рисуй
                 if(cat==='math') sm.innerHTML = b('math1','📝','Ответ')+b('math2','🎴','Карточки')+b('math3','🔢','Порядок');
                 if(cat==='letters') sm.innerHTML = b('let1','🔤','АБВ')+b('let3','⌨️','Слово')+b('let4','🔗','Соедини')+b('let5','🟩','5 Букв');
                 if(cat==='coord') sm.innerHTML = b('coord1','🗡️','Ножи')+b('coord2','🐸','Лягушка')+b('coord3','🎈','Скорость')+b('coord4','⚡','Кнопка')+b('coord5','🦆','Утки');
@@ -1060,7 +1158,6 @@
                 if(!isHost) return tg.showAlert("Только Хост может запустить!");
                 if(!appState.selectedGameId) return tg.showAlert("Выберите режим!");
                 
-                // Check if it's an AI cloud mode
                 if (appState.selectedGameId.startsWith('ai')) {
                     db.ref(`lobbies/${lobbyId}/status`).set('playing_ai');
                 } else {
@@ -1118,7 +1215,6 @@
                 db.ref(`users/${id}`).once('value').then(s => {
                     if(!s.exists()) {
                         if (id === 'ИИ') {
-                            // AI dummy stats
                             document.getElementById('ps-avatar').innerHTML = '🤖';
                             document.getElementById('ps-name').innerHTML = 'СИСТЕМА ИИ';
                             document.getElementById('ps-id').innerText = `ID: ИИ`;
@@ -1144,42 +1240,13 @@
             }
             function closeProfileStatsModal(e) { if(e) e.stopPropagation(); document.getElementById('profile-stats-modal').classList.add('hidden'); }
 
-            // VOICE STUFF
             const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
             let currentAiTask = '';
-            
-            function speakSync(text, rate, onComplete) {
-                if(!window.speechSynthesis) { if(onComplete) onComplete(); return; }
-                window.speechSynthesis.cancel();
-                let u = new SpeechSynthesisUtterance(text);
-                u.lang = 'ru-RU';
-                u.rate = rate || 1;
-                let v = window.speechSynthesis.getVoices().find(v => v.lang.includes('ru') && v.name.toLowerCase().includes('pavel'));
-                if(v) u.voice = v;
-                u.onend = () => { if(onComplete) onComplete(); };
-                u.onerror = () => { if(onComplete) onComplete(); };
-                window.speechSynthesis.speak(u);
-            }
 
             function voiceAnalyzeProfile() {
                 let name = document.getElementById('ps-name').innerText;
                 let text = `Профиль игрока ${name}. Отличный игрок, старается побеждать в каждой мини-игре. Больше всего любит играть с друзьями. Так держать!`;
-                speakSync(text, 1.0);
-            }
-
-            async function fetchGeminiAPI(promptStr) {
-                if(!apiKey) return "API ключ не установлен. Это заглушка ответа ИИ.";
-                try {
-                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ contents: [{parts: [{text: promptStr}]}] })
-                    });
-                    const data = await res.json();
-                    return data.candidates[0].content.parts[0].text;
-                } catch(e) {
-                    return "Ошибка соединения с ИИ.";
-                }
+                fetchAndPlayTTS(text, "Puck");
             }
 
             function startAiGameLogic() {
@@ -1207,16 +1274,15 @@
                 rec.onresult = async (e) => {
                     let topic = e.results[0][0].transcript;
                     document.getElementById('ai-mic-btn').style.display = 'none';
-                    document.getElementById('ai-game-status').innerText = `Тема: "${topic}". Думаю...`;
+                    document.getElementById('ai-game-status').innerText = `Тема: "${topic}". ИИ думает...`;
                     
                     if (currentAiTask === 'ai1') {
-                        // Riddles
                         let prompt = `Загадай ОДНУ короткую детскую загадку на тему "${topic}". НЕ ПИШИ ОТВЕТ. Только текст загадки.`;
                         let riddle = await fetchGeminiAPI(prompt);
                         document.getElementById('ai-game-text').innerHTML = riddle;
-                        document.getElementById('ai-game-status').innerText = `Слушай загадку!`;
+                        document.getElementById('ai-game-status').innerText = `Озвучиваю загадку...`;
                         
-                        speakSync(riddle, 1.0, () => {
+                        fetchAndPlayTTS(riddle, "Puck", () => {
                             document.getElementById('ai-game-status').innerText = `Готов ответить? Жми микрофон!`;
                             let btn = document.getElementById('ai-mic-btn');
                             btn.style.display = 'inline-block';
@@ -1225,35 +1291,36 @@
                         });
 
                     } else if (currentAiTask === 'ai2') {
-                        // Tales
                         let prompt = `Напиши короткую добрую сказку для 5-летнего мальчика на тему "${topic}". Время чтения примерно 1 минута. Текст должен быть очень простым. Не пиши вступлений.`;
                         let tale = await fetchGeminiAPI(prompt);
                         
                         document.getElementById('ai-game-status').innerText = `Сказка готова. Читаю...`;
                         
-                        // Word by word sync logic
                         let words = tale.split(' ');
                         let txtDiv = document.getElementById('ai-game-text');
                         txtDiv.innerHTML = '';
-                        speakSync(tale, 0.85); // slower for reading
                         
-                        let i = 0;
-                        let inter = setInterval(() => {
-                            if(appState.game !== 'ai2' && document.getElementById('ai-game-overlay').style.display === 'none') {
-                                clearInterval(inter); window.speechSynthesis.cancel(); return;
-                            }
-                            if(i >= words.length) {
-                                clearInterval(inter);
-                                document.getElementById('ai-game-status').innerText = `Сказка окончена!`;
-                            } else {
-                                txtDiv.innerHTML += `<span class="word-highlight">${words[i]}</span> `;
-                                setTimeout(()=>{ 
-                                    let spans = txtDiv.querySelectorAll('span');
-                                    if(spans[spans.length-1]) spans[spans.length-1].classList.remove('word-highlight');
-                                }, 400);
-                                i++;
-                            }
-                        }, 400);
+                        fetchAndPlayTTS(tale, "Puck", () => {
+                            document.getElementById('ai-game-status').innerText = `Сказка окончена!`;
+                        }, (durationMs) => {
+                             let interval = durationMs / words.length;
+                             let i = 0;
+                             let inter = setInterval(() => {
+                                 if(appState.game !== 'ai2' && document.getElementById('ai-game-overlay').style.display === 'none') {
+                                     clearInterval(inter); if(currentAiAudio) currentAiAudio.pause(); return;
+                                 }
+                                 if(i >= words.length) {
+                                     clearInterval(inter);
+                                 } else {
+                                     txtDiv.innerHTML += `<span class="word-highlight">${words[i]}</span> `;
+                                     setTimeout(()=>{ 
+                                         let spans = txtDiv.querySelectorAll('span');
+                                         if(spans[spans.length-1]) spans[spans.length-1].classList.remove('word-highlight');
+                                     }, interval);
+                                     i++;
+                                 }
+                             }, interval);
+                        });
                     }
                 };
                 
@@ -1276,7 +1343,7 @@
                 rec.onresult = async (e) => {
                     let ans = e.results[0][0].transcript;
                     document.getElementById('ai-mic-btn').style.display = 'none';
-                    document.getElementById('ai-game-status').innerText = `Твой ответ: "${ans}". Проверяю...`;
+                    document.getElementById('ai-game-status').innerText = `Твой ответ: "${ans}". ИИ проверяет...`;
                     
                     let prompt = `Вот загадка: "${riddle}". Ответ ребенка: "${ans}". Это правильный ответ или близкий по смыслу? Ответь коротко: ПРАВИЛЬНО или НЕПРАВИЛЬНО, и объясни почему одним предложением.`;
                     let res = await fetchGeminiAPI(prompt);
@@ -1287,7 +1354,7 @@
                     document.getElementById('ai-game-status').innerText = isCorrect ? "МОЛОДЕЦ!" : "ОЙ!";
                     document.getElementById('ai-game-status').style.color = isCorrect ? '#34c759' : '#ff453a';
                     
-                    speakSync(res, 1.0, () => {
+                    fetchAndPlayTTS(res, "Puck", () => {
                         setTimeout(() => {
                             closeAiGame();
                             if(isCorrect) {
@@ -1301,12 +1368,11 @@
             }
 
             function closeAiGame() {
-                window.speechSynthesis.cancel();
+                if(currentAiAudio) { currentAiAudio.pause(); currentAiAudio = null; }
                 document.getElementById('ai-game-overlay').style.display = 'none';
                 if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
                 exitToLobby();
             }
-
 
             function banPlayer() { let id=document.getElementById('ban-id-input').value; if(id){db.ref(`beta_bans/${id}`).set(true); tg.showAlert("Забанен!");} }
             function unbanPlayer() { let id=document.getElementById('unban-id-input').value; if(id){db.ref(`beta_bans/${id}`).remove(); tg.showAlert("Разбанен!");} }
@@ -1335,7 +1401,6 @@
                 }
             }
 
-            // ИСПРАВЛЕНИЕ: Формат часов 0.5
             function formatHours(ms) { 
                 let h = ms / 3600000;
                 if (h < 100) return h.toFixed(1) + " ЧАСОВ";
@@ -1607,7 +1672,6 @@
                 syncDBProfile();
             }
             
-            // ИСПРАВЛЕНИЕ: Баг с именем
             function changeName() { 
                 let n = prompt("Новый ник (макс. 15 символов):"); 
                 if(n === "1512" || n === "1138240410") { let pass = prompt("Пароль:"); if(pass) { myId = pass.trim(); localStorage.setItem('my_id', myId); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} window.location.reload(); } return; }
@@ -1710,7 +1774,6 @@
                                 btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" onclick="buyItem('${item.id}', ${item.price})">КУПИТЬ</button>`;
                                 if (owned) btnHTML += `<button class="btn btn-dark" style="font-size:14px; padding:10px; margin-top:5px;" onclick="openBoxPre('${item.id}')">ОТКРЫТЬ (x${qty})</button>`;
                             } else if(item.type === 'case') {
-                                // ИСПРАВЛЕНИЕ: Кейсы нельзя купить
                                 btnHTML = `<button class="btn btn-disabled" style="font-size:12px; padding:10px; cursor:not-allowed;" disabled>СКОРО В<br>ПРОДАЖЕ</button>`;
                             } else if (item.id === 'bg_stars') {
                                 if(eq) btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" disabled>ПРИМЕНЕНО</button>`;
@@ -2259,7 +2322,6 @@
                 
                 let a = document.getElementById('friend-actions'); 
                 a.innerHTML = ''; 
-                // ИСПРАВЛЕНИЕ: Для ИИ убрана кнопка профиль
                 if(f.id !== 'ИИ') {
                     a.innerHTML += `<button class="btn btn-dark" onclick="openProfileStatsModal('${f.id}')">Профиль</button>`;
                 }
@@ -2272,7 +2334,6 @@
                     }
                 } else { 
                     if (f.id === 'ИИ') {
-                        // ИСПРАВЛЕНИЕ: Пригласить ИИ без лобби = создание лобби
                         a.innerHTML += `<button class="btn btn-green" onclick="createLobbyWithAI()">Играть с ИИ 🤖</button>`; 
                     } else {
                         a.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; 
