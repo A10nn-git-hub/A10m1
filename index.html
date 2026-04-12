@@ -757,7 +757,7 @@
                     <div class="so2-card" onclick="setPendingSO2Game('hidden', '🔎 Поиск', this)"><div style="font-size:30px;">🔎</div><b>ПОИСК</b></div>
                     <div class="so2-card" onclick="setPendingSO2Game('tictactoe', '❌⭕ Крестики', this)"><div style="font-size:30px;">❌⭕</div><b>КРЕСТИКИ</b></div>
                     <div class="so2-card" onclick="setPendingSO2Game('clicker', '⏱️ Кликер', this)"><div style="font-size:30px;">⏱️</div><b>КЛИКЕР</b></div>
-                    <div class="so2-card" onclick="setPendingSO2Game('br', '⚔️ Выживание', this)"><div style="font-size:30px;">⚔️</div><b>ВЫЖИВАНИЕ</b></div>
+                    <div class="so2-card" onclick="selectSO2Category('br', this)"><div style="font-size:30px;">⚔️</div><b>ВЫЖИВАНИЕ</b></div>
                 </div>
                 <div class="so2-right" id="so2-submodes">
                     <h2 style="color:gray; width:100%; text-align:center; margin-top:40%;">ВЫБЕРИТЕ КАТЕГОРИЮ СЛЕВА</h2>
@@ -1135,6 +1135,7 @@
                 if(cat==='letters') sm.innerHTML = b('let1','🔤','АБВ')+b('let3','⌨️','Слово')+b('let4','🔗','Соедини')+b('let5','🟩','5 Букв');
                 if(cat==='coord') sm.innerHTML = b('coord1','🗡️','Ножи')+b('coord2','🐸','Лягушка')+b('coord3','🎈','Скорость')+b('coord4','⚡','Кнопка')+b('coord5','🦆','Утки');
                 if(cat==='ai') sm.innerHTML = b('ai1','🗣️','Загадки')+b('ai2','📖','Сказки');
+                if(cat==='br') sm.innerHTML = b('br_2d','🔫','2D Арена') + b('br_3d','🏃‍♂️','3D Паркур');
 
                 document.getElementById('ttt-bot-diff').style.display='none';
             }
@@ -1177,7 +1178,8 @@
                 else if(id==='hidden') { document.getElementById('screen-game-hidden').classList.add('active'); initHiddenGame(); }
                 else if(id==='tictactoe') { document.getElementById('screen-game-tictactoe').classList.add('active'); initTicTacToe(); }
                 else if(id==='clicker') { document.getElementById('screen-game-clicker').classList.add('active'); initClickerUI(); }
-                else if(id==='br') { document.getElementById('screen-game-br').classList.add('active'); initBR(); }
+                else if(id==='br_2d') { document.getElementById('screen-game-br').classList.add('active'); initBR(); }
+                else if(id==='br_3d') { setIsland("Загрузка 3D...", "#3390ec"); window.location.href = "https://playcanv.as/b/4a505698"; }
                 
                 document.getElementById('pause-btn').style.display = 'flex';
                 setIsland("ИГРА НАЧАЛАСЬ!", "#34c759");
@@ -1196,7 +1198,7 @@
                 document.getElementById('dynamic-island').style.display = 'none';
                 document.getElementById('ai-game-overlay').style.display = 'none';
                 document.body.classList.remove('let5-active');
-                if(appState.game==='br') stopBR();
+                if(appState.game==='br_2d') stopBR();
                 if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
                 appState.game = null;
             }
@@ -1440,7 +1442,7 @@
                 'math1': 'МАТЕМАТИКА [ОТВЕТ]', 'math2': 'МАТЕМАТИКА [КАРТОЧКИ]', 'math3': 'МАТЕМАТИКА [ПОРЯДОК]',
                 'let1': 'БУКВЫ [АБВ]', 'let3': 'БУКВЫ [СЛОВО]', 'let4': 'БУКВЫ [СОЕДИНИ]', 'let5': 'БУКВЫ [5 БУКВ]',
                 'coord1': 'КООРДИНАЦИЯ [НОЖИ]', 'coord2': 'КООРДИНАЦИЯ [ЛЯГУШКА]', 'coord3': 'КООРДИНАЦИЯ [СКОРОСТЬ]', 'coord4': 'КООРДИНАЦИЯ [КНОПКА]', 'coord5': 'КООРДИНАЦИЯ [УТКИ]',
-                'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br': '⚔️ ВЫЖИВАНИЕ',
+                'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br_2d': '⚔️ ВЫЖИВАНИЕ [2D]', 'br_3d': '🏃‍♂️ 3D ПАРКУР',
                 'ai1': '🤖 ЗАГАДКИ ИИ', 'ai2': '🤖 СКАЗКИ ИИ'
             };
 
@@ -1586,17 +1588,17 @@
                     }
 
                     document.addEventListener('keydown', (e) => {
-                        if(appState.game === 'br' && !isMobile) brKeys[e.code] = true;
+                        if(appState.game === 'br_2d' && !isMobile) brKeys[e.code] = true;
                         if(appState.game !== 'let5') return;
                         if(/^[А-Яа-яЁё]$/.test(e.key)) { wPress(e.key.toUpperCase()); }
                         if(e.key === 'Backspace') { wBack(); }
                         if(e.key === 'Enter') { wEnter(); }
                     });
                     document.addEventListener('keyup', (e) => {
-                        if(appState.game === 'br' && !isMobile) brKeys[e.code] = false;
+                        if(appState.game === 'br_2d' && !isMobile) brKeys[e.code] = false;
                     });
                     document.addEventListener('mousemove', (e) => {
-                        if(appState.game === 'br' && !isMobile) {
+                        if(appState.game === 'br_2d' && !isMobile) {
                             let c = document.getElementById('br-canvas');
                             let rect = c.getBoundingClientRect();
                             let mx = e.clientX - rect.left;
@@ -1606,10 +1608,10 @@
                         }
                     });
                     document.getElementById('br-canvas').addEventListener('mousedown', (e) => {
-                        if(appState.game === 'br' && !isMobile) { isShooting = true; }
+                        if(appState.game === 'br_2d' && !isMobile) { isShooting = true; }
                     });
                     document.getElementById('br-canvas').addEventListener('mouseup', (e) => {
-                        if(appState.game === 'br' && !isMobile) { isShooting = false; }
+                        if(appState.game === 'br_2d' && !isMobile) { isShooting = false; }
                     });
                 }
                 try { tg.CloudStorage.getKeys((err, keys) => { if (err || !keys || keys.length === 0) return startData({}); tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); }); }); } catch(e) { startData({}); } setTimeout(() => startData({}), 1000);
