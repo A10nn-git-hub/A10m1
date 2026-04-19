@@ -203,7 +203,7 @@
         .so2-modal { background: var(--panel-bg); padding: 0; width: 90vw; max-width: 800px; height: 85vh; border-radius: 15px; display: flex; border: 3px solid #555; overflow: hidden; margin: auto; }
         .so2-left { width: 35%; background: rgba(0,0,0,0.8); padding: 15px; overflow-y: auto; overflow-x: hidden; border-right: 2px solid #444; display: flex; flex-direction: column; gap: 10px; }
         .so2-right { width: 65%; background: rgba(0,0,0,0.4); padding: 15px; overflow-y: auto; overflow-x: hidden; display: flex; flex-wrap: wrap; gap: 10px; align-content: center; justify-content: center; }
-        .so2-card { background: linear-gradient(to bottom, #333, #111); border: 2px solid #555; border-radius: 10px; width: 90%; padding: 5px; cursor: pointer; transition: 0.2s; text-align: center; flex-shrink: 0; }
+        .so2-card { background: linear-gradient(to bottom, #333, #111); border: 2px solid #555; border-radius: 10px; width: 90%; padding: 15px 5px; cursor: pointer; transition: 0.2s; text-align: center; flex-shrink: 0; font-weight: bold; font-size: 18px; }
         .so2-card:hover { border-color: var(--coin-col); transform: scale(1.02); }
         .so2-card.active { border-color: #34c759; box-shadow: 0 0 15px rgba(52,199,89,0.5); }
         .so2-subcard { background: #222; border: 2px solid #444; border-radius: 10px; width: 110px; height: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; text-align: center; padding: 5px;}
@@ -281,10 +281,10 @@
         #br-death-screen { position: absolute; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:100; display:none; flex-direction:column; justify-content:center; align-items:center; }
 
         .acc-target-spin { width: 20vh; height: 20vh; border-radius: 50%; position: absolute; top: 15vh; left: 50%; margin-left: -10vh; background: repeating-radial-gradient(circle, #8b4513 0, #8b4513 10px, #a0522d 10px, #a0522d 20px); box-shadow: 0 0 15px rgba(0,0,0,0.8); animation: spin 3s linear infinite; z-index: 5; }
-        .acc-big-sword { width: 0.8vh; height: 10vh; background: linear-gradient(to right, #e0e0e0, #fff, #b0b0b0); position: absolute; left: 50%; margin-left: -0.4vh; border-radius: 50% 50% 0 0; bottom: 3vh; box-shadow: inset 0 0 2px #fff; }
+        .acc-big-sword { width: 0.8vh; height: 10vh; background: linear-gradient(to right, #e0e0e0, #fff, #b0b0b0); position: absolute; left: 50%; margin-left: -0.4vh; border-radius: 50% 50% 0 0; bottom: -8vh; box-shadow: inset 0 0 2px #fff; }
         .acc-big-sword::after { content: ''; position: absolute; bottom: -1vh; left: -1vh; width: 2.8vh; height: 1vh; background: #444; border-radius: 2px; }
         .acc-big-sword::before { content: ''; position: absolute; bottom: -4vh; left: -0.6vh; width: 2vh; height: 3vh; background: #654321; border-radius: 2px; }
-        .acc-stuck-knife { position: absolute; top: 50%; left: 50%; width: 2vh; height: 12vh; transform-origin: 50% 0; z-index: 10; }
+        .acc-stuck-knife { position: absolute; top: 50%; left: 50%; width: 2vh; height: 10vh; transform-origin: 50% 0; z-index: 10; margin-left:-1vh; }
         
         @keyframes slideTarget { 0% { left: 10%; } 100% { left: 80%; } }
         .acc-target-frog { border-radius: 50%; background: radial-gradient(circle, red 20%, white 20%, white 40%, red 40%, red 60%, white 60%, white 80%, red 80%); box-shadow: 0 0 15px rgba(0,0,0,0.5); }
@@ -295,13 +295,6 @@
         @keyframes popInOut { 0% { transform: scale(0); opacity: 0; } 10% { transform: scale(1.2); opacity: 1; } 20% { transform: scale(1); } 90% { transform: scale(1); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
 
         @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        /* AI Story / Riddles overlay */
-        #ai-game-overlay { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.95); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: white; padding: 20px; box-sizing: border-box; }
-        #ai-game-text { font-size: 4vh; max-width: 800px; line-height: 1.4; font-weight: bold; }
-        #ai-game-status { font-size: 2vh; color: var(--coin-col); margin-top: 20px; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% {opacity:0.5;} 50% {opacity:1;} 100% {opacity:0.5;} }
-        .word-highlight { color: var(--coin-col); }
 
     </style>
 </head>
@@ -358,10 +351,8 @@
                     <div class="profile-right-col">
                         <div class="mini-tabs-header">
                             <button class="mini-tab-btn active" onclick="switchMiniTab('my-stats-all', this)">ОБЩАЯ СТАТИСТИКА</button>
-                            <button class="mini-tab-btn" id="my-tab-btn-ai" onclick="switchMiniTab('my-stats-ai', this)">С ИИ</button>
                         </div>
                         <div id="my-stats-all" class="mini-tab-content active" style="width:100%;"></div>
-                        <div id="my-stats-ai" class="mini-tab-content" style="width:100%;"></div>
                     </div>
                 </div>
             </div>
@@ -420,7 +411,6 @@
                     <button class="sub-tab-btn" onclick="switchSubTab('admin','coins',this)">ИГРОКИ</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('admin','promos',this)">ПРОМОКОД</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('admin','beta',this)">БЕТА</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('admin','create',this)">ПРЕДМЕТЫ</button>
                 </div>
                 
                 <div id="adm-admins" class="sub-tab-content active">
@@ -505,33 +495,6 @@
                         <div id="unban-list" style="width:100%; max-height:150px; overflow-y:auto; margin-bottom:10px; background:#111; padding:5px; border-radius:10px;"></div>
                         <button class="btn btn-green" style="width:100%;" onclick="unbanAllPlayers()">РАЗБАНИТЬ ВСЕХ</button>
                     </div>
-                </div>
-
-                <div id="adm-create" class="sub-tab-content">
-                    <input type="text" id="ci-id" class="styled-input" placeholder="ID (лат. буквы)">
-                    <input type="text" id="ci-name" class="styled-input" placeholder="Название предмета">
-                    <select id="ci-type" class="styled-input" onchange="toggleCIBoxInput()">
-                        <option value="name">ИМЯ</option>
-                        <option value="avatar">АВАТАР</option>
-                        <option value="medal">МЕДАЛЬ</option>
-                        <option value="bg">ФОН</option>
-                        <option value="box">БОКС</option>
-                        <option value="case">КЕЙС</option>
-                        <option value="other">ДРУГОЕ (указать)</option>
-                    </select>
-                    <input type="text" id="ci-type-custom" class="styled-input" placeholder="Кастомный тип" style="display:none;">
-                    <input type="text" id="ci-icon" class="styled-input" placeholder="Эмодзи или HTML">
-                    <input type="number" id="ci-price" class="styled-input" placeholder="Цена">
-                    <select id="ci-rarity" class="styled-input">
-                        <option value="UNCOMMON">UNCOMMON</option>
-                        <option value="RARE">RARE</option>
-                        <option value="EPIC">EPIC</option>
-                        <option value="LEGENDARY">LEGENDARY</option>
-                        <option value="ARCANE">ARCANE</option>
-                        <option value="NAMELESS">NAMELESS</option>
-                    </select>
-                    <input type="text" id="ci-box" class="styled-input" placeholder="ID бокса (если падает из бокса)">
-                    <button class="btn btn-gold" onclick="createCustomItem()">ДОБАВИТЬ В ИГРУ</button>
                 </div>
             </div>
         </div>
@@ -641,10 +604,10 @@
                         <div id="coord-t1" class="acc-target-spin"></div>
                     </div>
                     <div id="coord-ready-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); z-index:20;">
-                        <div class="acc-big-sword"></div>
+                        <div class="acc-big-sword" style="bottom: 0;"></div>
                     </div>
                     <div id="coord-flying-knife" style="position:absolute; bottom:5vh; left:50%; transform:translateX(-50%); display:none; z-index:15;">
-                        <div class="acc-big-sword"></div>
+                        <div class="acc-big-sword" style="bottom: 0;"></div>
                     </div>
                 </div>
 
@@ -687,7 +650,6 @@
                     <canvas id="br-canvas"></canvas>
                     <div class="br-ui" id="br-ui-alive">Живых: ?</div>
                     <div class="br-ui" id="br-ui-kills" style="top:40px;">Киллы: 0</div>
-                    <div class="br-ui" style="top:10px; right:10px; font-size:1.5vh;">PC: WASD + Мышь. Mobile: Джойстик</div>
                     
                     <div id="br-death-screen">
                         <h1 style="color:#ff453a; font-size:6vh; margin-bottom:10px;" id="br-death-title">ПОТРАЧЕНО</h1>
@@ -753,9 +715,8 @@
                     <div class="so2-card" onclick="selectSO2Category('math', this)"><div style="font-size:30px;">🧮</div><b>МАТЕМАТИКА</b></div>
                     <div class="so2-card" onclick="selectSO2Category('letters', this)"><div style="font-size:30px;">🅰️</div><b>БУКВЫ</b></div>
                     <div class="so2-card" onclick="selectSO2Category('coord', this)"><div style="font-size:30px;">🎯</div><b>КООРДИНАЦИЯ</b></div>
-                    <div class="so2-card" onclick="selectSO2Category('ai', this)"><div style="font-size:30px;">🤖</div><b>ИИ ИГРЫ</b></div>
                     <div class="so2-card" onclick="setPendingSO2Game('hidden', '🔎 Поиск', this)"><div style="font-size:30px;">🔎</div><b>ПОИСК</b></div>
-                    <div class="so2-card" onclick="setPendingSO2Game('tictactoe', '❌⭕ Крестики', this)"><div style="font-size:30px;">❌⭕</div><b>КРЕСТИКИ</b></div>
+                    <div class="so2-card" onclick="selectSO2Category('ttt', this)"><div style="font-size:30px;">❌⭕</div><b>КРЕСТИКИ</b></div>
                     <div class="so2-card" onclick="setPendingSO2Game('clicker', '⏱️ Кликер', this)"><div style="font-size:30px;">⏱️</div><b>КЛИКЕР</b></div>
                     <div class="so2-card" onclick="selectSO2Category('br', this)"><div style="font-size:30px;">⚔️</div><b>ВЫЖИВАНИЕ</b></div>
                 </div>
@@ -764,14 +725,6 @@
                 </div>
             </div>
             <div style="position:absolute; bottom:20px; right:20px; display:flex; gap:10px; align-items:center;">
-                <div id="ttt-bot-diff" style="display:none; margin-right:20px; background:rgba(0,0,0,0.5); padding:10px; border-radius:10px;">
-                    <b style="color:var(--coin-col);">Сложность ИИ:</b>
-                    <select id="ttt-bot-select" class="styled-input" style="padding:10px; margin-left:10px; font-size:16px; margin-bottom:0;">
-                        <option value="easy">ЛЕГКО (Рандом)</option>
-                        <option value="medium" selected>СРЕДНЕ</option>
-                        <option value="hard">ПРОФИ (Без шансов)</option>
-                    </select>
-                </div>
                 <button class="btn btn-red" style="font-size:20px; padding:15px 30px;" onclick="closeSO2ModeSelect()">НАЗАД</button>
                 <button class="btn btn-green" style="font-size:20px; padding:15px 30px;" onclick="confirmSO2Mode()">ДАЛЕЕ</button>
             </div>
@@ -801,7 +754,7 @@
             </div>
         </div>
         
-        <div id="result-overlay" class="overlay hidden">
+        <div id="result-overlay" class="overlay glass hidden" style="z-index: 9999; backdrop-filter: blur(15px); background: rgba(0,0,0,0.8);">
             <div id="result-emoji" style="font-size:80px;">🏆</div>
             <h2 id="result-text" style="font-size:5vh;">Победа!</h2>
             <div id="result-subtext" class="result-score-list"></div>
@@ -836,17 +789,14 @@
                     <div id="ps-avatar" class="inspect-avatar" style="font-size:64px; margin-bottom: 10px;"></div>
                     <div id="ps-name" style="font-size:24px;font-weight:900;line-height:1.2; text-align:center; width:100%; overflow:hidden; text-overflow:ellipsis;"></div>
                     <div id="ps-id" style="color:#888;font-family:monospace;margin-top:5px; margin-bottom:15px;"></div>
-                    <button class="btn btn-dark" style="font-size:12px; width:100%; border:1px solid var(--coin-col);" onclick="voiceAnalyzeProfile()"><span style="font-size:16px;">🤖</span> Анализ ИИ</button>
                 </div>
                 <div style="width: 65%; display:flex; flex-direction:column; overflow-y:auto;">
                     <div class="mini-tabs-header" style="flex-wrap:wrap;">
                         <button class="mini-tab-btn active" id="ps-tab-btn-you" onclick="switchMiniTab('ps-tab-you', this)">ИГРА С ТОБОЙ</button>
                         <button class="mini-tab-btn" id="ps-tab-btn-all" onclick="switchMiniTab('ps-tab-all', this)">ВСЕ ИГРЫ</button>
-                        <button class="mini-tab-btn" id="ps-tab-btn-ai" onclick="switchMiniTab('ps-tab-ai', this)">ИГРА С ИИ</button>
                     </div>
                     <div id="ps-tab-you" class="mini-tab-content active" style="width:100%;"></div>
                     <div id="ps-tab-all" class="mini-tab-content" style="width:100%;"></div>
-                    <div id="ps-tab-ai" class="mini-tab-content" style="width:100%;"></div>
                 </div>
             </div>
             <button id="profile-stats-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:5000;padding:15px 20px;font-size:18px;" onclick="closeProfileStatsModal(event)">✖</button>
@@ -869,62 +819,17 @@
                 <button class="btn btn-red" style="margin-top:15px;width:100%;" onclick="closeInviteModal()">Закрыть</button>
             </div>
         </div>
-
-        <div id="ai-game-overlay">
-            <h1 id="ai-game-title" style="color:var(--coin-col); margin-bottom:30px;">ИИ РЕЖИМ</h1>
-            <div id="ai-game-text"></div>
-            <div id="ai-game-status">Нажми микрофон чтобы сказать!</div>
-            <button id="ai-mic-btn" class="btn btn-gold" style="margin-top:40px; font-size:40px; padding:20px 40px; border-radius:50%;" onclick="startAiMic()">🎤</button>
-            <button class="btn btn-red" style="margin-top:30px; font-size:20px; padding:15px 30px;" onclick="closeAiGame()">Выйти в лобби</button>
-        </div>
         
         <script>
             const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
             const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg","authDomain":"mini-games-b9400.firebaseapp.com","databaseURL":"https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app","projectId":"mini-games-b9400","storageBucket":"mini-games-b9400.firebasestorage.app","messagingSenderId":"523964322575","appId":"1:523964322575:web:a5502d0bf28f17b10f247a"}'); 
             firebase.initializeApp(firebaseConfig); const db = firebase.database();
 
-            // ИСПРАВЛЕНИЕ ИИ: Полноценное API и TTS (озвучка) без заглушек
-            const apiKey = ""; // Ключ прокидывается на сервере
+            const apiKey = ""; 
             
-            // Конвертация PCM16 в WAV для воспроизведения браузером
-            function pcmToWav(base64, sampleRate) {
-                const binaryString = window.atob(base64);
-                const len = binaryString.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                }
-                const buffer = new ArrayBuffer(44 + len);
-                const view = new DataView(buffer);
-                
-                const writeString = (offset, string) => {
-                    for (let i = 0; i < string.length; i++) {
-                        view.setUint8(offset + i, string.charCodeAt(i));
-                    }
-                };
-                
-                writeString(0, 'RIFF');
-                view.setUint32(4, 36 + len, true);
-                writeString(8, 'WAVE');
-                writeString(12, 'fmt ');
-                view.setUint32(16, 16, true);
-                view.setUint16(20, 1, true); 
-                view.setUint16(22, 1, true); 
-                view.setUint32(24, sampleRate, true);
-                view.setUint32(28, sampleRate * 2, true); 
-                view.setUint16(32, 2, true); 
-                view.setUint16(34, 16, true); 
-                writeString(36, 'data');
-                view.setUint32(40, len, true);
-                
-                const dataOffset = 44;
-                for (let i = 0; i < len; i++) {
-                    view.setUint8(dataOffset + i, bytes[i]);
-                }
-                
-                const blob = new Blob([view], { type: 'audio/wav' });
-                return URL.createObjectURL(blob);
-            }
+            // Consts
+            const ALPHABET = "АБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ";
+            const CONNECT_PAIRS = [{w:'КОТ', e:'🐈'}, {w:'ПЁС', e:'🐕'}, {w:'ЛЕС', e:'🌳'}, {w:'ДОМ', e:'🏠'}, {w:'СОК', e:'🧃'}, {w:'МЯЧ', e:'⚽'}, {w:'НОЖ', e:'🔪'}, {w:'СЫР', e:'🧀'}, {w:'ЛУК', e:'🧅'}, {w:'ЖУК', e:'🪲'}];
 
             async function fetchGeminiAPI(promptStr) {
                 let retries = 5, delay = 1000;
@@ -941,55 +846,6 @@
                     } catch(e) {
                         retries--;
                         if(retries === 0) return "Извините, произошла ошибка соединения с сервером ИИ.";
-                        await new Promise(r => setTimeout(r, delay));
-                        delay *= 2;
-                    }
-                }
-            }
-            
-            let currentAiAudio = null;
-
-            async function fetchAndPlayTTS(text, voiceName, onComplete, onReadyToSync) {
-                let retries = 5, delay = 1000;
-                while(retries > 0) {
-                    try {
-                        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({
-                                contents: [{ parts: [{ text: text }] }],
-                                generationConfig: {
-                                    responseModalities: ["AUDIO"],
-                                    speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: voiceName } } }
-                                },
-                                model: "gemini-2.5-flash-preview-tts"
-                            })
-                        });
-                        if (!res.ok) throw new Error("API Error");
-                        const data = await res.json();
-                        const mimeType = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType;
-                        const pcmBase64 = data.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-                        
-                        if (!pcmBase64) throw new Error("No audio data");
-                        
-                        let sampleRate = 24000;
-                        if(mimeType && mimeType.includes('rate=')) {
-                            sampleRate = parseInt(mimeType.split('rate=')[1]) || 24000;
-                        }
-
-                        const wavUrl = pcmToWav(pcmBase64, sampleRate);
-                        const durationMs = ((pcmBase64.length * 0.75) / 2 / sampleRate) * 1000; // Точный подсчет времени аудио
-                        
-                        if(currentAiAudio) { currentAiAudio.pause(); }
-                        currentAiAudio = new Audio(wavUrl);
-                        currentAiAudio.onended = () => { if(onComplete) onComplete(); };
-                        currentAiAudio.play();
-                        
-                        if(onReadyToSync) onReadyToSync(durationMs);
-                        return;
-                    } catch(e) {
-                        retries--;
-                        if(retries === 0) { if(onComplete) onComplete(); return; }
                         await new Promise(r => setTimeout(r, delay));
                         delay *= 2;
                     }
@@ -1060,6 +916,7 @@
                 currentOpenedBoxId = id;
                 document.getElementById('box-roulette-modal').classList.remove('hidden');
                 document.getElementById('btn-start-roulette').style.display = 'block';
+                document.getElementById('btn-close-box').style.display = 'block';
                 document.getElementById('roulette-track').style.transform = 'translateX(0px)';
                 
                 let boxItems = [];
@@ -1079,6 +936,7 @@
 
             function startBoxRoulette() {
                 document.getElementById('btn-start-roulette').style.display = 'none';
+                document.getElementById('btn-close-box').style.display = 'none';
                 
                 let boxItems = [];
                 if (currentOpenedBoxId === 'box_upgrade') {
@@ -1112,6 +970,7 @@
                         db.ref(`users/${myId}/inventory/${win.id}`).once('value').then(ss => {
                             db.ref(`users/${myId}/inventory/${win.id}`).set((parseInt(ss.val())||0)+1);
                             tg.showAlert(`Выпало: ${win.name}!`); renderInventory(); renderShop();
+                            document.getElementById('btn-close-box').style.display = 'block';
                         });
                     });
                 }, 8500);
@@ -1123,7 +982,6 @@
                 document.getElementById('so2-mode-modal').classList.remove('hidden');
                 document.getElementById('so2-submodes').innerHTML = '<h2 style="color:gray;width:100%;text-align:center;margin-top:40%;">ВЫБЕРИТЕ КАТЕГОРИЮ СЛЕВА</h2>';
                 document.querySelectorAll('.so2-card').forEach(c=>c.classList.remove('active'));
-                document.getElementById('ttt-bot-diff').style.display='none';
             }
             
             function selectSO2Category(cat, el) {
@@ -1134,22 +992,36 @@
                 if(cat==='math') sm.innerHTML = b('math1','📝','Ответ')+b('math2','🎴','Карточки')+b('math3','🔢','Порядок');
                 if(cat==='letters') sm.innerHTML = b('let1','🔤','АБВ')+b('let3','⌨️','Слово')+b('let4','🔗','Соедини')+b('let5','🟩','5 Букв');
                 if(cat==='coord') sm.innerHTML = b('coord1','🗡️','Ножи')+b('coord2','🐸','Лягушка')+b('coord3','🎈','Скорость')+b('coord4','⚡','Кнопка')+b('coord5','🦆','Утки');
-                if(cat==='ai') sm.innerHTML = b('ai1','🗣️','Загадки')+b('ai2','📖','Сказки');
                 if(cat==='br') sm.innerHTML = b('br_2d','🔫','2D Арена') + b('br_3d','🏃‍♂️','3D Паркур');
-
-                document.getElementById('ttt-bot-diff').style.display='none';
+                if(cat==='ttt') {
+                    sm.innerHTML = `
+                        <h2 style="width:100%; text-align:center; color:white; margin-bottom: 20px;">Сложность ИИ (Крестики)</h2>
+                        <div style="display:flex; flex-wrap:wrap; justify-content:center; gap:15px; width:100%;">
+                            <div class="so2-card" style="width:40%;" onclick="setTTTDifficulty('easy', '❌⭕ Легко (1⭐)', this)">⭐ ЛЕГКО</div>
+                            <div class="so2-card" style="width:40%;" onclick="setTTTDifficulty('medium', '❌⭕ Средне (2⭐)', this)">⭐⭐ СРЕДНЕ</div>
+                            <div class="so2-card" style="width:40%;" onclick="setTTTDifficulty('hard', '❌⭕ Профи (3⭐)', this)">⭐⭐⭐ ПРОФИ</div>
+                        </div>
+                    `;
+                }
             }
             
             function setPendingSO2Game(id, name, el) {
                 pendingModeId = id;
                 document.querySelectorAll('.so2-subcard, .so2-card').forEach(c=>{ if(c.classList.contains('so2-subcard')||c.innerHTML.includes(name.split(' ')[1])) c.classList.remove('active'); });
                 if(el) el.classList.add('active');
-                document.getElementById('ttt-bot-diff').style.display = (id==='tictactoe' && lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) ? 'block' : 'none';
+            }
+
+            function setTTTDifficulty(diff, name, el) {
+                aiDifficulty = diff;
+                pendingModeId = 'tictactoe';
+                document.querySelectorAll('.so2-card').forEach(c => {
+                    if (c.innerHTML.includes('⭐')) c.classList.remove('active');
+                });
+                if(el) el.classList.add('active');
             }
             
             function confirmSO2Mode() {
                 if(!pendingModeId) return tg.showAlert("Выберите режим!");
-                if(pendingModeId==='tictactoe') aiDifficulty = document.getElementById('ttt-bot-select').value;
                 db.ref(`lobbies/${lobbyId}/game`).set(pendingModeId);
                 closeSO2ModeSelect();
             }
@@ -1158,12 +1030,7 @@
             function startLobbyGame() {
                 if(!isHost) return tg.showAlert("Только Хост может запустить!");
                 if(!appState.selectedGameId) return tg.showAlert("Выберите режим!");
-                
-                if (appState.selectedGameId.startsWith('ai')) {
-                    db.ref(`lobbies/${lobbyId}/status`).set('playing_ai');
-                } else {
-                    db.ref(`lobbies/${lobbyId}/status`).set('playing');
-                }
+                db.ref(`lobbies/${lobbyId}/status`).set('playing');
             }
 
             function startLocalGameUI() {
@@ -1196,7 +1063,6 @@
                 document.getElementById('view-lobby').style.display = 'flex';
                 document.getElementById('pause-btn').style.display = 'none';
                 document.getElementById('dynamic-island').style.display = 'none';
-                document.getElementById('ai-game-overlay').style.display = 'none';
                 document.body.classList.remove('let5-active');
                 if(appState.game==='br_2d') stopBR();
                 if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
@@ -1222,7 +1088,6 @@
                             document.getElementById('ps-id').innerText = `ID: ИИ`;
                             document.getElementById('ps-tab-you').innerHTML = generateKDHTML(aiStats);
                             document.getElementById('ps-tab-all').innerHTML = '<p>Это бот. Вы видите только статистику игр с ним.</p>';
-                            document.getElementById('ps-tab-ai').innerHTML = '';
                             switchMiniTab('ps-tab-you', document.getElementById('ps-tab-btn-you'));
                             document.getElementById('profile-stats-modal').classList.remove('hidden');
                         }
@@ -1235,146 +1100,11 @@
                     let hisAi = d.aiStats || {};
                     document.getElementById('ps-tab-you').innerHTML = generateKDHTML(getInvertedStats(pvpStats[id]));
                     document.getElementById('ps-tab-all').innerHTML = generateKDHTML(buildTotalStats(d.pvpStats, hisAi));
-                    document.getElementById('ps-tab-ai').innerHTML = generateKDHTML(hisAi);
                     switchMiniTab('ps-tab-you', document.getElementById('ps-tab-btn-you'));
                     document.getElementById('profile-stats-modal').classList.remove('hidden');
                 });
             }
             function closeProfileStatsModal(e) { if(e) e.stopPropagation(); document.getElementById('profile-stats-modal').classList.add('hidden'); }
-
-            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
-            let currentAiTask = '';
-
-            function voiceAnalyzeProfile() {
-                let name = document.getElementById('ps-name').innerText;
-                let text = `Профиль игрока ${name}. Отличный игрок, старается побеждать в каждой мини-игре. Больше всего любит играть с друзьями. Так держать!`;
-                fetchAndPlayTTS(text, "Puck");
-            }
-
-            function startAiGameLogic() {
-                document.getElementById('view-lobby').style.display = 'none';
-                let ov = document.getElementById('ai-game-overlay');
-                ov.style.display = 'flex';
-                let t = appState.selectedGameId;
-                
-                document.getElementById('ai-game-title').innerText = t === 'ai1' ? 'ЗАГАДКИ ИИ' : 'СКАЗКИ ИИ';
-                document.getElementById('ai-game-text').innerHTML = '';
-                document.getElementById('ai-game-status').innerText = 'Нажми микрофон чтобы сказать тему!';
-                document.getElementById('ai-mic-btn').style.display = 'inline-block';
-                currentAiTask = t;
-            }
-
-            function startAiMic() {
-                if(!SpeechRec) return tg.showAlert("Микрофон не поддерживается браузером!");
-                let rec = new SpeechRec();
-                rec.lang = 'ru-RU';
-                rec.interimResults = false;
-                
-                document.getElementById('ai-game-status').innerText = 'Слушаю...';
-                document.getElementById('ai-mic-btn').style.background = '#ff453a';
-                
-                rec.onresult = async (e) => {
-                    let topic = e.results[0][0].transcript;
-                    document.getElementById('ai-mic-btn').style.display = 'none';
-                    document.getElementById('ai-game-status').innerText = `Тема: "${topic}". ИИ думает...`;
-                    
-                    if (currentAiTask === 'ai1') {
-                        let prompt = `Загадай ОДНУ короткую детскую загадку на тему "${topic}". НЕ ПИШИ ОТВЕТ. Только текст загадки.`;
-                        let riddle = await fetchGeminiAPI(prompt);
-                        document.getElementById('ai-game-text').innerHTML = riddle;
-                        document.getElementById('ai-game-status').innerText = `Озвучиваю загадку...`;
-                        
-                        fetchAndPlayTTS(riddle, "Puck", () => {
-                            document.getElementById('ai-game-status').innerText = `Готов ответить? Жми микрофон!`;
-                            let btn = document.getElementById('ai-mic-btn');
-                            btn.style.display = 'inline-block';
-                            btn.style.background = 'var(--coin-col)';
-                            btn.onclick = () => answerAiRiddle(topic, riddle);
-                        });
-
-                    } else if (currentAiTask === 'ai2') {
-                        let prompt = `Напиши короткую добрую сказку для 5-летнего мальчика на тему "${topic}". Время чтения примерно 1 минута. Текст должен быть очень простым. Не пиши вступлений.`;
-                        let tale = await fetchGeminiAPI(prompt);
-                        
-                        document.getElementById('ai-game-status').innerText = `Сказка готова. Читаю...`;
-                        
-                        let words = tale.split(' ');
-                        let txtDiv = document.getElementById('ai-game-text');
-                        txtDiv.innerHTML = '';
-                        
-                        fetchAndPlayTTS(tale, "Puck", () => {
-                            document.getElementById('ai-game-status').innerText = `Сказка окончена!`;
-                        }, (durationMs) => {
-                             let interval = durationMs / words.length;
-                             let i = 0;
-                             let inter = setInterval(() => {
-                                 if(appState.game !== 'ai2' && document.getElementById('ai-game-overlay').style.display === 'none') {
-                                     clearInterval(inter); if(currentAiAudio) currentAiAudio.pause(); return;
-                                 }
-                                 if(i >= words.length) {
-                                     clearInterval(inter);
-                                 } else {
-                                     txtDiv.innerHTML += `<span class="word-highlight">${words[i]}</span> `;
-                                     setTimeout(()=>{ 
-                                         let spans = txtDiv.querySelectorAll('span');
-                                         if(spans[spans.length-1]) spans[spans.length-1].classList.remove('word-highlight');
-                                     }, interval);
-                                     i++;
-                                 }
-                             }, interval);
-                        });
-                    }
-                };
-                
-                rec.onerror = () => {
-                    document.getElementById('ai-game-status').innerText = 'Ошибка микрофона. Попробуй еще.';
-                    document.getElementById('ai-mic-btn').style.background = 'var(--coin-col)';
-                };
-                
-                rec.start();
-            }
-
-            function answerAiRiddle(topic, riddle) {
-                let rec = new SpeechRec();
-                rec.lang = 'ru-RU';
-                rec.interimResults = false;
-                
-                document.getElementById('ai-game-status').innerText = 'Слушаю ответ...';
-                document.getElementById('ai-mic-btn').style.background = '#ff453a';
-                
-                rec.onresult = async (e) => {
-                    let ans = e.results[0][0].transcript;
-                    document.getElementById('ai-mic-btn').style.display = 'none';
-                    document.getElementById('ai-game-status').innerText = `Твой ответ: "${ans}". ИИ проверяет...`;
-                    
-                    let prompt = `Вот загадка: "${riddle}". Ответ ребенка: "${ans}". Это правильный ответ или близкий по смыслу? Ответь коротко: ПРАВИЛЬНО или НЕПРАВИЛЬНО, и объясни почему одним предложением.`;
-                    let res = await fetchGeminiAPI(prompt);
-                    
-                    document.getElementById('ai-game-text').innerHTML = res;
-                    let isCorrect = res.toLowerCase().includes('правильно') && !res.toLowerCase().includes('неправильно');
-                    
-                    document.getElementById('ai-game-status').innerText = isCorrect ? "МОЛОДЕЦ!" : "ОЙ!";
-                    document.getElementById('ai-game-status').style.color = isCorrect ? '#34c759' : '#ff453a';
-                    
-                    fetchAndPlayTTS(res, "Puck", () => {
-                        setTimeout(() => {
-                            closeAiGame();
-                            if(isCorrect) {
-                                addCoins(10);
-                                showResult("УМНИЦА!", '#34c759', '🤖', "+10 🪙");
-                            }
-                        }, 1500);
-                    });
-                };
-                rec.start();
-            }
-
-            function closeAiGame() {
-                if(currentAiAudio) { currentAiAudio.pause(); currentAiAudio = null; }
-                document.getElementById('ai-game-overlay').style.display = 'none';
-                if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
-                exitToLobby();
-            }
 
             function banPlayer() { let id=document.getElementById('ban-id-input').value; if(id){db.ref(`beta_bans/${id}`).set(true); tg.showAlert("Забанен!");} }
             function unbanPlayer() { let id=document.getElementById('unban-id-input').value; if(id){db.ref(`beta_bans/${id}`).remove(); tg.showAlert("Разбанен!");} }
@@ -1442,15 +1172,12 @@
                 'math1': 'МАТЕМАТИКА [ОТВЕТ]', 'math2': 'МАТЕМАТИКА [КАРТОЧКИ]', 'math3': 'МАТЕМАТИКА [ПОРЯДОК]',
                 'let1': 'БУКВЫ [АБВ]', 'let3': 'БУКВЫ [СЛОВО]', 'let4': 'БУКВЫ [СОЕДИНИ]', 'let5': 'БУКВЫ [5 БУКВ]',
                 'coord1': 'КООРДИНАЦИЯ [НОЖИ]', 'coord2': 'КООРДИНАЦИЯ [ЛЯГУШКА]', 'coord3': 'КООРДИНАЦИЯ [СКОРОСТЬ]', 'coord4': 'КООРДИНАЦИЯ [КНОПКА]', 'coord5': 'КООРДИНАЦИЯ [УТКИ]',
-                'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br_2d': '⚔️ ВЫЖИВАНИЕ [2D]', 'br_3d': '🏃‍♂️ 3D ПАРКУР',
-                'ai1': '🤖 ЗАГАДКИ ИИ', 'ai2': '🤖 СКАЗКИ ИИ'
+                'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br_2d': '⚔️ ВЫЖИВАНИЕ [2D]', 'br_3d': '🏃‍♂️ 3D ПАРКУР'
             };
 
-            const RARITIES = { 'UNCOMMON': '#32ade6', 'RARE': '#007aff', 'EPIC': '#af52de', 'LEGENDARY': '#ff1493', 'ARCANE': '#ff3b30', 'NAMELESS': '#ffcc00' };
+            const RARITIES = { 'UNCOMMON': '#32ade6', 'RARE': '#007aff', 'EPIC': '#af52de', 'LEGENDARY': '#ff1493', 'ARCANE': '#ff3b30' };
 
             let SHOP_ITEMS = [ 
-                {id: 'case_upgrade', type:'case', name: 'UPGRADE CASE', desc: 'Пока нельзя открыть', price: 10000, plainIcon: '📦', icon: '📦', rarity: 'LEGENDARY'},
-                {id: 'case_chameleon', type:'case', name: 'CHAMELEON CASE', desc: 'Пока нельзя открыть', price: 10000, plainIcon: '🎁', icon: '🎁', rarity: 'LEGENDARY'},
                 {id: 'box_chameleon', type:'box', name: 'Chameleon Box', desc: 'Только имена и медали', price: 1000, plainIcon: '🎁', icon: '🎁', rarity: 'LEGENDARY'},
                 {id: 'box_upgrade', type:'box', name: 'Upgrade Box', desc: 'Только аватары и фоны', price: 1000, plainIcon: '📦', icon: '📦', rarity: 'LEGENDARY'},
                 {id: 'gif_poop', type:'avatar', name: 'Живая какашка', desc: 'GIF аватарка', price: 500, plainIcon: '💩', icon: '<span class="anim-poop">💩</span>', rarity: 'EPIC', boxTarget: 'box_upgrade'}, 
@@ -1505,15 +1232,6 @@
                 return res; 
             }
 
-            const VALID_5_LETTER_WORDS = [
-                "АБЗАЦ","БАНКА","ВЕТВЬ","ГАЗОН","ДВЕРЬ","ЖИВОТ","ЗАМОК","КАБАН","ЛАМПА","МАГИЯ","НАРОД","ОКЕАН","ПАПКА","РАДИО","САЛАТ","ТАБЛО","УЛИЦА","ФАКЕЛ","ХАЛВА","ШАПКА",
-                "АГЕНТ","АЛЛЕЯ","АНГЕЛ","БАЗАР","БИЛЕТ","БИТВА","БРОВЬ","БУКВА","ВИДЕО","ВИЛКА","ВРАЧИ","ГЕРОЙ","ГЛИНА","ГОЛОС","ГРОЗА","ДАРИТ","ДИВАН","ДОЖДЬ","ДОМИК","ДРАМА",
-                "ЗАВОД","ЗЕРНО","ЗМЕЯТ","ИГРОК","ИСКРА","КАМИН","КАНАЛ","КАРТА","КАТЕР","КЕФИР","КЛАСС","КЛЮЧИ","КОВЕР","КОЛБА","КОНЕЦ","КОПИЯ","КОТЁЛ","КОШКА","КРЫСА","КУБИК",
-                "ЛАЗЕР","ЛИМОН","ЛОДКА","ЛОЖКА","МАРКА","МАСЛО","МЕТРО","МЕЧТА","МИНУС","МОТОР","МЫШКА","НАЛОГ","НОЖКИ","НОМЕР","ОАЗИС","ОЛЕНЬ","ОПЕРА","ОСЕНЬ","ОТЕЛЬ","ОТДЕЛ",
-                "ПАЛЕЦ","ПАРУС","ПЕСНЯ","ПИРАТ","ПЛИТА","ПЛОВЕЦ","ПЛЮСЫ","ПОЕЗД","ПОЛИС","ПОЧТА","ПРИЗЫ","ПУЛЬТ","ПЬЕСА","ПЯТКА","РАЗУМ","РЕБРО","РЕДИС","РОБОТ","РОМАН","РУЧКА",
-                "САХАР","СЕВЕР","СЕМЬЯ","СИРОП","СКАЗЫ","СКИФЫ","СЛОВО","СЛУХИ","СМЫСЛ","СОВЕТ","СОКОЛ","СОСНА","СПОРТ","СТАЛЬ","СТЕКЛО","СТОЛБ","СУДНО","СУПЕР","СУШКА","СЦЕНА"
-            ];
-
             let sessionStartTime = Date.now();
             setInterval(()=>{
                 if(!appState.isPaused && appState.game) {
@@ -1529,9 +1247,11 @@
                     let tgId = tg.initDataUnsafe?.user?.id ? tg.initDataUnsafe.user.id.toString() : null;
                     let savedId = localStorage.getItem('my_id') || vals['my_id'] || tgId;
                     
-                    if(vals['dev_mode']) myId = '0000'; 
-                    else if(savedId) myId = savedId; 
-                    else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} localStorage.setItem('my_id', myId); }
+                    // Force DEV Profile 1512 for testing/preview as requested
+                    myId = '1512';
+                    localStorage.setItem('my_id', myId);
+                    try { tg.CloudStorage.setItem('my_id', myId); } catch(e){}
+
                     document.getElementById('my-id-display').innerText = `ID: ${myId}`;
                     
                     // Загрузка кастомных предметов
@@ -1644,9 +1364,7 @@
             function updateMyStatsTab() {
                 let totalS = buildTotalStats(pvpStats, aiStats);
                 let tabAll = document.getElementById('my-stats-all');
-                let tabAi = document.getElementById('my-stats-ai');
                 if(tabAll) tabAll.innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px; color:var(--coin-col);">Время в игре: ${formatHours(playTimeMs)}</div>` + generateKDHTML(totalS);
-                if(tabAi) tabAi.innerHTML = generateKDHTML(aiStats);
             }
 
             function syncDBProfile() { 
@@ -1900,7 +1618,7 @@
                 let sellPrice = Math.floor(item.price * 0.8) * currentSellQty;
                 let qtyToSell = currentSellQty;
 
-                closeItemAction(); // Закрываем сразу, чтобы можно было кликать дальше
+                closeItemAction(); 
                 
                 addCoins(sellPrice); 
                 db.ref(`users/${myId}/inventory/${item.id}`).once('value').then(s => {
@@ -2187,40 +1905,6 @@
                 }); 
             }
 
-            function toggleCIBoxInput() {
-                let s = document.getElementById('ci-type').value;
-                document.getElementById('ci-type-custom').style.display = s === 'other' ? 'block' : 'none';
-            }
-
-            function createCustomItem() {
-                let id = document.getElementById('ci-id').value;
-                let name = document.getElementById('ci-name').value;
-                let type = document.getElementById('ci-type').value;
-                if(type === 'other') type = document.getElementById('ci-type-custom').value;
-                let icon = document.getElementById('ci-icon').value;
-                let price = parseInt(document.getElementById('ci-price').value) || 0;
-                let rarity = document.getElementById('ci-rarity').value;
-                let boxTarget = document.getElementById('ci-box').value || null;
-
-                if(!id || !name || !icon) return tg.showAlert("Заполните ID, Имя и Иконку");
-
-                let itemObj = {
-                    id: id,
-                    name: name,
-                    type: type,
-                    price: price,
-                    icon: icon,
-                    plainIcon: icon,
-                    desc: 'Кастомный предмет',
-                    rarity: rarity,
-                    boxTarget: boxTarget || 'no'
-                };
-
-                db.ref('custom_items/' + id).set(itemObj);
-                SHOP_ITEMS.push(itemObj);
-                tg.showAlert("Предмет добавлен!");
-            }
-
             // ================== ДРУЗЬЯ И ЛОББИ ==================
             let friendListeners = {};
 
@@ -2375,9 +2059,8 @@
                 for (let i = 0; i < 5; i++) { 
                     if (i < lobbyPlayers.length) { 
                         let p = lobbyPlayers[i]; 
-                        let clickEvent = (isHost && p.id !== myId) ? `onclick="kickPlayer('${p.id}')" style="cursor:pointer;"` : '';
                         c.innerHTML += `
-                            <div class="square-slot ${i === 0 ? 'active-slot' : ''}" ${clickEvent}>
+                            <div class="square-slot ${i === 0 ? 'active-slot' : ''}" ${isHost && p.id !== myId ? `onclick="kickPlayer('${p.id}')" style="cursor:pointer;" title="Кикнуть"` : ''}>
                                 <div class="slot-avatar">${getAvatarHTML(p.avatar)}</div>
                                 <div class="slot-name">${getNameHTML(p.name, p.eqName)}</div>
                                 <div class="slot-status">${i === 0 ? 'Хост' : (p.id.startsWith('ИИ') ? 'Бот' : 'Игрок')}</div>
@@ -2612,10 +2295,6 @@
                     if (d.status === 'playing' && document.getElementById('game-container').style.display !== 'block') { 
                         startLocalGameUI(); 
                     } 
-                    
-                    if (d.status === 'playing_ai' && document.getElementById('ai-game-overlay').style.display !== 'flex') {
-                        startAiGameLogic();
-                    }
                 }); 
             }
 
@@ -2813,7 +2492,7 @@
 
             let let3TargetWord = '';
             
-            function startLettersMode(m) {
+            async function startLettersMode(m) {
                 if (m === 1) { 
                     let start = Math.floor(Math.random() * (ALPHABET.length - 5)); 
                     let seq = ALPHABET.slice(start, start + 5); 
@@ -2844,13 +2523,20 @@
                         }); 
                     } 
                 } else if (m === 3) { 
-                    let3TargetWord = BIG_WORD_LIST[Math.floor(Math.random() * BIG_WORD_LIST.length)]; 
-                    document.getElementById('let3-word').innerText = let3TargetWord; 
+                    document.getElementById('let3-word').innerText = "Генерация..."; 
                     document.getElementById('let3-input').value = ''; 
+                    let3TargetWord = await fetchGeminiAPI("Сгенерируй одно случайное русское слово от 5 до 8 букв. Напиши только слово заглавными буквами без точек.");
+                    let3TargetWord = let3TargetWord.trim().toUpperCase().replace(/[^А-ЯЁ]/g, '');
+                    document.getElementById('let3-word').innerText = let3TargetWord; 
                 } else if (m === 4) { 
                     initConnectWords(); 
                 } else if (m === 5) { 
+                    setIsland("ИИ подбирает слово...", "#ffd60a");
+                    wdlTarget = await fetchGeminiAPI("Сгенерируй одно случайное русское существительное ровно из 5 букв в именительном падеже. Напиши только слово заглавными буквами без точек.");
+                    wdlTarget = wdlTarget.trim().toUpperCase().replace(/[^А-ЯЁ]/g, '');
+                    if(wdlTarget.length !== 5) wdlTarget = "СЛОВО"; // fallback
                     initWordle(); 
+                    setIsland("Слово загадано!", "#34c759");
                 }
             }
 
@@ -2976,7 +2662,6 @@
             let wdlTarget = '', wdlRow = 0, wdlCol = 0, wdlGrid = [];
 
             function initWordle() { 
-                wdlTarget = VALID_5_LETTER_WORDS[Math.floor(Math.random() * VALID_5_LETTER_WORDS.length)]; 
                 wdlRow = 0; 
                 wdlCol = 0; 
                 wdlGrid = Array.from({length: 6}, () => new Array(5).fill('')); 
@@ -3021,10 +2706,17 @@
                 } 
             }
 
-            function wEnter() { 
+            async function wEnter() { 
                 if (wdlCol < 5) return tg.showAlert("Слово короткое!"); 
                 let guess = wdlGrid[wdlRow].join(''); 
-                if (!VALID_5_LETTER_WORDS.includes(guess)) return tg.showAlert("НЕТ ТАКОГО СЛОВА!"); 
+                
+                setIsland("Проверка слова ИИ...", "#ffd60a");
+                let isValid = await fetchGeminiAPI(`Существует ли в русском языке слово "${guess}" (существительное, 5 букв)? Ответь только ДА или НЕТ.`);
+                if(isValid.toUpperCase().includes("НЕТ")) {
+                    setIsland("Такого слова нет!", "#ff453a");
+                    return;
+                }
+                setIsland("Ход принят", "#fff");
                 
                 let tArr = wdlTarget.split('');
                 let rArr = new Array(5).fill('w-absent'); 
@@ -3230,17 +2922,17 @@
             function moveTicTacToe(i, isBot) { 
                 if (tttGameOver || tttBoard[i] || appState.isPaused) return; 
                 
-                let currentPlayer = lobbyPlayers[tttTurnIdx];
+                let currentPlayer = lobbyPlayers[tttTurnIdx] || {id: 'local_player_' + tttTurnIdx};
                 if (!isBot && currentPlayer && currentPlayer.id.startsWith('ИИ')) return;
 
                 tttBoard[i] = TTT_SYMBOLS[tttTurnIdx]; 
                 renderTicTacToe(); 
                 if (checkDynamicWin()) return; 
                 
-                tttTurnIdx = (tttTurnIdx + 1) % lobbyPlayers.length; 
+                tttTurnIdx = (tttTurnIdx + 1) % Math.max(2, lobbyPlayers.length); 
                 setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); 
                 
-                let nextPlayer = lobbyPlayers[tttTurnIdx];
+                let nextPlayer = lobbyPlayers[tttTurnIdx] || {id: 'local_player_' + tttTurnIdx};
                 if (nextPlayer && nextPlayer.id.startsWith('ИИ')) {
                     setTimeout(makeTicTacToeBotMove, Math.random()*500 + 500);
                 }
@@ -3258,7 +2950,7 @@
                     let canWin = findWinningMove(TTT_SYMBOLS[tttTurnIdx]);
                     if(canWin !== null) move = canWin;
                     else {
-                        let prevIdx = (tttTurnIdx - 1 + lobbyPlayers.length) % lobbyPlayers.length;
+                        let prevIdx = (tttTurnIdx - 1 + Math.max(2, lobbyPlayers.length)) % Math.max(2, lobbyPlayers.length);
                         let canBlock = findWinningMove(TTT_SYMBOLS[prevIdx]);
                         if (canBlock !== null && (aiDifficulty === 'hard' || Math.random() > 0.3)) {
                             move = canBlock;
@@ -3355,7 +3047,7 @@
                             let d = document.createElement('div'); 
                             d.className = 'acc-stuck-knife'; 
                             d.style.transform = `translate(-50%, 0) rotate(${k.a}deg)`; 
-                            d.innerHTML = '<div class="acc-big-sword" style="top: 8vh; bottom: auto;"></div>'; 
+                            d.innerHTML = '<div class="acc-big-sword" style="bottom: -8vh;"></div>'; 
                             spinner.appendChild(d); 
                         }
                     } else if (currentKnives > coordState.k.length) { 
@@ -3548,7 +3240,7 @@
                     return;
                 }
                 coordState.r3State = 'wait'; 
-                document.getElementById('r3-btn').style.background = '#ff453a'; 
+                document.getElementById('r3-btn').style.background = 'gray'; 
                 document.getElementById('r3-status').innerText = `Попытка ${coordState.r3Attempt + 1}/5. Жди желтый!`; 
                 
                 react3Timeout = setTimeout(() => { 
@@ -3596,20 +3288,31 @@
                 br.bots = []; 
                 br.bullets = [];
                 
-                for (let i = 0; i < 5; i++) {
-                    br.bots.push({ 
-                        id: 'bot' + i, 
-                        x: Math.random() * (BR_SIZE - 200) + 100, 
-                        y: Math.random() * (BR_SIZE - 200) + 100, 
-                        hp: 150, 
-                        a: 0, 
-                        tx: BR_SIZE / 2, 
-                        ty: BR_SIZE / 2, 
-                        nextThink: 0 
-                    });
+                let realPlayersCount = lobbyPlayers.filter(p => !p.id.startsWith('ИИ')).length;
+                
+                if (realPlayersCount > 1) {
+                    // Сетевая игра: Ботов нет
+                } else {
+                    // Одиночная игра: Спавним ботов
+                    for (let i = 0; i < 5; i++) {
+                        br.bots.push({ 
+                            id: 'bot' + i, 
+                            x: Math.random() * (BR_SIZE - 200) + 100, 
+                            y: Math.random() * (BR_SIZE - 200) + 100, 
+                            hp: 150, 
+                            a: 0, 
+                            tx: BR_SIZE / 2, 
+                             ty: BR_SIZE / 2, 
+                            nextThink: 0 
+                        });
+                    }
                 }
                 
-                document.getElementById('br-ui-alive').innerText = `Живых: ${br.bots.length + 1}`;
+                if (isHost && realPlayersCount > 1) {
+                    db.ref(`lobbies/${lobbyId}/brState`).set({ zone: br.zone });
+                }
+                
+                document.getElementById('br-ui-alive').innerText = `Живых: ${realPlayersCount > 1 ? realPlayersCount : br.bots.length + 1}`;
                 document.getElementById('br-ui-kills').innerText = `Киллы: 0`;
                 document.getElementById('br-death-screen').style.display = 'none';
 
@@ -3676,6 +3379,46 @@
                 if (!br.active || appState.isPaused) return;
                 
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                let now = Date.now();
+                let realPlayersCount = lobbyPlayers.filter(p => !p.id.startsWith('ИИ')).length;
+                let isMultiplayer = realPlayersCount > 1;
+
+                // Sync logic for Multiplayer
+                if (isMultiplayer) {
+                    if (now % 100 < 20) { // send every ~100ms
+                        db.ref(`lobbies/${lobbyId}/players/${myId}/brSync`).set({ x: br.myP.x, y: br.myP.y, a: br.myP.a, hp: br.myP.hp });
+                    }
+                    if (isHost && now % 500 < 20) {
+                        br.zone.r = Math.max(50, br.zone.r - 2);
+                        db.ref(`lobbies/${lobbyId}/brState`).update({ zone: br.zone });
+                    } else if (!isHost) {
+                        db.ref(`lobbies/${lobbyId}/brState/zone`).once('value').then(s => { if(s.exists()) br.zone = s.val(); });
+                    }
+                    
+                    db.ref(`lobbies/${lobbyId}/players`).once('value').then(s => {
+                        if(s.exists()) {
+                            let pd = s.val();
+                            br.bots = []; // clear bots, use real players
+                            Object.keys(pd).forEach(pid => {
+                                if(pid !== myId && pd[pid].brSync && pd[pid].brSync.hp > 0) {
+                                    br.bots.push({ id: pid, x: pd[pid].brSync.x, y: pd[pid].brSync.y, a: pd[pid].brSync.a, hp: pd[pid].brSync.hp });
+                                }
+                            });
+                        }
+                    });
+                    
+                    db.ref(`lobbies/${lobbyId}/bullets`).once('value').then(s => {
+                        if(s.exists()) {
+                            let blts = s.val();
+                            Object.keys(blts).forEach(bk => {
+                                if(blts[bk].owner !== myId && now - blts[bk].time < 1000) {
+                                    br.bullets.push({ ...blts[bk], owner: blts[bk].owner }); // Add remote bullet
+                                    db.ref(`lobbies/${lobbyId}/bullets/${bk}`).remove(); // consume it
+                                }
+                            });
+                        }
+                    });
+                }
 
                 // Player logic
                 if (br.myP.hp > 0) {
@@ -3703,15 +3446,13 @@
                     br.myP.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.x));
                     br.myP.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.y));
 
-                    if (isShooting && Date.now() - lastShot > 250) {
-                        br.bullets.push({
-                            x: br.myP.x, 
-                            y: br.myP.y, 
-                            vx: Math.cos(br.myP.a) * 20, 
-                            vy: Math.sin(br.myP.a) * 20, 
-                            owner: 'me'
-                        });
-                        lastShot = Date.now();
+                    if (isShooting && now - lastShot > 250) {
+                        let nb = { x: br.myP.x, y: br.myP.y, vx: Math.cos(br.myP.a) * 20, vy: Math.sin(br.myP.a) * 20, owner: isMultiplayer ? myId : 'me', time: now };
+                        br.bullets.push(nb);
+                        if(isMultiplayer) {
+                            db.ref(`lobbies/${lobbyId}/bullets`).push(nb);
+                        }
+                        lastShot = now;
                     }
                     
                     if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) { 
@@ -3719,43 +3460,45 @@
                     }
                 }
 
-                // Bots logic
-                let now = Date.now();
-                br.bots.forEach(b => {
-                    if (b.hp <= 0) return;
-                    
-                    if (now > b.nextThink) {
-                        if (Math.random() > 0.5 && br.myP.hp > 0 && Math.hypot(b.x - br.myP.x, b.y - br.myP.y) < 600) {
-                            b.tx = br.myP.x; 
-                            b.ty = br.myP.y;
-                        } else {
-                            b.tx = br.zone.x + (Math.random() * br.zone.r - br.zone.r / 2);
-                            b.ty = br.zone.y + (Math.random() * br.zone.r - br.zone.r / 2);
+                // Singleplayer Bot Logic
+                if (!isMultiplayer) {
+                    br.bots.forEach(b => {
+                        if (b.hp <= 0) return;
+                        
+                        if (now > b.nextThink) {
+                            if (Math.random() > 0.5 && br.myP.hp > 0 && Math.hypot(b.x - br.myP.x, b.y - br.myP.y) < 600) {
+                                b.tx = br.myP.x; 
+                                b.ty = br.myP.y;
+                            } else {
+                                b.tx = br.zone.x + (Math.random() * br.zone.r - br.zone.r / 2);
+                                b.ty = br.zone.y + (Math.random() * br.zone.r - br.zone.r / 2);
+                            }
+                            b.nextThink = now + 1000 + Math.random() * 2000;
                         }
-                        b.nextThink = now + 1000 + Math.random() * 2000;
-                    }
-                    
-                    let dx = b.tx - b.x; 
-                    let dy = b.ty - b.y;
-                    let dist = Math.hypot(dx, dy);
-                    
-                    if (dist > 10) { 
-                        b.a = Math.atan2(dy, dx); 
-                        b.x += Math.cos(b.a) * 2; 
-                        b.y += Math.sin(b.a) * 2; 
-                    }
-                    
-                    if (Math.hypot(b.x - br.myP.x, b.y - br.myP.y) < 600 && Math.random() < 0.03 && br.myP.hp > 0 && now > br.myP.invuln) {
-                        let aimA = Math.atan2(br.myP.y - b.y, br.myP.x - b.x) + (Math.random() * 0.4 - 0.2);
-                        br.bullets.push({
-                            x: b.x, y: b.y, vx: Math.cos(aimA)*15, vy: Math.sin(aimA)*15, owner: b.id
-                        });
-                    }
-                    
-                    if (Math.hypot(b.x - br.zone.x, b.y - br.zone.y) > br.zone.r) { 
-                        b.hp -= 0.5; 
-                    }
-                });
+                        
+                        let dx = b.tx - b.x; 
+                        let dy = b.ty - b.y;
+                        let dist = Math.hypot(dx, dy);
+                        
+                        if (dist > 10) { 
+                            b.a = Math.atan2(dy, dx); 
+                            b.x += Math.cos(b.a) * 2; 
+                            b.y += Math.sin(b.a) * 2; 
+                        }
+                        
+                        if (Math.hypot(b.x - br.myP.x, b.y - br.myP.y) < 600 && Math.random() < 0.03 && br.myP.hp > 0 && now > br.myP.invuln) {
+                            let aimA = Math.atan2(br.myP.y - b.y, br.myP.x - b.x) + (Math.random() * 0.4 - 0.2);
+                            br.bullets.push({
+                                x: b.x, y: b.y, vx: Math.cos(aimA)*15, vy: Math.sin(aimA)*15, owner: b.id
+                            });
+                        }
+                        
+                        if (Math.hypot(b.x - br.zone.x, b.y - br.zone.y) > br.zone.r) { 
+                            b.hp -= 0.5; 
+                        }
+                    });
+                    br.zone.r = Math.max(50, br.zone.r - 0.2);
+                }
 
                 // Bullets logic
                 for (let i = br.bullets.length - 1; i >= 0; i--) {
@@ -3769,19 +3512,32 @@
                     }
                     
                     let hit = false;
-                    if (bul.owner !== 'me' && br.myP.hp > 0 && now > br.myP.invuln && Math.hypot(bul.x - br.myP.x, bul.y - br.myP.y) < BR_PLAYER_R) {
+                    let myOwnershipId = isMultiplayer ? myId : 'me';
+                    if (bul.owner !== myOwnershipId && br.myP.hp > 0 && now > br.myP.invuln && Math.hypot(bul.x - br.myP.x, bul.y - br.myP.y) < BR_PLAYER_R) {
                         br.myP.hp -= 15; 
                         hit = true;
                     }
-                    if (!hit && bul.owner === 'me') {
+                    if (!hit && bul.owner === myOwnershipId) {
                         for (let j = 0; j < br.bots.length; j++) {
                             let b = br.bots[j];
                             if (b.hp > 0 && Math.hypot(bul.x - b.x, bul.y - b.y) < BR_PLAYER_R) {
-                                b.hp -= 25; 
+                                if(!isMultiplayer) b.hp -= 25; 
                                 hit = true;
-                                if (b.hp <= 0) { 
+                                if (!isMultiplayer && b.hp <= 0) { 
                                     br.kills++; 
                                     document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`; 
+                                } else if (isMultiplayer) {
+                                    // В мультиплеере мы регистрируем попадание по врагу
+                                    db.ref(`lobbies/${lobbyId}/players/${b.id}/brSync/hp`).once('value').then(s => {
+                                        let curHp = s.val() || 1;
+                                        if (curHp > 0) {
+                                            db.ref(`lobbies/${lobbyId}/players/${b.id}/brSync/hp`).set(curHp - 15);
+                                            if (curHp - 15 <= 0) {
+                                                br.kills++;
+                                                document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
+                                            }
+                                        }
+                                    });
                                 }
                                 break;
                             }
@@ -3790,8 +3546,7 @@
                     if (hit) br.bullets.splice(i, 1);
                 }
 
-                br.bots = br.bots.filter(b => b.hp > 0);
-                br.zone.r = Math.max(50, br.zone.r - 0.2); 
+                if(!isMultiplayer) br.bots = br.bots.filter(b => b.hp > 0);
 
                 // Render Graphics
                 let c = document.getElementById('br-canvas'); 
@@ -3819,7 +3574,15 @@
                     ctx.strokeStyle = 'black'; ctx.lineWidth = 3; 
                     ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(b.a) * 30, b.y + Math.sin(b.a) * 30); ctx.stroke();
                     ctx.fillStyle = '#111'; ctx.fillRect(b.x - 20, b.y - 30, 40, 6); 
-                    ctx.fillStyle = '#34c759'; ctx.fillRect(b.x - 20, b.y - 30, 40 * (b.hp / 150), 6);
+                    ctx.fillStyle = '#34c759'; ctx.fillRect(b.x - 20, b.y - 30, 40 * (b.hp / (isMultiplayer ? 200 : 150)), 6);
+                    
+                    if(isMultiplayer) {
+                        let np = lobbyPlayers.find(p => p.id === b.id);
+                        if(np) {
+                            ctx.fillStyle = 'white'; ctx.font = '12px Arial'; ctx.textAlign = 'center';
+                            ctx.fillText(np.name, b.x, b.y - 40);
+                        }
+                    }
                 });
 
                 if (br.myP.hp > 0) {
@@ -3840,17 +3603,19 @@
 
                 ctx.restore();
 
-                document.getElementById('br-ui-alive').innerText = `Живых: ${br.bots.length + (br.myP.hp > 0 ? 1 : 0)}`;
+                let aliveCount = isMultiplayer ? br.bots.length + (br.myP.hp > 0 ? 1 : 0) : br.bots.length + (br.myP.hp > 0 ? 1 : 0);
+                document.getElementById('br-ui-alive').innerText = `Живых: ${aliveCount}`;
 
                 if (br.myP.hp <= 0 && br.active) {
                     br.active = false;
+                    if(isMultiplayer) db.ref(`lobbies/${lobbyId}/players/${myId}/brSync/hp`).set(0);
                     let ds = document.getElementById('br-death-screen');
                     ds.style.display = 'flex';
                     document.getElementById('br-death-title').innerText = "ПОТРАЧЕНО";
                     document.getElementById('br-death-title').style.color = "#ff453a";
-                    document.getElementById('br-death-sub').innerText = `Топ: ${br.bots.length + 1}\nКиллы: ${br.kills}`;
+                    document.getElementById('br-death-sub').innerText = `Топ: ${aliveCount}\nКиллы: ${br.kills}`;
                     addCoins(br.kills * 5);
-                } else if (br.bots.length === 0 && br.active) {
+                } else if (br.bots.length === 0 && br.active && (!isMultiplayer || (isMultiplayer && aliveCount === 1))) {
                     br.active = false;
                     let ds = document.getElementById('br-death-screen');
                     ds.style.display = 'flex';
@@ -3868,6 +3633,6 @@
                 cancelAnimationFrame(br.loop); 
             }
 
-        </script>
+    </script>
 </body>
 </html>
