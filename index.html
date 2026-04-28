@@ -1215,6 +1215,7 @@
             function confirmSO2Mode() {
                 if(!pendingModeId) return tg.showAlert("Выберите режим!");
                 if(pendingModeId==='tictactoe') aiDifficulty = document.getElementById('ttt-bot-select').value;
+                setSelectedModeUI(pendingModeId);
                 db.ref(`lobbies/${lobbyId}/game`).set(pendingModeId);
                 closeSO2ModeSelect();
             }
@@ -1501,6 +1502,7 @@
             
             let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
+            let inventoryListener = null, customItemsListener = null, liveInventory = {}, inventoryLoaded = false;
             let aiDifficulty = 'medium'; let currentOpenedBoxId = null; let activeFriend = null;
 
             const GAME_NAMES = {
@@ -1570,6 +1572,67 @@
                 return res; 
             }
 
+            function setSelectedModeUI(gameId) {
+                appState.selectedGameId = gameId || null;
+                const modeText = document.getElementById('selected-mode-text');
+                if (!modeText) return;
+                if (gameId && GAME_NAMES[gameId]) {
+                    modeText.innerText = GAME_NAMES[gameId];
+                    modeText.style.color = '#34c759';
+                } else {
+                    modeText.innerText = 'Режим не выбран';
+                    modeText.style.color = '';
+                }
+            }
+
+            function applyCustomItems(customItems) {
+                for (let i = SHOP_ITEMS.length - 1; i >= 0; i--) {
+                    if (SHOP_ITEMS[i].isCustom) SHOP_ITEMS.splice(i, 1);
+                }
+
+                Object.keys(customItems || {}).forEach(id => {
+                    const item = customItems[id];
+                    if (item) SHOP_ITEMS.push({ ...item, isCustom: true });
+                });
+
+                renderShop();
+                renderInventory();
+            }
+
+            function bindCustomItemsSync() {
+                if (customItemsListener) {
+                    try { db.ref('custom_items').off('value', customItemsListener); } catch (e) {}
+                }
+
+                customItemsListener = snap => applyCustomItems(snap.exists() ? snap.val() : {});
+                db.ref('custom_items').on('value', customItemsListener, err => {
+                    handleFirebaseError(err, 'custom_items listener', null);
+                    applyCustomItems({});
+                });
+            }
+
+            function bindInventorySync() {
+                inventoryLoaded = false;
+                liveInventory = {};
+                if (inventoryListener) {
+                    try { db.ref(`users/${myId}/inventory`).off('value', inventoryListener); } catch (e) {}
+                }
+
+                inventoryListener = snap => {
+                    liveInventory = snap.exists() ? (snap.val() || {}) : {};
+                    inventoryLoaded = true;
+                    renderShop();
+                    renderInventory();
+                };
+                db.ref(`users/${myId}/inventory`).on('value', inventoryListener, err => {
+                    handleFirebaseError(err, 'inventory listener', null);
+                    liveInventory = {};
+                    inventoryLoaded = true;
+                    renderShop();
+                    renderInventory();
+                });
+            }
+
             const VALID_5_LETTER_WORDS = [
                 "АБЗАЦ","БАНКА","ВЕТВЬ","ГАЗОН","ДВЕРЬ","ЖИВОТ","ЗАМОК","КАБАН","ЛАМПА","МАГИЯ","НАРОД","ОКЕАН","ПАПКА","РАДИО","САЛАТ","ТАБЛО","УЛИЦА","ФАКЕЛ","ХАЛВА","ШАПКА",
                 "АГЕНТ","АЛЛЕЯ","АНГЕЛ","БАЗАР","БИЛЕТ","БИТВА","БРОВЬ","БУКВА","ВИДЕО","ВИЛКА","ВРАЧИ","ГЕРОЙ","ГЛИНА","ГОЛОС","ГРОЗА","ДАРИТ","ДИВАН","ДОЖДЬ","ДОМИК","ДРАМА",
@@ -1600,12 +1663,10 @@
                     else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} localStorage.setItem('my_id', myId); }
                     document.getElementById('my-id-display').innerText = `ID: ${myId}`;
                     
-                    // Загрузка кастомных предметов
-                    readDbOnce('custom_items', {}, 'custom_items').then(ci => {
-                        if(ci) {
-                            Object.keys(ci).forEach(k => SHOP_ITEMS.push(ci[k]));
-                        }
-                    }).finally(() => {
+                    bindCustomItemsSync();
+                    bindInventorySync();
+
+                    Promise.resolve().finally(() => {
                         db.ref('beta_bans').on('value', snap => {
                             let bans = snap.exists() ? snap.val() : {};
                             renderBanLists(bans);
@@ -1817,8 +1878,7 @@
             }
 
             function renderShop() { 
-                db.ref(`users/${myId}/inventory`).once('value').then(s => { 
-                    let inv = s.val() || {}; 
+                const drawShop = (inv) => {
                     db.ref(`users/${myId}/flags/stars_received`).once('value').then(fSnap => {
                         let rcvdStars = fSnap.exists();
                         if (gamesPlayed >= 50 && !rcvdStars && !inv['bg_stars']) { 
@@ -1866,12 +1926,16 @@
                         }); 
                         document.getElementById('inv-shop').innerHTML = shopHTML; 
                     });
-                }); 
+                };
+
+                if (inventoryLoaded) drawShop({ ...liveInventory });
+                else {
+                    db.ref(`users/${myId}/inventory`).once('value').then(s => drawShop(s.val() || {}));
+                }
             }
 
             function renderInventory() { 
-                db.ref(`users/${myId}/inventory`).once('value').then(s => { 
-                    let inv = s.val() || {}; 
+                const drawInventory = (inv) => {
                     let hasAny = SHOP_ITEMS.some(i => inv[i.id]); 
                     if(!hasAny) { document.getElementById('inv-bag').innerHTML = '<div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2>'; return; } 
                     
@@ -1888,14 +1952,19 @@
                             let dispIcon = item.type === 'name' ? item.plainIcon : (item.plainIcon || item.icon);
                             
                             for(let i=0; i<qty; i++) {
-                                let isEquippedInstance = (i === 0 && eq); // Только первый элемент будет показан как экипированный
+                                let isEquippedInstance = (i === 0 && eq);
                                 html += `<div class="inv-item-card ${isEquippedInstance ? 'equipped' : ''}" onclick="openItemAction('${item.id}', '${item.type}', ${isEquippedInstance}, ${qty})"><div class="inv-item-icon">${dispIcon}</div><div class="inv-item-name">${item.name}</div><div class="inv-rarity-line" style="background:${RARITIES[item.rarity]}"></div></div>`; 
                             }
                         } 
                     }); 
                     document.getElementById('inv-bag').innerHTML = '<div class="inv-grid" id="inv-grid-container"></div>';
                     document.getElementById('inv-grid-container').innerHTML = html; 
-                }); 
+                };
+
+                if (inventoryLoaded) drawInventory(liveInventory);
+                else {
+                    db.ref(`users/${myId}/inventory`).once('value').then(s => drawInventory(s.val() || {}));
+                }
             }
 
             let currentActionItem = null;
@@ -2285,7 +2354,6 @@
                 };
 
                 db.ref('custom_items/' + id).set(itemObj);
-                SHOP_ITEMS.push(itemObj);
                 tg.showAlert("Предмет добавлен!");
             }
 
@@ -2502,6 +2570,8 @@
                 appState.inLobby = true; 
                 lobbyId = myId; 
                 isHost = true; 
+                pendingModeId = null;
+                setSelectedModeUI(null);
                 lobbyPlayers = [{id: myId, name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}]; 
                 
                 db.ref('lobbies/' + lobbyId).set({
@@ -2540,6 +2610,8 @@
                 } 
                 document.getElementById('main-buttons-view').style.display = 'flex'; 
                 document.getElementById('view-lobby').style.display = 'none'; 
+                pendingModeId = null;
+                setSelectedModeUI(null);
             }
 
             function createLobbyWithAI() {
@@ -2552,6 +2624,8 @@
                 if (pendingInvite) { 
                     lobbyId = pendingInvite.lId; 
                     isHost = false; 
+                    pendingModeId = null;
+                    setSelectedModeUI(null);
                     db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ 
                         name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals 
                     }); 
@@ -2587,6 +2661,8 @@
             function joinFriendLobby() { 
                 lobbyId = activeFriend.id; 
                 isHost = false; 
+                pendingModeId = null;
+                setSelectedModeUI(null);
                 closeFriendModal(); 
                 db.ref('lobbies/' + lobbyId).once('value').then(s => { 
                     if (s.exists()) { 
@@ -2636,11 +2712,7 @@
                     } 
                     renderLobbySlots(); 
                     
-                    if (d.game) { 
-                        appState.selectedGameId = d.game; 
-                        document.getElementById('selected-mode-text').innerText = GAME_NAMES[d.game] || "Выбран режим"; 
-                        document.getElementById('selected-mode-text').style.color = '#34c759'; 
-                    } 
+                    setSelectedModeUI(d.game || null);
 
                     if (d.game === 'clicker') { 
                         if (d.clickTime && !clickActive) { 
