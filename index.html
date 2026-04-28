@@ -884,6 +884,33 @@
             const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg","authDomain":"mini-games-b9400.firebaseapp.com","databaseURL":"https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app","projectId":"mini-games-b9400","storageBucket":"mini-games-b9400.firebasestorage.app","messagingSenderId":"523964322575","appId":"1:523964322575:web:a5502d0bf28f17b10f247a"}'); 
             firebase.initializeApp(firebaseConfig); const db = firebase.database();
             let firebaseReadyPromise = null;
+            let firebaseStatusMessage = '';
+
+            function setFirebaseStatus(message, color = '#ff453a') {
+                firebaseStatusMessage = message || '';
+                if (!message) return;
+                console.warn('Firebase status:', message);
+                try { setIsland(message, color); } catch (e) {}
+            }
+
+            function handleFirebaseError(err, context, fallbackValue) {
+                const code = err && err.code ? err.code : 'unknown';
+                console.error(`Firebase error in ${context}:`, err);
+                if (code === 'PERMISSION_DENIED' || code === 'permission-denied') {
+                    setFirebaseStatus('Firebase: нет доступа к базе');
+                } else if (code === 'auth/admin-restricted-operation') {
+                    setFirebaseStatus('Firebase: anonymous auth выключен');
+                } else {
+                    setFirebaseStatus(`Firebase: ${code}`);
+                }
+                return fallbackValue;
+            }
+
+            function readDbOnce(path, fallbackValue = null, context = path) {
+                return db.ref(path).once('value')
+                    .then((snap) => snap.exists() ? snap.val() : fallbackValue)
+                    .catch((err) => handleFirebaseError(err, context, fallbackValue));
+            }
 
             function ensureFirebaseReady() {
                 if (firebaseReadyPromise) return firebaseReadyPromise;
@@ -912,7 +939,7 @@
                     }
 
                     auth.signInAnonymously().then(safeFinish).catch((err) => {
-                        console.error('Firebase anonymous auth failed:', err);
+                        handleFirebaseError(err, 'auth.signInAnonymously', null);
                         safeFinish();
                     });
 
@@ -1574,9 +1601,8 @@
                     document.getElementById('my-id-display').innerText = `ID: ${myId}`;
                     
                     // Загрузка кастомных предметов
-                    db.ref('custom_items').once('value').then(cSnap => {
-                        if(cSnap.exists()) {
-                            let ci = cSnap.val();
+                    readDbOnce('custom_items', {}, 'custom_items').then(ci => {
+                        if(ci) {
                             Object.keys(ci).forEach(k => SHOP_ITEMS.push(ci[k]));
                         }
                     }).finally(() => {
@@ -1585,18 +1611,21 @@
                             renderBanLists(bans);
                             let isDev = (myId === '1512' || myId === '1138240410');
                             if(!isDev) {
-                                db.ref('admins/'+myId).once('value').then(adSnap => {
-                                    if(!adSnap.exists() && (bans[myId] || bans['all'])) {
+                                readDbOnce('admins/'+myId, null, 'admins access').then(adminValue => {
+                                    if(!adminValue && (bans[myId] || bans['all'])) {
                                         document.getElementById('beta-ban-overlay').style.display = 'flex';
                                     } else {
                                         document.getElementById('beta-ban-overlay').style.display = 'none';
                                     }
                                 });
                             }
+                        }, err => {
+                            handleFirebaseError(err, 'beta_bans listener', null);
+                            renderBanLists({});
                         });
 
-                        db.ref('users/' + myId).once('value').then(snap => {
-                            let d = snap.exists() ? snap.val() : {}; let tgName = tg.initDataUnsafe?.user?.first_name;
+                        readDbOnce('users/' + myId, {}, 'user profile').then(d => {
+                            d = d || {}; let tgName = tg.initDataUnsafe?.user?.first_name;
                             myName = d.name || vals['my_name'] || tgName || "Игрок"; 
                             myAvatar = d.avatar || vals['my_avatar'] || "😎"; 
                             myEqName = d.eqName || ''; 
@@ -1611,7 +1640,7 @@
                             if(localStorage.getItem('eq_bg') === 'bg_balloons') spawnBalloons();
 
                             updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile();
-                            db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } });
+                            db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } }, err => handleFirebaseError(err, 'coins listener', null));
                             db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = ['ИИ']; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ' && !k.startsWith('ИИ')) friendsIds.push(k); }); } renderFriends(); });
                             if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (fid !== 'ИИ' && fid !== 'БОТ' && !fid.startsWith('ИИ')) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
                             db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(s.val()); });
