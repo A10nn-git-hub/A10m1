@@ -930,17 +930,38 @@
                 return fallbackValue;
             }
 
+            function getFirebaseFriendlyMessage(defaultMessage) {
+                return firebaseStatusMessage || defaultMessage;
+            }
+
+            function ensureFirebaseAccess() {
+                return ensureFirebaseReady().then(() => {
+                    if (!firebase.auth) return null;
+                    const auth = firebase.auth();
+                    if (auth.currentUser) return auth.currentUser;
+                    return auth.signInAnonymously()
+                        .then(() => auth.currentUser)
+                        .catch((err) => {
+                            handleFirebaseError(err, 'auth.ensureSession', null);
+                            return null;
+                        });
+                });
+            }
+
             function readDbOnce(path, fallbackValue = null, context = path) {
-                return db.ref(path).once('value')
+                return ensureFirebaseAccess()
+                    .then(() => db.ref(path).once('value'))
                     .then((snap) => snap.exists() ? snap.val() : fallbackValue)
                     .catch((err) => handleFirebaseError(err, context, fallbackValue));
             }
 
             function writeDb(path, value, context = path) {
-                return db.ref(path).set(value).catch((err) => {
-                    handleFirebaseError(err, context, null);
-                    throw err;
-                });
+                return ensureFirebaseAccess()
+                    .then(() => db.ref(path).set(value))
+                    .catch((err) => {
+                        handleFirebaseError(err, context, null);
+                        throw err;
+                    });
             }
 
             function ensureFirebaseReady() {
@@ -1253,7 +1274,7 @@
                     setSelectedModeUI(pendingModeId);
                     closeSO2ModeSelect();
                 } catch (err) {
-                    tg.showAlert("Не удалось сохранить выбранный режим.");
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось сохранить выбранный режим."));
                 }
             }
             function closeSO2ModeSelect() { document.getElementById('so2-mode-modal').classList.add('hidden'); }
@@ -1280,7 +1301,7 @@
                     await writeDb(`lobbies/${lobbyId}/status`, nextStatus, 'start lobby game');
                     setIsland("Запуск игры...", "#34c759");
                 } catch (err) {
-                    tg.showAlert("Не удалось запустить игру. Проверь доступ к Firebase.");
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось запустить игру. Проверь доступ к Firebase."));
                 }
             }
 
@@ -2620,23 +2641,32 @@
 
             function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
 
-            function openLobby() { 
+            async function openLobby() { 
+                const nextLobbyId = myId;
+                const nextPlayers = [{id: myId, name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}];
+
+                try {
+                    await writeDb('lobbies/' + nextLobbyId, {
+                        host: myId, 
+                        game: '', 
+                        status: 'waiting', 
+                        clickTime: 15, 
+                        players: {
+                            [myId]: {name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}
+                        }
+                    }, 'create lobby');
+                } catch (err) {
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось создать лобби."));
+                    return;
+                }
+
                 appState.inLobby = true; 
-                lobbyId = myId; 
+                lobbyId = nextLobbyId; 
                 isHost = true; 
                 pendingModeId = null;
                 setSelectedModeUI(null);
-                lobbyPlayers = [{id: myId, name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}]; 
+                lobbyPlayers = nextPlayers; 
                 
-                db.ref('lobbies/' + lobbyId).set({
-                    host: myId, 
-                    game: '', 
-                    status: 'waiting', 
-                    clickTime: 15, 
-                    players: {
-                        [myId]: {name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}
-                    }
-                }); 
                 db.ref('lobbies/' + lobbyId).onDisconnect().remove();
                 
                 listenLobby(); 
@@ -2668,10 +2698,10 @@
                 setSelectedModeUI(null);
             }
 
-            function createLobbyWithAI() {
+            async function createLobbyWithAI() {
                 closeFriendModal();
-                openLobby();
-                setTimeout(() => inviteBotLobby(), 500);
+                await openLobby();
+                if (appState.inLobby) setTimeout(() => inviteBotLobby(), 500);
             }
 
             function acceptLobbyInvite() { 
