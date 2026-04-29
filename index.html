@@ -891,9 +891,8 @@
         <script>
             const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
             const APP_VERSION_INFO = {
-                commitFull: '2c49b18fca7cf5958cf55df561a9ef2e1fc08cba',
-                commitShort: '2c49b18',
-                committedAt: '28.04.2026 21:47:55'
+                label: 'локальная сборка',
+                note: 'версия берется из index.html'
             };
             const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg","authDomain":"mini-games-b9400.firebaseapp.com","databaseURL":"https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app","projectId":"mini-games-b9400","storageBucket":"mini-games-b9400.firebasestorage.app","messagingSenderId":"523964322575","appId":"1:523964322575:web:a5502d0bf28f17b10f247a"}'); 
             firebase.initializeApp(firebaseConfig); const db = firebase.database();
@@ -904,10 +903,11 @@
                 const mainEl = document.getElementById('app-version-main');
                 const subEl = document.getElementById('app-version-sub');
                 if (!mainEl || !subEl) return;
-                mainEl.innerText = `commit ${APP_VERSION_INFO.commitShort}`;
-                subEl.innerText = `Последний коммит: ${APP_VERSION_INFO.committedAt}`;
-                mainEl.title = APP_VERSION_INFO.commitFull;
-                subEl.title = APP_VERSION_INFO.commitFull;
+                const modifiedAt = document.lastModified ? new Date(document.lastModified).toLocaleString('ru-RU') : 'неизвестно';
+                mainEl.innerText = APP_VERSION_INFO.label;
+                subEl.innerText = `Файл обновлен: ${modifiedAt}`;
+                mainEl.title = APP_VERSION_INFO.note;
+                subEl.title = APP_VERSION_INFO.note;
             }
 
             function setFirebaseStatus(message, color = '#ff453a') {
@@ -958,6 +958,15 @@
             function writeDb(path, value, context = path) {
                 return ensureFirebaseAccess()
                     .then(() => db.ref(path).set(value))
+                    .catch((err) => {
+                        handleFirebaseError(err, context, null);
+                        throw err;
+                    });
+            }
+
+            function updateDbPaths(updates, context = 'database update') {
+                return ensureFirebaseAccess()
+                    .then(() => db.ref().update(updates))
                     .catch((err) => {
                         handleFirebaseError(err, context, null);
                         throw err;
@@ -1154,13 +1163,43 @@
                 return h;
             }
 
-            function buyItem(id, price) {
+            let purchaseInProgress = false;
+
+            function getInventoryQty(value) {
+                return typeof value === 'boolean' ? 1 : (parseInt(value) || 0);
+            }
+
+            async function buyItem(id, price) {
+                if(purchaseInProgress) return;
                 if(globalCoins < price) return tg.showAlert("Не хватает монет!");
-                addCoins(-price);
-                db.ref(`users/${myId}/inventory/${id}`).once('value').then(s => {
-                    db.ref(`users/${myId}/inventory/${id}`).set((parseInt(s.val())||0) + 1);
-                    tg.showAlert("Куплено!"); renderShop(); renderInventory();
-                });
+
+                purchaseInProgress = true;
+                try {
+                    const currentValue = inventoryLoaded && Object.prototype.hasOwnProperty.call(liveInventory, id)
+                        ? liveInventory[id]
+                        : await readDbOnce(`users/${myId}/inventory/${id}`, 0, 'buy item inventory read');
+                    const nextQty = getInventoryQty(currentValue) + 1;
+                    const nextCoins = Math.max(0, globalCoins - price);
+
+                    await updateDbPaths({
+                        [`users/${myId}/inventory/${id}`]: nextQty,
+                        [`users/${myId}/coins`]: nextCoins
+                    }, 'buy item');
+
+                    globalCoins = nextCoins;
+                    liveInventory = { ...liveInventory, [id]: nextQty };
+                    inventoryLoaded = true;
+                    updateCoinsUI();
+                    try { tg.CloudStorage.setItem('player_coins', globalCoins.toString()); } catch(e) {}
+
+                    renderInventory();
+                    renderShop();
+                    tg.showAlert("Куплено!");
+                } catch (err) {
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось купить предмет."));
+                } finally {
+                    purchaseInProgress = false;
+                }
             }
 
             function inspectItem(id, type) {
@@ -1542,10 +1581,16 @@
                 }
             }
 
-            function formatHours(ms) { 
-                let h = ms / 3600000;
-                if (h < 100) return h.toFixed(1) + " ЧАСОВ";
-                return Math.floor(h) + " ЧАСОВ"; 
+            function formatPlayTime(ms) {
+                const totalSeconds = Math.floor(ms / 1000);
+                if (totalSeconds < 60) return totalSeconds + " СЕК";
+
+                const totalMinutes = Math.floor(totalSeconds / 60);
+                if (totalMinutes < 60) return totalMinutes + " МИН";
+
+                const hours = Math.floor(totalMinutes / 60);
+                const minutes = totalMinutes % 60;
+                return minutes > 0 ? `${hours} Ч ${minutes} МИН` : `${hours} Ч`;
             }
             
             function buildTotalStats(uPvp, uAi) {
@@ -1706,6 +1751,34 @@
                 });
             }
 
+            async function ensureEquippedItemsInInventory() {
+                const equippedIds = [];
+                if (SHOP_ITEMS.some(i => i.id === myAvatar && i.type === 'avatar')) equippedIds.push(myAvatar);
+                if (myEqName && SHOP_ITEMS.some(i => i.id === myEqName && i.type === 'name')) equippedIds.push(myEqName);
+                (myPinnedMedals || []).forEach(id => {
+                    if (SHOP_ITEMS.some(i => i.id === id && i.type === 'medal')) equippedIds.push(id);
+                });
+
+                const eqBg = localStorage.getItem('eq_bg');
+                if (eqBg && SHOP_ITEMS.some(i => i.id === eqBg && i.type === 'bg')) equippedIds.push(eqBg);
+
+                const updates = {};
+                equippedIds.forEach(id => {
+                    if (getInventoryQty(liveInventory[id]) <= 0) {
+                        updates[`users/${myId}/inventory/${id}`] = 1;
+                        liveInventory[id] = 1;
+                    }
+                });
+
+                if (Object.keys(updates).length === 0) return;
+                inventoryLoaded = true;
+                renderInventory();
+                renderShop();
+                try {
+                    await updateDbPaths(updates, 'restore equipped inventory');
+                } catch (err) {}
+            }
+
             const VALID_5_LETTER_WORDS = [
                 "АБЗАЦ","БАНКА","ВЕТВЬ","ГАЗОН","ДВЕРЬ","ЖИВОТ","ЗАМОК","КАБАН","ЛАМПА","МАГИЯ","НАРОД","ОКЕАН","ПАПКА","РАДИО","САЛАТ","ТАБЛО","УЛИЦА","ФАКЕЛ","ХАЛВА","ШАПКА",
                 "АГЕНТ","АЛЛЕЯ","АНГЕЛ","БАЗАР","БИЛЕТ","БИТВА","БРОВЬ","БУКВА","ВИДЕО","ВИЛКА","ВРАЧИ","ГЕРОЙ","ГЛИНА","ГОЛОС","ГРОЗА","ДАРИТ","ДИВАН","ДОЖДЬ","ДОМИК","ДРАМА",
@@ -1716,11 +1789,15 @@
             ];
 
             let sessionStartTime = Date.now();
+            let lastPlayTimeSync = Date.now();
             setInterval(()=>{
-                if(!appState.isPaused && appState.game) {
+                if(!appState.isPaused) {
                     playTimeMs += 1000;
                     updateMyStatsTab();
-                    if(playTimeMs % 30000 === 0) syncDBProfile(); // sync every 30s
+                    if(Date.now() - lastPlayTimeSync >= 30000) {
+                        lastPlayTimeSync = Date.now();
+                        syncDBProfile();
+                    }
                 }
             }, 1000);
 
@@ -1774,7 +1851,7 @@
                             if(localStorage.getItem('eq_bg') === 'bg_stars') document.body.classList.add('star-bg');
                             if(localStorage.getItem('eq_bg') === 'bg_balloons') spawnBalloons();
 
-                            updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile();
+                            updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile(); ensureEquippedItemsInInventory();
                             db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } }, err => handleFirebaseError(err, 'coins listener', null));
                             db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = ['ИИ']; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ' && !k.startsWith('ИИ')) friendsIds.push(k); }); } renderFriends(); });
                             if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (fid !== 'ИИ' && fid !== 'БОТ' && !fid.startsWith('ИИ')) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
@@ -1848,12 +1925,14 @@
                 let totalS = buildTotalStats(pvpStats, aiStats);
                 let tabAll = document.getElementById('my-stats-all');
                 let tabAi = document.getElementById('my-stats-ai');
-                if(tabAll) tabAll.innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px; color:var(--coin-col);">Время в игре: ${formatHours(playTimeMs)}</div>` + generateKDHTML(totalS);
+                if(tabAll) tabAll.innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px; color:var(--coin-col);">Время в игре: ${formatPlayTime(playTimeMs)}</div>` + generateKDHTML(totalS);
                 if(tabAi) tabAi.innerHTML = generateKDHTML(aiStats);
             }
 
             function syncDBProfile() { 
-                db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins, gamesPlayed: gamesPlayed, playTimeMs: playTimeMs, aiStats: aiStats, pvpStats: pvpStats }); 
+                ensureFirebaseAccess()
+                    .then(() => db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins, gamesPlayed: gamesPlayed, playTimeMs: playTimeMs, aiStats: aiStats, pvpStats: pvpStats }))
+                    .catch((err) => handleFirebaseError(err, 'sync profile', null));
                 updateMyStatsTab();
             }
             
@@ -2219,7 +2298,7 @@
                 globalCoins = Math.max(0, globalCoins + a); 
                 updateCoinsUI(); 
                 try { tg.CloudStorage.setItem('player_coins', globalCoins.toString()); } catch(e) {} 
-                db.ref('users/' + myId + '/coins').set(globalCoins); 
+                writeDb('users/' + myId + '/coins', globalCoins, 'coins update').catch(() => {});
             }
 
             function switchTab(t, el) { 
