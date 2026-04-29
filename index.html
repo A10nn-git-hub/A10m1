@@ -111,6 +111,10 @@
         .profile-name-container { display: flex; flex-direction: column; align-items: center; gap: 5px; margin-top: 10px; margin-bottom: 5px; flex-wrap: nowrap; width: 100%; }
         .profile-name { font-size: 28px; font-weight: 900; cursor: pointer; border-bottom: 2px dashed transparent; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .profile-id { font-size: 18px; color: #888; font-family: monospace; background: #111; padding: 5px 15px; border-radius: 10px; display: inline-block; margin-bottom: 20px; margin-top: 15px; }
+        .profile-version { width: 100%; margin-top: 4px; padding: 12px 14px; border-radius: 14px; background: #171717; border: 1px solid #3a3a3a; box-sizing: border-box; text-align: left; }
+        .profile-version-label { font-size: 11px; font-weight: bold; color: var(--coin-col); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+        .profile-version-main { font-size: 15px; font-weight: bold; color: #fff; font-family: monospace; }
+        .profile-version-sub { font-size: 12px; color: #9a9a9a; margin-top: 4px; line-height: 1.35; }
         
         .stat-donut-wrap { display: flex; align-items: center; justify-content: center; gap: 20px; width: 100%; margin-top: 10px; }
         .stat-donut { width: 100px; height: 100px; border-radius: 50%; display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
@@ -354,6 +358,11 @@
                             <div id="my-medals-display" class="medals-container" onclick="openMedalsModal()"></div>
                         </div>
                         <div class="profile-id" id="my-id-display">ID: ...</div>
+                        <div class="profile-version">
+                            <div class="profile-version-label">Версия программы</div>
+                            <div class="profile-version-main" id="app-version-main">commit ...</div>
+                            <div class="profile-version-sub" id="app-version-sub">Последнее обновление: ...</div>
+                        </div>
                     </div>
                     
                     <div class="profile-right-col">
@@ -881,10 +890,25 @@
         
         <script>
             const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
+            const APP_VERSION_INFO = {
+                commitFull: '2c49b18fca7cf5958cf55df561a9ef2e1fc08cba',
+                commitShort: '2c49b18',
+                committedAt: '28.04.2026 21:47:55'
+            };
             const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg","authDomain":"mini-games-b9400.firebaseapp.com","databaseURL":"https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app","projectId":"mini-games-b9400","storageBucket":"mini-games-b9400.firebasestorage.app","messagingSenderId":"523964322575","appId":"1:523964322575:web:a5502d0bf28f17b10f247a"}'); 
             firebase.initializeApp(firebaseConfig); const db = firebase.database();
             let firebaseReadyPromise = null;
             let firebaseStatusMessage = '';
+
+            function renderAppVersionInfo() {
+                const mainEl = document.getElementById('app-version-main');
+                const subEl = document.getElementById('app-version-sub');
+                if (!mainEl || !subEl) return;
+                mainEl.innerText = `commit ${APP_VERSION_INFO.commitShort}`;
+                subEl.innerText = `Последний коммит: ${APP_VERSION_INFO.committedAt}`;
+                mainEl.title = APP_VERSION_INFO.commitFull;
+                subEl.title = APP_VERSION_INFO.commitFull;
+            }
 
             function setFirebaseStatus(message, color = '#ff453a') {
                 firebaseStatusMessage = message || '';
@@ -910,6 +934,13 @@
                 return db.ref(path).once('value')
                     .then((snap) => snap.exists() ? snap.val() : fallbackValue)
                     .catch((err) => handleFirebaseError(err, context, fallbackValue));
+            }
+
+            function writeDb(path, value, context = path) {
+                return db.ref(path).set(value).catch((err) => {
+                    handleFirebaseError(err, context, null);
+                    throw err;
+                });
             }
 
             function ensureFirebaseReady() {
@@ -1212,23 +1243,44 @@
                 document.getElementById('ttt-bot-diff').style.display = (id==='tictactoe' && lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) ? 'block' : 'none';
             }
             
-            function confirmSO2Mode() {
+            async function confirmSO2Mode() {
                 if(!pendingModeId) return tg.showAlert("Выберите режим!");
+                if(!lobbyId) return tg.showAlert("Лобби не найдено.");
                 if(pendingModeId==='tictactoe') aiDifficulty = document.getElementById('ttt-bot-select').value;
-                setSelectedModeUI(pendingModeId);
-                db.ref(`lobbies/${lobbyId}/game`).set(pendingModeId);
-                closeSO2ModeSelect();
+
+                try {
+                    await writeDb(`lobbies/${lobbyId}/game`, pendingModeId, 'set lobby game');
+                    setSelectedModeUI(pendingModeId);
+                    closeSO2ModeSelect();
+                } catch (err) {
+                    tg.showAlert("Не удалось сохранить выбранный режим.");
+                }
             }
             function closeSO2ModeSelect() { document.getElementById('so2-mode-modal').classList.add('hidden'); }
 
-            function startLobbyGame() {
+            async function startLobbyGame() {
                 if(!isHost) return tg.showAlert("Только Хост может запустить!");
-                if(!appState.selectedGameId) return tg.showAlert("Выберите режим!");
-                
-                if (appState.selectedGameId.startsWith('ai')) {
-                    db.ref(`lobbies/${lobbyId}/status`).set('playing_ai');
-                } else {
-                    db.ref(`lobbies/${lobbyId}/status`).set('playing');
+                if(!lobbyId) return tg.showAlert("Лобби не найдено.");
+
+                const selectedGameId = appState.selectedGameId || pendingModeId;
+                if(!selectedGameId) return tg.showAlert("Выберите режим!");
+
+                try {
+                    const lobbyData = await readDbOnce(`lobbies/${lobbyId}`, null, 'read lobby before start');
+                    if(!lobbyData || !lobbyData.players || !lobbyData.players[myId]) {
+                        return tg.showAlert("Лобби больше не активно.");
+                    }
+
+                    if(!lobbyData.game && selectedGameId) {
+                        await writeDb(`lobbies/${lobbyId}/game`, selectedGameId, 'restore lobby game before start');
+                        setSelectedModeUI(selectedGameId);
+                    }
+
+                    const nextStatus = selectedGameId.startsWith('ai') ? 'playing_ai' : 'playing';
+                    await writeDb(`lobbies/${lobbyId}/status`, nextStatus, 'start lobby game');
+                    setIsland("Запуск игры...", "#34c759");
+                } catch (err) {
+                    tg.showAlert("Не удалось запустить игру. Проверь доступ к Firebase.");
                 }
             }
 
@@ -1744,7 +1796,7 @@
                     });
                 }
                 try { tg.CloudStorage.getKeys((err, keys) => { if (err || !keys || keys.length === 0) return startData({}); tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); }); }); } catch(e) { startData({}); } setTimeout(() => startData({}), 1000);
-            } initApp();
+            } renderAppVersionInfo(); initApp();
 
             let islandHideTimeout;
             function setIsland(t, c='#fff') { 
