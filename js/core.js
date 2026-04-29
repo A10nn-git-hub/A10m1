@@ -7,6 +7,7 @@
             firebase.initializeApp(firebaseConfig); const db = firebase.database();
             let firebaseReadyPromise = null;
             let firebaseStatusMessage = '';
+            let firebaseAuthUnavailable = false;
 
             function renderAppVersionInfo() {
                 const mainEl = document.getElementById('app-version-main');
@@ -43,14 +44,24 @@
                 return firebaseStatusMessage || defaultMessage;
             }
 
+            function isOptionalAuthError(err) {
+                const code = err && err.code ? err.code : '';
+                return code === 'auth/internal-error' || code === 'auth/admin-restricted-operation';
+            }
+
             function ensureFirebaseAccess() {
                 return ensureFirebaseReady().then(() => {
-                    if (!firebase.auth) return null;
+                    if (!firebase.auth || firebaseAuthUnavailable) return null;
                     const auth = firebase.auth();
                     if (auth.currentUser) return auth.currentUser;
                     return auth.signInAnonymously()
                         .then(() => auth.currentUser)
                         .catch((err) => {
+                            if (isOptionalAuthError(err)) {
+                                firebaseAuthUnavailable = true;
+                                console.warn('Firebase Auth is unavailable; continuing with database rules.');
+                                return null;
+                            }
                             handleFirebaseError(err, 'auth.ensureSession', null);
                             return null;
                         });
@@ -118,6 +129,12 @@
                     }
 
                     auth.signInAnonymously().then(safeFinish).catch((err) => {
+                        if (isOptionalAuthError(err)) {
+                            firebaseAuthUnavailable = true;
+                            console.warn('Firebase Auth is unavailable; continuing with database rules.');
+                            safeFinish();
+                            return;
+                        }
                         handleFirebaseError(err, 'auth.signInAnonymously', null);
                         safeFinish();
                     });
@@ -1061,7 +1078,7 @@
                     return;
                 }
                 ensureFirebaseAccess()
-                    .then(() => db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins, gamesPlayed: gamesPlayed, playTimeMs: playTimeMs, aiStats: aiStats, pvpStats: pvpStats }))
+                    .then(() => db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, gamesPlayed: gamesPlayed, playTimeMs: playTimeMs, aiStats: aiStats, pvpStats: pvpStats }))
                     .catch((err) => handleFirebaseError(err, 'sync profile', null));
                 updateMyStatsTab();
             }
