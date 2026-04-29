@@ -1719,6 +1719,7 @@
             setInterval(()=>{
                 if(!appState.isPaused && appState.game) {
                     playTimeMs += 1000;
+                    updateMyStatsTab();
                     if(playTimeMs % 30000 === 0) syncDBProfile(); // sync every 30s
                 }
             }, 1000);
