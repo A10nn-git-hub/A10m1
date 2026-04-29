@@ -1878,59 +1878,61 @@
             }
 
             function renderShop() { 
-                const drawShop = (inv) => {
-                    db.ref(`users/${myId}/flags/stars_received`).once('value').then(fSnap => {
-                        let rcvdStars = fSnap.exists();
-                        if (gamesPlayed >= 50 && !rcvdStars && !inv['bg_stars']) { 
-                            db.ref(`users/${myId}/inventory/bg_stars`).set(1); 
-                            db.ref(`users/${myId}/flags/stars_received`).set(true);
-                            inv['bg_stars'] = 1; rcvdStars = true;
-                        }
-                        
-                        let shopHTML = ''; 
-                        SHOP_ITEMS.forEach(item => { 
-                            let qty = typeof inv[item.id] === 'boolean' ? 1 : (parseInt(inv[item.id])||0);
-                            let owned = qty > 0; 
-                            let eq = false;
-                            if(item.type === 'avatar') eq = (myAvatar === item.id);
-                            if(item.type === 'name') eq = (myEqName === item.id);
-                            if(item.type === 'medal') eq = myPinnedMedals.includes(item.id);
-                            if(item.type === 'bg') eq = (localStorage.getItem('eq_bg') === item.id);
-                            
-                            let cardClass = eq ? 'equipped' : (owned && item.type !== 'case' ? 'bought' : '');
-                            let btnHTML = '';
-                            
-                            if(item.type === 'box') {
-                                btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" onclick="buyItem('${item.id}', ${item.price})">КУПИТЬ</button>`;
-                                if (owned) btnHTML += `<button class="btn btn-dark" style="font-size:14px; padding:10px; margin-top:5px;" onclick="openBoxPre('${item.id}')">ОТКРЫТЬ (x${qty})</button>`;
-                            } else if(item.type === 'case') {
-                                btnHTML = `<button class="btn btn-disabled" style="font-size:12px; padding:10px; cursor:not-allowed;" disabled>СКОРО В<br>ПРОДАЖЕ</button>`;
-                            } else if (item.id === 'bg_stars') {
-                                if(eq) btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" disabled>ПРИМЕНЕНО</button>`;
-                                else if(!rcvdStars && gamesPlayed < 50) btnHTML = `<button class="btn btn-dark" style="font-size:14px; padding:10px;" disabled>${gamesPlayed}/50 ИГР</button>`;
-                                else btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" onclick="buyItem('${item.id}', ${item.price})">КУПИТЬ</button>`;
-                            } else {
-                                if(eq) btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" disabled>ПРИМЕНЕНО</button>`;
-                                else btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" onclick="buyItem('${item.id}', ${item.price})">КУПИТЬ</button>`;
-                            }
+                const drawShop = async (inv) => {
+                    const starsReceived = await readDbOnce(`users/${myId}/flags/stars_received`, false, 'shop stars flag');
+                    let rcvdStars = !!starsReceived;
 
-                            let rBar = `<div class="shop-rarity-bar" style="background:${RARITIES[item.rarity]}">${item.rarity}</div>`;
-                            let topDisp = '';
-                            if(item.type === 'name') { 
-                                topDisp = `<div style="font-weight:bold;" class="market-name-preview">${getNameMarketPreviewHTML(item.id)}</div>`; 
-                            } else { 
-                                topDisp = `<div style="font-size:50px;">${item.plainIcon || item.icon}</div>`; 
-                            }
-                            let inspectBtnHTML = (item.type === 'box' || item.type === 'case') ? '' : `<button class="btn btn-dark" style="font-size:12px; padding:10px; margin-top:10px;" onclick="inspectItem('${item.id}','${item.type}')">ОСМОТРЕТЬ</button>`;
-                            shopHTML += `<div class="shop-item-card ${cardClass}"><div style="margin-bottom:10px; display:flex; justify-content:center; align-items:center; height:60px;">${topDisp}</div>${item.type === 'name' ? '' : `<b style="font-size:14px;">${item.name}</b>`}<span style="font-size:11px; color:gray; margin-top:5px;">${item.desc}</span>${rBar}<span style="color:var(--coin-col); font-weight:bold; font-size:16px; margin-bottom:10px;">${item.price} 🪙</span>${btnHTML}${inspectBtnHTML}</div>`; 
-                        }); 
-                        document.getElementById('inv-shop').innerHTML = shopHTML; 
-                    });
+                    if (gamesPlayed >= 50 && !rcvdStars && !inv['bg_stars']) { 
+                        db.ref(`users/${myId}/inventory/bg_stars`).set(1).catch(() => {});
+                        db.ref(`users/${myId}/flags/stars_received`).set(true).catch(() => {});
+                        inv['bg_stars'] = 1;
+                        rcvdStars = true;
+                    }
+                    
+                    let shopHTML = ''; 
+                    SHOP_ITEMS.forEach(item => { 
+                        let qty = typeof inv[item.id] === 'boolean' ? 1 : (parseInt(inv[item.id])||0);
+                        let owned = qty > 0; 
+                        let eq = false;
+                        if(item.type === 'avatar') eq = (myAvatar === item.id);
+                        if(item.type === 'name') eq = (myEqName === item.id);
+                        if(item.type === 'medal') eq = myPinnedMedals.includes(item.id);
+                        if(item.type === 'bg') eq = (localStorage.getItem('eq_bg') === item.id);
+                        
+                        let cardClass = eq ? 'equipped' : (owned && item.type !== 'case' ? 'bought' : '');
+                        let btnHTML = '';
+                        
+                        if(item.type === 'box') {
+                            btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" onclick="buyItem('${item.id}', ${item.price})">КУПИТЬ</button>`;
+                            if (owned) btnHTML += `<button class="btn btn-dark" style="font-size:14px; padding:10px; margin-top:5px;" onclick="openBoxPre('${item.id}')">ОТКРЫТЬ (x${qty})</button>`;
+                        } else if(item.type === 'case') {
+                            btnHTML = `<button class="btn btn-disabled" style="font-size:12px; padding:10px; cursor:not-allowed;" disabled>СКОРО В<br>ПРОДАЖЕ</button>`;
+                        } else if (item.id === 'bg_stars') {
+                            if(eq) btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" disabled>ПРИМЕНЕНО</button>`;
+                            else if(!rcvdStars && gamesPlayed < 50) btnHTML = `<button class="btn btn-dark" style="font-size:14px; padding:10px;" disabled>${gamesPlayed}/50 ИГР</button>`;
+                            else btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" onclick="buyItem('${item.id}', ${item.price})">КУПИТЬ</button>`;
+                        } else {
+                            if(eq) btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" disabled>ПРИМЕНЕНО</button>`;
+                            else btnHTML = `<button class="btn btn-gold" style="font-size:14px; padding:10px;" onclick="buyItem('${item.id}', ${item.price})">КУПИТЬ</button>`;
+                        }
+
+                        let rBar = `<div class="shop-rarity-bar" style="background:${RARITIES[item.rarity]}">${item.rarity}</div>`;
+                        let topDisp = '';
+                        if(item.type === 'name') { 
+                            topDisp = `<div style="font-weight:bold;" class="market-name-preview">${getNameMarketPreviewHTML(item.id)}</div>`; 
+                        } else { 
+                            topDisp = `<div style="font-size:50px;">${item.plainIcon || item.icon}</div>`; 
+                        }
+                        let inspectBtnHTML = (item.type === 'box' || item.type === 'case') ? '' : `<button class="btn btn-dark" style="font-size:12px; padding:10px; margin-top:10px;" onclick="inspectItem('${item.id}','${item.type}')">ОСМОТРЕТЬ</button>`;
+                        shopHTML += `<div class="shop-item-card ${cardClass}"><div style="margin-bottom:10px; display:flex; justify-content:center; align-items:center; height:60px;">${topDisp}</div>${item.type === 'name' ? '' : `<b style="font-size:14px;">${item.name}</b>`}<span style="font-size:11px; color:gray; margin-top:5px;">${item.desc}</span>${rBar}<span style="color:var(--coin-col); font-weight:bold; font-size:16px; margin-bottom:10px;">${item.price} 🪙</span>${btnHTML}${inspectBtnHTML}</div>`; 
+                    }); 
+                    document.getElementById('inv-shop').innerHTML = shopHTML; 
                 };
 
-                if (inventoryLoaded) drawShop({ ...liveInventory });
-                else {
-                    db.ref(`users/${myId}/inventory`).once('value').then(s => drawShop(s.val() || {}));
+                if (inventoryLoaded) {
+                    drawShop({ ...liveInventory });
+                } else {
+                    readDbOnce(`users/${myId}/inventory`, {}, 'shop inventory').then(inv => drawShop(inv || {}));
                 }
             }
 
