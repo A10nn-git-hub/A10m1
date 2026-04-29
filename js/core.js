@@ -64,6 +64,15 @@
                     .catch((err) => handleFirebaseError(err, context, fallbackValue));
             }
 
+            function readDbOnceStrict(path, context = path) {
+                return ensureFirebaseAccess()
+                    .then(() => db.ref(path).once('value'))
+                    .catch((err) => {
+                        handleFirebaseError(err, context, null);
+                        throw err;
+                    });
+            }
+
             function writeDb(path, value, context = path) {
                 return ensureFirebaseAccess()
                     .then(() => db.ref(path).set(value))
@@ -725,7 +734,7 @@
 
             const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', eqName: '', pMedals: [] }; 
             
-            let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; 
+            let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; let profileLoaded = false;
             
             let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
@@ -922,6 +931,8 @@
                     else if(savedId) myId = savedId; 
                     else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try{tg.CloudStorage.setItem('my_id', myId);}catch(e){} localStorage.setItem('my_id', myId); }
                     document.getElementById('my-id-display').innerText = `ID: ${myId}`;
+
+                    await ensureFirebaseAccess();
                     
                     bindCustomItemsSync();
                     bindInventorySync();
@@ -945,8 +956,9 @@
                             renderBanLists({});
                         });
 
-                        readDbOnce('users/' + myId, {}, 'user profile').then(d => {
-                            d = d || {}; let tgName = tg.initDataUnsafe?.user?.first_name;
+                        readDbOnceStrict('users/' + myId, 'user profile').then(snap => {
+                            const d = snap.exists() ? (snap.val() || {}) : {};
+                            let tgName = tg.initDataUnsafe?.user?.first_name;
                             myName = d.name || vals['my_name'] || tgName || "Игрок"; 
                             myAvatar = d.avatar || vals['my_avatar'] || "😎"; 
                             myEqName = d.eqName || ''; 
@@ -960,12 +972,17 @@
                             if(localStorage.getItem('eq_bg') === 'bg_stars') document.body.classList.add('star-bg');
                             if(localStorage.getItem('eq_bg') === 'bg_balloons') spawnBalloons();
 
+                            // Синхронизируем профиль только после успешного чтения Firebase,
+                            // иначе локальный fallback может затереть реальные данные игрока.
+                            profileLoaded = true;
                             updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile(); ensureEquippedItemsInInventory();
                             db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } }, err => handleFirebaseError(err, 'coins listener', null));
                             db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = ['ИИ']; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ' && !k.startsWith('ИИ')) friendsIds.push(k); }); } renderFriends(); });
                             if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (fid !== 'ИИ' && fid !== 'БОТ' && !fid.startsWith('ИИ')) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
                             db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(s.val()); });
                             db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); } });
+                        }).catch(() => {
+                            tg.showAlert(getFirebaseFriendlyMessage("Не удалось загрузить профиль из Firebase."));
                         });
                     });
 
@@ -1039,6 +1056,10 @@
             }
 
             function syncDBProfile() { 
+                if (!profileLoaded) {
+                    updateMyStatsTab();
+                    return;
+                }
                 ensureFirebaseAccess()
                     .then(() => db.ref('users/' + myId).update({ name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, coins: globalCoins, gamesPlayed: gamesPlayed, playTimeMs: playTimeMs, aiStats: aiStats, pvpStats: pvpStats }))
                     .catch((err) => handleFirebaseError(err, 'sync profile', null));
