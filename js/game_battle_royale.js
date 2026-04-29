@@ -12,9 +12,11 @@
                 br.bots = []; 
                 br.bullets = [];
                 
-                for (let i = 0; i < 5; i++) {
+                const opponents = getBrOpponents();
+                opponents.forEach((opponent, i) => {
                     br.bots.push({ 
-                        id: 'bot' + i, 
+                        id: opponent.id,
+                        label: opponent.name,
                         x: Math.random() * (BR_SIZE - 200) + 100, 
                         y: Math.random() * (BR_SIZE - 200) + 100, 
                         hp: 150, 
@@ -23,7 +25,7 @@
                         ty: BR_SIZE / 2, 
                         nextThink: 0 
                     });
-                }
+                });
                 
                 document.getElementById('br-ui-alive').innerText = `Живых: ${br.bots.length + 1}`;
                 document.getElementById('br-ui-kills').innerText = `Киллы: 0`;
@@ -76,6 +78,23 @@
                 }
 
                 br.loop = requestAnimationFrame(brLoop);
+            }
+
+            function getBrOpponents() {
+                const players = Array.isArray(lobbyPlayers) ? lobbyPlayers : [];
+                const realOpponents = players
+                    .filter(p => p.id !== myId && !p.id.startsWith('ИИ'))
+                    .map(p => ({ id: p.id, name: p.name || 'Игрок' }));
+                const hasInvitedBot = players.some(p => p.id && p.id.startsWith('ИИ'));
+
+                if (realOpponents.length > 0 && !hasInvitedBot) return realOpponents;
+
+                const botCount = realOpponents.length > 0 && hasInvitedBot ? 3 : 5;
+                const bots = [];
+                for (let i = 0; i < botCount; i++) {
+                    bots.push({ id: 'bot' + i, name: 'Бот ' + (i + 1) });
+                }
+                return realOpponents.concat(bots);
             }
 
             function brStartShoot(e) { 
@@ -236,6 +255,12 @@
                     ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(b.a) * 30, b.y + Math.sin(b.a) * 30); ctx.stroke();
                     ctx.fillStyle = '#111'; ctx.fillRect(b.x - 20, b.y - 30, 40, 6); 
                     ctx.fillStyle = '#34c759'; ctx.fillRect(b.x - 20, b.y - 30, 40 * (b.hp / 150), 6);
+                    if (b.label) {
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '14px sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(b.label, b.x, b.y - 38);
+                    }
                 });
 
                 if (br.myP.hp > 0) {

@@ -10,14 +10,18 @@
             let firebaseAuthUnavailable = false;
 
             function renderAppVersionInfo() {
-                const mainEl = document.getElementById('app-version-main');
-                const subEl = document.getElementById('app-version-sub');
-                if (!mainEl || !subEl) return;
+                const versionTargets = [
+                    [document.getElementById('app-version-main'), document.getElementById('app-version-sub')],
+                    [document.getElementById('app-version-main-settings'), document.getElementById('app-version-sub-settings')]
+                ];
                 const modifiedAt = document.lastModified ? new Date(document.lastModified).toLocaleString('ru-RU') : 'неизвестно';
-                mainEl.innerText = APP_VERSION_INFO.label;
-                subEl.innerText = `Файл обновлен: ${modifiedAt}`;
-                mainEl.title = APP_VERSION_INFO.note;
-                subEl.title = APP_VERSION_INFO.note;
+                versionTargets.forEach(([mainEl, subEl]) => {
+                    if (!mainEl || !subEl) return;
+                    mainEl.innerText = APP_VERSION_INFO.label;
+                    subEl.innerText = `Файл обновлен: ${modifiedAt}`;
+                    mainEl.title = APP_VERSION_INFO.note;
+                    subEl.title = APP_VERSION_INFO.note;
+                });
             }
 
             function setFirebaseStatus(message, color = '#ff453a') {
@@ -345,12 +349,23 @@
                 document.getElementById('inspect-medals').innerHTML = it.type==='medal'?it.icon:'';
                 document.getElementById('inspect-modal').classList.remove('hidden');
             }
-            function closeInspectModal(e) { if(e) e.stopPropagation(); document.getElementById('inspect-modal').classList.add('hidden'); }
+            function closeInspectModal(e) {
+                if(e) e.stopPropagation();
+                document.getElementById('inspect-modal').classList.add('hidden');
+                if (boxAwaitingPrizeInspect) {
+                    boxAwaitingPrizeInspect = false;
+                    const closeBtn = document.getElementById('btn-close-box');
+                    if (closeBtn && !document.getElementById('box-roulette-modal').classList.contains('hidden')) {
+                        closeBtn.style.display = 'block';
+                    }
+                }
+            }
 
             function openBoxPre(id) {
                 currentOpenedBoxId = id;
                 document.getElementById('box-roulette-modal').classList.remove('hidden');
                 document.getElementById('btn-start-roulette').style.display = 'block';
+                document.getElementById('btn-close-box').style.display = 'block';
                 document.getElementById('roulette-track').style.transform = 'translateX(0px)';
                 
                 let boxItems = [];
@@ -369,7 +384,11 @@
             }
 
             function startBoxRoulette() {
+                if (boxRouletteActive) return;
+                boxRouletteActive = true;
+                boxAwaitingPrizeInspect = false;
                 document.getElementById('btn-start-roulette').style.display = 'none';
+                document.getElementById('btn-close-box').style.display = 'none';
                 
                 let boxItems = [];
                 if (currentOpenedBoxId === 'box_upgrade') {
@@ -402,12 +421,19 @@
                         else db.ref(`users/${myId}/inventory/${currentOpenedBoxId}`).remove();
                         db.ref(`users/${myId}/inventory/${win.id}`).once('value').then(ss => {
                             db.ref(`users/${myId}/inventory/${win.id}`).set((parseInt(ss.val())||0)+1);
-                            tg.showAlert(`Выпало: ${win.name}!`); renderInventory(); renderShop();
+                            boxRouletteActive = false;
+                            boxAwaitingPrizeInspect = true;
+                            tg.showAlert(`Выпало: ${win.name}!`);
+                            inspectItem(win.id, win.type);
+                            renderInventory(); renderShop();
                         });
                     });
                 }, 8500);
             }
-            function closeBoxModal() { document.getElementById('box-roulette-modal').classList.add('hidden'); }
+            function closeBoxModal() {
+                if (boxRouletteActive || boxAwaitingPrizeInspect) return;
+                document.getElementById('box-roulette-modal').classList.add('hidden');
+            }
 
             function openSO2ModeSelect() {
                 if(!isHost) return tg.showAlert("Только Хост может выбирать!");
@@ -425,9 +451,20 @@
                 if(cat==='math') sm.innerHTML = b('math1','📝','Ответ')+b('math2','🎴','Карточки')+b('math3','🔢','Порядок');
                 if(cat==='letters') sm.innerHTML = b('let1','🔤','АБВ')+b('let3','⌨️','Слово')+b('let4','🔗','Соедини')+b('let5','🟩','5 Букв');
                 if(cat==='coord') sm.innerHTML = b('coord1','🗡️','Ножи')+b('coord2','🐸','Лягушка')+b('coord3','🎈','Скорость')+b('coord4','⚡','Кнопка')+b('coord5','🦆','Утки');
-                if(cat==='ai') sm.innerHTML = b('ai1','🗣️','Загадки')+b('ai2','📖','Сказки');
+                if(cat==='ttt') sm.innerHTML = `
+                    <div class="so2-subcard" onclick="setPendingTttLevel('easy', this)"><div class="so2-subcard-icon">⭐</div><div class="so2-subcard-title">Уровень 1</div></div>
+                    <div class="so2-subcard" onclick="setPendingTttLevel('medium', this)"><div class="so2-subcard-icon">⭐⭐</div><div class="so2-subcard-title">Уровень 2</div></div>
+                    <div class="so2-subcard" onclick="setPendingTttLevel('hard', this)"><div class="so2-subcard-icon">⭐⭐⭐</div><div class="so2-subcard-title">Уровень 3</div></div>`;
                 if(cat==='br') sm.innerHTML = b('br_2d','🔫','2D Арена') + b('br_3d','🏃‍♂️','3D Паркур');
 
+                document.getElementById('ttt-bot-diff').style.display='none';
+            }
+
+            function setPendingTttLevel(level, el) {
+                aiDifficulty = level;
+                pendingModeId = 'tictactoe';
+                document.querySelectorAll('.so2-subcard').forEach(c=>c.classList.remove('active'));
+                if(el) el.classList.add('active');
                 document.getElementById('ttt-bot-diff').style.display='none';
             }
             
@@ -435,13 +472,13 @@
                 pendingModeId = id;
                 document.querySelectorAll('.so2-subcard, .so2-card').forEach(c=>{ if(c.classList.contains('so2-subcard')||c.innerHTML.includes(name.split(' ')[1])) c.classList.remove('active'); });
                 if(el) el.classList.add('active');
-                document.getElementById('ttt-bot-diff').style.display = (id==='tictactoe' && lobbyPlayers.some(p=>p.id.startsWith('ИИ'))) ? 'block' : 'none';
+                document.getElementById('ttt-bot-diff').style.display = id==='tictactoe' ? 'block' : 'none';
             }
             
             async function confirmSO2Mode() {
                 if(!pendingModeId) return tg.showAlert("Выберите режим!");
                 if(!lobbyId) return tg.showAlert("Лобби не найдено.");
-                if(pendingModeId==='tictactoe') aiDifficulty = document.getElementById('ttt-bot-select').value;
+                if(pendingModeId==='tictactoe' && document.getElementById('ttt-bot-diff').style.display !== 'none') aiDifficulty = document.getElementById('ttt-bot-select').value;
 
                 try {
                     await writeDb(`lobbies/${lobbyId}/game`, pendingModeId, 'set lobby game');
@@ -471,8 +508,7 @@
                         setSelectedModeUI(selectedGameId);
                     }
 
-                    const nextStatus = selectedGameId.startsWith('ai') ? 'playing_ai' : 'playing';
-                    await writeDb(`lobbies/${lobbyId}/status`, nextStatus, 'start lobby game');
+                    await writeDb(`lobbies/${lobbyId}/status`, 'playing', 'start lobby game');
                     setIsland("Запуск игры...", "#34c759");
                 } catch (err) {
                     tg.showAlert(getFirebaseFriendlyMessage("Не удалось запустить игру. Проверь доступ к Firebase."));
@@ -530,14 +566,7 @@
                 db.ref(`users/${id}`).once('value').then(s => {
                     if(!s.exists()) {
                         if (id === 'ИИ') {
-                            document.getElementById('ps-avatar').innerHTML = '🤖';
-                            document.getElementById('ps-name').innerHTML = 'СИСТЕМА ИИ';
-                            document.getElementById('ps-id').innerText = `ID: ИИ`;
-                            document.getElementById('ps-tab-you').innerHTML = generateKDHTML(aiStats);
-                            document.getElementById('ps-tab-all').innerHTML = '<p>Это бот. Вы видите только статистику игр с ним.</p>';
-                            document.getElementById('ps-tab-ai').innerHTML = '';
-                            switchMiniTab('ps-tab-you', document.getElementById('ps-tab-btn-you'));
-                            document.getElementById('profile-stats-modal').classList.remove('hidden');
+                            tg.showAlert("Профиль ИИ недоступен.");
                         }
                         return;
                     }
@@ -545,10 +574,8 @@
                     document.getElementById('ps-avatar').innerHTML = getAvatarHTML(d.avatar);
                     document.getElementById('ps-name').innerHTML = getNameHTML(d.name, d.eqName);
                     document.getElementById('ps-id').innerText = `ID: ${id}`;
-                    let hisAi = d.aiStats || {};
                     document.getElementById('ps-tab-you').innerHTML = generateKDHTML(getInvertedStats(pvpStats[id]));
-                    document.getElementById('ps-tab-all').innerHTML = generateKDHTML(buildTotalStats(d.pvpStats, hisAi));
-                    document.getElementById('ps-tab-ai').innerHTML = generateKDHTML(hisAi);
+                    document.getElementById('ps-tab-all').innerHTML = generateKDHTML(buildTotalStats(d.pvpStats));
                     switchMiniTab('ps-tab-you', document.getElementById('ps-tab-btn-you'));
                     document.getElementById('profile-stats-modal').classList.remove('hidden');
                 });
@@ -731,9 +758,9 @@
             function buildTotalStats(uPvp, uAi) {
                 let t = {math:{w:0,l:0,d:0}, letters:{w:0,l:0,d:0}, acc:{w:0,l:0,d:0}, ttt:{w:0,l:0,d:0}, hidden:{w:0,l:0,d:0}, clk:{w:0,l:0,d:0}, react:{w:0,l:0,d:0}};
                 let cats = ['math','letters','acc','ttt','hidden','clk','react'];
-                if(uAi) cats.forEach(c => { if(uAi[c]) { t[c].w += uAi[c].w; t[c].l += uAi[c].l; t[c].d += uAi[c].d; } });
                 if(uPvp) {
                     Object.keys(uPvp).forEach(opp => {
+                        if(opp.startsWith('ИИ')) return;
                         cats.forEach(c => { if(uPvp[opp][c]) { t[c].w += uPvp[opp][c].w; t[c].l += uPvp[opp][c].l; t[c].d += uPvp[opp][c].d; } });
                     });
                 }
@@ -753,17 +780,17 @@
             
             let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; let profileLoaded = false;
             
-            let friendsIds = ['ИИ']; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
+            let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
             let inventoryListener = null, customItemsListener = null, liveInventory = {}, inventoryLoaded = false;
             let aiDifficulty = 'medium'; let currentOpenedBoxId = null; let activeFriend = null;
+            let boxRouletteActive = false, boxAwaitingPrizeInspect = false;
 
             const GAME_NAMES = {
                 'math1': 'МАТЕМАТИКА [ОТВЕТ]', 'math2': 'МАТЕМАТИКА [КАРТОЧКИ]', 'math3': 'МАТЕМАТИКА [ПОРЯДОК]',
                 'let1': 'БУКВЫ [АБВ]', 'let3': 'БУКВЫ [СЛОВО]', 'let4': 'БУКВЫ [СОЕДИНИ]', 'let5': 'БУКВЫ [5 БУКВ]',
                 'coord1': 'КООРДИНАЦИЯ [НОЖИ]', 'coord2': 'КООРДИНАЦИЯ [ЛЯГУШКА]', 'coord3': 'КООРДИНАЦИЯ [СКОРОСТЬ]', 'coord4': 'КООРДИНАЦИЯ [КНОПКА]', 'coord5': 'КООРДИНАЦИЯ [УТКИ]',
-                'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br_2d': '⚔️ ВЫЖИВАНИЕ [2D]', 'br_3d': '🏃‍♂️ 3D ПАРКУР',
-                'ai1': '🤖 ЗАГАДКИ ИИ', 'ai2': '🤖 СКАЗКИ ИИ'
+                'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br_2d': '⚔️ ВЫЖИВАНИЕ [2D]', 'br_3d': '🏃‍♂️ 3D ПАРКУР'
             };
 
             const RARITIES = { 'UNCOMMON': '#32ade6', 'RARE': '#007aff', 'EPIC': '#af52de', 'LEGENDARY': '#ff1493', 'ARCANE': '#ff3b30', 'NAMELESS': '#ffcc00' };
@@ -994,10 +1021,11 @@
                             profileLoaded = true;
                             updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile(); ensureEquippedItemsInInventory();
                             db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } }, err => handleFirebaseError(err, 'coins listener', null));
-                            db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = ['ИИ']; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ' && !k.startsWith('ИИ')) friendsIds.push(k); }); } renderFriends(); });
+                            db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = []; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ' && !k.startsWith('ИИ')) friendsIds.push(k); }); } renderFriends(); });
                             if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (fid !== 'ИИ' && fid !== 'БОТ' && !fid.startsWith('ИИ')) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
                             db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(s.val()); });
                             db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); } });
+                            ensureHomeLobby();
                         }).catch(() => {
                             tg.showAlert(getFirebaseFriendlyMessage("Не удалось загрузить профиль из Firebase."));
                         });
@@ -1065,11 +1093,9 @@
             }
 
             function updateMyStatsTab() {
-                let totalS = buildTotalStats(pvpStats, aiStats);
+                let totalS = buildTotalStats(pvpStats);
                 let tabAll = document.getElementById('my-stats-all');
-                let tabAi = document.getElementById('my-stats-ai');
                 if(tabAll) tabAll.innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px; color:var(--coin-col);">Время в игре: ${formatPlayTime(playTimeMs)}</div>` + generateKDHTML(totalS);
-                if(tabAi) tabAi.innerHTML = generateKDHTML(aiStats);
             }
 
             function syncDBProfile() { 
@@ -1451,7 +1477,8 @@
             function switchTab(t, el) { 
                 document.body.classList.remove('let5-active');
                 document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); 
-                el.classList.add('active'); 
+                if (!el) el = document.querySelector(`[data-tab="${t}"]`);
+                if (el) el.classList.add('active');
                 document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active')); 
                 document.getElementById('tab-' + t).classList.add('active'); 
             }

@@ -8,18 +8,6 @@
                 friendListeners = {};
                 
                 friendsIds.forEach(id => { 
-                    if (id === 'ИИ') { 
-                        let d = document.createElement('div'); 
-                        d.className = 'list-item'; 
-                        d.innerHTML = `
-                            <div class="friend-row">
-                                <div style="font-size:30px;">🤖</div> 
-                                <div><b>ИИ</b><br><span style="font-size:10px;color:gray;">ID: ИИ</span></div>
-                            </div>`; 
-                        d.onclick = () => openFriendModal(SYSTEM_BOT); 
-                        list.appendChild(d); 
-                        return; 
-                    } 
                     let d = document.createElement('div'); 
                     d.className = 'list-item'; 
                     d.id = 'friend-row-' + id;
@@ -112,10 +100,12 @@
                         a.innerHTML += `<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; 
                     }
                 } else { 
-                    if (f.id === 'ИИ') {
-                        a.innerHTML += `<button class="btn btn-green" onclick="createLobbyWithAI()">Играть с ИИ 🤖</button>`; 
-                    } else {
-                        a.innerHTML += `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`; 
+                    if (f.id !== 'ИИ') {
+                        db.ref('lobbies/' + f.id).once('value').then(s => {
+                            if (s.exists() && document.getElementById('friend-modal') && !document.getElementById('friend-modal').classList.contains('hidden')) {
+                                document.getElementById('friend-actions').insertAdjacentHTML('beforeend', `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`);
+                            }
+                        });
                     }
                 } 
                 
@@ -208,6 +198,12 @@
             function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
 
             async function openLobby() { 
+                if (appState.inLobby && lobbyId) {
+                    document.getElementById('main-buttons-view').style.display = 'none';
+                    document.getElementById('view-lobby').style.display = 'flex';
+                    return;
+                }
+
                 const nextLobbyId = myId;
                 const nextPlayers = [{id: myId, name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}];
 
@@ -236,8 +232,13 @@
                 db.ref('lobbies/' + lobbyId).onDisconnect().remove();
                 
                 listenLobby(); 
-                document.getElementById('main-buttons-view').style.display = 'none'; 
+                document.getElementById('main-buttons-view').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'flex'; 
+            }
+
+            function ensureHomeLobby() {
+                if (appState.inLobby || pendingInvite) return;
+                openLobby();
             }
 
             function closeLobby() { 
@@ -258,10 +259,11 @@
                 } else { 
                     db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); 
                 } 
-                document.getElementById('main-buttons-view').style.display = 'flex'; 
+                document.getElementById('main-buttons-view').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'none'; 
                 pendingModeId = null;
                 setSelectedModeUI(null);
+                setTimeout(ensureHomeLobby, 300);
             }
 
             async function createLobbyWithAI() {
@@ -272,6 +274,10 @@
 
             function acceptLobbyInvite() { 
                 if (pendingInvite) { 
+                    if (appState.inLobby && isHost && lobbyId && lobbyId !== pendingInvite.lId) {
+                        if (lobbyRef) lobbyRef.off();
+                        db.ref('lobbies/' + lobbyId).remove();
+                    }
                     lobbyId = pendingInvite.lId; 
                     isHost = false; 
                     pendingModeId = null;
@@ -281,7 +287,7 @@
                     }); 
                     db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                     appState.inLobby = true; 
-                    switchTab('friends', document.querySelectorAll('.nav-item')[2]); 
+                    switchTab('friends', document.querySelector('[data-tab="friends"]'));
                     document.getElementById('main-buttons-view').style.display = 'none'; 
                     document.getElementById('view-lobby').style.display = 'flex'; 
                     listenLobby(); 
@@ -319,7 +325,7 @@
                         db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}); 
                         db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                         appState.inLobby = true; 
-                        switchTab('friends', document.querySelectorAll('.nav-item')[2]); 
+                        switchTab('friends', document.querySelector('[data-tab="friends"]'));
                         document.getElementById('main-buttons-view').style.display = 'none'; 
                         document.getElementById('view-lobby').style.display = 'flex'; 
                         listenLobby(); 
@@ -402,9 +408,5 @@
                     if (d.status === 'playing' && document.getElementById('game-container').style.display !== 'block') { 
                         startLocalGameUI(); 
                     } 
-                    
-                    if (d.status === 'playing_ai' && document.getElementById('ai-game-overlay').style.display !== 'flex') {
-                        startAiGameLogic();
-                    }
                 }); 
             }

@@ -30,26 +30,30 @@
 
     <div id="app-container">
         <div class="nav-bar" id="nav-bar">
-            <div class="nav-item active" onclick="switchTab('profile', this); updateMyProfileUI();">
+            <div class="nav-item active" data-tab="friends" onclick="switchTab('friends', this)">
+                <div class="nav-icon">👥</div>
+                <div class="nav-text">Главная</div>
+            </div>
+            <div class="nav-item" data-tab="profile" onclick="switchTab('profile', this); updateMyProfileUI();">
                 <div class="nav-icon">👤</div>
                 <div class="nav-text">Профиль</div>
             </div>
-            <div class="nav-item" onclick="switchTab('inv', this); renderShop(); renderInventory();">
+            <div class="nav-item" data-tab="inv" onclick="switchTab('inv', this); renderShop(); renderInventory();">
                 <div class="nav-icon">🎒</div>
                 <div class="nav-text">Инвентарь</div>
             </div>
-            <div class="nav-item" onclick="switchTab('friends', this)">
-                <div class="nav-icon">👥</div>
-                <div class="nav-text">Друзья</div>
+            <div class="nav-item" data-tab="settings" onclick="switchTab('settings', this)">
+                <div class="nav-icon">⚙️</div>
+                <div class="nav-text">Настройки</div>
             </div>
-            <div class="nav-item" id="nav-admin" style="display:none;" onclick="switchTab('admin', this); renderAdminList();">
+            <div class="nav-item" data-tab="admin" id="nav-admin" style="display:none;" onclick="switchTab('admin', this); renderAdminList();">
                 <div class="nav-icon">👨‍💻</div>
                 <div class="nav-text">Разраб</div>
             </div>
         </div>
         
         <div class="main-content">
-            <div id="tab-profile" class="tab-view active">
+            <div id="tab-profile" class="tab-view">
                 <div class="profile-layout-container">
                     <div class="profile-left-col">
                         <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
@@ -68,10 +72,8 @@
                     <div class="profile-right-col">
                         <div class="mini-tabs-header">
                             <button class="mini-tab-btn active" onclick="switchMiniTab('my-stats-all', this)">ОБЩАЯ СТАТИСТИКА</button>
-                            <button class="mini-tab-btn" id="my-tab-btn-ai" onclick="switchMiniTab('my-stats-ai', this)">С ИИ</button>
                         </div>
                         <div id="my-stats-all" class="mini-tab-content active" style="width:100%;"></div>
-                        <div id="my-stats-ai" class="mini-tab-content" style="width:100%;"></div>
                     </div>
                 </div>
             </div>
@@ -93,7 +95,7 @@
                 </div>
             </div>
 
-            <div id="tab-friends" class="tab-view" style="flex-direction: row; gap:20px;">
+            <div id="tab-friends" class="tab-view active" style="flex-direction: row; gap:20px;">
                 <div class="friends-list-panel">
                     <div style="display:flex;justify-content:space-between;margin-bottom:10px;">
                         <h3 style="margin:0;">Друзья</h3>
@@ -108,10 +110,7 @@
                     <div id="fr-list" class="mini-tab-content active" style="overflow-y:auto;flex-grow:1;width:100%;"></div>
                     <div id="fr-reqs" class="mini-tab-content" style="overflow-y:auto;flex-grow:1;width:100%;"></div>
                 </div>
-                <div class="lobby-buttons-panel" id="main-buttons-view">
-                    <button class="mega-btn mega-create" onclick="openLobby()">Создать Лобби</button>
-                    <button class="mega-btn mega-custom" onclick="tg.showAlert('В разработке!')">Кастомное Лобби</button>
-                </div>
+                <div class="lobby-buttons-panel" id="main-buttons-view" style="display:none;"></div>
                 <div id="view-lobby">
                     <button class="btn btn-dark" style="position:absolute;top:-10px;right:0;z-index:5;" onclick="closeLobby()">Выйти 🚪</button>
                     <div class="lobby-slots-container" id="lobby-slots-container"></div>
@@ -119,6 +118,19 @@
                         <div class="mode-text" id="selected-mode-text" style="font-size:18px; font-weight:bold;">Режим не выбран</div>
                         <button class="btn btn-dark" onclick="openSO2ModeSelect()">Выбрать режим 📋</button>
                         <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()">ИГРАТЬ!</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-settings" class="tab-view" style="flex-direction: column;">
+                <div class="profile-layout-container">
+                    <div class="profile-left-col" style="width:100%; max-width:520px; margin:0 auto;">
+                        <h2 style="margin-top:0;">НАСТРОЙКИ</h2>
+                        <div class="profile-version" style="margin-top:12px;">
+                            <div class="profile-version-label">Версия программы</div>
+                            <div class="profile-version-main" id="app-version-main-settings">commit ...</div>
+                            <div class="profile-version-sub" id="app-version-sub-settings">Последнее обновление: ...</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -463,9 +475,8 @@
                     <div class="so2-card" onclick="selectSO2Category('math', this)"><div style="font-size:30px;">🧮</div><b>МАТЕМАТИКА</b></div>
                     <div class="so2-card" onclick="selectSO2Category('letters', this)"><div style="font-size:30px;">🅰️</div><b>БУКВЫ</b></div>
                     <div class="so2-card" onclick="selectSO2Category('coord', this)"><div style="font-size:30px;">🎯</div><b>КООРДИНАЦИЯ</b></div>
-                    <div class="so2-card" onclick="selectSO2Category('ai', this)"><div style="font-size:30px;">🤖</div><b>ИИ ИГРЫ</b></div>
                     <div class="so2-card" onclick="setPendingSO2Game('hidden', '🔎 Поиск', this)"><div style="font-size:30px;">🔎</div><b>ПОИСК</b></div>
-                    <div class="so2-card" onclick="setPendingSO2Game('tictactoe', '❌⭕ Крестики', this)"><div style="font-size:30px;">❌⭕</div><b>КРЕСТИКИ</b></div>
+                    <div class="so2-card" onclick="selectSO2Category('ttt', this)"><div style="font-size:30px;">❌⭕</div><b>КРЕСТИКИ</b></div>
                     <div class="so2-card" onclick="setPendingSO2Game('clicker', '⏱️ Кликер', this)"><div style="font-size:30px;">⏱️</div><b>КЛИКЕР</b></div>
                     <div class="so2-card" onclick="selectSO2Category('br', this)"><div style="font-size:30px;">⚔️</div><b>ВЫЖИВАНИЕ</b></div>
                 </div>
@@ -475,11 +486,11 @@
             </div>
             <div style="position:absolute; bottom:20px; right:20px; display:flex; gap:10px; align-items:center;">
                 <div id="ttt-bot-diff" style="display:none; margin-right:20px; background:rgba(0,0,0,0.5); padding:10px; border-radius:10px;">
-                    <b style="color:var(--coin-col);">Сложность ИИ:</b>
+                    <b style="color:var(--coin-col);">Уровень:</b>
                     <select id="ttt-bot-select" class="styled-input" style="padding:10px; margin-left:10px; font-size:16px; margin-bottom:0;">
-                        <option value="easy">ЛЕГКО (Рандом)</option>
-                        <option value="medium" selected>СРЕДНЕ</option>
-                        <option value="hard">ПРОФИ (Без шансов)</option>
+                        <option value="easy">⭐ УРОВЕНЬ 1</option>
+                        <option value="medium" selected>⭐⭐ УРОВЕНЬ 2</option>
+                        <option value="hard">⭐⭐⭐ УРОВЕНЬ 3</option>
                     </select>
                 </div>
                 <button class="btn btn-red" style="font-size:20px; padding:15px 30px;" onclick="closeSO2ModeSelect()">НАЗАД</button>
@@ -546,17 +557,14 @@
                     <div id="ps-avatar" class="inspect-avatar" style="font-size:64px; margin-bottom: 10px;"></div>
                     <div id="ps-name" style="font-size:24px;font-weight:900;line-height:1.2; text-align:center; width:100%; overflow:hidden; text-overflow:ellipsis;"></div>
                     <div id="ps-id" style="color:#888;font-family:monospace;margin-top:5px; margin-bottom:15px;"></div>
-                    <button class="btn btn-dark" style="font-size:12px; width:100%; border:1px solid var(--coin-col);" onclick="voiceAnalyzeProfile()"><span style="font-size:16px;">🤖</span> Анализ ИИ</button>
                 </div>
                 <div style="width: 65%; display:flex; flex-direction:column; overflow-y:auto;">
                     <div class="mini-tabs-header" style="flex-wrap:wrap;">
                         <button class="mini-tab-btn active" id="ps-tab-btn-you" onclick="switchMiniTab('ps-tab-you', this)">ИГРА С ТОБОЙ</button>
                         <button class="mini-tab-btn" id="ps-tab-btn-all" onclick="switchMiniTab('ps-tab-all', this)">ВСЕ ИГРЫ</button>
-                        <button class="mini-tab-btn" id="ps-tab-btn-ai" onclick="switchMiniTab('ps-tab-ai', this)">ИГРА С ИИ</button>
                     </div>
                     <div id="ps-tab-you" class="mini-tab-content active" style="width:100%;"></div>
                     <div id="ps-tab-all" class="mini-tab-content" style="width:100%;"></div>
-                    <div id="ps-tab-ai" class="mini-tab-content" style="width:100%;"></div>
                 </div>
             </div>
             <button id="profile-stats-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:5000;padding:15px 20px;font-size:18px;" onclick="closeProfileStatsModal(event)">✖</button>

@@ -32,7 +32,7 @@
                             let d = document.createElement('div'); 
                             d.className = 'acc-stuck-knife'; 
                             d.style.transform = `translate(-50%, 0) rotate(${k.a}deg)`; 
-                            d.innerHTML = '<div class="acc-big-sword" style="top: 8vh; bottom: auto;"></div>'; 
+                            d.innerHTML = '<div class="acc-big-sword" style="top: 3vh; bottom: auto;"></div>';
                             spinner.appendChild(d); 
                         }
                     } else if (currentKnives > coordState.k.length) { 
@@ -121,17 +121,21 @@
                 fly.style.bottom = '65vh'; 
                 
                 setTimeout(() => {
+                    let spinner = document.getElementById('coord-t1');
+                    let currentRot = getElementRotationDegrees(spinner);
+                    let hitAngle = (180 - currentRot + 360) % 360;
+                    let collision = coordState.k.some(k => {
+                        let delta = Math.abs(((k.a - hitAngle + 540) % 360) - 180);
+                        return delta < 15;
+                    });
+
                     fly.style.display = 'none'; 
                     fly.style.transition = 'none'; 
                     fly.style.bottom = '5vh'; 
-                    ready.style.display = 'block'; 
                     window.isKnifeFlying = false;
                     
-                    let currentRot = ((Date.now() % 3000) / 3000) * 360; 
-                    let hitAngle = (540 - currentRot) % 360; 
-                    let collision = coordState.k.some(k => Math.abs(k.a - hitAngle) < 15 || Math.abs(k.a - hitAngle) > 345);
-                    
                     if (collision) { 
+                        ready.style.display = 'block';
                         tg.showAlert("Дзинь! Попал в меч!"); 
                         showResult(`НОЖИ: ${coordState.k.length}`, '#ff453a', '🗡️'); 
                         lobbyPlayers.forEach(p => { if (p.id !== myId) updatePvpStat(p.id, 'acc', 'loss'); });
@@ -146,6 +150,16 @@
                         }
                     }
                 }, 250);
+            }
+
+            function getElementRotationDegrees(el) {
+                const transform = window.getComputedStyle(el).transform;
+                if (!transform || transform === 'none') return 0;
+                const values = transform.match(/matrix\(([^)]+)\)/);
+                if (!values) return 0;
+                const parts = values[1].split(',').map(Number);
+                const angle = Math.atan2(parts[1], parts[0]) * (180 / Math.PI);
+                return (angle + 360) % 360;
             }
 
             function accTriggerFrogClick() {
