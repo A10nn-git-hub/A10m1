@@ -142,9 +142,11 @@
                 document.getElementById('friend-preview-id').innerText = `ID: ${id}`;
                 const addBtn = document.getElementById('friend-preview-add');
                 addBtn.style.display = isFriend ? 'none' : 'inline-flex';
+                const actions = document.getElementById('friend-preview-actions');
+                if (actions) actions.style.display = isFriend ? 'flex' : 'none';
                 const stats = document.getElementById('friend-preview-stats');
                 stats.style.display = 'none';
-                stats.innerHTML = generateKDHTML(buildTotalStats(profile.pvpStats));
+                stats.innerHTML = '';
                 document.getElementById('friend-preview-modal').classList.remove('hidden');
             }
 
@@ -153,9 +155,9 @@
                 document.getElementById('friend-preview-modal').classList.add('hidden');
             }
 
-            function toggleFriendPreviewStats() {
-                const stats = document.getElementById('friend-preview-stats');
-                stats.style.display = stats.style.display === 'block' ? 'none' : 'block';
+            function showFriendPreviewActions() {
+                const actions = document.getElementById('friend-preview-actions');
+                if (actions) actions.style.display = 'flex';
             }
 
             function sendFriendRequestFromPreview() {
@@ -163,6 +165,7 @@
                 db.ref(`users/${activePreviewPlayer.id}/friend_reqs/${myId}`).set(true);
                 tg.showAlert("Заявка отправлена!");
                 document.getElementById('friend-preview-add').style.display = 'none';
+                showFriendPreviewActions();
             }
 
             function openPreviewProfile() {
@@ -209,24 +212,6 @@
             function renderLobbySlots() { 
                 const c = document.getElementById('lobby-slots-container'); 
                 c.innerHTML = ''; 
-                for (let i = 0; i < 5; i++) { 
-                    if (i < lobbyPlayers.length) { 
-                        let p = lobbyPlayers[i]; 
-                        let clickEvent = (isHost && p.id !== myId) ? `onclick="kickPlayer('${p.id}')" style="cursor:pointer;"` : '';
-                        c.innerHTML += `
-                            <div class="square-slot ${i === 0 ? 'active-slot' : ''}" ${clickEvent}>
-                                <div class="slot-avatar">${getAvatarHTML(p.avatar)}</div>
-                                <div class="slot-name">${getNameHTML(p.name, p.eqName)}</div>
-                                <div class="slot-status">${i === 0 ? 'Хост' : (p.id.startsWith('ИИ') ? 'Бот' : 'Игрок')}</div>
-                            </div>`; 
-                    } else {
-                        c.innerHTML += `
-                            <div class="square-slot" style="opacity:0.5;cursor:pointer;" onclick="openInviteModal()">
-                                <div class="slot-avatar">➕</div>
-                                <div class="slot-name" style="color:gray;">Пригласить</div>
-                            </div>`; 
-                    }
-                } 
                 renderLobbyAgents();
             }
 
@@ -395,10 +380,14 @@
                 if (!isHost || lobbyPlayers.length >= 5) return; 
                 closeFriendModal(); 
                 let aiNames = ['ИИ', 'ИИ2', 'ИИ3', 'ИИ4', 'ИИ5'];
-                let nextAi = aiNames.find(n => !lobbyPlayers.some(p => p.id === n));
-                if (nextAi) {
-                    db.ref(`lobbies/${lobbyId}/players/${nextAi}`).set({...SYSTEM_BOT, id: nextAi, name: nextAi}); 
-                }
+                const updates = {};
+                aiNames.forEach(aiId => {
+                    const projectedCount = lobbyPlayers.length + Object.keys(updates).length;
+                    if (projectedCount < 5 && !lobbyPlayers.some(p => p.id === aiId)) {
+                        updates[`lobbies/${lobbyId}/players/${aiId}`] = {...SYSTEM_BOT, id: aiId, name: aiId};
+                    }
+                });
+                if (Object.keys(updates).length > 0) updateDbPaths(updates, 'invite ai lobby fillers').catch(() => {});
             }
 
             function inviteRealFriend(id) { 
@@ -511,6 +500,26 @@
                 return [String(a), String(b)].sort().join('_');
             }
 
+            let messagesBadgeListener = null;
+
+            function updateMessagesBadge(count) {
+                const badge = document.getElementById('messages-badge');
+                if (!badge) return;
+                const safeCount = parseInt(count || 0);
+                badge.style.display = safeCount > 0 ? 'block' : 'none';
+                badge.innerText = safeCount > 99 ? '99+' : String(safeCount);
+            }
+
+            function bindMessagesUnreadBadge() {
+                if (!myId || messagesBadgeListener) return;
+                messagesBadgeListener = snap => {
+                    const threads = snap.exists() ? snap.val() : {};
+                    const total = Object.values(threads).reduce((sum, thread) => sum + (parseInt(thread?.unread || 0) || 0), 0);
+                    updateMessagesBadge(total);
+                };
+                db.ref(`users/${myId}/message_threads`).on('value', messagesBadgeListener);
+            }
+
             function renderMessagesTab() {
                 const list = document.getElementById('messages-friends-list');
                 if (!list) return;
@@ -604,7 +613,11 @@
                     [`dm_threads/${chatId}/lastMessage`]: { id: msgRef.key, from: myId, text, createdAt },
                     [`dm_messages/${chatId}/${msgRef.key}`]: msg,
                     [`users/${myId}/message_threads/${friendId}`]: { ...preview, friendId, unread: 0 },
-                    [`users/${friendId}/message_threads/${myId}`]: { ...preview, friendId: myId }
+                    [`users/${friendId}/message_threads/${myId}/chatId`]: chatId,
+                    [`users/${friendId}/message_threads/${myId}/lastText`]: text,
+                    [`users/${friendId}/message_threads/${myId}/lastFrom`]: myId,
+                    [`users/${friendId}/message_threads/${myId}/updatedAt`]: createdAt,
+                    [`users/${friendId}/message_threads/${myId}/friendId`]: myId
                 }, 'send direct message').then(() => {
                     db.ref(`users/${friendId}/message_threads/${myId}/unread`).transaction(v => (parseInt(v) || 0) + 1);
                     renderMessagesTab();

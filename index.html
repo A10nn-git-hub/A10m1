@@ -44,6 +44,7 @@
             </div>
             <div class="nav-item" data-tab="messages" onclick="switchTab('messages', this); renderMessagesTab();">
                 <div class="nav-icon">💬</div>
+                <b id="messages-badge" class="nav-badge">0</b>
                 <div class="nav-text">Сообщения</div>
             </div>
             <div class="nav-item" data-tab="settings" onclick="switchTab('settings', this)">
@@ -142,10 +143,6 @@
                 </div>
                 <div class="lobby-buttons-panel" id="main-buttons-view" style="display:none;"></div>
                 <div id="view-lobby">
-                    <div class="lobby-top-actions">
-                        <button class="btn btn-dark" onclick="closeLobby()">Выйти 🚪</button>
-                        <button class="btn btn-green" onclick="openInviteModal()">+ Пригласить</button>
-                    </div>
                     <div id="lobby-agents-stage" class="lobby-agents-stage"></div>
                     <div class="lobby-slots-container" id="lobby-slots-container"></div>
                     <div class="lobby-controls-bottom-right">
@@ -616,7 +613,7 @@
 
         <div id="friend-preview-modal" class="overlay glass hidden" onclick="closeFriendPreview(event)" style="z-index:5200;">
             <div class="friend-preview-shell" onclick="event.stopPropagation()">
-                <div id="friend-preview-line" class="friend-preview-line" onclick="toggleFriendPreviewStats()">
+                <div id="friend-preview-line" class="friend-preview-line">
                     <div id="friend-preview-avatar" class="friend-preview-avatar">👤</div>
                     <div class="friend-preview-main">
                         <div id="friend-preview-name" class="friend-preview-name">Игрок</div>
@@ -625,11 +622,11 @@
                     <button id="friend-preview-add" class="btn btn-green friend-preview-add" onclick="event.stopPropagation(); sendFriendRequestFromPreview()">ДОБАВИТЬ В ДР</button>
                 </div>
                 <div id="friend-preview-stats" class="friend-preview-stats"></div>
-                <div class="friend-preview-actions">
-                    <button class="btn btn-dark" onclick="openPreviewProfile()">Профиль</button>
+                <div id="friend-preview-actions" class="friend-preview-actions">
+                    <button class="btn btn-dark" onclick="openPreviewProfile()">ПРОФИЛЬ</button>
                     <button class="btn btn-green" onclick="invitePreviewToLobby()">ПРИГЛАСИТЬ В ЛОББИ</button>
                     <button class="btn btn-dark" onclick="messagePreviewPlayer()">СООБЩЕНИЕ</button>
-                    <button class="btn btn-red" onclick="closeFriendPreview()">Закрыть</button>
+                    <button class="btn btn-red" onclick="closeFriendPreview()">ЗАКРЫТЬ</button>
                 </div>
             </div>
         </div>

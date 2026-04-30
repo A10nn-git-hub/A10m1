@@ -66,9 +66,10 @@
         #app-container { display: flex; width: 100vw; height: 100vh; position: relative; z-index: 5; }
         
         .nav-bar { width: var(--nav-w); flex-shrink: 0; background: var(--sidebar-bg); border-right: 2px solid #2a2a2a; display: flex; flex-direction: column; align-items: center; padding-top: 20px; gap: 20px; z-index: 50; overflow-y: auto; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.5; transition: 0.2s; width: 100%; padding: 10px 0; } 
+        .nav-item { display: flex; flex-direction: column; align-items: center; cursor: pointer; opacity: 0.5; transition: 0.2s; width: 100%; padding: 10px 0; position: relative; }
         .nav-item.active { opacity: 1; filter: drop-shadow(0 0 8px #3390ec); color: #3390ec; background: rgba(51,144,236,0.1); border-left: 3px solid #3390ec; }
         .nav-icon { font-size: 26px; margin-bottom: 5px; } .nav-text { font-size: 9px; font-weight: bold; text-transform: uppercase; text-align: center; }
+        .nav-badge { display: none; position: absolute; top: 5px; right: 14px; background: #ff453a; color: white; border-radius: 999px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; font-size: 11px; line-height: 18px; font-weight: 900; text-align: center; box-shadow: 0 0 0 2px #111; }
         
         .main-content { flex-grow: 1; position: relative; overflow: hidden; }
         .tab-view { display: none; width: 100%; height: 100%; padding: 20px; box-sizing: border-box; overflow-y: auto; overflow-x: hidden; } 
@@ -90,7 +91,7 @@
         .list-item:active { background: #333; }
         .friend-row { display: flex; align-items: center; gap: 10px; }
         
-        #global-coins { position: fixed; top: 15px; left: 100px; font-size: 20px; font-weight: bold; color: var(--coin-col); padding: 8px 15px; border-radius: 15px; z-index: 9999; display: flex; align-items: center; gap: 5px; pointer-events: none; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(14px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
+        #global-coins { position: fixed; top: 15px; left: 100px; font-size: 20px; font-weight: bold; color: var(--coin-col); padding: 8px 15px; border-radius: 15px; z-index: 9999; display: none; align-items: center; gap: 5px; pointer-events: none; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(14px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
 
         .profile-layout-container { display: flex; width: 100%; height: 100%; gap: 20px; justify-content: center; align-items: flex-start; flex-wrap: nowrap; }
         .profile-left-col { background: var(--panel-bg); padding: 30px; border-radius: 20px; text-align: center; border: 2px solid #444; width: 30%; min-width: 250px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; }
@@ -125,18 +126,18 @@
         .mega-create { background: linear-gradient(45deg, var(--coin-col), #ff453a); } 
         .mega-custom { background: linear-gradient(45deg, #32ade6, #3390ec); opacity: 0.8; }
         
-        #view-lobby { display: none; flex-direction: column; flex: 1 1 0; min-width: 0; position: relative; align-items: center; justify-content: flex-end; width: auto; height: 100%; padding: 64px 0 110px 0; box-sizing: border-box; overflow: hidden; }
+        #view-lobby { display: none; flex-direction: column; flex: 1 1 0; min-width: 0; position: relative; align-items: center; justify-content: flex-end; width: auto; height: 100%; padding: 24px 0 110px 0; box-sizing: border-box; overflow: hidden; }
         .lobby-top-actions { position: absolute; top: 8px; right: 8px; z-index: 6; display: flex; gap: 8px; align-items: center; }
-        .lobby-slots-container { display: flex; gap: 14px; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap; position: relative; z-index: 3; }
+        .lobby-slots-container { display: none; gap: 14px; justify-content: center; align-items: center; width: 100%; flex-wrap: wrap; position: relative; z-index: 3; }
         .square-slot { width: 16vh; height: 16vh; background: var(--panel-bg); border-radius: 15px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px solid #444; position: relative; transition: 0.2s; }
         .square-slot.active-slot { border-color: var(--coin-col); } 
         .slot-avatar { font-size: 5vh; margin-bottom: 1vh; } 
         .slot-name { font-weight: bold; font-size: 1.8vh; text-align: center; width: 90%; overflow: hidden; white-space: nowrap; } 
         .slot-status { font-size: 1.2vh; color: #34c759; position: absolute; bottom: -20px; font-weight: bold; }
         
-        .lobby-agents-stage { position: relative; width: 100%; height: clamp(220px, 42vh, 460px); flex: 1 1 auto; pointer-events: none; z-index: 1; }
+        .lobby-agents-stage { position: relative; width: 100%; height: clamp(300px, 58vh, 560px); flex: 1 1 auto; pointer-events: none; z-index: 3; }
         .lobby-agents-stage::before { content: ''; position: absolute; left: 8%; right: 8%; bottom: 8px; height: 26%; background: radial-gradient(ellipse at center, rgba(51,144,236,0.2), rgba(0,0,0,0) 68%); }
-        .lobby-agent { --x: 50%; --y: 0px; --s: 1; position: absolute; left: var(--x); bottom: var(--y); width: 116px; height: 245px; transform: translateX(-50%) scale(var(--s)); transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; }
+        .lobby-agent { --x: 50%; --y: 0px; --s: 1; position: absolute; left: var(--x); bottom: var(--y); width: 116px; height: 245px; transform: translateX(-50%) scale(var(--s)); transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; z-index: var(--z, 1); }
         .lobby-agent::after { content: ''; position: absolute; bottom: 4px; width: 90px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.55); filter: blur(2px); z-index: -1; }
         .agent-head { width: 58px; height: 58px; border-radius: 18px 18px 22px 22px; background: linear-gradient(145deg, #3b454f, #171b20); border: 2px solid #65717c; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 8px 18px rgba(0,0,0,0.45); overflow: hidden; }
         .agent-body { position: relative; width: 86px; height: 90px; margin-top: -2px; display: flex; justify-content: center; }
@@ -147,19 +148,21 @@
         .agent-legs { display: flex; gap: 10px; margin-top: -2px; }
         .agent-legs div { width: 22px; height: 76px; border-radius: 9px 9px 6px 6px; background: linear-gradient(#252c33, #0f1114); border: 2px solid #3a4249; }
         .agent-label { max-width: 124px; margin-top: 7px; padding: 4px 8px; border-radius: 7px; background: rgba(0,0,0,0.55); color: white; font-size: 12px; font-weight: 800; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .lobby-agent-1-1, .lobby-agent-3-1, .lobby-agent-5-1 { --x: 50%; --y: 0px; --s: 1.08; }
-        .lobby-agent-2-1 { --x: 42%; --y: 0px; --s: 1.02; }
-        .lobby-agent-2-2 { --x: 58%; --y: 0px; --s: 1.02; }
-        .lobby-agent-3-2 { --x: 34%; --y: 24px; --s: .9; }
-        .lobby-agent-3-3 { --x: 66%; --y: 24px; --s: .9; }
-        .lobby-agent-4-1 { --x: 39%; --y: 0px; --s: 1; }
-        .lobby-agent-4-2 { --x: 61%; --y: 0px; --s: 1; }
-        .lobby-agent-4-3 { --x: 25%; --y: 38px; --s: .82; }
-        .lobby-agent-4-4 { --x: 75%; --y: 38px; --s: .82; }
-        .lobby-agent-5-2 { --x: 35%; --y: 20px; --s: .92; }
-        .lobby-agent-5-3 { --x: 65%; --y: 20px; --s: .92; }
-        .lobby-agent-5-4 { --x: 23%; --y: 46px; --s: .78; }
-        .lobby-agent-5-5 { --x: 77%; --y: 46px; --s: .78; }
+        .lobby-agent-1-1 { --x: 50%; --y: 0px; --s: 1.12; --z: 5; }
+        .lobby-agent-2-1 { --x: 46%; --y: 0px; --s: 1.06; --z: 4; }
+        .lobby-agent-2-2 { --x: 54%; --y: 0px; --s: 1.06; --z: 4; }
+        .lobby-agent-3-1 { --x: 50%; --y: 0px; --s: 1.12; --z: 5; }
+        .lobby-agent-3-2 { --x: 39%; --y: 34px; --s: .92; --z: 3; }
+        .lobby-agent-3-3 { --x: 61%; --y: 34px; --s: .92; --z: 3; }
+        .lobby-agent-4-1 { --x: 43%; --y: 0px; --s: 1.03; --z: 5; }
+        .lobby-agent-4-2 { --x: 57%; --y: 0px; --s: 1.03; --z: 5; }
+        .lobby-agent-4-3 { --x: 32%; --y: 50px; --s: .84; --z: 3; }
+        .lobby-agent-4-4 { --x: 68%; --y: 50px; --s: .84; --z: 3; }
+        .lobby-agent-5-1 { --x: 50%; --y: 0px; --s: 1.1; --z: 5; }
+        .lobby-agent-5-2 { --x: 42%; --y: 24px; --s: .96; --z: 4; }
+        .lobby-agent-5-3 { --x: 58%; --y: 24px; --s: .96; --z: 4; }
+        .lobby-agent-5-4 { --x: 34%; --y: 58px; --s: .82; --z: 3; }
+        .lobby-agent-5-5 { --x: 66%; --y: 58px; --s: .82; --z: 3; }
         .lobby-controls-bottom-right { position: absolute; bottom: 0; right: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 5; }
         .play-btn { background: #34c759; color: #fff; border: none; border-radius: 12px; padding: 15px 50px; font-size: 26px; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: 0 6px 0 #248a3d; }
         
@@ -298,14 +301,15 @@
         #invite-friends-list { display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 40vh; padding-bottom: 10px; }
         #invite-friends-list .list-item { width: 100%; flex-direction: row; justify-content: space-between; text-align: left; align-items: center; }
         .friend-preview-shell { width: min(920px, 94vw); max-height: 90vh; display: flex; flex-direction: column; gap: 12px; }
-        .friend-preview-line { width: 100%; min-height: 96px; background: #111; border: 2px solid #444; border-radius: 8px; display: flex; align-items: center; gap: 18px; padding: 16px; box-sizing: border-box; cursor: pointer; box-shadow: 0 14px 28px rgba(0,0,0,0.45); }
+        .friend-preview-line { width: 100%; min-height: 96px; background: #111; border: 2px solid #444; border-radius: 8px; display: flex; align-items: center; gap: 18px; padding: 16px; box-sizing: border-box; cursor: default; box-shadow: 0 14px 28px rgba(0,0,0,0.45); }
         .friend-preview-avatar { width: 70px; height: 70px; border-radius: 50%; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 42px; flex-shrink: 0; }
         .friend-preview-main { flex: 1; min-width: 0; text-align: left; }
         .friend-preview-name { font-size: 26px; font-weight: 1000; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .friend-preview-id { color: #888; font-family: monospace; margin-top: 5px; }
         .friend-preview-add { min-width: 170px; justify-content: center; }
         .friend-preview-stats { display: none; background: #171717; border: 1px solid #3a3a3a; border-radius: 8px; padding: 16px; max-height: 44vh; overflow-y: auto; }
-        .friend-preview-actions { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+        .friend-preview-actions { display: none; flex-direction: column; align-items: stretch; gap: 8px; }
+        .friend-preview-actions .btn { width: 100%; margin: 0; }
         .messages-sidebar { width: 320px; flex: 0 0 320px; background: var(--panel-bg); border-radius: 12px; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; }
         .messages-friends-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
         .message-friend-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px; cursor: pointer; }

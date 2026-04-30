@@ -1027,6 +1027,7 @@
                             profileLoaded = true;
                             updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile(); ensureEquippedItemsInInventory();
                             db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } }, err => handleFirebaseError(err, 'coins listener', null));
+                            bindMessagesUnreadBadge();
                             db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = [SYSTEM_BOT.id]; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(!isAiFriendId(k)) friendsIds.push(k); }); } renderFriends(); renderMessagesTab(); });
                             if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (!isAiFriendId(fid)) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
                             db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(s.val()); });
@@ -1237,7 +1238,7 @@
                         if(item.type === 'medal') eq = myPinnedMedals.includes(item.id);
                         if(item.type === 'bg') eq = (localStorage.getItem('eq_bg') === item.id);
                         
-                        let cardClass = eq ? 'equipped' : (owned && item.type !== 'case' ? 'bought' : '');
+                        let cardClass = eq ? 'equipped' : (owned && item.type !== 'case' && item.type !== 'box' ? 'bought' : '');
                         let btnHTML = '';
                         
                         if(item.type === 'box') {
@@ -1477,7 +1478,16 @@
 
             function closeAvatarModal() { document.getElementById('avatar-modal').classList.add('hidden'); }
 
-            function updateCoinsUI() { document.getElementById('global-coins-val').innerText = globalCoins; }
+            function updateCoinsUI() { document.getElementById('global-coins-val').innerText = globalCoins; updateCoinsVisibility(); }
+
+            function updateCoinsVisibility() {
+                const coinsEl = document.getElementById('global-coins');
+                if (!coinsEl) return;
+                const invTabActive = document.getElementById('tab-inv')?.classList.contains('active');
+                const shopActive = document.getElementById('inv-shop')?.classList.contains('active');
+                const adminActive = document.getElementById('tab-admin')?.classList.contains('active');
+                coinsEl.style.display = (invTabActive && shopActive) || adminActive ? 'flex' : 'none';
+            }
 
             function addCoins(a) { 
                 globalCoins = Math.max(0, globalCoins + a); 
@@ -1493,6 +1503,7 @@
                 if (el) el.classList.add('active');
                 document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active')); 
                 document.getElementById('tab-' + t).classList.add('active'); 
+                updateCoinsVisibility();
             }
 
             function switchSubTab(p, s, el) { 
@@ -1500,6 +1511,7 @@
                 el.classList.add('active'); 
                 document.querySelectorAll(`#tab-${p} .sub-tab-content`).forEach(c => c.classList.remove('active')); 
                 document.getElementById(`${p === 'inv' ? 'inv' : 'adm'}-${s}`).classList.add('active'); 
+                updateCoinsVisibility();
             }
 
             function switchMiniTab(id, el) { 

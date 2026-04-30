@@ -3,6 +3,7 @@
                 active: false,
                 myP: null,
                 remotePlayers: {},
+                remotePlayerViews: {},
                 bots: [],
                 bullets: [],
                 zone: {x: 1000, y: 1000, r: 2000},
@@ -37,6 +38,7 @@
                 br.placeShown = false;
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: BR_SIZE };
                 br.remotePlayers = {};
+                br.remotePlayerViews = {};
                 br.bots = [];
                 br.bullets = [];
 
@@ -123,7 +125,8 @@
                         };
                     });
 
-                    const botCount = Math.max(0, 6 - realPlayers.length);
+                    const hasAiParticipant = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).some(p => p.id && isAiFriendId(p.id));
+                    const botCount = hasAiParticipant ? Math.max(0, 6 - realPlayers.length) : 0;
                     const bots = [];
                     for (let i = 0; i < botCount; i++) {
                         const sp = brSpawnForId('bot' + i);
@@ -141,7 +144,7 @@
                 db.ref(`${base}/players/${myId}`).onDisconnect().update({alive: false, hp: 0});
 
                 br.playersListener = snap => {
-                    br.remotePlayers = snap.exists() ? snap.val() : {};
+                    applyBrRemotePlayers(snap.exists() ? snap.val() : {});
                     const remoteMe = br.remotePlayers[myId];
                     if (remoteMe && br.myP) {
                         br.myP.hp = Math.min(br.myP.hp, parseInt(remoteMe.hp) || 0);
@@ -172,6 +175,48 @@
                 };
             }
 
+            function applyBrRemotePlayers(nextPlayers) {
+                br.remotePlayers = nextPlayers || {};
+                Object.keys(br.remotePlayerViews).forEach(id => {
+                    if (!br.remotePlayers[id] || id === myId) delete br.remotePlayerViews[id];
+                });
+                Object.values(br.remotePlayers).forEach(p => {
+                    if (!p || p.id === myId) return;
+                    const x = Number(p.x) || 0;
+                    const y = Number(p.y) || 0;
+                    const view = br.remotePlayerViews[p.id];
+                    if (!view) {
+                        br.remotePlayerViews[p.id] = { x, y, a: p.a || 0, targetX: x, targetY: y, targetA: p.a || 0, lastSeen: Date.now() };
+                        return;
+                    }
+                    view.targetX = x;
+                    view.targetY = y;
+                    view.targetA = p.a || 0;
+                    view.lastSeen = Date.now();
+                    if (Math.hypot(view.x - x, view.y - y) > 320) {
+                        view.x = x;
+                        view.y = y;
+                        view.a = view.targetA;
+                    }
+                });
+            }
+
+            function updateBrRemotePlayerViews() {
+                Object.values(br.remotePlayerViews).forEach(view => {
+                    view.x += (view.targetX - view.x) * 0.22;
+                    view.y += (view.targetY - view.y) * 0.22;
+                    let da = (view.targetA || 0) - (view.a || 0);
+                    while (da > Math.PI) da -= Math.PI * 2;
+                    while (da < -Math.PI) da += Math.PI * 2;
+                    view.a = (view.a || 0) + da * 0.25;
+                });
+            }
+
+            function getBrRenderablePlayer(p) {
+                const view = br.remotePlayerViews[p.id];
+                return view ? {...p, x: view.x, y: view.y, a: view.a} : p;
+            }
+
             function syncBrPlayerState() {
                 if (!br.active || !lobbyId || !br.myP) return;
                 db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update(brPublicPlayerState()).catch(() => {});
@@ -192,6 +237,7 @@
 
                 const now = Date.now();
                 updateBrLocalPlayer(now);
+                updateBrRemotePlayerViews();
                 if (isHost) updateBrBots(now);
                 updateBrBullets(now);
                 br.zone.r = Math.max(50, br.zone.r - 0.2);
@@ -336,7 +382,7 @@
 
                 br.bots.filter(b => b.alive && b.hp > 0).forEach(b => drawBrFighter(ctx, b, '#ff453a', b.label, 150));
                 Object.values(br.remotePlayers).forEach(p => {
-                    if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, p, '#af52de', p.name || 'Игрок', 200);
+                    if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, getBrRenderablePlayer(p), '#af52de', p.name || 'Игрок', 200);
                 });
                 if (br.myP.hp > 0) {
                     if (now < br.myP.invuln) {
