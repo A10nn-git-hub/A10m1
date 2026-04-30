@@ -1,5 +1,9 @@
             // ================== ДРУЗЬЯ И ЛОББИ ==================
             let friendListeners = {};
+            let activePreviewPlayer = null;
+            let activeChatFriend = null;
+            let activeChatId = null;
+            let chatMessagesListener = null;
 
             function renderFriends() { 
                 const list = document.getElementById('fr-list'); 
@@ -12,6 +16,16 @@
                     d.className = 'list-item'; 
                     d.id = 'friend-row-' + id;
                     list.appendChild(d);
+
+                    if (id === SYSTEM_BOT.id) {
+                        d.innerHTML = `
+                            <div class="friend-row">
+                                <div style="font-size:30px;">${getAvatarHTML(SYSTEM_BOT.avatar)}</div>
+                                <div>${getNameHTML(SYSTEM_BOT.name, SYSTEM_BOT.eqName)}<br><span style="font-size:10px;color:gray;">ID: ${SYSTEM_BOT.id}</span></div>
+                            </div>`;
+                        d.onclick = () => openFriendModal({...SYSTEM_BOT});
+                        return;
+                    }
                     
                     friendListeners[id] = db.ref('users/' + id).on('value', s => { 
                         let rEl = document.getElementById('friend-row-' + id);
@@ -38,8 +52,7 @@
                     if (friendsIds.includes(id)) return tg.showAlert("Уже в списке!"); 
                     db.ref('users/' + id).once('value').then(s => { 
                         if (s.exists()) { 
-                            db.ref(`users/${id}/friend_reqs/${myId}`).set(true); 
-                            tg.showAlert("Заявка отправлена!"); 
+                            openFriendPreview(id, s.val(), false);
                         } else {
                             tg.showAlert("Не найден!"); 
                         }
@@ -91,6 +104,7 @@
                 a.innerHTML = ''; 
                 if(f.id !== 'ИИ') {
                     a.innerHTML += `<button class="btn btn-dark" onclick="openProfileStatsModal('${f.id}')">Профиль</button>`;
+                    a.innerHTML += `<button class="btn btn-dark" onclick="openFriendChatFromModal()">Сообщение 💬</button>`;
                 }
                 
                 if (appState.inLobby) { 
@@ -120,6 +134,62 @@
             }
 
             function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
+
+            function openFriendPreview(id, profile, isFriend = false) {
+                activePreviewPlayer = { id, ...(profile || {}) };
+                document.getElementById('friend-preview-avatar').innerHTML = getAvatarHTML(profile.avatar);
+                document.getElementById('friend-preview-name').innerHTML = getNameHTML(profile.name || 'Игрок', profile.eqName);
+                document.getElementById('friend-preview-id').innerText = `ID: ${id}`;
+                const addBtn = document.getElementById('friend-preview-add');
+                addBtn.style.display = isFriend ? 'none' : 'inline-flex';
+                const stats = document.getElementById('friend-preview-stats');
+                stats.style.display = 'none';
+                stats.innerHTML = generateKDHTML(buildTotalStats(profile.pvpStats));
+                document.getElementById('friend-preview-modal').classList.remove('hidden');
+            }
+
+            function closeFriendPreview(e) {
+                if (e) e.stopPropagation();
+                document.getElementById('friend-preview-modal').classList.add('hidden');
+            }
+
+            function toggleFriendPreviewStats() {
+                const stats = document.getElementById('friend-preview-stats');
+                stats.style.display = stats.style.display === 'block' ? 'none' : 'block';
+            }
+
+            function sendFriendRequestFromPreview() {
+                if (!activePreviewPlayer || activePreviewPlayer.id === myId) return;
+                db.ref(`users/${activePreviewPlayer.id}/friend_reqs/${myId}`).set(true);
+                tg.showAlert("Заявка отправлена!");
+                document.getElementById('friend-preview-add').style.display = 'none';
+            }
+
+            function openPreviewProfile() {
+                if (!activePreviewPlayer) return;
+                openProfileStatsModal(activePreviewPlayer.id);
+            }
+
+            function invitePreviewToLobby() {
+                if (!activePreviewPlayer) return;
+                if (!appState.inLobby) return tg.showAlert("Сначала зайди в лобби.");
+                inviteRealFriend(activePreviewPlayer.id);
+                closeFriendPreview();
+            }
+
+            function messagePreviewPlayer() {
+                if (!activePreviewPlayer) return;
+                if (isAiFriendId(activePreviewPlayer.id)) return tg.showAlert("ИИ не принимает сообщения.");
+                closeFriendPreview();
+                openFriendChat(activePreviewPlayer.id, activePreviewPlayer);
+            }
+
+            function openFriendChatFromModal() {
+                if (!activeFriend || isAiFriendId(activeFriend.id)) return;
+                const friend = {...activeFriend};
+                closeFriendModal();
+                openFriendChat(friend.id, friend);
+            }
 
             function removeFriend() { 
                 if (confirm(`Удалить?`)) { 
@@ -157,6 +227,24 @@
                             </div>`; 
                     }
                 } 
+                renderLobbyAgents();
+            }
+
+            function renderLobbyAgents() {
+                const stage = document.getElementById('lobby-agents-stage');
+                if (!stage) return;
+                stage.innerHTML = '';
+                const count = Math.max(1, lobbyPlayers.length);
+                lobbyPlayers.forEach((p, i) => {
+                    const agent = document.createElement('div');
+                    agent.className = `lobby-agent lobby-agent-${count}-${i + 1}`;
+                    agent.innerHTML = `
+                        <div class="agent-head">${getAvatarHTML(p.avatar)}</div>
+                        <div class="agent-body"><div class="agent-arm left"></div><div class="agent-chest"></div><div class="agent-arm right"></div></div>
+                        <div class="agent-legs"><div></div><div></div></div>
+                        <div class="agent-label">${getNameHTML(p.name, p.eqName)}</div>`;
+                    stage.appendChild(agent);
+                });
             }
 
             function openInviteModal() { 
@@ -199,8 +287,10 @@
 
             async function openLobby() { 
                 if (appState.inLobby && lobbyId) {
+                    appState.autoLobbyPaused = false;
                     document.getElementById('main-buttons-view').style.display = 'none';
                     document.getElementById('view-lobby').style.display = 'flex';
+                    renderLobbySlots();
                     return;
                 }
 
@@ -223,6 +313,7 @@
                 }
 
                 appState.inLobby = true; 
+                appState.autoLobbyPaused = false;
                 lobbyId = nextLobbyId; 
                 isHost = true; 
                 pendingModeId = null;
@@ -232,16 +323,19 @@
                 db.ref('lobbies/' + lobbyId).onDisconnect().remove();
                 
                 listenLobby(); 
+                renderLobbySlots();
                 document.getElementById('main-buttons-view').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'flex'; 
             }
 
             function ensureHomeLobby() {
-                if (appState.inLobby || pendingInvite) return;
+                if (appState.inLobby || pendingInvite || appState.autoLobbyPaused) return;
                 openLobby();
             }
 
-            function closeLobby() { 
+            function closeLobby(options = {}) {
+                const shouldReopen = !!options.autoReopen;
+                appState.autoLobbyPaused = !shouldReopen;
                 appState.inLobby = false; 
                 if (lobbyRef) lobbyRef.off(); 
                 db.ref('lobbies/' + lobbyId).onDisconnect().cancel();
@@ -263,7 +357,7 @@
                 document.getElementById('view-lobby').style.display = 'none'; 
                 pendingModeId = null;
                 setSelectedModeUI(null);
-                setTimeout(ensureHomeLobby, 300);
+                if (shouldReopen) setTimeout(ensureHomeLobby, 300);
             }
 
             async function createLobbyWithAI() {
@@ -287,6 +381,7 @@
                     }); 
                     db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                     appState.inLobby = true; 
+                    appState.autoLobbyPaused = false;
                     switchTab('friends', document.querySelector('[data-tab="friends"]'));
                     document.getElementById('main-buttons-view').style.display = 'none'; 
                     document.getElementById('view-lobby').style.display = 'flex'; 
@@ -325,6 +420,7 @@
                         db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}); 
                         db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                         appState.inLobby = true; 
+                        appState.autoLobbyPaused = false;
                         switchTab('friends', document.querySelector('[data-tab="friends"]'));
                         document.getElementById('main-buttons-view').style.display = 'none'; 
                         document.getElementById('view-lobby').style.display = 'flex'; 
@@ -342,14 +438,14 @@
                     if (!snap.exists()) { 
                         if (!isHost) {
                             tg.showAlert("Хост закрыл лобби!"); 
-                            closeLobby();
+                            closeLobby({autoReopen:true});
                         } 
                         return; 
                     } 
                     let d = snap.val(); 
                     if (!isHost && (!d.players || !d.players[myId])) { 
                         tg.showAlert("Вы удалены из лобби."); 
-                        closeLobby(); 
+                        closeLobby({autoReopen:true});
                         return; 
                     }
                     if (d.host === myId && !isHost) { 
@@ -409,4 +505,110 @@
                         startLocalGameUI(); 
                     } 
                 }); 
+            }
+
+            function getDmChatId(a, b) {
+                return [String(a), String(b)].sort().join('_');
+            }
+
+            function renderMessagesTab() {
+                const list = document.getElementById('messages-friends-list');
+                if (!list) return;
+                const realFriends = friendsIds.filter(id => !isAiFriendId(id));
+                if (realFriends.length === 0) {
+                    list.innerHTML = '<div class="chat-empty">Нет друзей для сообщений</div>';
+                    return;
+                }
+
+                db.ref(`users/${myId}/message_threads`).once('value').then(threadSnap => {
+                    const threads = threadSnap.exists() ? threadSnap.val() : {};
+                    const sorted = [...realFriends].sort((a, b) => (threads[b]?.updatedAt || 0) - (threads[a]?.updatedAt || 0));
+                    list.innerHTML = '';
+                    sorted.forEach(id => {
+                        db.ref('users/' + id).once('value').then(s => {
+                            if (!s.exists()) return;
+                            const p = s.val();
+                            const row = document.createElement('div');
+                            row.className = 'message-friend-row';
+                            const lastText = threads[id]?.lastText ? escapeHTML(threads[id].lastText) : 'Нет сообщений';
+                            const unread = parseInt(threads[id]?.unread || 0);
+                            row.innerHTML = `
+                                <div class="friend-row">
+                                    <div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div>
+                                    <div class="message-friend-meta">
+                                        <div>${getNameHTML(p.name || 'Игрок', p.eqName)}</div>
+                                        <span>${lastText}</span>
+                                    </div>
+                                </div>
+                                ${unread > 0 ? `<b class="message-unread">${unread}</b>` : ''}`;
+                            row.onclick = () => openFriendChat(id, {id, ...p});
+                            list.appendChild(row);
+                        });
+                    });
+                });
+            }
+
+            function openFriendChat(friendId, profile) {
+                if (isAiFriendId(friendId)) return tg.showAlert("ИИ не принимает сообщения.");
+                activeChatFriend = { id: friendId, ...(profile || {}) };
+                switchTab('messages', document.querySelector('[data-tab="messages"]'));
+                document.getElementById('chat-empty').style.display = 'none';
+                document.getElementById('chat-active').style.display = 'flex';
+                document.getElementById('chat-peer-avatar').innerHTML = getAvatarHTML(activeChatFriend.avatar);
+                document.getElementById('chat-peer-name').innerHTML = getNameHTML(activeChatFriend.name || 'Игрок', activeChatFriend.eqName);
+                document.getElementById('chat-peer-id').innerText = `ID: ${friendId}`;
+                const chatId = getDmChatId(myId, friendId);
+                bindChatMessages(chatId);
+                db.ref(`users/${myId}/message_threads/${friendId}/unread`).set(0).catch(() => {});
+                renderMessagesTab();
+            }
+
+            function bindChatMessages(chatId) {
+                if (chatMessagesListener && activeChatId) {
+                    db.ref(`dm_messages/${activeChatId}`).off('value', chatMessagesListener);
+                }
+                activeChatId = chatId;
+                const box = document.getElementById('chat-messages');
+                box.innerHTML = '';
+                chatMessagesListener = snap => {
+                    const messages = snap.exists() ? snap.val() : {};
+                    const rows = Object.keys(messages)
+                        .map(key => ({id: key, ...messages[key]}))
+                        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                    box.innerHTML = rows.map(m => `
+                        <div class="message-bubble ${m.from === myId ? 'own' : 'friend'}">
+                            <div>${escapeHTML(m.text)}</div>
+                        </div>`).join('');
+                    box.scrollTop = box.scrollHeight;
+                };
+                db.ref(`dm_messages/${chatId}`).on('value', chatMessagesListener);
+            }
+
+            function sendChatMessage() {
+                if (!activeChatFriend || isAiFriendId(activeChatFriend.id)) return;
+                const input = document.getElementById('chat-input');
+                const text = input.value.trim();
+                if (!text) return;
+                const friendId = activeChatFriend.id;
+                const chatId = getDmChatId(myId, friendId);
+                const msgRef = db.ref(`dm_messages/${chatId}`).push();
+                const createdAt = firebase.database.ServerValue.TIMESTAMP;
+                const msg = { from: myId, to: friendId, text, createdAt };
+                const preview = { chatId, lastText: text, lastFrom: myId, updatedAt: createdAt };
+
+                input.value = '';
+                updateDbPaths({
+                    [`dm_threads/${chatId}/members/${myId}`]: true,
+                    [`dm_threads/${chatId}/members/${friendId}`]: true,
+                    [`dm_threads/${chatId}/updatedAt`]: createdAt,
+                    [`dm_threads/${chatId}/lastMessage`]: { id: msgRef.key, from: myId, text, createdAt },
+                    [`dm_messages/${chatId}/${msgRef.key}`]: msg,
+                    [`users/${myId}/message_threads/${friendId}`]: { ...preview, friendId, unread: 0 },
+                    [`users/${friendId}/message_threads/${myId}`]: { ...preview, friendId: myId }
+                }, 'send direct message').then(() => {
+                    db.ref(`users/${friendId}/message_threads/${myId}/unread`).transaction(v => (parseInt(v) || 0) + 1);
+                    renderMessagesTab();
+                }).catch(() => {
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось отправить сообщение."));
+                });
             }

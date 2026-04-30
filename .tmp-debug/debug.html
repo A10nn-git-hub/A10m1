@@ -1,10 +1,30 @@
 <!DOCTYPE html>
 <html lang="ru">
-<head>
+<head><base href="http://127.0.0.1:8770/">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Игровой Центр</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+localStorage.setItem('my_id', '8451');
+localStorage.removeItem('player_coins');
+window.__tgAlerts = [];
+window.__pageErrors = [];
+window.Telegram = { WebApp: {
+  initDataUnsafe: { user: { id: 8451, first_name: 'Debug' } },
+  expand() {},
+  requestFullscreen() {},
+  ready() {},
+  showAlert(message) { window.__tgAlerts.push(String(message)); document.body.setAttribute('data-last-alert', String(message)); },
+  CloudStorage: {
+    getKeys(cb) { cb(null, ['my_id']); },
+    getItems(keys, cb) { cb(null, { my_id: '8451' }); },
+    setItem(k, v) { localStorage.setItem(k, String(v)); },
+    removeItem(k) { localStorage.removeItem(k); }
+  }
+}};
+window.addEventListener('error', (e) => { window.__pageErrors.push({ message: e.message, src: e.target && e.target.src, file: e.filename, line: e.lineno }); }, true);
+window.addEventListener('unhandledrejection', (e) => { window.__pageErrors.push({ rejection: String(e.reason && (e.reason.message || e.reason.code || e.reason)) }); });
+</script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>

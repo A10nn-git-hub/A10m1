@@ -11,7 +11,6 @@
 
             function renderAppVersionInfo() {
                 const versionTargets = [
-                    [document.getElementById('app-version-main'), document.getElementById('app-version-sub')],
                     [document.getElementById('app-version-main-settings'), document.getElementById('app-version-sub-settings')]
                 ];
                 const modifiedAt = document.lastModified ? new Date(document.lastModified).toLocaleString('ru-RU') : 'неизвестно';
@@ -22,6 +21,16 @@
                     mainEl.title = APP_VERSION_INFO.note;
                     subEl.title = APP_VERSION_INFO.note;
                 });
+            }
+
+            function escapeHTML(value) {
+                return String(value ?? '').replace(/[&<>"']/g, ch => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[ch]));
             }
 
             function setFirebaseStatus(message, color = '#ff453a') {
@@ -361,6 +370,12 @@
                 }
             }
 
+            function getBoxPrizeItems(id) {
+                const box = SHOP_ITEMS.find(i => i.id === id && i.type === 'box');
+                if (!box) return [];
+                return SHOP_ITEMS.filter(i => i.type !== 'box' && i.type !== 'case' && i.boxTarget === id);
+            }
+
             function openBoxPre(id) {
                 currentOpenedBoxId = id;
                 document.getElementById('box-roulette-modal').classList.remove('hidden');
@@ -368,14 +383,7 @@
                 document.getElementById('btn-close-box').style.display = 'block';
                 document.getElementById('roulette-track').style.transform = 'translateX(0px)';
                 
-                let boxItems = [];
-                if (id === 'box_upgrade') {
-                    boxItems = SHOP_ITEMS.filter(i => i.type === 'avatar' || i.type === 'bg');
-                } else if (id === 'box_chameleon') {
-                    boxItems = SHOP_ITEMS.filter(i => i.type === 'name' || i.type === 'medal');
-                } else {
-                    boxItems = SHOP_ITEMS.filter(i => i.type !== 'box' && i.type !== 'case'); // fallback
-                }
+                let boxItems = getBoxPrizeItems(id);
 
                 let p = document.getElementById('box-contents-preview'); p.innerHTML = '';
                 boxItems.forEach(it => {
@@ -390,20 +398,13 @@
                 document.getElementById('btn-start-roulette').style.display = 'none';
                 document.getElementById('btn-close-box').style.display = 'none';
                 
-                let boxItems = [];
-                if (currentOpenedBoxId === 'box_upgrade') {
-                    boxItems = SHOP_ITEMS.filter(i => (i.type === 'avatar' || i.type === 'bg') && i.boxTarget !== 'no');
-                } else if (currentOpenedBoxId === 'box_chameleon') {
-                    boxItems = SHOP_ITEMS.filter(i => (i.type === 'name' || i.type === 'medal') && i.boxTarget !== 'no');
-                } else {
-                    let customBox = SHOP_ITEMS.find(i=>i.id===currentOpenedBoxId);
-                    if(customBox) {
-                        boxItems = SHOP_ITEMS.filter(i => i.boxTarget === customBox.id || (!i.boxTarget && i.type!=='box'&&i.type!=='case'));
-                    } else {
-                        boxItems = SHOP_ITEMS.filter(i => i.type !== 'box' && i.type !== 'case');
-                    }
+                let boxItems = getBoxPrizeItems(currentOpenedBoxId);
+                if (boxItems.length === 0) {
+                    boxRouletteActive = false;
+                    document.getElementById('btn-start-roulette').style.display = 'block';
+                    document.getElementById('btn-close-box').style.display = 'block';
+                    return tg.showAlert("В этом боксе нет предметов.");
                 }
-                if(boxItems.length === 0) boxItems = SHOP_ITEMS.filter(i => i.type !== 'box' && i.type !== 'case'); // safe fallback
                 
                 let win = boxItems[Math.floor(Math.random()*boxItems.length)];
                 let tr = document.getElementById('roulette-track'); tr.innerHTML = '';
@@ -777,10 +778,15 @@
             let EMOJIS = ['😎','🤓','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','🤗','🤔','🫣','🤭','🤫','🤥','😶','😶‍🌫️','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','😵‍💫','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾','🙈','🙉','🙊','🐵','🐒','🦍','🦧','🐶','🐕','🦮','🐕‍🦺','🐩','🐺','🦊','🦝','🐱','🐈','🐈‍⬛','🦁'];
 
             const SYSTEM_BOT = { id: 'ИИ', name: 'ИИ', avatar: '🤖', eqName: '', pMedals: [] }; 
+
+            function isAiFriendId(id) {
+                const value = String(id || '');
+                return value === 'ИИ' || value === 'БОТ' || value.startsWith('ИИ');
+            }
             
             let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; let profileLoaded = false;
             
-            let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
+            let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
             let inventoryListener = null, customItemsListener = null, liveInventory = {}, inventoryLoaded = false;
             let aiDifficulty = 'medium'; let currentOpenedBoxId = null; let activeFriend = null;
@@ -1021,8 +1027,8 @@
                             profileLoaded = true;
                             updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile(); ensureEquippedItemsInInventory();
                             db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } }, err => handleFirebaseError(err, 'coins listener', null));
-                            db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = []; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(k !== 'ИИ' && k !== 'БОТ' && !k.startsWith('ИИ')) friendsIds.push(k); }); } renderFriends(); });
-                            if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (fid !== 'ИИ' && fid !== 'БОТ' && !fid.startsWith('ИИ')) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
+                            db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = [SYSTEM_BOT.id]; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(!isAiFriendId(k)) friendsIds.push(k); }); } renderFriends(); renderMessagesTab(); });
+                            if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (!isAiFriendId(fid)) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
                             db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(s.val()); });
                             db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); } });
                             ensureHomeLobby();
@@ -1194,6 +1200,12 @@
                 document.getElementById('my-avatar').innerHTML = getAvatarHTML(myAvatar);
                 document.getElementById('my-name-display').innerHTML = getNameHTML(myName, myEqName) + ' ✏️';
                 document.getElementById('my-medals-display').innerHTML = getMedalsHTML(myPinnedMedals);
+                const homeAvatar = document.getElementById('home-profile-avatar');
+                const homeName = document.getElementById('home-profile-name');
+                const homeId = document.getElementById('home-profile-id');
+                if (homeAvatar) homeAvatar.innerHTML = getAvatarHTML(myAvatar);
+                if (homeName) homeName.innerHTML = getNameHTML(myName, myEqName);
+                if (homeId) homeId.innerText = `ID: ${myId}`;
                 if(appState.inLobby && lobbyPlayers.length>0){
                     let lp = lobbyPlayers.find(p=>p.id===myId);
                     if(lp) {

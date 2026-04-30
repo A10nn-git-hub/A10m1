@@ -1,310 +1,425 @@
             // ================== ВЫЖИВАНИЕ (BATTLE ROYALE) ==================
-            let br = { active: false, myP: null, bots: [], bullets: [], zone: {x: 1000, y: 1000, r: 2000}, loop: null, kills: 0 };
-            const BR_SIZE = 2000; 
+            let br = {
+                active: false,
+                myP: null,
+                remotePlayers: {},
+                bots: [],
+                bullets: [],
+                zone: {x: 1000, y: 1000, r: 2000},
+                loop: null,
+                kills: 0,
+                placeShown: false,
+                syncTimer: null,
+                playersListener: null,
+                botsListener: null
+            };
+            const BR_SIZE = 2000;
             const BR_PLAYER_R = 20;
             let joyTouch = null, jx = 0, jy = 0, isShooting = false, lastShot = 0;
 
+            function brSpawnForId(id) {
+                const seed = String(id || '0').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);
+                const angle = (seed % 360) * Math.PI / 180;
+                const radius = 520 + (seed % 260);
+                return {
+                    x: Math.max(120, Math.min(BR_SIZE - 120, BR_SIZE / 2 + Math.cos(angle) * radius)),
+                    y: Math.max(120, Math.min(BR_SIZE - 120, BR_SIZE / 2 + Math.sin(angle) * radius))
+                };
+            }
+
+            function brRealLobbyPlayers() {
+                return (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).filter(p => p.id && !isAiFriendId(p.id));
+            }
+
             function initBR() {
-                br.active = true; 
-                br.kills = 0; 
+                br.active = true;
+                br.kills = 0;
+                br.placeShown = false;
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: BR_SIZE };
-                br.myP = { x: Math.random() * (BR_SIZE - 200) + 100, y: Math.random() * (BR_SIZE - 200) + 100, hp: 200, a: 0, invuln: Date.now() + 3000 };
-                br.bots = []; 
+                br.remotePlayers = {};
+                br.bots = [];
                 br.bullets = [];
-                
-                const opponents = getBrOpponents();
-                opponents.forEach((opponent, i) => {
-                    br.bots.push({ 
-                        id: opponent.id,
-                        label: opponent.name,
-                        x: Math.random() * (BR_SIZE - 200) + 100, 
-                        y: Math.random() * (BR_SIZE - 200) + 100, 
-                        hp: 150, 
-                        a: 0, 
-                        tx: BR_SIZE / 2, 
-                        ty: BR_SIZE / 2, 
-                        nextThink: 0 
-                    });
-                });
-                
-                document.getElementById('br-ui-alive').innerText = `Живых: ${br.bots.length + 1}`;
-                document.getElementById('br-ui-kills').innerText = `Киллы: 0`;
+
+                const spawn = brSpawnForId(myId);
+                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, hp: 200, a: 0, kills: 0, alive: true, invuln: Date.now() + 3000 };
+
+                document.getElementById('br-ui-alive').innerText = 'Живых: ?';
+                document.getElementById('br-ui-kills').innerText = 'Киллы: 0';
                 document.getElementById('br-death-screen').style.display = 'none';
 
                 let c = document.getElementById('br-canvas');
-                c.width = window.innerWidth; 
+                c.width = window.innerWidth;
                 c.height = window.innerHeight;
-                
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                if (!isMobile) {
-                    document.getElementById('br-controls').style.display = 'none';
-                } else {
-                    document.getElementById('br-controls').style.display = 'flex';
-                    const jBox = document.getElementById('br-joystick');
-                    const jStick = document.getElementById('br-stick');
-                    jStick.style.transform = `translate(0px, 0px)`;
-                    
-                    jBox.ontouchstart = jBox.onmousedown = (e) => { 
-                        e.preventDefault(); 
-                        let ev = e.touches ? e.touches[0] : e; 
-                        joyTouch = ev.identifier || 'm'; 
-                        updateJoy(ev); 
-                    };
-                    
-                    jBox.ontouchmove = jBox.onmousemove = (e) => { 
-                        if (!joyTouch) return; 
-                        let ev = e.touches ? Array.from(e.touches).find(t => t.identifier === joyTouch) : e; 
-                        if (ev) updateJoy(ev); 
-                    };
-                    
-                    jBox.ontouchend = jBox.onmouseup = jBox.onmouseleave = (e) => { 
-                        joyTouch = null; jx = 0; jy = 0; 
-                        jStick.style.transform = `translate(0px, 0px)`; 
-                    };
-                    
-                    function updateJoy(ev) {
-                        let rect = jBox.getBoundingClientRect(); 
-                        let cx = rect.left + rect.width / 2; 
-                        let cy = rect.top + rect.height / 2;
-                        let dx = ev.clientX - cx; 
-                        let dy = ev.clientY - cy; 
-                        let dist = Math.min(45, Math.hypot(dx, dy));
-                        let angle = Math.atan2(dy, dx); 
-                        jx = Math.cos(angle) * dist; 
-                        jy = Math.sin(angle) * dist;
-                        jStick.style.transform = `translate(${jx}px, ${jy}px)`;
-                        br.myP.a = angle; 
-                    }
-                }
 
+                bindBrControls();
+                initBrFirebaseState();
                 br.loop = requestAnimationFrame(brLoop);
             }
 
-            function getBrOpponents() {
-                const players = Array.isArray(lobbyPlayers) ? lobbyPlayers : [];
-                const realOpponents = players
-                    .filter(p => p.id !== myId && !p.id.startsWith('ИИ'))
-                    .map(p => ({ id: p.id, name: p.name || 'Игрок' }));
-                const hasInvitedBot = players.some(p => p.id && p.id.startsWith('ИИ'));
-
-                if (realOpponents.length > 0 && !hasInvitedBot) return realOpponents;
-
-                const botCount = realOpponents.length > 0 && hasInvitedBot ? 3 : 5;
-                const bots = [];
-                for (let i = 0; i < botCount; i++) {
-                    bots.push({ id: 'bot' + i, name: 'Бот ' + (i + 1) });
+            function bindBrControls() {
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                if (!isMobile) {
+                    document.getElementById('br-controls').style.display = 'none';
+                    return;
                 }
-                return realOpponents.concat(bots);
+
+                document.getElementById('br-controls').style.display = 'flex';
+                const jBox = document.getElementById('br-joystick');
+                const jStick = document.getElementById('br-stick');
+                jStick.style.transform = `translate(0px, 0px)`;
+
+                jBox.ontouchstart = jBox.onmousedown = (e) => {
+                    e.preventDefault();
+                    let ev = e.touches ? e.touches[0] : e;
+                    joyTouch = ev.identifier || 'm';
+                    updateJoy(ev);
+                };
+                jBox.ontouchmove = jBox.onmousemove = (e) => {
+                    if (!joyTouch) return;
+                    let ev = e.touches ? Array.from(e.touches).find(t => t.identifier === joyTouch) : e;
+                    if (ev) updateJoy(ev);
+                };
+                jBox.ontouchend = jBox.onmouseup = jBox.onmouseleave = () => {
+                    joyTouch = null;
+                    jx = 0;
+                    jy = 0;
+                    jStick.style.transform = `translate(0px, 0px)`;
+                };
+
+                function updateJoy(ev) {
+                    let rect = jBox.getBoundingClientRect();
+                    let cx = rect.left + rect.width / 2;
+                    let cy = rect.top + rect.height / 2;
+                    let dx = ev.clientX - cx;
+                    let dy = ev.clientY - cy;
+                    let dist = Math.min(45, Math.hypot(dx, dy));
+                    let angle = Math.atan2(dy, dx);
+                    jx = Math.cos(angle) * dist;
+                    jy = Math.sin(angle) * dist;
+                    jStick.style.transform = `translate(${jx}px, ${jy}px)`;
+                    br.myP.a = angle;
+                }
             }
 
-            function brStartShoot(e) { 
-                e.preventDefault(); e.stopPropagation(); 
-                isShooting = true; 
+            function initBrFirebaseState() {
+                const base = `lobbies/${lobbyId}/br`;
+                if (isHost) {
+                    const realPlayers = brRealLobbyPlayers();
+                    const playersUpdate = {};
+                    realPlayers.forEach(p => {
+                        const sp = brSpawnForId(p.id);
+                        playersUpdate[`${base}/players/${p.id}`] = {
+                            id: p.id,
+                            name: p.name || 'Игрок',
+                            avatar: p.avatar || '👤',
+                            eqName: p.eqName || '',
+                            x: sp.x,
+                            y: sp.y,
+                            hp: 200,
+                            a: 0,
+                            kills: 0,
+                            alive: true,
+                            updatedAt: firebase.database.ServerValue.TIMESTAMP
+                        };
+                    });
+
+                    const botCount = Math.max(0, 6 - realPlayers.length);
+                    const bots = [];
+                    for (let i = 0; i < botCount; i++) {
+                        const sp = brSpawnForId('bot' + i);
+                        bots.push({ id: 'bot' + i, label: 'Бот ' + (i + 1), x: sp.x, y: sp.y, hp: 150, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, kills: 0 });
+                    }
+
+                    updateDbPaths({
+                        [`${base}/zone`]: br.zone,
+                        [`${base}/bots`]: bots,
+                        ...playersUpdate
+                    }, 'init br state').catch(() => {});
+                }
+
+                db.ref(`${base}/players/${myId}`).update(brPublicPlayerState()).catch(() => {});
+                db.ref(`${base}/players/${myId}`).onDisconnect().update({alive: false, hp: 0});
+
+                br.playersListener = snap => {
+                    br.remotePlayers = snap.exists() ? snap.val() : {};
+                    const remoteMe = br.remotePlayers[myId];
+                    if (remoteMe && br.myP) {
+                        br.myP.hp = Math.min(br.myP.hp, parseInt(remoteMe.hp) || 0);
+                        br.myP.alive = remoteMe.alive !== false && br.myP.hp > 0;
+                    }
+                };
+                br.botsListener = snap => {
+                    br.bots = snap.exists() ? Object.values(snap.val()) : [];
+                };
+                db.ref(`${base}/players`).on('value', br.playersListener);
+                db.ref(`${base}/bots`).on('value', br.botsListener);
+                br.syncTimer = setInterval(syncBrPlayerState, 120);
             }
 
-            function brStopShoot(e) { 
-                e.preventDefault(); e.stopPropagation(); 
-                isShooting = false; 
+            function brPublicPlayerState() {
+                return {
+                    id: myId,
+                    name: myName,
+                    avatar: myAvatar,
+                    eqName: myEqName,
+                    x: Math.round(br.myP.x),
+                    y: Math.round(br.myP.y),
+                    hp: Math.max(0, Math.round(br.myP.hp)),
+                    a: br.myP.a,
+                    kills: br.kills,
+                    alive: br.myP.hp > 0,
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                };
+            }
+
+            function syncBrPlayerState() {
+                if (!br.active || !lobbyId || !br.myP) return;
+                db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update(brPublicPlayerState()).catch(() => {});
+            }
+
+            function brStartShoot(e) {
+                e.preventDefault(); e.stopPropagation();
+                isShooting = true;
+            }
+
+            function brStopShoot(e) {
+                e.preventDefault(); e.stopPropagation();
+                isShooting = false;
             }
 
             function brLoop() {
                 if (!br.active || appState.isPaused) return;
-                
+
+                const now = Date.now();
+                updateBrLocalPlayer(now);
+                if (isHost) updateBrBots(now);
+                updateBrBullets(now);
+                br.zone.r = Math.max(50, br.zone.r - 0.2);
+                renderBR(now);
+                checkBrEnd();
+
+                if (br.active) br.loop = requestAnimationFrame(brLoop);
+            }
+
+            function updateBrLocalPlayer(now) {
+                if (br.myP.hp <= 0) return;
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                let speed = 6;
 
-                // Player logic
-                if (br.myP.hp > 0) {
-                    let speed = 6;
-                    
-                    if (isMobile) {
-                        if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
-                            br.myP.x += Math.cos(br.myP.a) * speed;
-                            br.myP.y += Math.sin(br.myP.a) * speed;
-                        }
-                    } else {
-                        let dx = 0, dy = 0;
-                        if (brKeys['KeyW'] || brKeys['ArrowUp']) dy = -1;
-                        if (brKeys['KeyS'] || brKeys['ArrowDown']) dy = 1;
-                        if (brKeys['KeyA'] || brKeys['ArrowLeft']) dx = -1;
-                        if (brKeys['KeyD'] || brKeys['ArrowRight']) dx = 1;
-                        
-                        if (dx !== 0 || dy !== 0) {
-                            let len = Math.hypot(dx, dy);
-                            br.myP.x += (dx / len) * speed;
-                            br.myP.y += (dy / len) * speed;
-                        }
+                if (isMobile) {
+                    if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
+                        br.myP.x += Math.cos(br.myP.a) * speed;
+                        br.myP.y += Math.sin(br.myP.a) * speed;
                     }
-                    
-                    br.myP.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.x));
-                    br.myP.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.y));
-
-                    if (isShooting && Date.now() - lastShot > 250) {
-                        br.bullets.push({
-                            x: br.myP.x, 
-                            y: br.myP.y, 
-                            vx: Math.cos(br.myP.a) * 20, 
-                            vy: Math.sin(br.myP.a) * 20, 
-                            owner: 'me'
-                        });
-                        lastShot = Date.now();
-                    }
-                    
-                    if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) { 
-                        br.myP.hp -= 0.5; 
+                } else {
+                    let dx = 0, dy = 0;
+                    if (brKeys['KeyW'] || brKeys['ArrowUp']) dy = -1;
+                    if (brKeys['KeyS'] || brKeys['ArrowDown']) dy = 1;
+                    if (brKeys['KeyA'] || brKeys['ArrowLeft']) dx = -1;
+                    if (brKeys['KeyD'] || brKeys['ArrowRight']) dx = 1;
+                    if (dx !== 0 || dy !== 0) {
+                        let len = Math.hypot(dx, dy);
+                        br.myP.x += (dx / len) * speed;
+                        br.myP.y += (dy / len) * speed;
                     }
                 }
 
-                // Bots logic
-                let now = Date.now();
+                br.myP.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.x));
+                br.myP.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.y));
+
+                if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) br.myP.hp -= 0.5;
+                if (isShooting && now - lastShot > 250) {
+                    br.bullets.push({ x: br.myP.x, y: br.myP.y, vx: Math.cos(br.myP.a) * 20, vy: Math.sin(br.myP.a) * 20, owner: myId });
+                    lastShot = now;
+                }
+            }
+
+            function updateBrBots(now) {
+                let changed = false;
                 br.bots.forEach(b => {
-                    if (b.hp <= 0) return;
-                    
-                    if (now > b.nextThink) {
-                        if (Math.random() > 0.5 && br.myP.hp > 0 && Math.hypot(b.x - br.myP.x, b.y - br.myP.y) < 600) {
-                            b.tx = br.myP.x; 
-                            b.ty = br.myP.y;
+                    if (!b.alive || b.hp <= 0) return;
+                    if (now > (b.nextThink || 0)) {
+                        const targets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0);
+                        const target = targets[Math.floor(Math.random() * targets.length)];
+                        if (target && Math.random() > 0.35) {
+                            b.tx = target.x;
+                            b.ty = target.y;
                         } else {
                             b.tx = br.zone.x + (Math.random() * br.zone.r - br.zone.r / 2);
                             b.ty = br.zone.y + (Math.random() * br.zone.r - br.zone.r / 2);
                         }
                         b.nextThink = now + 1000 + Math.random() * 2000;
+                        changed = true;
                     }
-                    
-                    let dx = b.tx - b.x; 
-                    let dy = b.ty - b.y;
+                    let dx = b.tx - b.x, dy = b.ty - b.y;
                     let dist = Math.hypot(dx, dy);
-                    
-                    if (dist > 10) { 
-                        b.a = Math.atan2(dy, dx); 
-                        b.x += Math.cos(b.a) * 2; 
-                        b.y += Math.sin(b.a) * 2; 
+                    if (dist > 10) {
+                        b.a = Math.atan2(dy, dx);
+                        b.x += Math.cos(b.a) * 2;
+                        b.y += Math.sin(b.a) * 2;
+                        changed = true;
                     }
-                    
-                    if (Math.hypot(b.x - br.myP.x, b.y - br.myP.y) < 600 && Math.random() < 0.03 && br.myP.hp > 0 && now > br.myP.invuln) {
-                        let aimA = Math.atan2(br.myP.y - b.y, br.myP.x - b.x) + (Math.random() * 0.4 - 0.2);
-                        br.bullets.push({
-                            x: b.x, y: b.y, vx: Math.cos(aimA)*15, vy: Math.sin(aimA)*15, owner: b.id
-                        });
-                    }
-                    
-                    if (Math.hypot(b.x - br.zone.x, b.y - br.zone.y) > br.zone.r) { 
-                        b.hp -= 0.5; 
+                    if (Math.hypot(b.x - br.zone.x, b.y - br.zone.y) > br.zone.r) {
+                        b.hp -= 0.5;
+                        if (b.hp <= 0) b.alive = false;
+                        changed = true;
                     }
                 });
+                if (changed) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
+            }
 
-                // Bullets logic
+            function updateBrBullets(now) {
                 for (let i = br.bullets.length - 1; i >= 0; i--) {
-                    let bul = br.bullets[i]; 
-                    bul.x += bul.vx; 
+                    let bul = br.bullets[i];
+                    bul.x += bul.vx;
                     bul.y += bul.vy;
-                    
-                    if (bul.x < 0 || bul.x > BR_SIZE || bul.y < 0 || bul.y > BR_SIZE) { 
-                        br.bullets.splice(i, 1); 
-                        continue; 
+                    if (bul.x < 0 || bul.x > BR_SIZE || bul.y < 0 || bul.y > BR_SIZE) {
+                        br.bullets.splice(i, 1);
+                        continue;
                     }
-                    
+
                     let hit = false;
-                    if (bul.owner !== 'me' && br.myP.hp > 0 && now > br.myP.invuln && Math.hypot(bul.x - br.myP.x, bul.y - br.myP.y) < BR_PLAYER_R) {
-                        br.myP.hp -= 15; 
-                        hit = true;
-                    }
-                    if (!hit && bul.owner === 'me') {
-                        for (let j = 0; j < br.bots.length; j++) {
-                            let b = br.bots[j];
-                            if (b.hp > 0 && Math.hypot(bul.x - b.x, bul.y - b.y) < BR_PLAYER_R) {
-                                b.hp -= 25; 
-                                hit = true;
-                                if (b.hp <= 0) { 
-                                    br.kills++; 
-                                    document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`; 
-                                }
-                                break;
+                    br.bots.forEach(b => {
+                        if (hit || !b.alive || b.hp <= 0) return;
+                        if (Math.hypot(bul.x - b.x, bul.y - b.y) < BR_PLAYER_R) {
+                            b.hp -= 25;
+                            hit = true;
+                            if (b.hp <= 0) {
+                                b.alive = false;
+                                br.kills++;
+                                document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
+                                syncBrPlayerState();
+                                if (isHost) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
                             }
                         }
-                    }
+                    });
+
+                    Object.values(br.remotePlayers).forEach(p => {
+                        if (hit || p.id === myId || !p.alive || p.hp <= 0) return;
+                        if (Math.hypot(bul.x - p.x, bul.y - p.y) < BR_PLAYER_R) {
+                            hit = true;
+                            const hpRef = db.ref(`lobbies/${lobbyId}/br/players/${p.id}/hp`);
+                            hpRef.transaction(v => Math.max(0, (parseInt(v) || 0) - 18)).then(res => {
+                                if ((res.snapshot.val() || 0) <= 0) {
+                                    db.ref(`lobbies/${lobbyId}/br/players/${p.id}/alive`).set(false);
+                                    br.kills++;
+                                    document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
+                                    syncBrPlayerState();
+                                }
+                            });
+                        }
+                    });
+
                     if (hit) br.bullets.splice(i, 1);
                 }
+            }
 
-                br.bots = br.bots.filter(b => b.hp > 0);
-                br.zone.r = Math.max(50, br.zone.r - 0.2); 
-
-                // Render Graphics
-                let c = document.getElementById('br-canvas'); 
+            function renderBR(now) {
+                let c = document.getElementById('br-canvas');
                 let ctx = c.getContext('2d');
                 ctx.clearRect(0, 0, c.width, c.height);
                 ctx.save();
-                
+
                 let camX = br.myP.hp > 0 ? br.myP.x - c.width / 2 : br.zone.x - c.width / 2;
                 let camY = br.myP.hp > 0 ? br.myP.y - c.height / 2 : br.zone.y - c.height / 2;
                 ctx.translate(-camX, -camY);
 
-                ctx.strokeStyle = '#4e7a27'; 
+                ctx.strokeStyle = '#4e7a27';
                 ctx.lineWidth = 2;
                 for (let x = 0; x <= BR_SIZE; x += 100) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, BR_SIZE); ctx.stroke(); }
                 for (let y = 0; y <= BR_SIZE; y += 100) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(BR_SIZE, y); ctx.stroke(); }
 
-                ctx.strokeStyle = 'rgba(255,0,0,0.8)'; 
+                ctx.strokeStyle = 'rgba(255,0,0,0.8)';
                 ctx.lineWidth = 10;
                 ctx.beginPath(); ctx.arc(br.zone.x, br.zone.y, br.zone.r, 0, Math.PI * 2); ctx.stroke();
                 ctx.fillStyle = 'rgba(255,0,0,0.1)'; ctx.fill();
 
-                br.bots.forEach(b => {
-                    ctx.fillStyle = '#ff453a'; 
-                    ctx.beginPath(); ctx.arc(b.x, b.y, BR_PLAYER_R, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = 'black'; ctx.lineWidth = 3; 
-                    ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x + Math.cos(b.a) * 30, b.y + Math.sin(b.a) * 30); ctx.stroke();
-                    ctx.fillStyle = '#111'; ctx.fillRect(b.x - 20, b.y - 30, 40, 6); 
-                    ctx.fillStyle = '#34c759'; ctx.fillRect(b.x - 20, b.y - 30, 40 * (b.hp / 150), 6);
-                    if (b.label) {
-                        ctx.fillStyle = '#fff';
-                        ctx.font = '14px sans-serif';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(b.label, b.x, b.y - 38);
-                    }
+                br.bots.filter(b => b.alive && b.hp > 0).forEach(b => drawBrFighter(ctx, b, '#ff453a', b.label, 150));
+                Object.values(br.remotePlayers).forEach(p => {
+                    if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, p, '#af52de', p.name || 'Игрок', 200);
                 });
-
                 if (br.myP.hp > 0) {
-                    if(now < br.myP.invuln) {
+                    if (now < br.myP.invuln) {
                         ctx.fillStyle = 'rgba(255,255,255,0.5)';
                         ctx.beginPath(); ctx.arc(br.myP.x, br.myP.y, BR_PLAYER_R + 10, 0, Math.PI * 2); ctx.fill();
                     }
-                    ctx.fillStyle = '#3390ec'; 
-                    ctx.beginPath(); ctx.arc(br.myP.x, br.myP.y, BR_PLAYER_R, 0, Math.PI * 2); ctx.fill();
-                    ctx.strokeStyle = 'black'; ctx.lineWidth = 4; 
-                    ctx.beginPath(); ctx.moveTo(br.myP.x, br.myP.y); ctx.lineTo(br.myP.x + Math.cos(br.myP.a) * 35, br.myP.y + Math.sin(br.myP.a) * 35); ctx.stroke();
-                    ctx.fillStyle = '#111'; ctx.fillRect(br.myP.x - 20, br.myP.y - 30, 40, 6); 
-                    ctx.fillStyle = '#34c759'; ctx.fillRect(br.myP.x - 20, br.myP.y - 30, 40 * (br.myP.hp / 200), 6);
+                    drawBrFighter(ctx, br.myP, '#3390ec', myName, 200);
                 }
 
                 ctx.fillStyle = '#ffd60a';
                 br.bullets.forEach(bul => { ctx.beginPath(); ctx.arc(bul.x, bul.y, 4, 0, Math.PI * 2); ctx.fill(); });
-
                 ctx.restore();
 
-                document.getElementById('br-ui-alive').innerText = `Живых: ${br.bots.length + (br.myP.hp > 0 ? 1 : 0)}`;
-
-                if (br.myP.hp <= 0 && br.active) {
-                    br.active = false;
-                    let ds = document.getElementById('br-death-screen');
-                    ds.style.display = 'flex';
-                    document.getElementById('br-death-title').innerText = "ПОТРАЧЕНО";
-                    document.getElementById('br-death-title').style.color = "#ff453a";
-                    document.getElementById('br-death-sub').innerText = `Топ: ${br.bots.length + 1}\nКиллы: ${br.kills}`;
-                    addCoins(br.kills * 5);
-                } else if (br.bots.length === 0 && br.active) {
-                    br.active = false;
-                    let ds = document.getElementById('br-death-screen');
-                    ds.style.display = 'flex';
-                    document.getElementById('br-death-title').innerText = "ТОП-1 ПОБЕДА!";
-                    document.getElementById('br-death-title').style.color = "#ffd60a";
-                    document.getElementById('br-death-sub').innerText = `Киллы: ${br.kills}\n+${50 + br.kills * 5} 🪙`;
-                    addCoins(50 + br.kills * 5);
-                }
-
-                if (br.active) br.loop = requestAnimationFrame(brLoop);
+                const aliveCount = getBrAliveRows().length;
+                document.getElementById('br-ui-alive').innerText = `Живых: ${aliveCount}`;
             }
 
-            function stopBR() { 
-                br.active = false; 
-                cancelAnimationFrame(br.loop); 
+            function drawBrFighter(ctx, p, color, label, maxHp) {
+                ctx.fillStyle = color;
+                ctx.beginPath(); ctx.arc(p.x, p.y, BR_PLAYER_R, 0, Math.PI * 2); ctx.fill();
+                ctx.strokeStyle = 'black'; ctx.lineWidth = 4;
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + Math.cos(p.a || 0) * 35, p.y + Math.sin(p.a || 0) * 35); ctx.stroke();
+                ctx.fillStyle = '#111'; ctx.fillRect(p.x - 20, p.y - 30, 40, 6);
+                ctx.fillStyle = '#34c759'; ctx.fillRect(p.x - 20, p.y - 30, 40 * ((p.hp || 0) / maxHp), 6);
+                ctx.fillStyle = '#fff';
+                ctx.font = '14px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(label, p.x, p.y - 38);
+            }
+
+            function getBrAliveRows() {
+                const rows = [];
+                Object.values(br.remotePlayers).forEach(p => {
+                    rows.push({ id: p.id, name: p.name || 'Игрок', kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 });
+                });
+                br.bots.forEach(b => rows.push({ id: b.id, name: b.label || b.id, kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 }));
+                return rows.filter(r => r.alive);
+            }
+
+            function checkBrEnd() {
+                if (br.placeShown) return;
+                if (br.myP.hp <= 0) {
+                    br.myP.alive = false;
+                    syncBrPlayerState();
+                    showBrFinal(false);
+                    return;
+                }
+                const alive = getBrAliveRows();
+                if (alive.length <= 1 && alive.some(r => r.id === myId)) showBrFinal(true);
+            }
+
+            function showBrFinal(isWin) {
+                br.placeShown = true;
+                br.active = false;
+                const allRows = [
+                    ...Object.values(br.remotePlayers).map(p => ({ id: p.id, name: p.name || 'Игрок', kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 })),
+                    ...br.bots.map(b => ({ id: b.id, name: b.label || b.id, kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 }))
+                ].sort((a, b) => Number(b.alive) - Number(a.alive) || b.kills - a.kills);
+
+                const winner = allRows[0] || {name: myName, kills: br.kills};
+                let ds = document.getElementById('br-death-screen');
+                ds.style.display = 'flex';
+                document.getElementById('br-death-title').innerText = isWin ? 'ПОБЕДА!' : 'МАТЧ ОКОНЧЕН';
+                document.getElementById('br-death-title').style.color = isWin ? '#ffd60a' : '#ff453a';
+                document.getElementById('br-death-sub').innerHTML = `
+                    <div class="br-final-winner">ПОБЕДИТЕЛЬ: ${escapeHTML(winner.name)} - ${winner.kills || 0} КИЛЛОВ</div>
+                    <div class="br-final-list">
+                        ${allRows.slice(1).map((r, i) => `<div>${i + 2}. ${escapeHTML(r.name)} - ${r.kills || 0} киллов</div>`).join('')}
+                    </div>`;
+                addCoins(isWin ? 50 + br.kills * 5 : br.kills * 5);
+                addGamePlayed();
+            }
+
+            function stopBR() {
+                br.active = false;
+                cancelAnimationFrame(br.loop);
+                if (br.syncTimer) clearInterval(br.syncTimer);
+                if (lobbyId) {
+                    if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
+                    if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
+                    db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
+                }
+                br.syncTimer = null;
+                br.playersListener = null;
+                br.botsListener = null;
             }
