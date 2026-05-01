@@ -4,6 +4,7 @@
                 myP: null,
                 remotePlayers: {},
                 remotePlayerViews: {},
+                remoteShotSeqs: {},
                 bots: [],
                 bullets: [],
                 remoteBullets: {},
@@ -12,10 +13,12 @@
                 kills: 0,
                 placeShown: false,
                 freeRoam: false,
+                lastSyncX: 0,
+                lastSyncY: 0,
+                lastSyncAt: 0,
                 syncTimer: null,
                 playersListener: null,
-                botsListener: null,
-                bulletsListener: null
+                botsListener: null
             };
             const BR_SIZE = 2000;
             const BR_PLAYER_R = 20;
@@ -42,13 +45,19 @@
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: BR_SIZE };
                 br.remotePlayers = {};
                 br.remotePlayerViews = {};
+                br.remoteShotSeqs = {};
                 br.bots = [];
                 br.bullets = [];
                 br.remoteBullets = {};
                 br.freeRoam = false;
+                br.lastSyncX = 0;
+                br.lastSyncY = 0;
+                br.lastSyncAt = Date.now();
 
                 const spawn = brSpawnForId(myId);
-                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, hp: 200, a: 0, kills: 0, alive: true, invuln: Date.now() + 3000 };
+                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: 200, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000 };
+                br.lastSyncX = br.myP.x;
+                br.lastSyncY = br.myP.y;
 
                 document.getElementById('br-ui-alive').innerText = 'Живых: ?';
                 document.getElementById('br-ui-kills').innerText = 'Киллы: 0';
@@ -137,9 +146,12 @@
                             eqName: p.eqName || '',
                             x: sp.x,
                             y: sp.y,
+                            vx: 0,
+                            vy: 0,
                             hp: 200,
                             a: 0,
                             kills: 0,
+                            shotSeq: 0,
                             alive: true,
                             updatedAt: firebase.database.ServerValue.TIMESTAMP
                         };
@@ -157,6 +169,7 @@
                     updateDbPaths({
                         [`${base}/zone`]: br.zone,
                         [`${base}/bots`]: bots,
+                        [`${base}/bullets`]: null,
                         ...playersUpdate
                     }, 'init br state').catch(() => {});
                 }
@@ -175,13 +188,9 @@
                 br.botsListener = snap => {
                     br.bots = snap.exists() ? Object.values(snap.val()) : [];
                 };
-                br.bulletsListener = snap => {
-                    br.remoteBullets = snap.exists() ? snap.val() : {};
-                };
                 db.ref(`${base}/players`).on('value', br.playersListener);
                 db.ref(`${base}/bots`).on('value', br.botsListener);
-                db.ref(`${base}/bullets`).on('value', br.bulletsListener);
-                br.syncTimer = setInterval(syncBrPlayerState, 120);
+                br.syncTimer = setInterval(syncBrPlayerState, 80);
             }
 
             function brPublicPlayerState() {
@@ -192,9 +201,16 @@
                     eqName: myEqName,
                     x: Math.round(br.myP.x),
                     y: Math.round(br.myP.y),
+                    vx: Number((br.myP.vx || 0).toFixed(2)),
+                    vy: Number((br.myP.vy || 0).toFixed(2)),
                     hp: Math.max(0, Math.round(br.myP.hp)),
                     a: br.myP.a,
                     kills: br.kills,
+                    shotSeq: br.myP.shotSeq || 0,
+                    shotX: Math.round(br.myP.shotX || br.myP.x),
+                    shotY: Math.round(br.myP.shotY || br.myP.y),
+                    shotVx: Number((br.myP.shotVx || 0).toFixed(2)),
+                    shotVy: Number((br.myP.shotVy || 0).toFixed(2)),
                     alive: br.myP.hp > 0,
                     updatedAt: firebase.database.ServerValue.TIMESTAMP
                 };
@@ -205,29 +221,60 @@
                 Object.keys(br.remotePlayerViews).forEach(id => {
                     if (!br.remotePlayers[id] || id === myId) delete br.remotePlayerViews[id];
                 });
+                Object.keys(br.remoteShotSeqs).forEach(id => {
+                    if (!br.remotePlayers[id] || id === myId) delete br.remoteShotSeqs[id];
+                });
                 Object.values(br.remotePlayers).forEach(p => {
                     if (!p || p.id === myId) return;
                     const x = Number(p.x) || 0;
                     const y = Number(p.y) || 0;
+                    const vx = Number(p.vx) || 0;
+                    const vy = Number(p.vy) || 0;
                     const view = br.remotePlayerViews[p.id];
                     if (!view) {
-                        br.remotePlayerViews[p.id] = { x, y, a: p.a || 0, targetX: x, targetY: y, targetA: p.a || 0, lastSeen: Date.now() };
+                        br.remotePlayerViews[p.id] = { x, y, a: p.a || 0, snapshotX: x, snapshotY: y, vx, vy, targetX: x, targetY: y, targetA: p.a || 0, receivedAt: Date.now(), lastSeen: Date.now() };
+                        applyBrRemoteShot(p);
                         return;
                     }
+                    view.snapshotX = x;
+                    view.snapshotY = y;
+                    view.vx = vx;
+                    view.vy = vy;
                     view.targetX = x;
                     view.targetY = y;
                     view.targetA = p.a || 0;
+                    view.receivedAt = Date.now();
                     view.lastSeen = Date.now();
                     if (Math.hypot(view.x - x, view.y - y) > 320) {
                         view.x = x;
                         view.y = y;
                         view.a = view.targetA;
                     }
+                    applyBrRemoteShot(p);
                 });
+            }
+
+            function applyBrRemoteShot(p) {
+                const seq = Number(p.shotSeq) || 0;
+                if (!seq || br.remoteShotSeqs[p.id] === seq) return;
+                br.remoteShotSeqs[p.id] = seq;
+                const vx = Number(p.shotVx) || Math.cos(Number(p.a) || 0) * 20;
+                const vy = Number(p.shotVy) || Math.sin(Number(p.a) || 0) * 20;
+                br.remoteBullets[`${p.id}_seq_${seq}`] = {
+                    owner: p.id,
+                    x: Number(p.shotX) || Number(p.x) || 0,
+                    y: Number(p.shotY) || Number(p.y) || 0,
+                    vx,
+                    vy,
+                    receivedAt: Date.now()
+                };
             }
 
             function updateBrRemotePlayerViews() {
                 Object.values(br.remotePlayerViews).forEach(view => {
+                    const framesAhead = Math.min(8, Math.max(0, (Date.now() - (view.receivedAt || Date.now())) / 16.67));
+                    view.targetX = (view.snapshotX || view.targetX || 0) + (view.vx || 0) * framesAhead;
+                    view.targetY = (view.snapshotY || view.targetY || 0) + (view.vy || 0) * framesAhead;
                     view.x += (view.targetX - view.x) * 0.22;
                     view.y += (view.targetY - view.y) * 0.22;
                     let da = (view.targetA || 0) - (view.a || 0);
@@ -244,6 +291,13 @@
 
             function syncBrPlayerState() {
                 if (!br.active || !lobbyId || !br.myP) return;
+                const now = Date.now();
+                const dtFrames = Math.max(1, (now - (br.lastSyncAt || now)) / 16.67);
+                br.myP.vx = (br.myP.x - br.lastSyncX) / dtFrames;
+                br.myP.vy = (br.myP.y - br.lastSyncY) / dtFrames;
+                br.lastSyncX = br.myP.x;
+                br.lastSyncY = br.myP.y;
+                br.lastSyncAt = now;
                 db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update(brPublicPlayerState()).catch(() => {});
             }
 
@@ -276,6 +330,8 @@
                 if (br.myP.hp <= 0) return;
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 let speed = 6;
+                const oldX = br.myP.x;
+                const oldY = br.myP.y;
 
                 if (isMobile) {
                     if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
@@ -297,26 +353,21 @@
 
                 br.myP.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.x));
                 br.myP.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.y));
+                br.myP.vx = br.myP.x - oldX;
+                br.myP.vy = br.myP.y - oldY;
 
                 if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) br.myP.hp -= 0.5;
                 if (isShooting && now - lastShot > 250) {
                     const bullet = { x: br.myP.x, y: br.myP.y, vx: Math.cos(br.myP.a) * 20, vy: Math.sin(br.myP.a) * 20, owner: myId, createdAt: now };
                     br.bullets.push(bullet);
-                    publishBrBullet(bullet);
+                    br.myP.shotSeq = (br.myP.shotSeq || 0) + 1;
+                    br.myP.shotX = bullet.x;
+                    br.myP.shotY = bullet.y;
+                    br.myP.shotVx = bullet.vx;
+                    br.myP.shotVy = bullet.vy;
+                    syncBrPlayerState();
                     lastShot = now;
                 }
-            }
-
-            function publishBrBullet(bullet) {
-                if (!lobbyId) return;
-                const id = `${myId}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-                db.ref(`lobbies/${lobbyId}/br/bullets/${id}`).set({
-                    ...bullet,
-                    x: Math.round(bullet.x),
-                    y: Math.round(bullet.y),
-                    createdAt: Date.now()
-                }).catch(() => {});
-                setTimeout(() => db.ref(`lobbies/${lobbyId}/br/bullets/${id}`).remove().catch(() => {}), 1200);
             }
 
             function updateBrBots(now) {
@@ -433,10 +484,14 @@
 
                 ctx.fillStyle = '#ffd60a';
                 br.bullets.forEach(bul => { ctx.beginPath(); ctx.arc(bul.x, bul.y, 4, 0, Math.PI * 2); ctx.fill(); });
-                Object.values(br.remoteBullets || {}).forEach(bul => {
+                Object.keys(br.remoteBullets || {}).forEach(key => {
+                    const bul = br.remoteBullets[key];
                     if (!bul || bul.owner === myId) return;
-                    const age = Math.max(0, now - (Number(bul.createdAt) || now));
-                    if (age > 1300) return;
+                    const age = Math.max(0, now - (Number(bul.receivedAt) || now));
+                    if (age > 1500) {
+                        delete br.remoteBullets[key];
+                        return;
+                    }
                     const steps = age / 16.67;
                     const x = (Number(bul.x) || 0) + (Number(bul.vx) || 0) * steps;
                     const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
@@ -512,11 +567,9 @@
                 if (lobbyId) {
                     if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
                     if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
-                    if (br.bulletsListener) db.ref(`lobbies/${lobbyId}/br/bullets`).off('value', br.bulletsListener);
                     db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
                 }
                 br.syncTimer = null;
                 br.playersListener = null;
                 br.botsListener = null;
-                br.bulletsListener = null;
             }
