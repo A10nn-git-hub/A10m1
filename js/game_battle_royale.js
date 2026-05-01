@@ -23,7 +23,7 @@
             };
             const BR_SIZE = 2000;
             const BR_PLAYER_R = 20;
-            let joyTouch = null, jx = 0, jy = 0, isShooting = false, lastShot = 0;
+            let joyTouch = null, shootTouch = null, jx = 0, jy = 0, isShooting = false, lastShot = 0;
 
             function brSpawnForId(id) {
                 const seed = String(id || '0').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);
@@ -54,6 +54,9 @@
                 br.lastSyncX = 0;
                 br.lastSyncY = 0;
                 br.lastSyncAt = Date.now();
+                shootTouch = null;
+                isShooting = false;
+                lastShot = 0;
 
                 const spawn = brSpawnForId(myId);
                 br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: 200, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000 };
@@ -85,13 +88,18 @@
                 const jStick = document.getElementById('br-stick');
                 const shootBtn = document.getElementById('br-shoot-btn');
                 jBox.style.touchAction = 'none';
-                if (shootBtn) shootBtn.style.touchAction = 'none';
+                if (shootBtn) {
+                    shootBtn.style.touchAction = 'none';
+                    shootBtn.style.webkitUserSelect = 'none';
+                    shootBtn.style.userSelect = 'none';
+                    bindBrShootButton(shootBtn);
+                }
                 jStick.style.transform = `translate(0px, 0px)`;
 
                 jBox.ontouchstart = jBox.onmousedown = (e) => {
                     e.preventDefault();
                     let ev = e.changedTouches ? e.changedTouches[0] : (e.touches ? e.touches[0] : e);
-                    joyTouch = ev.identifier ?? 'm';
+                    joyTouch = ev.identifier !== undefined ? ev.identifier : 'm';
                     updateJoy(ev);
                 };
                 jBox.ontouchmove = jBox.onmousemove = (e) => {
@@ -133,6 +141,46 @@
                 }
             }
 
+            function bindBrShootButton(shootBtn) {
+                if (shootBtn.dataset.brShootBound === '1') return;
+                shootBtn.dataset.brShootBound = '1';
+
+                const startShoot = (e) => {
+                    if (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    const touch = e && e.changedTouches ? e.changedTouches[0] : null;
+                    shootTouch = touch ? touch.identifier : 'm';
+                    isShooting = true;
+                    fireBrShot(Date.now());
+                };
+
+                const stopShoot = (e) => {
+                    if (e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                    if (e && e.changedTouches && shootTouch !== null) {
+                        const ended = Array.from(e.changedTouches).some(t => t.identifier === shootTouch);
+                        if (!ended) return;
+                    }
+                    shootTouch = null;
+                    isShooting = false;
+                };
+
+                shootBtn.addEventListener('touchstart', startShoot, {passive: false});
+                shootBtn.addEventListener('touchend', stopShoot, {passive: false});
+                shootBtn.addEventListener('touchcancel', stopShoot, {passive: false});
+                shootBtn.addEventListener('pointerdown', startShoot);
+                shootBtn.addEventListener('pointerup', stopShoot);
+                shootBtn.addEventListener('pointercancel', stopShoot);
+                shootBtn.addEventListener('pointerleave', stopShoot);
+                shootBtn.addEventListener('mousedown', startShoot);
+                shootBtn.addEventListener('mouseup', stopShoot);
+                shootBtn.addEventListener('mouseleave', stopShoot);
+            }
+
             function initBrFirebaseState() {
                 const base = `lobbies/${lobbyId}/br`;
                 if (isHost) {
@@ -167,12 +215,11 @@
                         bots.push({ id: 'bot' + i, label: 'Бот ' + (i + 1), x: sp.x, y: sp.y, hp: 150, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, kills: 0 });
                     }
 
-                    updateDbPaths({
+                    updateDbPaths(Object.assign({
                         [`${base}/zone`]: br.zone,
                         [`${base}/bots`]: bots,
-                        [`${base}/bullets`]: null,
-                        ...playersUpdate
-                    }, 'init br state').catch(() => {});
+                        [`${base}/bullets`]: null
+                    }, playersUpdate), 'init br state').catch(() => {});
                 }
 
                 db.ref(`${base}/players/${myId}`).update(brPublicPlayerState()).catch(() => {});
@@ -191,7 +238,7 @@
                 };
                 db.ref(`${base}/players`).on('value', br.playersListener);
                 br.shotsListener = snap => {
-                    const p = snap.exists() ? { id: snap.key, ...snap.val() } : null;
+                    const p = snap.exists() ? Object.assign({ id: snap.key }, snap.val()) : null;
                     if (!p || p.id === myId) return;
                     br.remotePlayers[p.id] = p;
                     applyBrRemoteShot(p);
@@ -215,11 +262,11 @@
                     a: br.myP.a,
                     kills: br.kills,
                     shotSeq: br.myP.shotSeq || 0,
-                    shotX: Math.round(br.myP.shotX ?? br.myP.x),
-                    shotY: Math.round(br.myP.shotY ?? br.myP.y),
+                    shotX: Math.round(br.myP.shotX !== undefined ? br.myP.shotX : br.myP.x),
+                    shotY: Math.round(br.myP.shotY !== undefined ? br.myP.shotY : br.myP.y),
                     shotVx: Number((br.myP.shotVx || 0).toFixed(2)),
                     shotVy: Number((br.myP.shotVy || 0).toFixed(2)),
-                    shotA: br.myP.shotA ?? br.myP.a,
+                    shotA: br.myP.shotA !== undefined ? br.myP.shotA : br.myP.a,
                     alive: br.myP.hp > 0,
                     updatedAt: firebase.database.ServerValue.TIMESTAMP
                 };
@@ -267,7 +314,7 @@
                 const seq = Number(p.shotSeq) || 0;
                 if (!seq || br.remoteShotSeqs[p.id] === seq) return;
                 br.remoteShotSeqs[p.id] = seq;
-                const angle = Number(p.shotA ?? p.a) || 0;
+                const angle = Number(p.shotA !== undefined ? p.shotA : p.a) || 0;
                 const vx = Number(p.shotVx) || Math.cos(angle) * 20;
                 const vy = Number(p.shotVy) || Math.sin(angle) * 20;
                 const view = br.remotePlayerViews[p.id];
@@ -299,7 +346,7 @@
 
             function getBrRenderablePlayer(p) {
                 const view = br.remotePlayerViews[p.id];
-                return view ? {...p, x: view.x, y: view.y, a: view.a} : p;
+                return view ? Object.assign({}, p, {x: view.x, y: view.y, a: view.a}) : p;
             }
 
             function syncBrPlayerState() {
@@ -317,6 +364,7 @@
             function brStartShoot(e) {
                 e.preventDefault(); e.stopPropagation();
                 isShooting = true;
+                fireBrShot(Date.now());
             }
 
             function brStopShoot(e) {
@@ -370,26 +418,29 @@
                 br.myP.vy = br.myP.y - oldY;
 
                 if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) br.myP.hp -= 0.5;
-                if (isShooting && now - lastShot > 250) {
-                    const shotA = br.myP.a || 0;
-                    const bullet = {
-                        x: br.myP.x + Math.cos(shotA) * (BR_PLAYER_R + 8),
-                        y: br.myP.y + Math.sin(shotA) * (BR_PLAYER_R + 8),
-                        vx: Math.cos(shotA) * 20,
-                        vy: Math.sin(shotA) * 20,
-                        owner: myId,
-                        createdAt: now
-                    };
-                    br.bullets.push(bullet);
-                    br.myP.shotSeq = (br.myP.shotSeq || 0) + 1;
-                    br.myP.shotX = bullet.x;
-                    br.myP.shotY = bullet.y;
-                    br.myP.shotVx = bullet.vx;
-                    br.myP.shotVy = bullet.vy;
-                    br.myP.shotA = shotA;
-                    syncBrPlayerState();
-                    lastShot = now;
-                }
+                if (isShooting) fireBrShot(now);
+            }
+
+            function fireBrShot(now) {
+                if (!br.active || !br.myP || br.myP.hp <= 0 || now - lastShot <= 250) return;
+                const shotA = br.myP.a || 0;
+                const bullet = {
+                    x: br.myP.x + Math.cos(shotA) * (BR_PLAYER_R + 8),
+                    y: br.myP.y + Math.sin(shotA) * (BR_PLAYER_R + 8),
+                    vx: Math.cos(shotA) * 20,
+                    vy: Math.sin(shotA) * 20,
+                    owner: myId,
+                    createdAt: now
+                };
+                br.bullets.push(bullet);
+                br.myP.shotSeq = (br.myP.shotSeq || 0) + 1;
+                br.myP.shotX = bullet.x;
+                br.myP.shotY = bullet.y;
+                br.myP.shotVx = bullet.vx;
+                br.myP.shotVy = bullet.vy;
+                br.myP.shotA = shotA;
+                syncBrPlayerState();
+                lastShot = now;
             }
 
             function updateBrBots(now) {
@@ -563,10 +614,10 @@
             function showBrFinal(isWin) {
                 br.placeShown = true;
                 br.active = false;
-                const allRows = [
-                    ...Object.values(br.remotePlayers).map(p => ({ id: p.id, name: p.name || 'Игрок', kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 })),
-                    ...br.bots.map(b => ({ id: b.id, name: b.label || b.id, kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 }))
-                ].sort((a, b) => Number(b.alive) - Number(a.alive) || b.kills - a.kills);
+                const allRows = Object.values(br.remotePlayers)
+                    .map(p => ({ id: p.id, name: p.name || 'Игрок', kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 }))
+                    .concat(br.bots.map(b => ({ id: b.id, name: b.label || b.id, kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 })))
+                    .sort((a, b) => Number(b.alive) - Number(a.alive) || b.kills - a.kills);
 
                 const winner = allRows[0] || {name: myName, kills: br.kills};
                 let ds = document.getElementById('br-death-screen');
@@ -596,4 +647,6 @@
                 br.playersListener = null;
                 br.shotsListener = null;
                 br.botsListener = null;
+                shootTouch = null;
+                isShooting = false;
             }
