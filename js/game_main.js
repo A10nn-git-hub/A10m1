@@ -575,18 +575,101 @@
             }
 
             let tttBoard = [], tttTurnIdx = 0, tttGameOver = false, tttSize = 3, tttWinReq = 3; 
+            let tttParticipants = [], tttLocalPassPlay = true, tttStateListener = null, tttBotTimer = null, tttResultShown = false;
             const TTT_SYMBOLS = ['x', 'o', 'triangle', 'square', 'circle_solid']; 
             const TTT_CHARS = {'x': '❌', 'o': '⭕', 'triangle': '🔺', 'square': '🔲', 'circle_solid': '🔴'}; 
             const TTT_COLORS = {'x': '#ff453a', 'o': '#32ade6', 'triangle': '#34c759', 'square': '#ffd60a', 'circle_solid': '#af52de'};
 
             function initTicTacToe() { 
+                stopTicTacToeSync();
+                const setup = getTicTacToeSetup();
+                tttParticipants = setup.participants;
+                tttLocalPassPlay = setup.localPassPlay;
                 tttGameOver = false; 
+                tttResultShown = false;
                 tttTurnIdx = 0; 
-                tttSize = 3; 
-                tttWinReq = 3; 
+                tttSize = setup.size; 
+                tttWinReq = setup.winReq; 
                 tttBoard = new Array(tttSize * tttSize).fill(''); 
                 renderTicTacToe(); 
                 setIsland('Ход: ❌', '#ff453a'); 
+                if (!tttLocalPassPlay) initTicTacToeSync();
+            }
+
+            function getTicTacToeSetup() {
+                const players = (Array.isArray(lobbyPlayers) && lobbyPlayers.length > 0)
+                    ? lobbyPlayers
+                    : [{id: myId, name: myName, avatar: myAvatar, eqName: myEqName}];
+                const realPlayers = players.filter(p => p && p.id && !isAiFriendId(p.id));
+                const aiPlayers = players.filter(p => p && p.id && isAiFriendId(p.id));
+
+                if (realPlayers.length <= 1 && aiPlayers.length === 0) {
+                    return {
+                        localPassPlay: true,
+                        participants: [
+                            {id: `${myId}_local_x`, name: 'Игрок 1'},
+                            {id: `${myId}_local_o`, name: 'Игрок 2'}
+                        ],
+                        size: 3,
+                        winReq: 3
+                    };
+                }
+
+                const participants = (realPlayers.length >= 2 && aiPlayers.length === 0)
+                    ? realPlayers.slice(0, 2)
+                    : players.slice(0, TTT_SYMBOLS.length);
+                const size = participants.length <= 2 ? 3 : Math.min(6, participants.length + 1);
+                return {
+                    localPassPlay: false,
+                    participants,
+                    size,
+                    winReq: participants.length <= 2 ? 3 : Math.min(4, size)
+                };
+            }
+
+            function stopTicTacToeSync() {
+                clearTimeout(tttBotTimer);
+                tttBotTimer = null;
+                if (tttStateListener && lobbyId) {
+                    db.ref(`lobbies/${lobbyId}/ttt`).off('value', tttStateListener);
+                }
+                tttStateListener = null;
+            }
+
+            function initTicTacToeSync() {
+                if (!lobbyId) return;
+                const ref = db.ref(`lobbies/${lobbyId}/ttt`);
+                if (isHost) {
+                    ref.set({
+                        board: tttBoard,
+                        turnIdx: tttTurnIdx,
+                        gameOver: false,
+                        size: tttSize,
+                        winReq: tttWinReq,
+                        participants: tttParticipants,
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP
+                    }).catch(() => {});
+                }
+
+                tttStateListener = snap => {
+                    if (!snap.exists()) return;
+                    const state = snap.val();
+                    tttSize = Number(state.size) || tttSize;
+                    tttWinReq = Number(state.winReq) || tttWinReq;
+                    tttParticipants = Array.isArray(state.participants) ? state.participants : tttParticipants;
+                    tttBoard = Array.isArray(state.board) ? state.board : tttBoard;
+                    tttTurnIdx = Number(state.turnIdx) || 0;
+                    tttGameOver = !!state.gameOver;
+                    renderTicTacToe();
+                    if (!tttGameOver) {
+                        const sym = TTT_SYMBOLS[tttTurnIdx];
+                        setIsland(`Ход: ${TTT_CHARS[sym]}`, TTT_COLORS[sym]);
+                        scheduleTicTacToeBotMove();
+                    } else {
+                        checkDynamicWin();
+                    }
+                };
+                ref.on('value', tttStateListener);
             }
 
             function renderTicTacToe() { 
@@ -609,19 +692,41 @@
             function moveTicTacToe(i, isBot) { 
                 if (tttGameOver || tttBoard[i] || appState.isPaused) return; 
                 
-                let currentPlayer = lobbyPlayers[tttTurnIdx];
-                if (!isBot && currentPlayer && currentPlayer.id.startsWith('ИИ')) return;
+                let currentPlayer = tttParticipants[tttTurnIdx];
+                if (!tttLocalPassPlay) {
+                    if (!isBot && (!currentPlayer || currentPlayer.id !== myId)) return;
+                    if (isBot && (!isHost || !currentPlayer || !isAiFriendId(currentPlayer.id))) return;
+                }
 
                 tttBoard[i] = TTT_SYMBOLS[tttTurnIdx]; 
                 renderTicTacToe(); 
-                if (checkDynamicWin()) return; 
+                if (checkDynamicWin()) {
+                    publishTicTacToeState(true);
+                    return; 
+                }
                 
-                tttTurnIdx = (tttTurnIdx + 1) % lobbyPlayers.length; 
+                tttTurnIdx = (tttTurnIdx + 1) % tttParticipants.length; 
                 setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); 
-                
-                let nextPlayer = lobbyPlayers[tttTurnIdx];
-                if (nextPlayer && nextPlayer.id.startsWith('ИИ')) {
-                    setTimeout(makeTicTacToeBotMove, Math.random()*500 + 500);
+                publishTicTacToeState(false);
+                scheduleTicTacToeBotMove();
+            }
+
+            function publishTicTacToeState(forceGameOver) {
+                if (tttLocalPassPlay || !lobbyId) return;
+                db.ref(`lobbies/${lobbyId}/ttt`).update({
+                    board: tttBoard,
+                    turnIdx: tttTurnIdx,
+                    gameOver: forceGameOver || tttGameOver,
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                }).catch(() => {});
+            }
+
+            function scheduleTicTacToeBotMove() {
+                clearTimeout(tttBotTimer);
+                if (tttGameOver || tttLocalPassPlay || !isHost) return;
+                let nextPlayer = tttParticipants[tttTurnIdx];
+                if (nextPlayer && isAiFriendId(nextPlayer.id)) {
+                    tttBotTimer = setTimeout(makeTicTacToeBotMove, Math.random()*500 + 500);
                 }
             }
 
@@ -637,7 +742,7 @@
                     let canWin = findWinningMove(TTT_SYMBOLS[tttTurnIdx]);
                     if(canWin !== null) move = canWin;
                     else {
-                        let prevIdx = (tttTurnIdx - 1 + lobbyPlayers.length) % lobbyPlayers.length;
+                        let prevIdx = (tttTurnIdx - 1 + tttParticipants.length) % tttParticipants.length;
                         let canBlock = findWinningMove(TTT_SYMBOLS[prevIdx]);
                         if (canBlock !== null && (aiDifficulty === 'hard' || Math.random() > 0.3)) {
                             move = canBlock;
@@ -683,18 +788,24 @@
                 }
                 if (!winner && !tttBoard.includes('')) {
                     tttGameOver = true; 
-                    setTimeout(() => showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); 
-                    lobbyPlayers.forEach(p => { if (p.id !== myId) updatePvpStat(p.id, 'ttt', 'draw'); });
+                    if (!tttResultShown) {
+                        tttResultShown = true;
+                        setTimeout(() => showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); 
+                        tttParticipants.forEach(p => { if (p.id !== myId && !isAiFriendId(p.id)) updatePvpStat(p.id, 'ttt', 'draw'); });
+                    }
                     return true;
                 } 
                 if (winner) {
                     tttGameOver = true; 
                     let wIdx = TTT_SYMBOLS.indexOf(winner);
-                    let isMyWin = (wIdx === lobbyPlayers.findIndex(p => p.id === myId)); 
+                    let isMyWin = tttLocalPassPlay ? false : (wIdx === tttParticipants.findIndex(p => p.id === myId)); 
                     let wName = isMyWin ? "ПОБЕДА! +5 🪙" : `ПОБЕДИЛ ${TTT_CHARS[winner]}!`; 
-                    if (isMyWin) addCoins(5); 
-                    setTimeout(() => showResult(wName, isMyWin ? '#34c759' : TTT_COLORS[winner], TTT_CHARS[winner]), 300); 
-                    lobbyPlayers.forEach(p => { if (p.id !== myId) updatePvpStat(p.id, 'ttt', isMyWin ? 'win' : 'loss'); });
+                    if (!tttResultShown) {
+                        tttResultShown = true;
+                        if (isMyWin) addCoins(5); 
+                        setTimeout(() => showResult(wName, isMyWin ? '#34c759' : TTT_COLORS[winner], TTT_CHARS[winner]), 300); 
+                        tttParticipants.forEach(p => { if (p.id !== myId && !isAiFriendId(p.id)) updatePvpStat(p.id, 'ttt', isMyWin ? 'win' : 'loss'); });
+                    }
                     return true;
                 } 
                 return false; 

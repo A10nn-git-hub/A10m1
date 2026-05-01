@@ -6,13 +6,16 @@
                 remotePlayerViews: {},
                 bots: [],
                 bullets: [],
+                remoteBullets: {},
                 zone: {x: 1000, y: 1000, r: 2000},
                 loop: null,
                 kills: 0,
                 placeShown: false,
+                freeRoam: false,
                 syncTimer: null,
                 playersListener: null,
-                botsListener: null
+                botsListener: null,
+                bulletsListener: null
             };
             const BR_SIZE = 2000;
             const BR_PLAYER_R = 20;
@@ -41,6 +44,8 @@
                 br.remotePlayerViews = {};
                 br.bots = [];
                 br.bullets = [];
+                br.remoteBullets = {};
+                br.freeRoam = false;
 
                 const spawn = brSpawnForId(myId);
                 br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, hp: 200, a: 0, kills: 0, alive: true, invuln: Date.now() + 3000 };
@@ -68,25 +73,40 @@
                 document.getElementById('br-controls').style.display = 'flex';
                 const jBox = document.getElementById('br-joystick');
                 const jStick = document.getElementById('br-stick');
+                const shootBtn = document.getElementById('br-shoot-btn');
+                jBox.style.touchAction = 'none';
+                if (shootBtn) shootBtn.style.touchAction = 'none';
                 jStick.style.transform = `translate(0px, 0px)`;
 
                 jBox.ontouchstart = jBox.onmousedown = (e) => {
                     e.preventDefault();
-                    let ev = e.touches ? e.touches[0] : e;
-                    joyTouch = ev.identifier || 'm';
+                    let ev = e.changedTouches ? e.changedTouches[0] : (e.touches ? e.touches[0] : e);
+                    joyTouch = ev.identifier ?? 'm';
                     updateJoy(ev);
                 };
                 jBox.ontouchmove = jBox.onmousemove = (e) => {
-                    if (!joyTouch) return;
+                    if (joyTouch === null) return;
+                    e.preventDefault();
                     let ev = e.touches ? Array.from(e.touches).find(t => t.identifier === joyTouch) : e;
                     if (ev) updateJoy(ev);
                 };
-                jBox.ontouchend = jBox.onmouseup = jBox.onmouseleave = () => {
+                jBox.ontouchend = jBox.ontouchcancel = (e) => {
+                    if (joyTouch === null) return;
+                    const ended = e.changedTouches ? Array.from(e.changedTouches).some(t => t.identifier === joyTouch) : true;
+                    if (!ended) return;
+                    resetJoy();
+                };
+                jBox.onmouseup = jBox.onmouseleave = () => {
+                    if (joyTouch !== 'm') return;
+                    resetJoy();
+                };
+
+                function resetJoy() {
                     joyTouch = null;
                     jx = 0;
                     jy = 0;
                     jStick.style.transform = `translate(0px, 0px)`;
-                };
+                }
 
                 function updateJoy(ev) {
                     let rect = jBox.getBoundingClientRect();
@@ -127,6 +147,7 @@
 
                     const hasAiParticipant = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).some(p => p.id && isAiFriendId(p.id));
                     const botCount = hasAiParticipant ? Math.max(0, 6 - realPlayers.length) : 0;
+                    br.freeRoam = realPlayers.length <= 1 && botCount === 0;
                     const bots = [];
                     for (let i = 0; i < botCount; i++) {
                         const sp = brSpawnForId('bot' + i);
@@ -154,8 +175,12 @@
                 br.botsListener = snap => {
                     br.bots = snap.exists() ? Object.values(snap.val()) : [];
                 };
+                br.bulletsListener = snap => {
+                    br.remoteBullets = snap.exists() ? snap.val() : {};
+                };
                 db.ref(`${base}/players`).on('value', br.playersListener);
                 db.ref(`${base}/bots`).on('value', br.botsListener);
+                db.ref(`${base}/bullets`).on('value', br.bulletsListener);
                 br.syncTimer = setInterval(syncBrPlayerState, 120);
             }
 
@@ -275,9 +300,23 @@
 
                 if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) br.myP.hp -= 0.5;
                 if (isShooting && now - lastShot > 250) {
-                    br.bullets.push({ x: br.myP.x, y: br.myP.y, vx: Math.cos(br.myP.a) * 20, vy: Math.sin(br.myP.a) * 20, owner: myId });
+                    const bullet = { x: br.myP.x, y: br.myP.y, vx: Math.cos(br.myP.a) * 20, vy: Math.sin(br.myP.a) * 20, owner: myId, createdAt: now };
+                    br.bullets.push(bullet);
+                    publishBrBullet(bullet);
                     lastShot = now;
                 }
+            }
+
+            function publishBrBullet(bullet) {
+                if (!lobbyId) return;
+                const id = `${myId}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+                db.ref(`lobbies/${lobbyId}/br/bullets/${id}`).set({
+                    ...bullet,
+                    x: Math.round(bullet.x),
+                    y: Math.round(bullet.y),
+                    createdAt: Date.now()
+                }).catch(() => {});
+                setTimeout(() => db.ref(`lobbies/${lobbyId}/br/bullets/${id}`).remove().catch(() => {}), 1200);
             }
 
             function updateBrBots(now) {
@@ -394,6 +433,15 @@
 
                 ctx.fillStyle = '#ffd60a';
                 br.bullets.forEach(bul => { ctx.beginPath(); ctx.arc(bul.x, bul.y, 4, 0, Math.PI * 2); ctx.fill(); });
+                Object.values(br.remoteBullets || {}).forEach(bul => {
+                    if (!bul || bul.owner === myId) return;
+                    const age = Math.max(0, now - (Number(bul.createdAt) || now));
+                    if (age > 1300) return;
+                    const steps = age / 16.67;
+                    const x = (Number(bul.x) || 0) + (Number(bul.vx) || 0) * steps;
+                    const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
+                    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+                });
                 ctx.restore();
 
                 const aliveCount = getBrAliveRows().length;
@@ -430,6 +478,7 @@
                     showBrFinal(false);
                     return;
                 }
+                if (br.freeRoam) return;
                 const alive = getBrAliveRows();
                 if (alive.length <= 1 && alive.some(r => r.id === myId)) showBrFinal(true);
             }
@@ -463,9 +512,11 @@
                 if (lobbyId) {
                     if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
                     if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
+                    if (br.bulletsListener) db.ref(`lobbies/${lobbyId}/br/bullets`).off('value', br.bulletsListener);
                     db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
                 }
                 br.syncTimer = null;
                 br.playersListener = null;
                 br.botsListener = null;
+                br.bulletsListener = null;
             }

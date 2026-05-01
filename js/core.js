@@ -549,6 +549,7 @@
                 document.getElementById('ai-game-overlay').style.display = 'none';
                 document.body.classList.remove('let5-active');
                 if(appState.game==='br_2d') stopBR();
+                if(appState.game==='tictactoe' && typeof stopTicTacToeSync === 'function') stopTicTacToeSync();
                 if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
                 appState.game = null;
             }
