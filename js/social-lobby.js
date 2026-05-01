@@ -440,8 +440,9 @@
                     if (d.host === myId && !isHost) { 
                         isHost = true; 
                         db.ref(`lobbies/${lobbyId}`).onDisconnect().remove(); 
-                    }
+                    } 
 
+                    currentLobbySettings = d.settings || {};
                     lobbyPlayers = []; 
                     if (d.players && d.players[d.host]) { 
                         lobbyPlayers.push({id: d.host, ...d.players[d.host]}); 
@@ -454,6 +455,9 @@
                     renderLobbySlots(); 
                     
                     setSelectedModeUI(d.game || null);
+                    if (!document.getElementById('game-settings-modal')?.classList.contains('hidden')) {
+                        renderGameSettingsModal(d.game || appState.selectedGameId || pendingModeId);
+                    }
 
                     if (d.game === 'clicker') { 
                         if (d.clickTime && !clickActive) { 

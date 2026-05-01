@@ -164,6 +164,8 @@
         .lobby-agent-5-4 { --x: 34%; --y: 58px; --s: .82; --z: 3; }
         .lobby-agent-5-5 { --x: 66%; --y: 58px; --s: .82; --z: 3; }
         .lobby-controls-bottom-right { position: absolute; bottom: 0; right: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 5; }
+        .lobby-start-row { display: flex; align-items: stretch; gap: 10px; }
+        .lobby-settings-btn { width: 61px; height: 61px; flex: 0 0 61px; border: none; border-radius: 12px; background: #2c2c2e; color: #fff; font-size: 30px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 #151517; display: inline-flex; align-items: center; justify-content: center; }
         .play-btn { background: #34c759; color: #fff; border: none; border-radius: 12px; padding: 15px 50px; font-size: 26px; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: 0 6px 0 #248a3d; }
         
         #game-container { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: var(--bg); z-index: 1000; overflow: hidden; }
@@ -240,6 +242,28 @@
         .so2-subcard.active { box-shadow: 0 0 15px rgba(255,214,10,0.5); }
         .so2-subcard-icon { font-size: 40px; margin-bottom: 10px; filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5)); }
         .so2-subcard-title { font-weight: bold; font-size: 12px; color: #fff; }
+
+        .game-settings-window { width: min(880px, 94vw); max-height: 86vh; background: #1c1c1e; border: 2px solid #555; border-radius: 12px; display: flex; flex-direction: column; box-shadow: 0 24px 80px rgba(0,0,0,0.55); overflow: hidden; }
+        .game-settings-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; padding: 18px 20px; border-bottom: 1px solid #3a3a3a; }
+        .game-settings-head h2 { margin: 3px 0 0; color: var(--coin-col); font-size: 24px; }
+        .game-settings-kicker { color: #8e8e93; font-size: 12px; font-weight: 900; text-transform: uppercase; }
+        .settings-close-btn { width: 44px; height: 44px; border: none; border-radius: 8px; background: #ff453a; color: #fff; font-size: 18px; cursor: pointer; flex: 0 0 auto; }
+        .game-settings-body { padding: 18px 20px; overflow-y: auto; text-align: left; }
+        .game-settings-table-wrap { width: 100%; overflow-x: auto; border: 1px solid #3a3a3a; border-radius: 8px; background: #111; }
+        .game-settings-table { width: 100%; min-width: 650px; border-collapse: collapse; }
+        .game-settings-table th, .game-settings-table td { padding: 10px; border-bottom: 1px solid #303033; color: #fff; text-align: left; vertical-align: middle; }
+        .game-settings-table th { color: #8e8e93; font-size: 12px; text-transform: uppercase; background: #19191b; }
+        .game-settings-table tr:last-child td { border-bottom: none; }
+        .game-settings-player { display: flex; align-items: center; gap: 8px; min-width: 150px; font-weight: 800; }
+        .game-settings-input, .game-settings-select { width: 100%; min-width: 92px; padding: 9px; border-radius: 8px; border: 1px solid #444; background: #0b0b0c; color: #fff; font-size: 15px; box-sizing: border-box; }
+        .game-settings-input[disabled], .game-settings-select[disabled], .settings-cycle-btn[disabled] { opacity: 0.7; cursor: default; }
+        .settings-cycle-btn { min-width: 94px; padding: 9px 12px; border: 1px solid #555; border-radius: 8px; background: #242426; color: #fff; font-weight: 900; cursor: pointer; }
+        .game-settings-extra { margin-top: 16px; display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 800; }
+        .game-settings-extra input { width: 22px; height: 22px; accent-color: #34c759; }
+        .game-settings-extra input.game-settings-size { width: 120px; margin-left: 10px; }
+        .game-settings-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px 18px; border-top: 1px solid #3a3a3a; }
+        .game-settings-empty { color: #8e8e93; text-align: center; padding: 30px 10px; font-weight: 800; }
+        .settings-error { color: #ff453a; margin-top: 12px; font-weight: 900; min-height: 20px; }
 
         .board { display: grid; gap: 4px; width: 70vh; height: 70vh; max-width: 95vw; max-height: 95vw; margin: 0 auto; box-sizing: border-box; } 
         .cell { background: #2c2c2e; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); box-sizing: border-box; }

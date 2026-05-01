@@ -27,6 +27,7 @@
             };
             const BR_SIZE = 2000;
             const BR_PLAYER_R = 20;
+            const BR_DEFAULT_HP = 200;
             let joyTouch = null, shootTouch = null, jx = 0, jy = 0, isShooting = false, lastShot = 0;
 
             function brSpawnForId(id) {
@@ -56,7 +57,10 @@
                 br.bullets = [];
                 br.remoteBullets = {};
                 br.freeRoam = false;
-                br.serverHp = 200;
+                br.settings = mergedSettingsForGame('br_2d');
+                const mySettings = br.settings.players?.[myId] || {};
+                const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                br.serverHp = myMaxHp;
                 br.damageTaken = 0;
                 br.lastSyncX = 0;
                 br.lastSyncY = 0;
@@ -66,7 +70,7 @@
                 lastShot = 0;
 
                 const spawn = brSpawnForId(myId);
-                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: 200, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000 };
+                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000 };
                 br.lastSyncX = br.myP.x;
                 br.lastSyncY = br.myP.y;
 
@@ -204,7 +208,8 @@
                             y: sp.y,
                             vx: 0,
                             vy: 0,
-                            hp: 200,
+                            hp: Math.max(1, parseInt(br.settings.players?.[p.id]?.lives) || BR_DEFAULT_HP),
+                            maxHp: Math.max(1, parseInt(br.settings.players?.[p.id]?.lives) || BR_DEFAULT_HP),
                             damageTaken: 0,
                             a: 0,
                             kills: 0,
@@ -221,7 +226,13 @@
                     const bots = [];
                     for (let i = 0; i < botCount; i++) {
                         const sp = brSpawnForId('bot' + i);
-                        bots.push({ id: 'bot' + i, label: 'Бот ' + (i + 1), x: sp.x, y: sp.y, hp: 150, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, kills: 0 });
+                        const aiLobby = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).filter(p => p.id && isAiFriendId(p.id));
+                        const sourceAi = aiLobby[i % Math.max(1, aiLobby.length)];
+                        const botSettings = br.settings.players?.[sourceAi?.id] || {};
+                        const botHp = Math.max(1, parseInt(botSettings.lives) || 150);
+                        const botLevel = Math.max(1, Math.min(3, parseInt(botSettings.aiLevel) || 2));
+                        const botAmmo = Math.max(1, Math.min(10, parseInt(botSettings.ammoPerSec) || 4));
+                        bots.push({ id: 'bot' + i, label: 'Бот ' + (i + 1), x: sp.x, y: sp.y, hp: botHp, maxHp: botHp, aiLevel: botLevel, ammoPerSec: botAmmo, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
                     }
 
                     updateDbPaths(Object.assign({
@@ -240,8 +251,9 @@
                     if (remoteMe && br.myP) {
                         const serverDamage = Math.max(parseInt(br.damageByPlayer[myId]) || 0, parseInt(remoteMe.damageTaken) || 0);
                         br.damageTaken = Math.max(br.damageTaken, serverDamage);
-                        const legacyHp = remoteMe.hp === undefined ? 200 : (parseInt(remoteMe.hp) || 0);
-                        const serverHp = Math.min(legacyHp, Math.max(0, 200 - br.damageTaken));
+                        const maxHp = Math.max(1, parseInt(remoteMe.maxHp) || parseInt(br.myP.maxHp) || BR_DEFAULT_HP);
+                        const legacyHp = remoteMe.hp === undefined ? maxHp : (parseInt(remoteMe.hp) || 0);
+                        const serverHp = Math.min(legacyHp, Math.max(0, maxHp - br.damageTaken));
                         br.myP.hp = Math.min(br.myP.hp, serverHp);
                         br.serverHp = br.myP.hp;
                         br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
@@ -258,7 +270,7 @@
                     const myDamage = Math.max(0, parseInt(br.damageByPlayer[myId]) || 0);
                     if (br.myP && myDamage > br.damageTaken) {
                         br.damageTaken = myDamage;
-                        br.myP.hp = Math.min(br.myP.hp, Math.max(0, 200 - myDamage));
+                        br.myP.hp = Math.min(br.myP.hp, Math.max(0, (br.myP.maxHp || BR_DEFAULT_HP) - myDamage));
                         br.serverHp = br.myP.hp;
                         br.myP.alive = br.myP.hp > 0;
                     }
@@ -295,6 +307,7 @@
                     shotVx: Number((br.myP.shotVx || 0).toFixed(2)),
                     shotVy: Number((br.myP.shotVy || 0).toFixed(2)),
                     shotA: br.myP.shotA !== undefined ? br.myP.shotA : br.myP.a,
+                    maxHp: br.myP.maxHp || BR_DEFAULT_HP,
                     updatedAt: firebase.database.ServerValue.TIMESTAMP
                 };
                 if (includeHealth) {
@@ -385,7 +398,8 @@
             function normalizeBrPlayerHealth(p) {
                 if (!p) return p;
                 const damageTaken = Math.max(parseInt(br.damageByPlayer[p.id]) || 0, parseInt(p.damageTaken) || 0);
-                const damageHp = Math.max(0, 200 - damageTaken);
+                const maxHp = Math.max(1, parseInt(p.maxHp) || BR_DEFAULT_HP);
+                const damageHp = Math.max(0, maxHp - damageTaken);
                 const rawHp = p.hp === undefined ? damageHp : (parseInt(p.hp) || 0);
                 p.hp = Math.min(rawHp, damageHp);
                 p.alive = p.alive !== false && p.hp > 0;
@@ -423,7 +437,7 @@
                 updateBrRemotePlayerViews();
                 if (isHost) updateBrBots(now);
                 updateBrBullets(now);
-                br.zone.r = Math.max(50, br.zone.r - 0.2);
+                if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
                 renderBR(now);
                 checkBrEnd();
 
@@ -469,7 +483,9 @@
             }
 
             function fireBrShot(now) {
-                if (!br.active || !br.myP || br.myP.hp <= 0 || now - lastShot <= 250) return;
+                const mySettings = br.settings?.players?.[myId] || {};
+                const cooldown = 1000 / Math.max(1, Math.min(10, parseInt(mySettings.ammoPerSec) || 4));
+                if (!br.active || !br.myP || br.myP.hp <= 0 || now - lastShot <= cooldown) return;
                 const shotA = br.myP.a || 0;
                 const bullet = {
                     x: br.myP.x + Math.cos(shotA) * (BR_PLAYER_R + 8),
@@ -494,10 +510,11 @@
                 let changed = false;
                 br.bots.forEach(b => {
                     if (!b.alive || b.hp <= 0) return;
+                    const level = Math.max(1, Math.min(3, parseInt(b.aiLevel) || 1));
+                    const targets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0);
+                    const target = targets[Math.floor(Math.random() * targets.length)];
                     if (now > (b.nextThink || 0)) {
-                        const targets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0);
-                        const target = targets[Math.floor(Math.random() * targets.length)];
-                        if (target && Math.random() > 0.35) {
+                        if (target && level === 3) {
                             b.tx = target.x;
                             b.ty = target.y;
                         } else {
@@ -520,8 +537,30 @@
                         if (b.hp <= 0) b.alive = false;
                         changed = true;
                     }
+                    if (target && level >= 2) {
+                        const aim = level === 3 ? target : targets[Math.floor(Math.random() * targets.length)];
+                        if (aim) {
+                            b.a = Math.atan2((aim.y || b.y) - b.y, (aim.x || b.x) - b.x);
+                            brBotTryShoot(b, now);
+                        }
+                    }
                 });
                 if (changed) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
+            }
+
+            function brBotTryShoot(bot, now) {
+                const cooldown = 1000 / Math.max(1, Math.min(10, parseInt(bot.ammoPerSec) || 4));
+                if (now < (bot.nextShot || 0)) return;
+                bot.nextShot = now + cooldown;
+                br.bullets.push({
+                    x: bot.x + Math.cos(bot.a) * (BR_PLAYER_R + 8),
+                    y: bot.y + Math.sin(bot.a) * (BR_PLAYER_R + 8),
+                    vx: Math.cos(bot.a) * 16,
+                    vy: Math.sin(bot.a) * 16,
+                    owner: bot.id,
+                    isBot: true,
+                    createdAt: now
+                });
             }
 
             function updateBrBullets(now) {
@@ -551,19 +590,25 @@
                     });
 
                     Object.values(br.remotePlayers).forEach(p => {
-                        if (hit || p.id === myId || !p.alive || p.hp <= 0) return;
+                        if (hit || (!bul.isBot && p.id === myId) || !p.alive || p.hp <= 0) return;
                         if (Math.hypot(bul.x - p.x, bul.y - p.y) < BR_PLAYER_R) {
                             hit = true;
+                            const maxHp = Math.max(1, parseInt(p.maxHp) || BR_DEFAULT_HP);
                             const damageRef = db.ref(`lobbies/${lobbyId}/br/damage/${p.id}`);
-                            damageRef.transaction(v => Math.min(200, (parseInt(v) || 0) + 18)).then(res => {
+                            damageRef.transaction(v => Math.min(maxHp, (parseInt(v) || 0) + 18)).then(res => {
                                 const damageTaken = parseInt(res.snapshot.val()) || 0;
-                                const nextHp = Math.max(0, 200 - damageTaken);
+                                const nextHp = Math.max(0, maxHp - damageTaken);
                                 br.damageByPlayer[p.id] = damageTaken;
                                 p.damageTaken = damageTaken;
                                 p.hp = nextHp;
                                 p.alive = nextHp > 0;
                                 db.ref(`lobbies/${lobbyId}/br/players/${p.id}`).update({ hp: nextHp, alive: nextHp > 0 }).catch(() => {});
-                                if (nextHp <= 0) db.ref(`lobbies/${lobbyId}/br/players/${myId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
+                                if (p.id === myId && br.myP) {
+                                    br.damageTaken = damageTaken;
+                                    br.myP.hp = nextHp;
+                                    br.myP.alive = nextHp > 0;
+                                }
+                                if (nextHp <= 0 && !bul.isBot) db.ref(`lobbies/${lobbyId}/br/players/${myId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
                             });
                         }
                     });
@@ -620,16 +665,16 @@
                 ctx.beginPath(); ctx.arc(br.zone.x, br.zone.y, br.zone.r, 0, Math.PI * 2); ctx.stroke();
                 ctx.fillStyle = 'rgba(255,0,0,0.1)'; ctx.fill();
 
-                br.bots.filter(b => b.alive && b.hp > 0).forEach(b => drawBrFighter(ctx, b, '#ff453a', b.label, 150));
+                br.bots.filter(b => b.alive && b.hp > 0).forEach(b => drawBrFighter(ctx, b, '#ff453a', b.label, b.maxHp || 150));
                 Object.values(br.remotePlayers).forEach(p => {
-                    if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, getBrRenderablePlayer(p), '#af52de', p.name || 'Игрок', 200);
+                    if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, getBrRenderablePlayer(p), '#af52de', p.name || 'Игрок', p.maxHp || BR_DEFAULT_HP);
                 });
                 if (br.myP.hp > 0) {
                     if (now < br.myP.invuln) {
                         ctx.fillStyle = 'rgba(255,255,255,0.5)';
                         ctx.beginPath(); ctx.arc(br.myP.x, br.myP.y, BR_PLAYER_R + 10, 0, Math.PI * 2); ctx.fill();
                     }
-                    drawBrFighter(ctx, br.myP, '#3390ec', myName, 200);
+                    drawBrFighter(ctx, br.myP, '#3390ec', myName, br.myP.maxHp || BR_DEFAULT_HP);
                 }
 
                 ctx.fillStyle = '#ffd60a';

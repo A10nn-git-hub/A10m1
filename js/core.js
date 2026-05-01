@@ -789,6 +789,7 @@
             
             let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
+            let currentLobbySettings = {};
             let inventoryListener = null, customItemsListener = null, liveInventory = {}, inventoryLoaded = false;
             let aiDifficulty = 'medium'; let currentOpenedBoxId = null; let activeFriend = null;
             let boxRouletteActive = false, boxAwaitingPrizeInspect = false;
@@ -799,6 +800,16 @@
                 'coord1': 'КООРДИНАЦИЯ [НОЖИ]', 'coord2': 'КООРДИНАЦИЯ [ЛЯГУШКА]', 'coord3': 'КООРДИНАЦИЯ [СКОРОСТЬ]', 'coord4': 'КООРДИНАЦИЯ [КНОПКА]', 'coord5': 'КООРДИНАЦИЯ [УТКИ]',
                 'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br_2d': '⚔️ ВЫЖИВАНИЕ [2D]', 'br_3d': '🏃‍♂️ 3D ПАРКУР'
             };
+            const TTT_SETTING_SYMBOLS = ['x', 'o', 'square', 'triangle', 'circle_solid'];
+            const TTT_SETTING_SYMBOL_LABELS = { x: 'Крестик', o: 'Нолик', square: 'Квадрат', triangle: 'Треугольник', circle_solid: 'Круг' };
+            const TTT_SETTING_SYMBOL_CHARS = { x: '❌', o: '⭕', square: '🔲', triangle: '🔺', circle_solid: '🔴' };
+            const TTT_SETTING_COLORS = [
+                { id: 'green', name: 'Зеленый', value: '#34c759' },
+                { id: 'red', name: 'Красный', value: '#ff453a' },
+                { id: 'blue', name: 'Синий', value: '#32ade6' },
+                { id: 'purple', name: 'Фиолетовый', value: '#af52de' },
+                { id: 'yellow', name: 'Желтый', value: '#ffd60a' }
+            ];
 
             const RARITIES = { 'UNCOMMON': '#32ade6', 'RARE': '#007aff', 'EPIC': '#af52de', 'LEGENDARY': '#ff1493', 'ARCANE': '#ff3b30', 'NAMELESS': '#ffcc00' };
 
@@ -870,6 +881,207 @@
                     modeText.innerText = 'Режим не выбран';
                     modeText.style.color = '';
                 }
+            }
+
+            function lobbySettingsPlayers() {
+                if (Array.isArray(lobbyPlayers) && lobbyPlayers.length) return lobbyPlayers;
+                return [{id: myId, name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}];
+            }
+
+            function defaultSettingsForGame(gameId, players = lobbySettingsPlayers()) {
+                if (gameId === 'br_2d') {
+                    const perPlayer = {};
+                    players.forEach(p => {
+                        perPlayer[p.id] = {
+                            lives: isAiFriendId(p.id) ? 150 : 200,
+                            ammoPerSec: 4,
+                            aiLevel: isAiFriendId(p.id) ? 2 : null
+                        };
+                    });
+                    return { players: perPlayer, shrinkZone: true };
+                }
+                if (gameId === 'tictactoe') {
+                    const perPlayer = {};
+                    players.slice(0, TTT_SETTING_SYMBOLS.length).forEach((p, i) => {
+                        perPlayer[p.id] = {
+                            symbol: TTT_SETTING_SYMBOLS[i % TTT_SETTING_SYMBOLS.length],
+                            color: TTT_SETTING_COLORS[i % TTT_SETTING_COLORS.length].id
+                        };
+                    });
+                    return { players: perPlayer, boardSize: 3 };
+                }
+                return { players: {} };
+            }
+
+            function mergedSettingsForGame(gameId) {
+                const players = lobbySettingsPlayers();
+                const defaults = defaultSettingsForGame(gameId, players);
+                const saved = (currentLobbySettings && currentLobbySettings[gameId]) || {};
+                const merged = Object.assign({}, defaults, saved, { players: Object.assign({}, defaults.players, saved.players || {}) });
+                players.forEach((p, i) => {
+                    if (!merged.players[p.id]) merged.players[p.id] = defaults.players[p.id] || {};
+                    if (gameId === 'tictactoe') {
+                        merged.players[p.id].symbol = merged.players[p.id].symbol || TTT_SETTING_SYMBOLS[i % TTT_SETTING_SYMBOLS.length];
+                        merged.players[p.id].color = merged.players[p.id].color || TTT_SETTING_COLORS[i % TTT_SETTING_COLORS.length].id;
+                    }
+                    if (gameId === 'br_2d') {
+                        merged.players[p.id].lives = Math.max(1, parseInt(merged.players[p.id].lives) || (isAiFriendId(p.id) ? 150 : 200));
+                        merged.players[p.id].ammoPerSec = Math.max(1, Math.min(10, parseInt(merged.players[p.id].ammoPerSec) || 4));
+                        merged.players[p.id].aiLevel = isAiFriendId(p.id) ? Math.max(1, Math.min(3, parseInt(merged.players[p.id].aiLevel) || 2)) : null;
+                    }
+                });
+                return merged;
+            }
+
+            function openGameSettingsModal() {
+                const gameId = appState.selectedGameId || pendingModeId;
+                const modal = document.getElementById('game-settings-modal');
+                if (!modal) return;
+                modal.classList.remove('hidden');
+                renderGameSettingsModal(gameId);
+            }
+
+            function closeGameSettingsModal(event) {
+                if (event) event.stopPropagation();
+                const modal = document.getElementById('game-settings-modal');
+                if (modal) modal.classList.add('hidden');
+            }
+
+            function renderGameSettingsModal(gameId = appState.selectedGameId || pendingModeId) {
+                const title = document.getElementById('game-settings-title');
+                const role = document.getElementById('game-settings-role');
+                const body = document.getElementById('game-settings-body');
+                const save = document.getElementById('game-settings-save');
+                if (!title || !role || !body || !save) return;
+
+                title.innerText = gameId && GAME_NAMES[gameId] ? `Настройки: ${GAME_NAMES[gameId]}` : 'Настройки игры';
+                role.innerText = isHost ? 'Хост может менять' : 'Только просмотр';
+                save.style.display = isHost ? 'inline-flex' : 'none';
+
+                if (!gameId) {
+                    body.innerHTML = '<div class="game-settings-empty">Сначала выберите режим игры.</div>';
+                    return;
+                }
+                if (gameId === 'br_2d') {
+                    body.innerHTML = renderBrSettingsTable(mergedSettingsForGame(gameId));
+                    return;
+                }
+                if (gameId === 'tictactoe') {
+                    body.innerHTML = renderTttSettingsTable(mergedSettingsForGame(gameId));
+                    return;
+                }
+                body.innerHTML = renderGenericSettingsTable();
+            }
+
+            function renderGenericSettingsTable() {
+                const rows = lobbySettingsPlayers().map(p => `
+                    <tr><td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td></tr>
+                `).join('');
+                return `<div class="game-settings-table-wrap"><table class="game-settings-table"><thead><tr><th>Игрок</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+            }
+
+            function renderBrSettingsTable(settings) {
+                const readonly = isHost ? '' : 'disabled';
+                const rows = lobbySettingsPlayers().map(p => {
+                    const ps = settings.players[p.id] || {};
+                    const aiCell = isAiFriendId(p.id)
+                        ? `<select class="game-settings-select" data-setting-player="${p.id}" data-setting-field="aiLevel" ${readonly}>
+                            ${[1,2,3].map(v => `<option value="${v}" ${Number(ps.aiLevel) === v ? 'selected' : ''}>${v}</option>`).join('')}
+                        </select>`
+                        : '<span style="color:#777;">-</span>';
+                    return `<tr>
+                        <td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td>
+                        <td><input class="game-settings-input" type="number" min="1" max="9999" value="${parseInt(ps.lives) || 200}" data-setting-player="${p.id}" data-setting-field="lives" ${readonly}></td>
+                        <td><input class="game-settings-input" type="number" min="1" max="10" value="${parseInt(ps.ammoPerSec) || 4}" data-setting-player="${p.id}" data-setting-field="ammoPerSec" ${readonly}></td>
+                        <td>${aiCell}</td>
+                    </tr>`;
+                }).join('');
+                return `<div class="game-settings-table-wrap"><table class="game-settings-table">
+                    <thead><tr><th>Игрок</th><th>Кол-во жизней</th><th>Патронов в сек</th><th>Уровень ИИ</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table></div>
+                <label class="game-settings-extra"><input id="setting-br-shrink" type="checkbox" ${settings.shrinkZone !== false ? 'checked' : ''} ${readonly}>уменьшение поля</label>
+                <div id="settings-error" class="settings-error"></div>`;
+            }
+
+            function renderTttSettingsTable(settings) {
+                const readonly = isHost ? '' : 'disabled';
+                const rows = lobbySettingsPlayers().slice(0, TTT_SETTING_SYMBOLS.length).map(p => {
+                    const ps = settings.players[p.id] || {};
+                    const colorOptions = TTT_SETTING_COLORS.map(c => `<option value="${c.id}" ${ps.color === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
+                    return `<tr>
+                        <td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td>
+                        <td><button class="settings-cycle-btn" data-setting-player="${p.id}" data-setting-field="symbol" data-symbol="${ps.symbol || 'x'}" onclick="cycleTttSettingsSymbol(this)" ${readonly}>${TTT_SETTING_SYMBOL_CHARS[ps.symbol] || '❌'} ${TTT_SETTING_SYMBOL_LABELS[ps.symbol] || 'Крестик'}</button></td>
+                        <td><select class="game-settings-select" data-setting-player="${p.id}" data-setting-field="color" ${readonly}>${colorOptions}</select></td>
+                    </tr>`;
+                }).join('');
+                return `<div class="game-settings-table-wrap"><table class="game-settings-table">
+                    <thead><tr><th>Игрок</th><th>Фигура</th><th>Цвет</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table></div>
+                <label class="game-settings-extra">Размер поля
+                    <input id="setting-ttt-size" class="game-settings-input game-settings-size" type="number" min="3" max="10" value="${Math.max(3, Math.min(10, parseInt(settings.boardSize) || 3))}" ${readonly}>
+                </label>
+                <div id="settings-error" class="settings-error"></div>`;
+            }
+
+            function cycleTttSettingsSymbol(btn) {
+                if (!isHost || !btn) return;
+                const current = btn.dataset.symbol || 'x';
+                const next = TTT_SETTING_SYMBOLS[(TTT_SETTING_SYMBOLS.indexOf(current) + 1) % TTT_SETTING_SYMBOLS.length];
+                btn.dataset.symbol = next;
+                btn.innerText = `${TTT_SETTING_SYMBOL_CHARS[next]} ${TTT_SETTING_SYMBOL_LABELS[next]}`;
+            }
+
+            async function saveGameSettings() {
+                if (!isHost) return;
+                const gameId = appState.selectedGameId || pendingModeId;
+                if (!gameId || !lobbyId) return tg.showAlert("Выберите режим игры.");
+                const settings = collectGameSettings(gameId);
+                if (!settings) return;
+                try {
+                    await writeDb(`lobbies/${lobbyId}/settings/${gameId}`, settings, 'save game settings');
+                    currentLobbySettings[gameId] = settings;
+                    setIsland("Настройки сохранены", "#34c759");
+                    renderGameSettingsModal(gameId);
+                } catch (err) {
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось сохранить настройки."));
+                }
+            }
+
+            function collectGameSettings(gameId) {
+                const error = document.getElementById('settings-error');
+                if (error) error.innerText = '';
+                if (gameId === 'br_2d') {
+                    const settings = { players: {}, shrinkZone: document.getElementById('setting-br-shrink')?.checked !== false };
+                    lobbySettingsPlayers().forEach(p => {
+                        const lives = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="lives"]`)?.value || 200);
+                        const ammo = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="ammoPerSec"]`)?.value || 4);
+                        const aiLevel = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="aiLevel"]`)?.value || 2);
+                        settings.players[p.id] = {
+                            lives: Math.max(1, Math.min(9999, Math.round(lives || 1))),
+                            ammoPerSec: Math.max(1, Math.min(10, Math.round(ammo || 1))),
+                            aiLevel: isAiFriendId(p.id) ? Math.max(1, Math.min(3, Math.round(aiLevel || 1))) : null
+                        };
+                    });
+                    return settings;
+                }
+                if (gameId === 'tictactoe') {
+                    const settings = { players: {}, boardSize: Math.max(3, Math.min(10, Number(document.getElementById('setting-ttt-size')?.value || 3))) };
+                    const symbols = [];
+                    lobbySettingsPlayers().slice(0, TTT_SETTING_SYMBOLS.length).forEach(p => {
+                        const symbol = document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="symbol"]`)?.dataset.symbol || 'x';
+                        const color = document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="color"]`)?.value || 'green';
+                        settings.players[p.id] = { symbol, color };
+                        symbols.push(symbol);
+                    });
+                    if (new Set(symbols).size !== symbols.length) {
+                        if (error) error.innerText = 'У нескольких игроков выбрана одинаковая фигура.';
+                        return null;
+                    }
+                    return settings;
+                }
+                return defaultSettingsForGame(gameId);
             }
 
             function applyCustomItems(customItems) {

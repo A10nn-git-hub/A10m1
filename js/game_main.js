@@ -576,7 +576,8 @@
 
             let tttBoard = [], tttTurnIdx = 0, tttGameOver = false, tttSize = 3, tttWinReq = 3; 
             let tttParticipants = [], tttLocalPassPlay = true, tttStateListener = null, tttBotTimer = null, tttResultShown = false;
-            const TTT_SYMBOLS = ['x', 'o', 'triangle', 'square', 'circle_solid']; 
+            let tttPlayerStyles = {};
+            const TTT_SYMBOLS = ['x', 'o', 'square', 'triangle', 'circle_solid']; 
             const TTT_CHARS = {'x': '❌', 'o': '⭕', 'triangle': '🔺', 'square': '🔲', 'circle_solid': '🔴'}; 
             const TTT_COLORS = {'x': '#ff453a', 'o': '#32ade6', 'triangle': '#34c759', 'square': '#ffd60a', 'circle_solid': '#af52de'};
 
@@ -592,7 +593,7 @@
                 tttWinReq = setup.winReq; 
                 tttBoard = new Array(tttSize * tttSize).fill(''); 
                 renderTicTacToe(); 
-                setIsland('Ход: ❌', '#ff453a'); 
+                setIsland(`Ход: ${getTttTurnChar()}`, getTttTurnColor()); 
                 if (!tttLocalPassPlay) initTicTacToeSync();
             }
 
@@ -603,14 +604,20 @@
                 const realPlayers = players.filter(p => p && p.id && !isAiFriendId(p.id));
                 const aiPlayers = players.filter(p => p && p.id && isAiFriendId(p.id));
 
+                const settings = mergedSettingsForGame('tictactoe');
+
                 if (realPlayers.length <= 1 && aiPlayers.length === 0) {
+                    tttPlayerStyles = {
+                        [`${myId}_local_x`]: { symbol: 'x', color: '#ff453a' },
+                        [`${myId}_local_o`]: { symbol: 'o', color: '#32ade6' }
+                    };
                     return {
                         localPassPlay: true,
                         participants: [
                             {id: `${myId}_local_x`, name: 'Игрок 1'},
                             {id: `${myId}_local_o`, name: 'Игрок 2'}
                         ],
-                        size: 3,
+                        size: Math.max(3, Math.min(10, parseInt(settings.boardSize) || 3)),
                         winReq: 3
                     };
                 }
@@ -618,7 +625,16 @@
                 const participants = (realPlayers.length >= 2 && aiPlayers.length === 0)
                     ? realPlayers.slice(0, 2)
                     : players.slice(0, TTT_SYMBOLS.length);
-                const size = participants.length <= 2 ? 3 : Math.min(6, participants.length + 1);
+                tttPlayerStyles = {};
+                participants.forEach((p, i) => {
+                    const ps = settings.players[p.id] || {};
+                    const colorDef = TTT_SETTING_COLORS.find(c => c.id === ps.color);
+                    tttPlayerStyles[p.id] = {
+                        symbol: ps.symbol || TTT_SYMBOLS[i],
+                        color: colorDef ? colorDef.value : TTT_COLORS[ps.symbol] || TTT_COLORS[TTT_SYMBOLS[i]]
+                    };
+                });
+                const size = Math.max(3, Math.min(10, parseInt(settings.boardSize) || (participants.length <= 2 ? 3 : Math.min(6, participants.length + 1))));
                 return {
                     localPassPlay: false,
                     participants,
@@ -647,6 +663,7 @@
                         size: tttSize,
                         winReq: tttWinReq,
                         participants: tttParticipants,
+                        playerStyles: tttPlayerStyles,
                         updatedAt: firebase.database.ServerValue.TIMESTAMP
                     }).catch(() => {});
                 }
@@ -657,13 +674,13 @@
                     tttSize = Number(state.size) || tttSize;
                     tttWinReq = Number(state.winReq) || tttWinReq;
                     tttParticipants = Array.isArray(state.participants) ? state.participants : tttParticipants;
+                    tttPlayerStyles = state.playerStyles || tttPlayerStyles;
                     tttBoard = Array.isArray(state.board) ? state.board : tttBoard;
                     tttTurnIdx = Number(state.turnIdx) || 0;
                     tttGameOver = !!state.gameOver;
                     renderTicTacToe();
                     if (!tttGameOver) {
-                        const sym = TTT_SYMBOLS[tttTurnIdx];
-                        setIsland(`Ход: ${TTT_CHARS[sym]}`, TTT_COLORS[sym]);
+                        setIsland(`Ход: ${getTttTurnChar()}`, getTttTurnColor());
                         scheduleTicTacToeBotMove();
                     } else {
                         checkDynamicWin();
@@ -683,6 +700,7 @@
                     let div = document.createElement('div'); 
                     div.className = `cell ${cell}`; 
                     div.innerText = cell ? TTT_CHARS[cell] : ''; 
+                    div.style.color = cell ? getTttColorForSymbol(cell) : '';
                     div.style.fontSize = fSize; 
                     div.onclick = () => moveTicTacToe(i, false); 
                     b.appendChild(div); 
@@ -698,7 +716,7 @@
                     if (isBot && (!isHost || !currentPlayer || !isAiFriendId(currentPlayer.id))) return;
                 }
 
-                tttBoard[i] = TTT_SYMBOLS[tttTurnIdx]; 
+                tttBoard[i] = getTttTurnSymbol(); 
                 renderTicTacToe(); 
                 if (checkDynamicWin()) {
                     publishTicTacToeState(true);
@@ -706,7 +724,7 @@
                 }
                 
                 tttTurnIdx = (tttTurnIdx + 1) % tttParticipants.length; 
-                setIsland(`Ход: ${TTT_CHARS[TTT_SYMBOLS[tttTurnIdx]]}`, TTT_COLORS[TTT_SYMBOLS[tttTurnIdx]]); 
+                setIsland(`Ход: ${getTttTurnChar()}`, getTttTurnColor()); 
                 publishTicTacToeState(false);
                 scheduleTicTacToeBotMove();
             }
@@ -739,11 +757,11 @@
                 let move = empty[Math.floor(Math.random() * empty.length)];
                 
                 if (aiDifficulty !== 'easy') {
-                    let canWin = findWinningMove(TTT_SYMBOLS[tttTurnIdx]);
+                    let canWin = findWinningMove(getTttTurnSymbol());
                     if(canWin !== null) move = canWin;
                     else {
                         let prevIdx = (tttTurnIdx - 1 + tttParticipants.length) % tttParticipants.length;
-                        let canBlock = findWinningMove(TTT_SYMBOLS[prevIdx]);
+                        let canBlock = findWinningMove(getTttParticipantSymbol(prevIdx));
                         if (canBlock !== null && (aiDifficulty === 'hard' || Math.random() > 0.3)) {
                             move = canBlock;
                         } else if (aiDifficulty === 'hard' && tttBoard[4] === '') {
@@ -764,6 +782,29 @@
                     }
                 }
                 return null;
+            }
+
+            function getTttParticipantSymbol(idx) {
+                const participant = tttParticipants[idx];
+                return (participant && tttPlayerStyles[participant.id]?.symbol) || TTT_SYMBOLS[idx % TTT_SYMBOLS.length];
+            }
+
+            function getTttTurnSymbol() {
+                return getTttParticipantSymbol(tttTurnIdx);
+            }
+
+            function getTttTurnChar() {
+                return TTT_CHARS[getTttTurnSymbol()] || '❌';
+            }
+
+            function getTttTurnColor() {
+                const participant = tttParticipants[tttTurnIdx];
+                return (participant && tttPlayerStyles[participant.id]?.color) || TTT_COLORS[getTttTurnSymbol()] || '#ff453a';
+            }
+
+            function getTttColorForSymbol(symbol) {
+                const participant = tttParticipants.find(p => tttPlayerStyles[p.id]?.symbol === symbol);
+                return (participant && tttPlayerStyles[participant.id]?.color) || TTT_COLORS[symbol] || '#fff';
             }
 
             function checkDynamicWinSilent(sym) {
@@ -797,13 +838,14 @@
                 } 
                 if (winner) {
                     tttGameOver = true; 
-                    let wIdx = TTT_SYMBOLS.indexOf(winner);
+                    let wIdx = tttParticipants.findIndex(p => tttPlayerStyles[p.id]?.symbol === winner);
+                    if (wIdx < 0) wIdx = TTT_SYMBOLS.indexOf(winner);
                     let isMyWin = tttLocalPassPlay ? false : (wIdx === tttParticipants.findIndex(p => p.id === myId)); 
                     let wName = isMyWin ? "ПОБЕДА! +5 🪙" : `ПОБЕДИЛ ${TTT_CHARS[winner]}!`; 
                     if (!tttResultShown) {
                         tttResultShown = true;
                         if (isMyWin) addCoins(5); 
-                        setTimeout(() => showResult(wName, isMyWin ? '#34c759' : TTT_COLORS[winner], TTT_CHARS[winner]), 300); 
+                        setTimeout(() => showResult(wName, isMyWin ? '#34c759' : getTttColorForSymbol(winner), TTT_CHARS[winner]), 300); 
                         tttParticipants.forEach(p => { if (p.id !== myId && !isAiFriendId(p.id)) updatePvpStat(p.id, 'ttt', isMyWin ? 'win' : 'loss'); });
                     }
                     return true;
