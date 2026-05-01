@@ -618,7 +618,7 @@
                             {id: `${myId}_local_o`, name: 'Игрок 2'}
                         ],
                         size: Math.max(3, Math.min(10, parseInt(settings.boardSize) || 3)),
-                        winReq: 3
+                        winReq: Math.max(3, Math.min(Math.max(3, Math.min(10, parseInt(settings.boardSize) || 3)), parseInt(settings.winLength) || 3))
                     };
                 }
 
@@ -639,7 +639,7 @@
                     localPassPlay: false,
                     participants,
                     size,
-                    winReq: participants.length <= 2 ? 3 : Math.min(4, size)
+                    winReq: Math.max(3, Math.min(size, parseInt(settings.winLength) || (participants.length <= 2 ? 3 : Math.min(4, size))))
                 };
             }
 

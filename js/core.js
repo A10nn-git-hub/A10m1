@@ -908,7 +908,7 @@
                             color: TTT_SETTING_COLORS[i % TTT_SETTING_COLORS.length].id
                         };
                     });
-                    return { players: perPlayer, boardSize: 3 };
+                    return { players: perPlayer, boardSize: 3, winLength: 3 };
                 }
                 return { players: {} };
             }
@@ -1015,12 +1015,17 @@
                         <td><select class="game-settings-select" data-setting-player="${p.id}" data-setting-field="color" ${readonly}>${colorOptions}</select></td>
                     </tr>`;
                 }).join('');
+                const boardSize = Math.max(3, Math.min(10, parseInt(settings.boardSize) || 3));
+                const winLength = Math.max(3, Math.min(boardSize, parseInt(settings.winLength) || 3));
                 return `<div class="game-settings-table-wrap"><table class="game-settings-table">
                     <thead><tr><th>Игрок</th><th>Фигура</th><th>Цвет</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table></div>
                 <label class="game-settings-extra">Размер поля
-                    <input id="setting-ttt-size" class="game-settings-input game-settings-size" type="number" min="3" max="10" value="${Math.max(3, Math.min(10, parseInt(settings.boardSize) || 3))}" ${readonly}>
+                    <input id="setting-ttt-size" class="game-settings-input game-settings-size" type="number" min="3" max="10" value="${boardSize}" ${readonly}>
+                </label>
+                <label class="game-settings-extra">Фигур в ряд для победы
+                    <input id="setting-ttt-win-length" class="game-settings-input game-settings-size" type="number" min="3" max="10" value="${winLength}" ${readonly}>
                 </label>
                 <div id="settings-error" class="settings-error"></div>`;
             }
@@ -1043,7 +1048,7 @@
                     await writeDb(`lobbies/${lobbyId}/settings/${gameId}`, settings, 'save game settings');
                     currentLobbySettings[gameId] = settings;
                     setIsland("Настройки сохранены", "#34c759");
-                    renderGameSettingsModal(gameId);
+                    closeGameSettingsModal();
                 } catch (err) {
                     tg.showAlert(getFirebaseFriendlyMessage("Не удалось сохранить настройки."));
                 }
@@ -1067,7 +1072,12 @@
                     return settings;
                 }
                 if (gameId === 'tictactoe') {
-                    const settings = { players: {}, boardSize: Math.max(3, Math.min(10, Number(document.getElementById('setting-ttt-size')?.value || 3))) };
+                    const boardSize = Math.max(3, Math.min(10, Number(document.getElementById('setting-ttt-size')?.value || 3)));
+                    const settings = {
+                        players: {},
+                        boardSize,
+                        winLength: Math.max(3, Math.min(boardSize, Number(document.getElementById('setting-ttt-win-length')?.value || 3)))
+                    };
                     const symbols = [];
                     lobbySettingsPlayers().slice(0, TTT_SETTING_SYMBOLS.length).forEach(p => {
                         const symbol = document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="symbol"]`)?.dataset.symbol || 'x';
