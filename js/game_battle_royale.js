@@ -18,6 +18,7 @@
                 lastSyncAt: 0,
                 syncTimer: null,
                 playersListener: null,
+                shotsListener: null,
                 botsListener: null
             };
             const BR_SIZE = 2000;
@@ -189,6 +190,13 @@
                     br.bots = snap.exists() ? Object.values(snap.val()) : [];
                 };
                 db.ref(`${base}/players`).on('value', br.playersListener);
+                br.shotsListener = snap => {
+                    const p = snap.exists() ? { id: snap.key, ...snap.val() } : null;
+                    if (!p || p.id === myId) return;
+                    br.remotePlayers[p.id] = p;
+                    applyBrRemoteShot(p);
+                };
+                db.ref(`${base}/players`).on('child_changed', br.shotsListener);
                 db.ref(`${base}/bots`).on('value', br.botsListener);
                 br.syncTimer = setInterval(syncBrPlayerState, 80);
             }
@@ -207,10 +215,11 @@
                     a: br.myP.a,
                     kills: br.kills,
                     shotSeq: br.myP.shotSeq || 0,
-                    shotX: Math.round(br.myP.shotX || br.myP.x),
-                    shotY: Math.round(br.myP.shotY || br.myP.y),
+                    shotX: Math.round(br.myP.shotX ?? br.myP.x),
+                    shotY: Math.round(br.myP.shotY ?? br.myP.y),
                     shotVx: Number((br.myP.shotVx || 0).toFixed(2)),
                     shotVy: Number((br.myP.shotVy || 0).toFixed(2)),
+                    shotA: br.myP.shotA ?? br.myP.a,
                     alive: br.myP.hp > 0,
                     updatedAt: firebase.database.ServerValue.TIMESTAMP
                 };
@@ -258,12 +267,16 @@
                 const seq = Number(p.shotSeq) || 0;
                 if (!seq || br.remoteShotSeqs[p.id] === seq) return;
                 br.remoteShotSeqs[p.id] = seq;
-                const vx = Number(p.shotVx) || Math.cos(Number(p.a) || 0) * 20;
-                const vy = Number(p.shotVy) || Math.sin(Number(p.a) || 0) * 20;
+                const angle = Number(p.shotA ?? p.a) || 0;
+                const vx = Number(p.shotVx) || Math.cos(angle) * 20;
+                const vy = Number(p.shotVy) || Math.sin(angle) * 20;
+                const view = br.remotePlayerViews[p.id];
+                const baseX = view ? view.x : (Number(p.shotX) || Number(p.x) || 0);
+                const baseY = view ? view.y : (Number(p.shotY) || Number(p.y) || 0);
                 br.remoteBullets[`${p.id}_seq_${seq}`] = {
                     owner: p.id,
-                    x: Number(p.shotX) || Number(p.x) || 0,
-                    y: Number(p.shotY) || Number(p.y) || 0,
+                    x: baseX + Math.cos(angle) * (BR_PLAYER_R + 8),
+                    y: baseY + Math.sin(angle) * (BR_PLAYER_R + 8),
                     vx,
                     vy,
                     receivedAt: Date.now()
@@ -358,13 +371,22 @@
 
                 if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) br.myP.hp -= 0.5;
                 if (isShooting && now - lastShot > 250) {
-                    const bullet = { x: br.myP.x, y: br.myP.y, vx: Math.cos(br.myP.a) * 20, vy: Math.sin(br.myP.a) * 20, owner: myId, createdAt: now };
+                    const shotA = br.myP.a || 0;
+                    const bullet = {
+                        x: br.myP.x + Math.cos(shotA) * (BR_PLAYER_R + 8),
+                        y: br.myP.y + Math.sin(shotA) * (BR_PLAYER_R + 8),
+                        vx: Math.cos(shotA) * 20,
+                        vy: Math.sin(shotA) * 20,
+                        owner: myId,
+                        createdAt: now
+                    };
                     br.bullets.push(bullet);
                     br.myP.shotSeq = (br.myP.shotSeq || 0) + 1;
                     br.myP.shotX = bullet.x;
                     br.myP.shotY = bullet.y;
                     br.myP.shotVx = bullet.vx;
                     br.myP.shotVy = bullet.vy;
+                    br.myP.shotA = shotA;
                     syncBrPlayerState();
                     lastShot = now;
                 }
@@ -566,10 +588,12 @@
                 if (br.syncTimer) clearInterval(br.syncTimer);
                 if (lobbyId) {
                     if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
+                    if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
                     if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
                     db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
                 }
                 br.syncTimer = null;
                 br.playersListener = null;
+                br.shotsListener = null;
                 br.botsListener = null;
             }
