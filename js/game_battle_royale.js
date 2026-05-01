@@ -200,6 +200,7 @@
                             vx: 0,
                             vy: 0,
                             hp: 200,
+                            damageTaken: 0,
                             a: 0,
                             kills: 0,
                             shotSeq: 0,
@@ -231,7 +232,10 @@
                     applyBrRemotePlayers(snap.exists() ? snap.val() : {});
                     const remoteMe = br.remotePlayers[myId];
                     if (remoteMe && br.myP) {
-                        br.myP.hp = Math.min(br.myP.hp, parseInt(remoteMe.hp) || 0);
+                        const serverDamage = Math.max(0, parseInt(remoteMe.damageTaken) || 0);
+                        const legacyHp = remoteMe.hp === undefined ? 200 : (parseInt(remoteMe.hp) || 0);
+                        const serverHp = Math.min(legacyHp, Math.max(0, 200 - serverDamage));
+                        br.myP.hp = Math.min(br.myP.hp, serverHp);
                         br.serverHp = br.myP.hp;
                         br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
                         document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
@@ -245,6 +249,7 @@
                 br.shotsListener = snap => {
                     const p = snap.exists() ? Object.assign({ id: snap.key }, snap.val()) : null;
                     if (!p || p.id === myId) return;
+                    normalizeBrPlayerHealth(p);
                     br.remotePlayers[p.id] = p;
                     applyBrRemoteShot(p);
                 };
@@ -275,6 +280,7 @@
                 };
                 if (includeHealth) {
                     state.hp = Math.max(0, Math.round(Math.min(br.myP.hp, br.serverHp)));
+                    state.damageTaken = Math.max(0, 200 - state.hp);
                     state.alive = br.myP.hp > 0;
                 }
                 return state;
@@ -290,6 +296,7 @@
                 });
                 Object.values(br.remotePlayers).forEach(p => {
                     if (!p || p.id === myId) return;
+                    normalizeBrPlayerHealth(p);
                     const x = Number(p.x) || 0;
                     const y = Number(p.y) || 0;
                     const vx = Number(p.vx) || 0;
@@ -355,6 +362,16 @@
             function getBrRenderablePlayer(p) {
                 const view = br.remotePlayerViews[p.id];
                 return view ? Object.assign({}, p, {x: view.x, y: view.y, a: view.a}) : p;
+            }
+
+            function normalizeBrPlayerHealth(p) {
+                if (!p) return p;
+                const damageTaken = Math.max(0, parseInt(p.damageTaken) || 0);
+                const damageHp = Math.max(0, 200 - damageTaken);
+                const rawHp = p.hp === undefined ? damageHp : (parseInt(p.hp) || 0);
+                p.hp = Math.min(rawHp, damageHp);
+                p.alive = p.alive !== false && p.hp > 0;
+                return p;
             }
 
             function syncBrPlayerState(includeHealth = false) {
@@ -519,12 +536,12 @@
                         if (hit || p.id === myId || !p.alive || p.hp <= 0) return;
                         if (Math.hypot(bul.x - p.x, bul.y - p.y) < BR_PLAYER_R) {
                             hit = true;
-                            const hpRef = db.ref(`lobbies/${lobbyId}/br/players/${p.id}/hp`);
-                            hpRef.transaction(v => Math.max(0, (parseInt(v) || 0) - 18)).then(res => {
-                                if ((res.snapshot.val() || 0) <= 0) {
-                                    db.ref(`lobbies/${lobbyId}/br/players/${p.id}/alive`).set(false);
-                                    db.ref(`lobbies/${lobbyId}/br/players/${myId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
-                                }
+                            const damageRef = db.ref(`lobbies/${lobbyId}/br/players/${p.id}/damageTaken`);
+                            damageRef.transaction(v => Math.min(200, (parseInt(v) || 0) + 18)).then(res => {
+                                const damageTaken = parseInt(res.snapshot.val()) || 0;
+                                const nextHp = Math.max(0, 200 - damageTaken);
+                                db.ref(`lobbies/${lobbyId}/br/players/${p.id}`).update({ hp: nextHp, alive: nextHp > 0 }).catch(() => {});
+                                if (nextHp <= 0) db.ref(`lobbies/${lobbyId}/br/players/${myId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
                             });
                         }
                     });
