@@ -13,6 +13,7 @@
                 kills: 0,
                 placeShown: false,
                 freeRoam: false,
+                serverHp: 200,
                 lastSyncX: 0,
                 lastSyncY: 0,
                 lastSyncAt: 0,
@@ -51,6 +52,7 @@
                 br.bullets = [];
                 br.remoteBullets = {};
                 br.freeRoam = false;
+                br.serverHp = 200;
                 br.lastSyncX = 0;
                 br.lastSyncY = 0;
                 br.lastSyncAt = Date.now();
@@ -222,7 +224,7 @@
                     }, playersUpdate), 'init br state').catch(() => {});
                 }
 
-                db.ref(`${base}/players/${myId}`).update(brPublicPlayerState()).catch(() => {});
+                db.ref(`${base}/players/${myId}`).update(brPublicPlayerState(true)).catch(() => {});
                 db.ref(`${base}/players/${myId}`).onDisconnect().update({alive: false, hp: 0});
 
                 br.playersListener = snap => {
@@ -230,6 +232,9 @@
                     const remoteMe = br.remotePlayers[myId];
                     if (remoteMe && br.myP) {
                         br.myP.hp = Math.min(br.myP.hp, parseInt(remoteMe.hp) || 0);
+                        br.serverHp = br.myP.hp;
+                        br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
+                        document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
                         br.myP.alive = remoteMe.alive !== false && br.myP.hp > 0;
                     }
                 };
@@ -248,8 +253,8 @@
                 br.syncTimer = setInterval(syncBrPlayerState, 80);
             }
 
-            function brPublicPlayerState() {
-                return {
+            function brPublicPlayerState(includeHealth) {
+                const state = {
                     id: myId,
                     name: myName,
                     avatar: myAvatar,
@@ -258,7 +263,6 @@
                     y: Math.round(br.myP.y),
                     vx: Number((br.myP.vx || 0).toFixed(2)),
                     vy: Number((br.myP.vy || 0).toFixed(2)),
-                    hp: Math.max(0, Math.round(br.myP.hp)),
                     a: br.myP.a,
                     kills: br.kills,
                     shotSeq: br.myP.shotSeq || 0,
@@ -267,9 +271,13 @@
                     shotVx: Number((br.myP.shotVx || 0).toFixed(2)),
                     shotVy: Number((br.myP.shotVy || 0).toFixed(2)),
                     shotA: br.myP.shotA !== undefined ? br.myP.shotA : br.myP.a,
-                    alive: br.myP.hp > 0,
                     updatedAt: firebase.database.ServerValue.TIMESTAMP
                 };
+                if (includeHealth) {
+                    state.hp = Math.max(0, Math.round(Math.min(br.myP.hp, br.serverHp)));
+                    state.alive = br.myP.hp > 0;
+                }
+                return state;
             }
 
             function applyBrRemotePlayers(nextPlayers) {
@@ -349,7 +357,7 @@
                 return view ? Object.assign({}, p, {x: view.x, y: view.y, a: view.a}) : p;
             }
 
-            function syncBrPlayerState() {
+            function syncBrPlayerState(includeHealth = false) {
                 if (!br.active || !lobbyId || !br.myP) return;
                 const now = Date.now();
                 const dtFrames = Math.max(1, (now - (br.lastSyncAt || now)) / 16.67);
@@ -358,7 +366,7 @@
                 br.lastSyncX = br.myP.x;
                 br.lastSyncY = br.myP.y;
                 br.lastSyncAt = now;
-                db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update(brPublicPlayerState()).catch(() => {});
+                db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update(brPublicPlayerState(includeHealth)).catch(() => {});
             }
 
             function brStartShoot(e) {
@@ -417,7 +425,11 @@
                 br.myP.vx = br.myP.x - oldX;
                 br.myP.vy = br.myP.y - oldY;
 
-                if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) br.myP.hp -= 0.5;
+                if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) {
+                    br.myP.hp -= 0.5;
+                    br.serverHp = Math.min(br.serverHp, br.myP.hp);
+                    syncBrPlayerState(true);
+                }
                 if (isShooting) fireBrShot(now);
             }
 
@@ -497,7 +509,7 @@
                                 b.alive = false;
                                 br.kills++;
                                 document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
-                                syncBrPlayerState();
+                                syncBrPlayerState(false);
                                 if (isHost) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
                             }
                         }
@@ -511,9 +523,7 @@
                             hpRef.transaction(v => Math.max(0, (parseInt(v) || 0) - 18)).then(res => {
                                 if ((res.snapshot.val() || 0) <= 0) {
                                     db.ref(`lobbies/${lobbyId}/br/players/${p.id}/alive`).set(false);
-                                    br.kills++;
-                                    document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
-                                    syncBrPlayerState();
+                                    db.ref(`lobbies/${lobbyId}/br/players/${myId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
                                 }
                             });
                         }
@@ -521,6 +531,34 @@
 
                     if (hit) br.bullets.splice(i, 1);
                 }
+                updateBrRemoteBulletHits(now);
+            }
+
+            function updateBrRemoteBulletHits(now) {
+                Object.keys(br.remoteBullets || {}).forEach(key => {
+                    const bul = br.remoteBullets[key];
+                    if (!bul || bul.owner === myId) return;
+                    const age = Math.max(0, now - (Number(bul.receivedAt) || now));
+                    if (age > 1500) {
+                        delete br.remoteBullets[key];
+                        return;
+                    }
+                    const steps = age / 16.67;
+                    const x = (Number(bul.x) || 0) + (Number(bul.vx) || 0) * steps;
+                    const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
+
+                    if (br.myP && br.myP.hp > 0 && Math.hypot(x - br.myP.x, y - br.myP.y) < BR_PLAYER_R) {
+                        delete br.remoteBullets[key];
+                        return;
+                    }
+
+                    const hitRemote = Object.values(br.remotePlayers).some(p => {
+                        if (!p || p.id === myId || p.id === bul.owner || !p.alive || p.hp <= 0) return false;
+                        const rp = getBrRenderablePlayer(p);
+                        return Math.hypot(x - rp.x, y - rp.y) < BR_PLAYER_R;
+                    });
+                    if (hitRemote) delete br.remoteBullets[key];
+                });
             }
 
             function renderBR(now) {
@@ -602,7 +640,7 @@
                 if (br.placeShown) return;
                 if (br.myP.hp <= 0) {
                     br.myP.alive = false;
-                    syncBrPlayerState();
+                    syncBrPlayerState(true);
                     showBrFinal(false);
                     return;
                 }
