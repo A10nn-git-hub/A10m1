@@ -5,6 +5,7 @@
                 remotePlayers: {},
                 remotePlayerViews: {},
                 remoteShotSeqs: {},
+                damageByPlayer: {},
                 bots: [],
                 bullets: [],
                 remoteBullets: {},
@@ -14,12 +15,14 @@
                 placeShown: false,
                 freeRoam: false,
                 serverHp: 200,
+                damageTaken: 0,
                 lastSyncX: 0,
                 lastSyncY: 0,
                 lastSyncAt: 0,
                 syncTimer: null,
                 playersListener: null,
                 shotsListener: null,
+                damageListener: null,
                 botsListener: null
             };
             const BR_SIZE = 2000;
@@ -48,11 +51,13 @@
                 br.remotePlayers = {};
                 br.remotePlayerViews = {};
                 br.remoteShotSeqs = {};
+                br.damageByPlayer = {};
                 br.bots = [];
                 br.bullets = [];
                 br.remoteBullets = {};
                 br.freeRoam = false;
                 br.serverHp = 200;
+                br.damageTaken = 0;
                 br.lastSyncX = 0;
                 br.lastSyncY = 0;
                 br.lastSyncAt = Date.now();
@@ -207,6 +212,7 @@
                             alive: true,
                             updatedAt: firebase.database.ServerValue.TIMESTAMP
                         };
+                        playersUpdate[`${base}/damage/${p.id}`] = 0;
                     });
 
                     const hasAiParticipant = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).some(p => p.id && isAiFriendId(p.id));
@@ -232,9 +238,10 @@
                     applyBrRemotePlayers(snap.exists() ? snap.val() : {});
                     const remoteMe = br.remotePlayers[myId];
                     if (remoteMe && br.myP) {
-                        const serverDamage = Math.max(0, parseInt(remoteMe.damageTaken) || 0);
+                        const serverDamage = Math.max(parseInt(br.damageByPlayer[myId]) || 0, parseInt(remoteMe.damageTaken) || 0);
+                        br.damageTaken = Math.max(br.damageTaken, serverDamage);
                         const legacyHp = remoteMe.hp === undefined ? 200 : (parseInt(remoteMe.hp) || 0);
-                        const serverHp = Math.min(legacyHp, Math.max(0, 200 - serverDamage));
+                        const serverHp = Math.min(legacyHp, Math.max(0, 200 - br.damageTaken));
                         br.myP.hp = Math.min(br.myP.hp, serverHp);
                         br.serverHp = br.myP.hp;
                         br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
@@ -246,6 +253,18 @@
                     br.bots = snap.exists() ? Object.values(snap.val()) : [];
                 };
                 db.ref(`${base}/players`).on('value', br.playersListener);
+                br.damageListener = snap => {
+                    br.damageByPlayer = snap.exists() ? snap.val() : {};
+                    const myDamage = Math.max(0, parseInt(br.damageByPlayer[myId]) || 0);
+                    if (br.myP && myDamage > br.damageTaken) {
+                        br.damageTaken = myDamage;
+                        br.myP.hp = Math.min(br.myP.hp, Math.max(0, 200 - myDamage));
+                        br.serverHp = br.myP.hp;
+                        br.myP.alive = br.myP.hp > 0;
+                    }
+                    Object.values(br.remotePlayers).forEach(p => normalizeBrPlayerHealth(p));
+                };
+                db.ref(`${base}/damage`).on('value', br.damageListener);
                 br.shotsListener = snap => {
                     const p = snap.exists() ? Object.assign({ id: snap.key }, snap.val()) : null;
                     if (!p || p.id === myId) return;
@@ -280,7 +299,6 @@
                 };
                 if (includeHealth) {
                     state.hp = Math.max(0, Math.round(Math.min(br.myP.hp, br.serverHp)));
-                    state.damageTaken = Math.max(0, 200 - state.hp);
                     state.alive = br.myP.hp > 0;
                 }
                 return state;
@@ -366,7 +384,7 @@
 
             function normalizeBrPlayerHealth(p) {
                 if (!p) return p;
-                const damageTaken = Math.max(0, parseInt(p.damageTaken) || 0);
+                const damageTaken = Math.max(parseInt(br.damageByPlayer[p.id]) || 0, parseInt(p.damageTaken) || 0);
                 const damageHp = Math.max(0, 200 - damageTaken);
                 const rawHp = p.hp === undefined ? damageHp : (parseInt(p.hp) || 0);
                 p.hp = Math.min(rawHp, damageHp);
@@ -536,10 +554,14 @@
                         if (hit || p.id === myId || !p.alive || p.hp <= 0) return;
                         if (Math.hypot(bul.x - p.x, bul.y - p.y) < BR_PLAYER_R) {
                             hit = true;
-                            const damageRef = db.ref(`lobbies/${lobbyId}/br/players/${p.id}/damageTaken`);
+                            const damageRef = db.ref(`lobbies/${lobbyId}/br/damage/${p.id}`);
                             damageRef.transaction(v => Math.min(200, (parseInt(v) || 0) + 18)).then(res => {
                                 const damageTaken = parseInt(res.snapshot.val()) || 0;
                                 const nextHp = Math.max(0, 200 - damageTaken);
+                                br.damageByPlayer[p.id] = damageTaken;
+                                p.damageTaken = damageTaken;
+                                p.hp = nextHp;
+                                p.alive = nextHp > 0;
                                 db.ref(`lobbies/${lobbyId}/br/players/${p.id}`).update({ hp: nextHp, alive: nextHp > 0 }).catch(() => {});
                                 if (nextHp <= 0) db.ref(`lobbies/${lobbyId}/br/players/${myId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
                             });
@@ -695,12 +717,14 @@
                 if (lobbyId) {
                     if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
                     if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
+                    if (br.damageListener) db.ref(`lobbies/${lobbyId}/br/damage`).off('value', br.damageListener);
                     if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
                     db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
                 }
                 br.syncTimer = null;
                 br.playersListener = null;
                 br.shotsListener = null;
+                br.damageListener = null;
                 br.botsListener = null;
                 shootTouch = null;
                 isShooting = false;
