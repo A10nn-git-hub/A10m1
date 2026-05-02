@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <link rel="stylesheet" href="./css/styles.css?v=20260502-lobby-agent-container-fit">
+    <link rel="stylesheet" href="./css/styles.css?v=20260502-lobby-responsive-depth">
 </head>
 <body>
     <div id="orientation-warning">
@@ -269,30 +269,38 @@
                 </div>
 
                 <div id="adm-create" class="sub-tab-content">
-                    <input type="text" id="ci-id" class="styled-input" placeholder="ID (лат. буквы)">
-                    <input type="text" id="ci-name" class="styled-input" placeholder="Название предмета">
-                    <select id="ci-type" class="styled-input" onchange="toggleCIBoxInput()">
-                        <option value="name">ИМЯ</option>
-                        <option value="avatar">АВАТАР</option>
-                        <option value="medal">МЕДАЛЬ</option>
-                        <option value="bg">ФОН</option>
-                        <option value="box">БОКС</option>
-                        <option value="case">КЕЙС</option>
-                        <option value="other">ДРУГОЕ (указать)</option>
-                    </select>
-                    <input type="text" id="ci-type-custom" class="styled-input" placeholder="Кастомный тип" style="display:none;">
-                    <input type="text" id="ci-icon" class="styled-input" placeholder="Эмодзи или HTML">
-                    <input type="number" id="ci-price" class="styled-input" placeholder="Цена">
-                    <select id="ci-rarity" class="styled-input">
-                        <option value="UNCOMMON">UNCOMMON</option>
-                        <option value="RARE">RARE</option>
-                        <option value="EPIC">EPIC</option>
-                        <option value="LEGENDARY">LEGENDARY</option>
-                        <option value="ARCANE">ARCANE</option>
-                        <option value="NAMELESS">NAMELESS</option>
-                    </select>
-                    <input type="text" id="ci-box" class="styled-input" placeholder="ID бокса (если падает из бокса)">
-                    <button class="btn btn-gold" onclick="createCustomItem()">ДОБАВИТЬ В ИГРУ</button>
+                    <div class="mini-tabs-header">
+                        <button class="mini-tab-btn active" onclick="switchMiniTab('ci-create',this); refreshAdminItemControls();">СОЗДАТЬ</button>
+                        <button class="mini-tab-btn" onclick="switchMiniTab('ci-delete',this); refreshAdminItemControls();">УДАЛИТЬ</button>
+                    </div>
+                    <div id="ci-create" class="mini-tab-content active">
+                        <input type="text" id="ci-name" class="styled-input" placeholder="Название предмета">
+                        <select id="ci-type" class="styled-input" onchange="refreshAdminItemControls()">
+                            <option value="name">ИМЯ</option>
+                            <option value="avatar">АВАТАР</option>
+                            <option value="medal">МЕДАЛЬ</option>
+                            <option value="bg">ФОН</option>
+                            <option value="box">БОКС</option>
+                            <option value="case">КЕЙС</option>
+                            <option value="other">ДРУГОЕ (указать)</option>
+                        </select>
+                        <input type="text" id="ci-type-custom" class="styled-input" placeholder="Кастомный тип" style="display:none;">
+                        <input type="number" id="ci-price" class="styled-input" placeholder="Цена">
+                        <select id="ci-rarity" class="styled-input">
+                            <option value="UNCOMMON">UNCOMMON</option>
+                            <option value="RARE">RARE</option>
+                            <option value="EPIC">EPIC</option>
+                            <option value="LEGENDARY">LEGENDARY</option>
+                            <option value="ARCANE">ARCANE</option>
+                            <option value="NAMELESS">NAMELESS</option>
+                        </select>
+                        <select id="ci-box" class="styled-input"></select>
+                        <button class="btn btn-gold" onclick="createCustomItem()">ДОБАВИТЬ В ИГРУ</button>
+                    </div>
+                    <div id="ci-delete" class="mini-tab-content">
+                        <select id="ci-delete-select" class="styled-input"></select>
+                        <button class="btn btn-red" onclick="deleteShopItemDev()">УДАЛИТЬ ИЗ МАГАЗИНА</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -572,7 +580,7 @@
         <div id="pause-overlay" class="overlay glass hidden">
             <h2>ПАУЗА ⏸️</h2>
             <div style="width:300px;display:flex;flex-direction:column;gap:10px;">
-                <button class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button>
+                <button id="pause-resume-btn" class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button>
                 <button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button>
             </div>
         </div>
@@ -639,7 +647,7 @@
 
         <div id="friend-preview-modal" class="overlay glass hidden" onclick="closeFriendPreview(event)" style="z-index:5200;">
             <div class="friend-preview-shell" onclick="event.stopPropagation()">
-                <div id="friend-preview-line" class="friend-preview-line">
+                <div id="friend-preview-line" class="friend-preview-line" onclick="showFriendPreviewActions()">
                     <div id="friend-preview-avatar" class="friend-preview-avatar">👤</div>
                     <div class="friend-preview-main">
                         <div id="friend-preview-name" class="friend-preview-name">Игрок</div>
@@ -672,12 +680,12 @@
             <button id="ai-mic-btn" class="btn btn-gold" style="margin-top:40px; font-size:40px; padding:20px 40px; border-radius:50%;" onclick="startAiMic()">🎤</button>
             <button class="btn btn-red" style="margin-top:30px; font-size:20px; padding:15px 30px;" onclick="closeAiGame()">Выйти в лобби</button>
         </div>
-        <script src="./js/core.js?v=20260502-lobby-agent-container-fit"></script>
-        <script src="./js/admin.js?v=20260502-lobby-agent-container-fit"></script>
-        <script src="./js/social-lobby.js?v=20260502-lobby-agent-container-fit"></script>
-        <script src="./js/game_main.js?v=20260502-lobby-agent-container-fit"></script>
-        <script src="./js/game_coordination.js?v=20260502-lobby-agent-container-fit"></script>
-        <script src="./js/game_battle_royale.js?v=20260502-lobby-agent-container-fit"></script>
-        <script src="./js/boot.js?v=20260502-lobby-agent-container-fit"></script>
+        <script src="./js/core.js?v=20260502-lobby-zoom-direction"></script>
+        <script src="./js/admin.js?v=20260502-lobby-zoom-direction"></script>
+        <script src="./js/social-lobby.js?v=20260502-lobby-zoom-direction"></script>
+        <script src="./js/game_main.js?v=20260502-lobby-zoom-direction"></script>
+        <script src="./js/game_coordination.js?v=20260502-lobby-zoom-direction"></script>
+        <script src="./js/game_battle_royale.js?v=20260502-lobby-zoom-direction"></script>
+        <script src="./js/boot.js?v=20260502-lobby-zoom-direction"></script>
 </body>
 </html>

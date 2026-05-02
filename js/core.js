@@ -1,7 +1,7 @@
             const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
             const APP_VERSION_INFO = {
-                label: 'локальная сборка',
-                note: 'версия берется из index.html'
+                label: 'Обновление магазина, паузы и сообщений',
+                note: 'Режим разработчика: создание/удаление предметов без ручных ID и HTML. Пауза хоста блокирует всех. Сообщения: Enter и статус принятого приглашения.'
             };
             const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg","authDomain":"mini-games-b9400.firebaseapp.com","databaseURL":"https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app","projectId":"mini-games-b9400","storageBucket":"mini-games-b9400.firebasestorage.app","messagingSenderId":"523964322575","appId":"1:523964322575:web:a5502d0bf28f17b10f247a"}'); 
             firebase.initializeApp(firebaseConfig); const db = firebase.database();
@@ -13,11 +13,10 @@
                 const versionTargets = [
                     [document.getElementById('app-version-main-settings'), document.getElementById('app-version-sub-settings')]
                 ];
-                const modifiedAt = document.lastModified ? new Date(document.lastModified).toLocaleString('ru-RU') : 'неизвестно';
                 versionTargets.forEach(([mainEl, subEl]) => {
                     if (!mainEl || !subEl) return;
                     mainEl.innerText = APP_VERSION_INFO.label;
-                    subEl.innerText = `Файл обновлен: ${modifiedAt}`;
+                    subEl.innerText = APP_VERSION_INFO.note;
                     mainEl.title = APP_VERSION_INFO.note;
                     subEl.title = APP_VERSION_INFO.note;
                 });
@@ -312,6 +311,7 @@
             }
 
             let purchaseInProgress = false;
+            let deletedShopItems = {};
 
             function getInventoryQty(value) {
                 return typeof value === 'boolean' ? 1 : (parseInt(value) || 0);
@@ -319,6 +319,8 @@
 
             async function buyItem(id, price) {
                 if(purchaseInProgress) return;
+                const item = SHOP_ITEMS.find(i => i.id === id);
+                if(!item || item.deleted) return tg.showAlert("Предмет больше не продается.");
                 if(globalCoins < price) return tg.showAlert("Не хватает монет!");
 
                 purchaseInProgress = true;
@@ -373,7 +375,7 @@
             function getBoxPrizeItems(id) {
                 const box = SHOP_ITEMS.find(i => i.id === id && i.type === 'box');
                 if (!box) return [];
-                return SHOP_ITEMS.filter(i => i.type !== 'box' && i.type !== 'case' && i.boxTarget === id);
+                return SHOP_ITEMS.filter(i => !i.deleted && i.type !== 'box' && i.type !== 'case' && i.boxTarget === id);
             }
 
             function openBoxPre(id) {
@@ -423,9 +425,8 @@
                         db.ref(`users/${myId}/inventory/${win.id}`).once('value').then(ss => {
                             db.ref(`users/${myId}/inventory/${win.id}`).set((parseInt(ss.val())||0)+1);
                             boxRouletteActive = false;
-                            boxAwaitingPrizeInspect = true;
                             tg.showAlert(`Выпало: ${win.name}!`);
-                            inspectItem(win.id, win.type);
+                            document.getElementById('btn-close-box').style.display = 'block';
                             renderInventory(); renderShop();
                         });
                     });
@@ -509,7 +510,10 @@
                         setSelectedModeUI(selectedGameId);
                     }
 
-                    await writeDb(`lobbies/${lobbyId}/status`, 'playing', 'start lobby game');
+                    await updateDbPaths({
+                        [`lobbies/${lobbyId}/status`]: 'playing',
+                        [`lobbies/${lobbyId}/hostPaused`]: false
+                    }, 'start lobby game');
                     setIsland("Запуск игры...", "#34c759");
                 } catch (err) {
                     tg.showAlert(getFirebaseFriendlyMessage("Не удалось запустить игру. Проверь доступ к Firebase."));
@@ -517,7 +521,7 @@
             }
 
             function startLocalGameUI() {
-                togglePause(false);
+                togglePause(false, { localOnly: true });
                 document.getElementById('result-overlay').classList.add('hidden');
                 document.getElementById('br-death-screen').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'none';
@@ -538,13 +542,23 @@
                 setIsland("ИГРА НАЧАЛАСЬ!", "#34c759");
             }
 
-            function togglePause(p) {
-                appState.isPaused = p;
-                document.getElementById('pause-overlay').classList.toggle('hidden', !p);
+            function setPauseUI(paused, hostLocked = false) {
+                appState.isPaused = !!paused;
+                appState.hostPaused = !!hostLocked;
+                document.getElementById('pause-overlay').classList.toggle('hidden', !paused);
+                const resumeBtn = document.getElementById('pause-resume-btn');
+                if (resumeBtn) resumeBtn.style.display = hostLocked && !isHost ? 'none' : 'block';
+            }
+
+            function togglePause(p, options = {}) {
+                if (!options.localOnly && appState.game && lobbyId && isHost) {
+                    db.ref(`lobbies/${lobbyId}/hostPaused`).set(!!p).catch(() => {});
+                }
+                setPauseUI(!!p, !!(p && appState.game && isHost));
             }
 
             function exitToLobby() {
-                togglePause(false);
+                togglePause(false, { localOnly: !isHost });
                 document.getElementById('game-container').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'flex';
                 document.getElementById('pause-btn').style.display = 'none';
@@ -791,7 +805,7 @@
             
             let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; let profileLoaded = false;
             
-            let friendsIds = []; let appState = { game: null, isPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
+            let friendsIds = []; let appState = { game: null, isPaused: false, hostPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
             let currentLobbySettings = {};
             let inventoryListener = null, customItemsListener = null, liveInventory = {}, inventoryLoaded = false;
@@ -836,6 +850,12 @@
                 {id: 'bg_stars', type:'bg', name: 'Звездное Небо', desc: 'ФОН', price: 1000, plainIcon: '🌌', icon: '🌌', rarity: 'RARE', boxTarget: 'box_upgrade'},
                 {id: 'bg_balloons', type:'bg', name: 'Шарики', desc: 'GIF ФОН', price: 1500, plainIcon: '🎈', icon: '🎈', rarity: 'LEGENDARY', boxTarget: 'box_upgrade'}
             ];
+
+            function getItemVisualHTML(item) {
+                if (!item) return '▫';
+                if (!item.generatedIcon) return item.plainIcon || item.icon || '▫';
+                return item.icon || item.plainIcon || '▫';
+            }
 
             function getAvatarHTML(av) { 
                 if(av === 'gif_poop') return '<span class="anim-poop">💩</span>';
@@ -1144,11 +1164,29 @@
 
                 Object.keys(customItems || {}).forEach(id => {
                     const item = customItems[id];
-                    if (item) SHOP_ITEMS.push({ ...item, isCustom: true });
+                    if (item) SHOP_ITEMS.push({ ...item, id, isCustom: true, deleted: !!item.deleted });
                 });
 
+                applyDeletedShopItems(deletedShopItems);
                 renderShop();
                 renderInventory();
+                if (typeof refreshAdminItemControls === 'function') refreshAdminItemControls();
+            }
+
+            function applyDeletedShopItems(items) {
+                deletedShopItems = items || {};
+                SHOP_ITEMS.forEach(item => {
+                    item.deleted = !!(item.deleted || deletedShopItems[item.id]);
+                });
+            }
+
+            function bindDeletedShopItemsSync() {
+                db.ref('deleted_shop_items').on('value', snap => {
+                    applyDeletedShopItems(snap.exists() ? snap.val() : {});
+                    renderShop();
+                    renderInventory();
+                    if (typeof refreshAdminItemControls === 'function') refreshAdminItemControls();
+                }, err => handleFirebaseError(err, 'deleted_shop_items listener', null));
             }
 
             function bindCustomItemsSync() {
@@ -1250,6 +1288,7 @@
 
                     await ensureFirebaseAccess();
                     
+                    bindDeletedShopItemsSync();
                     bindCustomItemsSync();
                     bindInventorySync();
 
@@ -1497,7 +1536,7 @@
                     }
                     
                     let shopHTML = ''; 
-                    SHOP_ITEMS.forEach(item => { 
+                    SHOP_ITEMS.filter(item => !item.deleted).forEach(item => { 
                         let qty = typeof inv[item.id] === 'boolean' ? 1 : (parseInt(inv[item.id])||0);
                         let owned = qty > 0; 
                         let eq = false;
@@ -1528,7 +1567,7 @@
                         if(item.type === 'name') { 
                             topDisp = `<div style="font-weight:bold;" class="market-name-preview">${getNameMarketPreviewHTML(item.id)}</div>`; 
                         } else { 
-                            topDisp = `<div style="font-size:50px;">${item.plainIcon || item.icon}</div>`; 
+                            topDisp = `<div style="font-size:50px;">${getItemVisualHTML(item)}</div>`; 
                         }
                         let inspectBtnHTML = (item.type === 'box' || item.type === 'case') ? '' : `<button class="btn btn-dark" style="font-size:12px; padding:10px; margin-top:10px;" onclick="inspectItem('${item.id}','${item.type}')">ОСМОТРЕТЬ</button>`;
                         shopHTML += `<div class="shop-item-card ${cardClass}"><div style="margin-bottom:10px; display:flex; justify-content:center; align-items:center; height:60px;">${topDisp}</div>${item.type === 'name' ? '' : `<b style="font-size:14px;">${item.name}</b>`}<span style="font-size:11px; color:gray; margin-top:5px;">${item.desc}</span>${rBar}<span style="color:var(--coin-col); font-weight:bold; font-size:16px; margin-bottom:10px;">${item.price} 🪙</span>${btnHTML}${inspectBtnHTML}</div>`; 
@@ -1558,7 +1597,7 @@
                             if(item.type==='medal') eq = myPinnedMedals.includes(item.id); 
                             if(item.type==='bg') eq = (localStorage.getItem('eq_bg') === item.id);
                             
-                            let dispIcon = item.type === 'name' ? item.plainIcon : (item.plainIcon || item.icon);
+                            let dispIcon = item.type === 'name' ? item.plainIcon : getItemVisualHTML(item);
                             
                             for(let i=0; i<qty; i++) {
                                 let isEquippedInstance = (i === 0 && eq);
@@ -1587,7 +1626,7 @@
                 document.getElementById('sell-qty-input').value = currentSellQty;
 
                 let item = SHOP_ITEMS.find(i=>i.id===id);
-                document.getElementById('action-modal-icon').innerHTML = item.type==='name'? item.plainIcon : (item.plainIcon || item.icon);
+                document.getElementById('action-modal-icon').innerHTML = item.type==='name'? item.plainIcon : getItemVisualHTML(item);
                 document.getElementById('action-modal-name').innerText = item.name;
                 let eqBtn = document.getElementById('action-btn-equip');
                 

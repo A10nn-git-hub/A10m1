@@ -409,6 +409,7 @@
 
             function acceptLobbyInvite() { 
                 if (pendingInvite) { 
+                    const acceptedInvite = { ...pendingInvite };
                     if (appState.inLobby && isHost && lobbyId && lobbyId !== pendingInvite.lId) {
                         if (lobbyRef) lobbyRef.off();
                         closeLobby({autoReopen:false});
@@ -426,7 +427,15 @@
                     document.getElementById('view-lobby').style.display = 'flex'; 
                     listenLobby(); 
                     document.getElementById('top-notify').style.top = '-100px'; 
-                    if (pendingInvite.inviteKey) db.ref(`users/${myId}/lobby_invites/${pendingInvite.inviteKey}`).remove().catch(() => {});
+                    if (acceptedInvite.inviteKey) {
+                        const chatId = getDmChatId(myId, acceptedInvite.hostId || acceptedInvite.host);
+                        updateDbPaths({
+                            [`dm_messages/${chatId}/${acceptedInvite.inviteKey}/accepted`]: true,
+                            [`dm_messages/${chatId}/${acceptedInvite.inviteKey}/acceptedAt`]: firebase.database.ServerValue.TIMESTAMP,
+                            [`dm_messages/${chatId}/${acceptedInvite.inviteKey}/acceptedBy`]: myId
+                        }, 'mark lobby invite accepted').catch(() => {});
+                        db.ref(`users/${myId}/lobby_invites/${acceptedInvite.inviteKey}`).remove().catch(() => {});
+                    }
                     db.ref(`lobbies/${lobbyId}/invites/${myId}`).remove().catch(() => {});
                     db.ref(`users/${myId}/invite`).remove().catch(() => {});
                     pendingInvite = null; 
@@ -588,6 +597,12 @@
                         setSelectedModeUI(d.game);
                         startLocalGameUI(); 
                     } 
+                    if (d.status === 'playing' && document.getElementById('game-container').style.display === 'block') {
+                        const hostPaused = !!d.hostPaused;
+                        if (hostPaused !== appState.hostPaused || (hostPaused && !appState.isPaused)) {
+                            setPauseUI(hostPaused, hostPaused);
+                        }
+                    }
                 }); 
             }
 
@@ -700,9 +715,11 @@
                 if (m.type === 'lobby_invite') {
                     const inviteKey = m.inviteKey || m.id;
                     const inviteText = escapeHTML(m.text || 'Приглашение в лобби');
-                    const button = m.to === myId
+                    const button = m.accepted
+                        ? `<button class="btn btn-disabled lobby-invite-chat-btn lobby-invite-accepted" disabled>ПРИНЯТО</button>`
+                        : (m.to === myId
                         ? `<button class="btn btn-green lobby-invite-chat-btn" onclick="event.stopPropagation(); acceptStoredLobbyInvite('${inviteKey}')">Войти</button>`
-                        : '';
+                        : '');
                     return `
                         <div class="message-bubble ${side} lobby-invite-chat">
                             <div class="lobby-invite-chat-title">Приглашение в лобби</div>

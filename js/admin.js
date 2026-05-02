@@ -8,11 +8,18 @@
                 let g = document.getElementById('admin-items-grid'); 
                 g.innerHTML = ''; 
                 SHOP_ITEMS.forEach(it => { 
+                    if (it.deleted) return;
                     let c = document.createElement('div'); 
-                    c.className = 'inv-item-card'; 
+                    c.className = 'admin-item-option'; 
                     c.style.cursor = 'pointer'; 
-                    let pIcon = it.type === 'name' ? it.plainIcon : (it.plainIcon || it.icon);
-                    c.innerHTML = `<div class="inv-item-icon">${pIcon}</div><div class="inv-item-name">${it.name}</div>`; 
+                    let pIcon = it.type === 'name' ? it.plainIcon : getItemVisualHTML(it);
+                    c.innerHTML = `
+                        <div class="admin-item-thumb">${pIcon}</div>
+                        <div class="admin-item-meta">
+                            <b>${escapeHTML(it.name)}</b>
+                            <span>${escapeHTML(it.rarity || 'UNCOMMON')}</span>
+                        </div>
+                        <div class="admin-item-price">${parseInt(it.price || 0)} 🪙</div>`; 
                     c.onclick = () => { 
                         if (adminSelectedItems.includes(it.id)) { 
                             adminSelectedItems = adminSelectedItems.filter(i => i !== it.id); 
@@ -152,22 +159,58 @@
                 }); 
             }
 
+            function makeCustomItemId(name) {
+                const base = String(name || 'item')
+                    .trim()
+                    .toLowerCase()
+                    .replace(/ё/g, 'e')
+                    .replace(/[^a-z0-9а-я]+/gi, '_')
+                    .replace(/^_+|_+$/g, '') || 'item';
+                return `custom_${base}_${Date.now().toString(36)}`;
+            }
+
+            function generatedItemIconHTML(name, type, rarity) {
+                const text = String(name || '?').trim();
+                const letters = text.replace(/[^A-Za-zА-Яа-я0-9]/g, '').slice(0, 2).toUpperCase() || '?';
+                const typeClass = ['avatar', 'name', 'medal', 'bg', 'box', 'case'].includes(type) ? type : 'other';
+                return `<span class="generated-item-icon generated-item-${typeClass} generated-rarity-${rarity || 'UNCOMMON'}">${escapeHTML(letters)}</span>`;
+            }
+
+            function refreshAdminItemControls() {
+                const typeEl = document.getElementById('ci-type');
+                const customTypeEl = document.getElementById('ci-type-custom');
+                if (typeEl && customTypeEl) customTypeEl.style.display = typeEl.value === 'other' ? 'block' : 'none';
+
+                const boxEl = document.getElementById('ci-box');
+                if (boxEl) {
+                    const boxes = SHOP_ITEMS.filter(i => !i.deleted && i.type === 'box');
+                    boxEl.innerHTML = '<option value="no">Не падает из бокса</option>' + boxes.map(i => `<option value="${escapeHTML(i.id)}">${escapeHTML(i.name)}</option>`).join('');
+                }
+
+                const deleteEl = document.getElementById('ci-delete-select');
+                if (deleteEl) {
+                    const items = SHOP_ITEMS.filter(i => !i.deleted);
+                    deleteEl.innerHTML = items.length
+                        ? items.map(i => `<option value="${escapeHTML(i.id)}">${escapeHTML(i.name)} - ${parseInt(i.price || 0)} монет</option>`).join('')
+                        : '<option value="">Магазин пуст</option>';
+                }
+            }
+
             function toggleCIBoxInput() {
-                let s = document.getElementById('ci-type').value;
-                document.getElementById('ci-type-custom').style.display = s === 'other' ? 'block' : 'none';
+                refreshAdminItemControls();
             }
 
             function createCustomItem() {
-                let id = document.getElementById('ci-id').value;
                 let name = document.getElementById('ci-name').value;
                 let type = document.getElementById('ci-type').value;
                 if(type === 'other') type = document.getElementById('ci-type-custom').value;
-                let icon = document.getElementById('ci-icon').value;
                 let price = parseInt(document.getElementById('ci-price').value) || 0;
                 let rarity = document.getElementById('ci-rarity').value;
-                let boxTarget = document.getElementById('ci-box').value || null;
+                let boxTarget = document.getElementById('ci-box').value || 'no';
+                let id = makeCustomItemId(name);
+                let icon = generatedItemIconHTML(name, type, rarity);
 
-                if(!id || !name || !icon) return tg.showAlert("Заполните ID, Имя и Иконку");
+                if(!name || !type) return tg.showAlert("Заполните название и тип");
 
                 let itemObj = {
                     id: id,
@@ -178,9 +221,32 @@
                     plainIcon: icon,
                     desc: 'Кастомный предмет',
                     rarity: rarity,
-                    boxTarget: boxTarget || 'no'
+                    boxTarget: boxTarget || 'no',
+                    generatedIcon: true,
+                    deleted: false
                 };
 
                 db.ref('custom_items/' + id).set(itemObj);
                 tg.showAlert("Предмет добавлен!");
+                document.getElementById('ci-name').value = '';
+                refreshAdminItemControls();
+            }
+
+            function deleteShopItemDev() {
+                const id = document.getElementById('ci-delete-select')?.value;
+                if (!id) return;
+                const item = SHOP_ITEMS.find(i => i.id === id);
+                if (!item) return tg.showAlert("Предмет не найден.");
+                if (!confirm(`Удалить "${item.name}" из магазина навсегда? У владельцев предмет останется.`)) return;
+
+                const updates = {};
+                if (item.isCustom) updates[`custom_items/${id}/deleted`] = true;
+                else updates[`deleted_shop_items/${id}`] = true;
+
+                db.ref().update(updates).then(() => {
+                    tg.showAlert("Предмет удален из магазина.");
+                    refreshAdminItemControls();
+                }).catch(() => {
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось удалить предмет."));
+                });
             }
