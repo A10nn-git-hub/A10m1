@@ -1006,15 +1006,15 @@
                         : '<span style="color:#777;">-</span>';
                     return `<tr>
                         <td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td>
-                        <td><input class="game-settings-input" type="number" min="1" max="9999" value="${parseInt(ps.lives) || 200}" data-setting-player="${p.id}" data-setting-field="lives" ${readonly}></td>
                         <td><input class="game-settings-input" type="number" min="1" max="10" value="${parseInt(ps.ammoPerSec) || 1}" data-setting-player="${p.id}" data-setting-field="ammoPerSec" ${readonly}></td>
+                        <td><input class="game-settings-input" type="number" min="1" max="9999" value="${parseInt(ps.lives) || 200}" data-setting-player="${p.id}" data-setting-field="lives" ${readonly}></td>
                         <td><input class="game-settings-input" type="number" min="1" max="5" value="${ps.team || ''}" placeholder="-" data-setting-player="${p.id}" data-setting-field="team" ${readonly}></td>
                         <td><input class="game-settings-input" type="number" min="1" max="15" value="${parseInt(ps.speed) || 3}" data-setting-player="${p.id}" data-setting-field="speed" ${readonly}></td>
                         <td>${aiCell}</td>
                     </tr>`;
                 }).join('');
                 return `<div class="game-settings-table-wrap"><table class="game-settings-table">
-                    <thead><tr><th>Игрок</th><th>Кол-во жизней</th><th>Патронов в сек</th><th>Команда</th><th>Скорость</th><th>Уровень ИИ</th></tr></thead>
+                    <thead><tr><th title="Игрок">👤</th><th title="Патронов в секунду">🔫</th><th title="Кол-во ХП">❤️</th><th title="Команда">🤝</th><th title="Скорость">🏃</th><th title="Уровень ИИ">🤖</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table></div>
                 <label class="game-settings-extra"><input id="setting-br-shrink" type="checkbox" ${settings.shrinkZone !== false ? 'checked' : ''} ${readonly}>уменьшение поля</label>

@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <link rel="stylesheet" href="./css/styles.css?v=20260502-lobby-ai-settings">
+    <link rel="stylesheet" href="./css/styles.css?v=20260502-solo-agent-br-icons">
 </head>
 <body>
     <div id="orientation-warning">
@@ -115,7 +115,7 @@
                         <div id="chat-messages" class="chat-messages"></div>
                         <div class="chat-compose">
                             <input id="chat-input" class="styled-input chat-input" type="text" maxlength="300" placeholder="Сообщение">
-                            <button class="btn btn-green chat-send-btn" onclick="sendChatMessage()">ОТПРАВИТЬ</button>
+                            <button class="btn btn-green chat-send-btn" aria-label="Отправить" title="Отправить" onclick="sendChatMessage()">➤</button>
                         </div>
                     </div>
                 </div>
@@ -145,6 +145,9 @@
                 </div>
                 <div class="lobby-buttons-panel" id="main-buttons-view" style="display:none;"></div>
                 <div id="view-lobby">
+                    <div class="lobby-top-actions">
+                        <button id="lobby-leave-btn" class="btn btn-red lobby-leave-btn" style="display:none;" onclick="closeLobby({autoReopen:true})">ВЫЙТИ</button>
+                    </div>
                     <div id="lobby-agents-stage" class="lobby-agents-stage"></div>
                     <div class="lobby-slots-container" id="lobby-slots-container"></div>
                     <div class="lobby-controls-bottom-right">
@@ -669,12 +672,12 @@
             <button id="ai-mic-btn" class="btn btn-gold" style="margin-top:40px; font-size:40px; padding:20px 40px; border-radius:50%;" onclick="startAiMic()">🎤</button>
             <button class="btn btn-red" style="margin-top:30px; font-size:20px; padding:15px 30px;" onclick="closeAiGame()">Выйти в лобби</button>
         </div>
-        <script src="./js/core.js?v=20260502-lobby-ai-settings"></script>
-        <script src="./js/admin.js?v=20260502-lobby-ai-settings"></script>
-        <script src="./js/social-lobby.js?v=20260502-lobby-ai-settings"></script>
-        <script src="./js/game_main.js?v=20260502-lobby-ai-settings"></script>
-        <script src="./js/game_coordination.js?v=20260502-lobby-ai-settings"></script>
-        <script src="./js/game_battle_royale.js?v=20260502-lobby-ai-settings"></script>
-        <script src="./js/boot.js?v=20260502-lobby-ai-settings"></script>
+        <script src="./js/core.js?v=20260502-solo-agent-br-icons"></script>
+        <script src="./js/admin.js?v=20260502-solo-agent-br-icons"></script>
+        <script src="./js/social-lobby.js?v=20260502-solo-agent-br-icons"></script>
+        <script src="./js/game_main.js?v=20260502-solo-agent-br-icons"></script>
+        <script src="./js/game_coordination.js?v=20260502-solo-agent-br-icons"></script>
+        <script src="./js/game_battle_royale.js?v=20260502-solo-agent-br-icons"></script>
+        <script src="./js/boot.js?v=20260502-solo-agent-br-icons"></script>
 </body>
 </html>

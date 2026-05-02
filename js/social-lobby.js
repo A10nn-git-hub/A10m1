@@ -237,7 +237,6 @@
             }
 
             function openInviteModal() { 
-                if (!isHost) return tg.showAlert("Только Хост!"); 
                 if (lobbyPlayers.length >= 5) return tg.showAlert("Полно!"); 
                 
                 let l = document.getElementById('invite-friends-list'); 
@@ -274,6 +273,48 @@
 
             function closeInviteModal() { document.getElementById('invite-modal').classList.add('hidden'); }
 
+            function getLobbyPlayerPayload() {
+                return {
+                    name: myName,
+                    avatar: myAvatar,
+                    eqName: myEqName,
+                    pMedals: myPinnedMedals,
+                    joinedAt: firebase.database.ServerValue.TIMESTAMP
+                };
+            }
+
+            function sortedLobbyPlayerEntries(players) {
+                return Object.keys(players || {}).sort((a, b) => {
+                    const aj = Number(players[a]?.joinedAt || 0);
+                    const bj = Number(players[b]?.joinedAt || 0);
+                    if (aj !== bj) return aj - bj;
+                    return String(a).localeCompare(String(b));
+                });
+            }
+
+            function hasLobbyGuestsOrInvites(data = {}) {
+                const players = data.players || {};
+                const guests = Object.keys(players).filter(id => id !== myId && !isAiFriendId(id));
+                const aiGuests = Object.keys(players).filter(id => id !== myId && isAiFriendId(id));
+                const invites = data.invites || {};
+                return guests.length > 0 || aiGuests.length > 0 || Object.keys(invites).length > 0;
+            }
+
+            function updateLobbyChrome(data = {}) {
+                const leaveBtn = document.getElementById('lobby-leave-btn');
+                const stage = document.getElementById('lobby-agents-stage');
+                const isRealLobby = hasLobbyGuestsOrInvites(data);
+                if (leaveBtn) leaveBtn.style.display = isRealLobby ? 'inline-flex' : 'none';
+                if (stage) stage.classList.toggle('home-solo-stage', !isRealLobby);
+            }
+
+            function maybePromoteMissingHost(data) {
+                if (!data || !data.players || !lobbyId) return;
+                if (data.host && data.players[data.host]) return;
+                const nextHost = sortedLobbyPlayerEntries(data.players).find(id => !isAiFriendId(id)) || sortedLobbyPlayerEntries(data.players)[0];
+                if (nextHost) db.ref(`lobbies/${lobbyId}/host`).set(nextHost).catch(() => {});
+            }
+
             async function openLobby() { 
                 if (appState.inLobby && lobbyId) {
                     appState.autoLobbyPaused = false;
@@ -284,7 +325,7 @@
                 }
 
                 const nextLobbyId = myId;
-                const nextPlayers = [{id: myId, name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}];
+                const nextPlayers = [{id: myId, name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals, joinedAt: Date.now()}];
 
                 try {
                     await writeDb('lobbies/' + nextLobbyId, {
@@ -293,7 +334,7 @@
                         status: 'waiting', 
                         clickTime: 15, 
                         players: {
-                            [myId]: {name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}
+                            [myId]: getLobbyPlayerPayload()
                         }
                     }, 'create lobby');
                 } catch (err) {
@@ -309,12 +350,13 @@
                 setSelectedModeUI(null);
                 lobbyPlayers = nextPlayers; 
                 
-                db.ref('lobbies/' + lobbyId).onDisconnect().remove();
+                db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                 
                 listenLobby(); 
                 renderLobbySlots();
                 document.getElementById('main-buttons-view').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'flex'; 
+                updateLobbyChrome({ players: { [myId]: nextPlayers[0] } });
             }
 
             function ensureHomeLobby() {
@@ -326,26 +368,36 @@
                 const shouldReopen = !!options.autoReopen;
                 appState.autoLobbyPaused = !shouldReopen;
                 appState.inLobby = false; 
+                const closingLobbyId = lobbyId;
+                const wasHost = isHost;
                 if (lobbyRef) lobbyRef.off(); 
-                db.ref('lobbies/' + lobbyId).onDisconnect().cancel();
-                db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().cancel();
+                if (closingLobbyId) {
+                    db.ref('lobbies/' + closingLobbyId).onDisconnect().cancel();
+                    db.ref(`lobbies/${closingLobbyId}/players/${myId}`).onDisconnect().cancel();
+                }
                 
-                if (isHost) { 
-                    let rem = lobbyPlayers.filter(p => p.id !== myId && !p.id.startsWith('ИИ'));
+                if (closingLobbyId && wasHost) { 
+                    let rem = lobbyPlayers
+                        .filter(p => p.id !== myId && !p.id.startsWith('ИИ'))
+                        .sort((a, b) => (Number(a.joinedAt || 0) - Number(b.joinedAt || 0)));
                     if (rem.length > 0) {
                         let newHost = rem[0].id; 
-                        db.ref(`lobbies/${lobbyId}/host`).set(newHost); 
-                        db.ref(`lobbies/${lobbyId}/players/${myId}`).remove();
+                        db.ref(`lobbies/${closingLobbyId}/host`).set(newHost); 
+                        db.ref(`lobbies/${closingLobbyId}/players/${myId}`).remove();
                     } else { 
-                        db.ref('lobbies/' + lobbyId).remove(); 
+                        db.ref('lobbies/' + closingLobbyId).remove(); 
                     }
-                } else { 
-                    db.ref(`lobbies/${lobbyId}/players/${myId}`).remove(); 
+                } else if (closingLobbyId) { 
+                    db.ref(`lobbies/${closingLobbyId}/players/${myId}`).remove(); 
                 } 
                 document.getElementById('main-buttons-view').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'none'; 
+                updateLobbyChrome({});
                 pendingModeId = null;
                 setSelectedModeUI(null);
+                lobbyId = null;
+                isHost = false;
+                lobbyPlayers = [];
                 if (shouldReopen) setTimeout(ensureHomeLobby, 300);
             }
 
@@ -359,15 +411,13 @@
                 if (pendingInvite) { 
                     if (appState.inLobby && isHost && lobbyId && lobbyId !== pendingInvite.lId) {
                         if (lobbyRef) lobbyRef.off();
-                        db.ref('lobbies/' + lobbyId).remove();
+                        closeLobby({autoReopen:false});
                     }
                     lobbyId = pendingInvite.lId; 
                     isHost = false; 
                     pendingModeId = null;
                     setSelectedModeUI(null);
-                    db.ref(`lobbies/${lobbyId}/players/${myId}`).set({ 
-                        name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals 
-                    }); 
+                    db.ref(`lobbies/${lobbyId}/players/${myId}`).set(getLobbyPlayerPayload()); 
                     db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                     appState.inLobby = true; 
                     appState.autoLobbyPaused = false;
@@ -377,13 +427,14 @@
                     listenLobby(); 
                     document.getElementById('top-notify').style.top = '-100px'; 
                     if (pendingInvite.inviteKey) db.ref(`users/${myId}/lobby_invites/${pendingInvite.inviteKey}`).remove().catch(() => {});
+                    db.ref(`lobbies/${lobbyId}/invites/${myId}`).remove().catch(() => {});
                     db.ref(`users/${myId}/invite`).remove().catch(() => {});
                     pendingInvite = null; 
                 } 
             }
 
             function inviteBotLobby() { 
-                if (!isHost || lobbyPlayers.length >= 5) return; 
+                if (lobbyPlayers.length >= 5) return; 
                 closeFriendModal(); 
                 let aiNames = ['ИИ', 'ИИ2', 'ИИ3', 'ИИ4', 'ИИ5'];
                 const aiId = aiNames.find(id => !lobbyPlayers.some(p => p.id === id));
@@ -395,16 +446,41 @@
                 if (lobbyPlayers.length >= 5) return; 
                 let rawName = myEqName ? SHOP_ITEMS.find(i => i.id === myEqName)?.name || myName : myName;
                 const inviteRef = db.ref(`users/${id}/lobby_invites`).push();
+                const chatId = getDmChatId(myId, id);
+                const createdAt = firebase.database.ServerValue.TIMESTAMP;
                 const invite = {
                     lId: lobbyId,
                     host: rawName,
                     hostId: myId,
-                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                    createdAt
                 };
+                const inviteMsg = {
+                    from: myId,
+                    to: id,
+                    text: `${rawName} зовет в лобби`,
+                    type: 'lobby_invite',
+                    inviteKey: inviteRef.key,
+                    invite,
+                    createdAt
+                };
+                const preview = { chatId, lastText: 'Приглашение в лобби', lastFrom: myId, updatedAt: createdAt };
                 updateDbPaths({
                     [`users/${id}/invite`]: { ...invite, inviteKey: inviteRef.key },
-                    [`users/${id}/lobby_invites/${inviteRef.key}`]: invite
+                    [`users/${id}/lobby_invites/${inviteRef.key}`]: invite,
+                    [`lobbies/${lobbyId}/invites/${id}`]: { from: myId, createdAt },
+                    [`dm_threads/${chatId}/members/${myId}`]: true,
+                    [`dm_threads/${chatId}/members/${id}`]: true,
+                    [`dm_threads/${chatId}/updatedAt`]: createdAt,
+                    [`dm_threads/${chatId}/lastMessage`]: { id: inviteRef.key, from: myId, text: 'Приглашение в лобби', createdAt },
+                    [`dm_messages/${chatId}/${inviteRef.key}`]: inviteMsg,
+                    [`users/${myId}/message_threads/${id}`]: { ...preview, friendId: id, unread: 0 },
+                    [`users/${id}/message_threads/${myId}/chatId`]: chatId,
+                    [`users/${id}/message_threads/${myId}/lastText`]: 'Приглашение в лобби',
+                    [`users/${id}/message_threads/${myId}/lastFrom`]: myId,
+                    [`users/${id}/message_threads/${myId}/updatedAt`]: createdAt,
+                    [`users/${id}/message_threads/${myId}/friendId`]: myId
                 }, 'send lobby invite').then(() => {
+                    db.ref(`users/${id}/message_threads/${myId}/unread`).transaction(v => (parseInt(v) || 0) + 1);
                     tg.showAlert("Отправлено!");
                 }).catch(() => {
                     tg.showAlert(getFirebaseFriendlyMessage("Не удалось отправить приглашение."));
@@ -420,7 +496,7 @@
                 closeFriendModal(); 
                 db.ref('lobbies/' + lobbyId).once('value').then(s => { 
                     if (s.exists()) { 
-                        db.ref(`lobbies/${lobbyId}/players/${myId}`).set({name: myName, avatar: myAvatar, eqName: myEqName, pMedals: myPinnedMedals}); 
+                        db.ref(`lobbies/${lobbyId}/players/${myId}`).set(getLobbyPlayerPayload()); 
                         db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                         appState.inLobby = true; 
                         appState.autoLobbyPaused = false;
@@ -446,15 +522,14 @@
                         return; 
                     } 
                     let d = snap.val(); 
+                    maybePromoteMissingHost(d);
                     if (!isHost && (!d.players || !d.players[myId])) { 
                         tg.showAlert("Вы удалены из лобби."); 
                         closeLobby({autoReopen:true});
                         return; 
                     }
-                    if (d.host === myId && !isHost) { 
-                        isHost = true; 
-                        db.ref(`lobbies/${lobbyId}`).onDisconnect().remove(); 
-                    } 
+                    isHost = d.host === myId;
+                    if (isHost) db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
 
                     currentLobbySettings = d.settings || {};
                     lobbyPlayers = []; 
@@ -467,6 +542,7 @@
                         }); 
                     } 
                     renderLobbySlots(); 
+                    updateLobbyChrome(d);
                     
                     setSelectedModeUI(d.game || null);
                     if (!document.getElementById('game-settings-modal')?.classList.contains('hidden') && !isEditingGameSettingsModal()) {
@@ -539,22 +615,6 @@
                 db.ref(`users/${myId}/message_threads`).on('value', messagesBadgeListener);
             }
 
-            function renderInviteRow(key, invite) {
-                const row = document.createElement('div');
-                row.className = 'message-friend-row lobby-invite-row';
-                row.innerHTML = `
-                    <div class="friend-row">
-                        <div class="lobby-invite-seal">AOE</div>
-                        <div class="message-friend-meta">
-                            <div>Приглашение в лобби</div>
-                            <span>${escapeHTML(invite.host || 'Игрок')} зовет в игру</span>
-                        </div>
-                    </div>
-                    <button class="btn btn-green" style="padding:7px 10px;font-size:12px;z-index:1;" onclick="event.stopPropagation(); acceptStoredLobbyInvite('${key}')">Войти</button>`;
-                row.onclick = () => acceptStoredLobbyInvite(key);
-                return row;
-            }
-
             function acceptStoredLobbyInvite(key) {
                 db.ref(`users/${myId}/lobby_invites/${key}`).once('value').then(s => {
                     if (!s.exists()) return tg.showAlert("Приглашение уже недоступно.");
@@ -570,21 +630,18 @@
 
                 db.ref(`users/${myId}/message_threads`).once('value').then(threadSnap => {
                     const threads = threadSnap.exists() ? threadSnap.val() : {};
-                    const sorted = [...realFriends].sort((a, b) => (threads[b]?.updatedAt || 0) - (threads[a]?.updatedAt || 0));
-                    list.innerHTML = '';
-                    db.ref(`users/${myId}/lobby_invites`).once('value').then(inviteSnap => {
-                        const invites = inviteSnap.exists() ? inviteSnap.val() : {};
-                        Object.keys(invites)
-                            .sort((a, b) => (invites[b]?.createdAt || 0) - (invites[a]?.createdAt || 0))
-                            .forEach(key => list.appendChild(renderInviteRow(key, invites[key] || {})));
-                        if (sorted.length === 0 && Object.keys(invites).length === 0) {
-                            list.innerHTML = '<div class="chat-empty">Нет сообщений</div>';
-                        }
+                    const ids = Array.from(new Set([...realFriends, ...Object.keys(threads).filter(id => !isAiFriendId(id))]));
+                    const sorted = ids.sort((a, b) => {
+                        const af = realFriends.includes(a) ? 1 : 0;
+                        const bf = realFriends.includes(b) ? 1 : 0;
+                        if (af !== bf) return bf - af;
+                        return (threads[b]?.updatedAt || 0) - (threads[a]?.updatedAt || 0);
                     });
+                    list.innerHTML = '';
+                    if (sorted.length === 0) list.innerHTML = '<div class="chat-empty">Нет сообщений</div>';
                     sorted.forEach(id => {
                         db.ref('users/' + id).once('value').then(s => {
-                            if (!s.exists()) return;
-                            const p = s.val();
+                            const p = s.exists() ? s.val() : { name: `Игрок ${id}`, avatar: '👤', eqName: '' };
                             const row = document.createElement('div');
                             row.className = 'message-friend-row';
                             const lastText = threads[id]?.lastText ? escapeHTML(threads[id].lastText) : 'Нет сообщений';
@@ -632,13 +689,31 @@
                     const rows = Object.keys(messages)
                         .map(key => ({id: key, ...messages[key]}))
                         .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
-                    box.innerHTML = rows.map(m => `
-                        <div class="message-bubble ${m.from === myId ? 'own' : 'friend'}">
-                            <div>${escapeHTML(m.text)}</div>
-                        </div>`).join('');
+                    box.innerHTML = rows.map(renderChatMessage).join('');
                     box.scrollTop = box.scrollHeight;
                 };
                 db.ref(`dm_messages/${chatId}`).on('value', chatMessagesListener);
+            }
+
+            function renderChatMessage(m) {
+                const side = m.from === myId ? 'own' : 'friend';
+                if (m.type === 'lobby_invite') {
+                    const inviteKey = m.inviteKey || m.id;
+                    const inviteText = escapeHTML(m.text || 'Приглашение в лобби');
+                    const button = m.to === myId
+                        ? `<button class="btn btn-green lobby-invite-chat-btn" onclick="event.stopPropagation(); acceptStoredLobbyInvite('${inviteKey}')">Войти</button>`
+                        : '';
+                    return `
+                        <div class="message-bubble ${side} lobby-invite-chat">
+                            <div class="lobby-invite-chat-title">Приглашение в лобби</div>
+                            <div>${inviteText}</div>
+                            ${button}
+                        </div>`;
+                }
+                return `
+                    <div class="message-bubble ${side}">
+                        <div>${escapeHTML(m.text)}</div>
+                    </div>`;
             }
 
             function sendChatMessage() {
