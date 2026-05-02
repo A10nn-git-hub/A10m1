@@ -895,6 +895,8 @@
                         perPlayer[p.id] = {
                             lives: isAiFriendId(p.id) ? 150 : 200,
                             ammoPerSec: 4,
+                            team: '',
+                            speed: 5,
                             aiLevel: isAiFriendId(p.id) ? 2 : null
                         };
                     });
@@ -927,6 +929,8 @@
                     if (gameId === 'br_2d') {
                         merged.players[p.id].lives = Math.max(1, parseInt(merged.players[p.id].lives) || (isAiFriendId(p.id) ? 150 : 200));
                         merged.players[p.id].ammoPerSec = Math.max(1, Math.min(10, parseInt(merged.players[p.id].ammoPerSec) || 4));
+                        merged.players[p.id].team = ['1','2','3','4','5'].includes(String(merged.players[p.id].team || '')) ? String(merged.players[p.id].team) : '';
+                        merged.players[p.id].speed = Math.max(1, Math.min(20, parseInt(merged.players[p.id].speed) || 5));
                         merged.players[p.id].aiLevel = isAiFriendId(p.id) ? Math.max(1, Math.min(3, parseInt(merged.players[p.id].aiLevel) || 2)) : null;
                     }
                 });
@@ -993,11 +997,13 @@
                         <td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td>
                         <td><input class="game-settings-input" type="number" min="1" max="9999" value="${parseInt(ps.lives) || 200}" data-setting-player="${p.id}" data-setting-field="lives" ${readonly}></td>
                         <td><input class="game-settings-input" type="number" min="1" max="10" value="${parseInt(ps.ammoPerSec) || 4}" data-setting-player="${p.id}" data-setting-field="ammoPerSec" ${readonly}></td>
+                        <td><input class="game-settings-input" type="number" min="1" max="5" value="${ps.team || ''}" placeholder="-" data-setting-player="${p.id}" data-setting-field="team" ${readonly}></td>
+                        <td><input class="game-settings-input" type="number" min="1" max="20" value="${parseInt(ps.speed) || 5}" data-setting-player="${p.id}" data-setting-field="speed" ${readonly}></td>
                         <td>${aiCell}</td>
                     </tr>`;
                 }).join('');
                 return `<div class="game-settings-table-wrap"><table class="game-settings-table">
-                    <thead><tr><th>Игрок</th><th>Кол-во жизней</th><th>Патронов в сек</th><th>Уровень ИИ</th></tr></thead>
+                    <thead><tr><th>Игрок</th><th>Кол-во жизней</th><th>Патронов в сек</th><th>Команда</th><th>Скорость</th><th>Уровень ИИ</th></tr></thead>
                     <tbody>${rows}</tbody>
                 </table></div>
                 <label class="game-settings-extra"><input id="setting-br-shrink" type="checkbox" ${settings.shrinkZone !== false ? 'checked' : ''} ${readonly}>уменьшение поля</label>
@@ -1062,13 +1068,26 @@
                     lobbySettingsPlayers().forEach(p => {
                         const lives = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="lives"]`)?.value || 200);
                         const ammo = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="ammoPerSec"]`)?.value || 4);
+                        const teamRaw = String(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="team"]`)?.value || '').trim();
+                        const speed = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="speed"]`)?.value || 5);
                         const aiLevel = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="aiLevel"]`)?.value || 2);
+                        if (teamRaw && !['1','2','3','4','5'].includes(teamRaw)) {
+                            if (error) error.innerText = 'Команда должна быть пустой или цифрой от 1 до 5.';
+                            return;
+                        }
+                        if (!Number.isFinite(speed) || speed < 1 || speed > 20) {
+                            if (error) error.innerText = 'Скорость должна быть от 1 до 20.';
+                            return;
+                        }
                         settings.players[p.id] = {
                             lives: Math.max(1, Math.min(9999, Math.round(lives || 1))),
                             ammoPerSec: Math.max(1, Math.min(10, Math.round(ammo || 1))),
+                            team: teamRaw,
+                            speed: Math.round(speed),
                             aiLevel: isAiFriendId(p.id) ? Math.max(1, Math.min(3, Math.round(aiLevel || 1))) : null
                         };
                     });
+                    if (Object.keys(settings.players).length !== lobbySettingsPlayers().length) return null;
                     return settings;
                 }
                 if (gameId === 'tictactoe') {

@@ -30,6 +30,41 @@
             const BR_DEFAULT_HP = 200;
             let joyTouch = null, shootTouch = null, jx = 0, jy = 0, isShooting = false, lastShot = 0;
 
+            function brNormalizeTeam(value) {
+                const team = String(value || '').trim();
+                return ['1','2','3','4','5'].includes(team) ? team : '';
+            }
+
+            function brNormalizeSpeed(value) {
+                return Math.max(1, Math.min(20, parseInt(value) || 5));
+            }
+
+            function brSpeedMultiplier(value) {
+                return brNormalizeSpeed(value) / 5;
+            }
+
+            function brTeamFor(entityOrId) {
+                if (!entityOrId) return '';
+                if (typeof entityOrId === 'object') return brNormalizeTeam(entityOrId.team);
+                if (br.myP && br.myP.id === entityOrId) return brNormalizeTeam(br.myP.team);
+                const bot = br.bots.find(b => b.id === entityOrId);
+                if (bot) return brNormalizeTeam(bot.team);
+                const player = br.remotePlayers[entityOrId];
+                if (player) return brNormalizeTeam(player.team);
+                return '';
+            }
+
+            function brAreAllies(a, b) {
+                const teamA = brTeamFor(a);
+                const teamB = brTeamFor(b);
+                return !!teamA && teamA === teamB;
+            }
+
+            function brIsEnemyTarget(ownerId, target) {
+                const targetId = typeof target === 'object' ? target.id : target;
+                return ownerId !== targetId && !brAreAllies(ownerId, target);
+            }
+
             function brSpawnForId(id) {
                 const seed = String(id || '0').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);
                 const angle = (seed % 360) * Math.PI / 180;
@@ -60,6 +95,8 @@
                 br.settings = mergedSettingsForGame('br_2d');
                 const mySettings = br.settings.players?.[myId] || {};
                 const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                const myTeam = brNormalizeTeam(mySettings.team);
+                const mySpeed = brNormalizeSpeed(mySettings.speed);
                 br.serverHp = myMaxHp;
                 br.damageTaken = 0;
                 br.lastSyncX = 0;
@@ -70,7 +107,7 @@
                 lastShot = 0;
 
                 const spawn = brSpawnForId(myId);
-                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000 };
+                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000 };
                 br.lastSyncX = br.myP.x;
                 br.lastSyncY = br.myP.y;
 
@@ -210,6 +247,8 @@
                             vy: 0,
                             hp: Math.max(1, parseInt(br.settings.players?.[p.id]?.lives) || BR_DEFAULT_HP),
                             maxHp: Math.max(1, parseInt(br.settings.players?.[p.id]?.lives) || BR_DEFAULT_HP),
+                            team: brNormalizeTeam(br.settings.players?.[p.id]?.team),
+                            speed: brNormalizeSpeed(br.settings.players?.[p.id]?.speed),
                             damageTaken: 0,
                             a: 0,
                             kills: 0,
@@ -232,7 +271,7 @@
                         const botHp = Math.max(1, parseInt(botSettings.lives) || 150);
                         const botLevel = Math.max(1, Math.min(3, parseInt(botSettings.aiLevel) || 2));
                         const botAmmo = Math.max(1, Math.min(10, parseInt(botSettings.ammoPerSec) || 4));
-                        bots.push({ id: 'bot' + i, label: 'Бот ' + (i + 1), x: sp.x, y: sp.y, hp: botHp, maxHp: botHp, aiLevel: botLevel, ammoPerSec: botAmmo, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                        bots.push({ id: 'bot' + i, label: 'Бот ' + (i + 1), sourcePlayerId: sourceAi?.id || '', x: sp.x, y: sp.y, hp: botHp, maxHp: botHp, team: brNormalizeTeam(botSettings.team), speed: brNormalizeSpeed(botSettings.speed), aiLevel: botLevel, ammoPerSec: botAmmo, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
                     }
 
                     updateDbPaths(Object.assign({
@@ -308,6 +347,8 @@
                     shotVy: Number((br.myP.shotVy || 0).toFixed(2)),
                     shotA: br.myP.shotA !== undefined ? br.myP.shotA : br.myP.a,
                     maxHp: br.myP.maxHp || BR_DEFAULT_HP,
+                    team: brNormalizeTeam(br.myP.team),
+                    speed: brNormalizeSpeed(br.myP.speed),
                     updatedAt: firebase.database.ServerValue.TIMESTAMP
                 };
                 if (includeHealth) {
@@ -447,7 +488,7 @@
             function updateBrLocalPlayer(now) {
                 if (br.myP.hp <= 0) return;
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                let speed = 6;
+                let speed = 6 * brSpeedMultiplier(br.myP.speed);
                 const oldX = br.myP.x;
                 const oldY = br.myP.y;
 
@@ -511,7 +552,7 @@
                 br.bots.forEach(b => {
                     if (!b.alive || b.hp <= 0) return;
                     const level = Math.max(1, Math.min(3, parseInt(b.aiLevel) || 1));
-                    const targets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0);
+                    const targets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0 && brIsEnemyTarget(b.id, p));
                     const target = targets[Math.floor(Math.random() * targets.length)];
                     if (now > (b.nextThink || 0)) {
                         if (target && level === 3) {
@@ -528,8 +569,9 @@
                     let dist = Math.hypot(dx, dy);
                     if (dist > 10) {
                         b.a = Math.atan2(dy, dx);
-                        b.x += Math.cos(b.a) * 2;
-                        b.y += Math.sin(b.a) * 2;
+                        const botSpeed = 2 * brSpeedMultiplier(b.speed);
+                        b.x += Math.cos(b.a) * botSpeed;
+                        b.y += Math.sin(b.a) * botSpeed;
                         changed = true;
                     }
                     if (Math.hypot(b.x - br.zone.x, b.y - br.zone.y) > br.zone.r) {
@@ -576,6 +618,7 @@
                     let hit = false;
                     br.bots.forEach(b => {
                         if (hit || !b.alive || b.hp <= 0) return;
+                        if (!brIsEnemyTarget(bul.owner, b)) return;
                         if (Math.hypot(bul.x - b.x, bul.y - b.y) < BR_PLAYER_R) {
                             b.hp -= 25;
                             hit = true;
@@ -591,6 +634,7 @@
 
                     Object.values(br.remotePlayers).forEach(p => {
                         if (hit || (!bul.isBot && p.id === myId) || !p.alive || p.hp <= 0) return;
+                        if (!brIsEnemyTarget(bul.owner, p)) return;
                         if (Math.hypot(bul.x - p.x, bul.y - p.y) < BR_PLAYER_R) {
                             hit = true;
                             const maxHp = Math.max(1, parseInt(p.maxHp) || BR_DEFAULT_HP);
@@ -631,13 +675,14 @@
                     const x = (Number(bul.x) || 0) + (Number(bul.vx) || 0) * steps;
                     const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
 
-                    if (br.myP && br.myP.hp > 0 && Math.hypot(x - br.myP.x, y - br.myP.y) < BR_PLAYER_R) {
+                    if (br.myP && br.myP.hp > 0 && brIsEnemyTarget(bul.owner, br.myP) && Math.hypot(x - br.myP.x, y - br.myP.y) < BR_PLAYER_R) {
                         delete br.remoteBullets[key];
                         return;
                     }
 
                     const hitRemote = Object.values(br.remotePlayers).some(p => {
                         if (!p || p.id === myId || p.id === bul.owner || !p.alive || p.hp <= 0) return false;
+                        if (!brIsEnemyTarget(bul.owner, p)) return false;
                         const rp = getBrRenderablePlayer(p);
                         return Math.hypot(x - rp.x, y - rp.y) < BR_PLAYER_R;
                     });
@@ -714,10 +759,17 @@
             function getBrAliveRows() {
                 const rows = [];
                 Object.values(br.remotePlayers).forEach(p => {
-                    rows.push({ id: p.id, name: p.name || 'Игрок', kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 });
+                    rows.push({ id: p.id, name: p.name || 'Игрок', team: brNormalizeTeam(p.team), kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 });
                 });
-                br.bots.forEach(b => rows.push({ id: b.id, name: b.label || b.id, kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 }));
+                br.bots.forEach(b => rows.push({ id: b.id, name: b.label || b.id, team: brNormalizeTeam(b.team), kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 }));
                 return rows.filter(r => r.alive);
+            }
+
+            function brWinningTeamForAliveRows(alive) {
+                if (!alive.length) return '';
+                const firstTeam = brNormalizeTeam(alive[0].team);
+                if (!firstTeam) return alive.length === 1 ? '' : null;
+                return alive.every(r => brNormalizeTeam(r.team) === firstTeam) ? firstTeam : null;
             }
 
             function checkBrEnd() {
@@ -730,24 +782,29 @@
                 }
                 if (br.freeRoam) return;
                 const alive = getBrAliveRows();
-                if (alive.length <= 1 && alive.some(r => r.id === myId)) showBrFinal(true);
+                const myTeam = brNormalizeTeam(br.myP.team);
+                const winnerTeam = brWinningTeamForAliveRows(alive);
+                const mySideAlive = alive.some(r => r.id === myId || (!!myTeam && brNormalizeTeam(r.team) === myTeam));
+                if (alive.length <= 1 && alive.some(r => r.id === myId)) showBrFinal(true, '');
+                else if (winnerTeam !== null && mySideAlive) showBrFinal(true, winnerTeam);
             }
 
-            function showBrFinal(isWin) {
+            function showBrFinal(isWin, winnerTeam = '') {
                 br.placeShown = true;
                 br.active = false;
                 const allRows = Object.values(br.remotePlayers)
-                    .map(p => ({ id: p.id, name: p.name || 'Игрок', kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 }))
-                    .concat(br.bots.map(b => ({ id: b.id, name: b.label || b.id, kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 })))
+                    .map(p => ({ id: p.id, name: p.name || 'Игрок', team: brNormalizeTeam(p.team), kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 }))
+                    .concat(br.bots.map(b => ({ id: b.id, name: b.label || b.id, team: brNormalizeTeam(b.team), kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 })))
                     .sort((a, b) => Number(b.alive) - Number(a.alive) || b.kills - a.kills);
 
                 const winner = allRows[0] || {name: myName, kills: br.kills};
+                const winnerLabel = winnerTeam ? `КОМАНДА ${winnerTeam}` : escapeHTML(winner.name);
                 let ds = document.getElementById('br-death-screen');
                 ds.style.display = 'flex';
                 document.getElementById('br-death-title').innerText = isWin ? 'ПОБЕДА!' : 'МАТЧ ОКОНЧЕН';
                 document.getElementById('br-death-title').style.color = isWin ? '#ffd60a' : '#ff453a';
                 document.getElementById('br-death-sub').innerHTML = `
-                    <div class="br-final-winner">ПОБЕДИТЕЛЬ: ${escapeHTML(winner.name)} - ${winner.kills || 0} КИЛЛОВ</div>
+                    <div class="br-final-winner">ПОБЕДИТЕЛЬ: ${winnerLabel} - ${winner.kills || 0} КИЛЛОВ</div>
                     <div class="br-final-list">
                         ${allRows.slice(1).map((r, i) => `<div>${i + 2}. ${escapeHTML(r.name)} - ${r.kills || 0} киллов</div>`).join('')}
                     </div>`;

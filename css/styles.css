@@ -250,7 +250,7 @@
         .settings-close-btn { width: 44px; height: 44px; border: none; border-radius: 8px; background: #ff453a; color: #fff; font-size: 18px; cursor: pointer; flex: 0 0 auto; }
         .game-settings-body { padding: 18px 20px; overflow-y: auto; text-align: left; }
         .game-settings-table-wrap { width: 100%; overflow-x: auto; border: 1px solid #3a3a3a; border-radius: 8px; background: #111; }
-        .game-settings-table { width: 100%; min-width: 650px; border-collapse: collapse; }
+        .game-settings-table { width: 100%; min-width: 850px; border-collapse: collapse; }
         .game-settings-table th, .game-settings-table td { padding: 10px; border-bottom: 1px solid #303033; color: #fff; text-align: left; vertical-align: middle; }
         .game-settings-table th { color: #8e8e93; font-size: 12px; text-transform: uppercase; background: #19191b; }
         .game-settings-table tr:last-child td { border-bottom: none; }
