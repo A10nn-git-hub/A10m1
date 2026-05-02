@@ -61,6 +61,11 @@
             <div id="tab-profile" class="tab-view">
                 <div class="profile-layout-container">
                     <div class="profile-left-col profile-left-col-flat">
+                        <div id="my-profile-visual-card" class="profile-visual-card">
+                            <div id="my-card-avatar" class="profile-visual-avatar">😎</div>
+                            <div id="my-card-name" class="profile-visual-name">Игрок</div>
+                            <div id="my-card-medals" class="medals-container"></div>
+                        </div>
                         <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
                         <div class="profile-name-container">
                             <div class="profile-name" id="my-name-display" onclick="changeName()">Игрок ✏️</div>
@@ -152,10 +157,10 @@
                     <div class="lobby-slots-container" id="lobby-slots-container"></div>
                     <div class="lobby-controls-bottom-right">
                         <div class="mode-text" id="selected-mode-text" style="font-size:18px; font-weight:bold;">Режим не выбран</div>
-                        <button class="btn btn-dark" onclick="openSO2ModeSelect()">Выбрать режим 📋</button>
                         <div class="lobby-start-row">
                             <button class="lobby-settings-btn" aria-label="Настройки игры" title="Настройки игры" onclick="openGameSettingsModal()">⚙</button>
-                            <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()">ИГРАТЬ!</button>
+                            <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()"><span>Выбрать<br>режим</span><span>Играть</span></button>
+                            <div class="lobby-guest-mode" id="lobby-guest-mode">РЕЖИМ НЕ ВЫБРАН</div>
                         </div>
                     </div>
                 </div>
@@ -617,6 +622,11 @@
         <div id="profile-stats-modal" class="overlay glass hidden" onclick="closeProfileStatsModal(event)" style="z-index: 5000;">
             <div style="background:#1c1c1e;padding:25px;border-radius:20px;width:600px;max-width:95vw;border:2px solid var(--coin-col); max-height:85vh; display:flex; flex-direction:row; gap:20px; position:relative;" onclick="event.stopPropagation()">
                 <div style="width: 35%; border-right: 2px solid #444; padding-right: 15px; display:flex; flex-direction:column; align-items:center;">
+                    <div id="ps-player-card" class="profile-visual-card">
+                        <div id="ps-card-avatar" class="profile-visual-avatar">👤</div>
+                        <div id="ps-card-name" class="profile-visual-name">Игрок</div>
+                        <div id="ps-card-medals" class="medals-container"></div>
+                    </div>
                     <div id="ps-avatar" class="inspect-avatar" style="font-size:64px; margin-bottom: 10px;"></div>
                     <div id="ps-name" style="font-size:24px;font-weight:900;line-height:1.2; text-align:center; width:100%; overflow:hidden; text-overflow:ellipsis;"></div>
                     <div id="ps-id" style="color:#888;font-family:monospace;margin-top:5px; margin-bottom:15px;"></div>
