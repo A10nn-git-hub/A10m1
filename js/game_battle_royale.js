@@ -13,6 +13,7 @@
                 loop: null,
                 kills: 0,
                 placeShown: false,
+                isSpectator: false,
                 freeRoam: false,
                 serverHp: 200,
                 damageTaken: 0,
@@ -36,11 +37,11 @@
             }
 
             function brNormalizeSpeed(value) {
-                return Math.max(1, Math.min(20, parseInt(value) || 5));
+                return Math.max(1, Math.min(15, parseInt(value) || 3));
             }
 
             function brSpeedMultiplier(value) {
-                return brNormalizeSpeed(value) / 5;
+                return brNormalizeSpeed(value) / 3;
             }
 
             function brTeamFor(entityOrId) {
@@ -65,6 +66,10 @@
                 return ownerId !== targetId && !brAreAllies(ownerId, target);
             }
 
+            function brIsInvulnerable(target, now = Date.now()) {
+                return !!target && Number(target.invulnUntil || target.invuln || 0) > now;
+            }
+
             function brSpawnForId(id) {
                 const seed = String(id || '0').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);
                 const angle = (seed % 360) * Math.PI / 180;
@@ -83,6 +88,7 @@
                 br.active = true;
                 br.kills = 0;
                 br.placeShown = false;
+                br.isSpectator = false;
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: BR_SIZE };
                 br.remotePlayers = {};
                 br.remotePlayerViews = {};
@@ -107,17 +113,19 @@
                 lastShot = 0;
 
                 const spawn = brSpawnForId(myId);
-                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000 };
+                const invulnUntil = Date.now() + 5000;
+                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: invulnUntil, invulnUntil };
                 br.lastSyncX = br.myP.x;
                 br.lastSyncY = br.myP.y;
 
                 document.getElementById('br-ui-alive').innerText = 'Живых: ?';
                 document.getElementById('br-ui-kills').innerText = 'Киллы: 0';
+                const spectatorLabel = document.getElementById('br-ui-spectator');
+                if (spectatorLabel) spectatorLabel.style.display = 'none';
                 document.getElementById('br-death-screen').style.display = 'none';
 
                 let c = document.getElementById('br-canvas');
-                c.width = window.innerWidth;
-                c.height = window.innerHeight;
+                resizeBrCanvas();
 
                 bindBrControls();
                 initBrFirebaseState();
@@ -249,6 +257,7 @@
                             maxHp: Math.max(1, parseInt(br.settings.players?.[p.id]?.lives) || BR_DEFAULT_HP),
                             team: brNormalizeTeam(br.settings.players?.[p.id]?.team),
                             speed: brNormalizeSpeed(br.settings.players?.[p.id]?.speed),
+                            invulnUntil: Date.now() + 5000,
                             damageTaken: 0,
                             a: 0,
                             kills: 0,
@@ -270,7 +279,7 @@
                         const botSettings = br.settings.players?.[sourceAi?.id] || {};
                         const botHp = Math.max(1, parseInt(botSettings.lives) || 150);
                         const botLevel = Math.max(1, Math.min(3, parseInt(botSettings.aiLevel) || 2));
-                        const botAmmo = Math.max(1, Math.min(10, parseInt(botSettings.ammoPerSec) || 4));
+                        const botAmmo = Math.max(1, Math.min(10, parseInt(botSettings.ammoPerSec) || 1));
                         bots.push({ id: 'bot' + i, label: 'Бот ' + (i + 1), sourcePlayerId: sourceAi?.id || '', x: sp.x, y: sp.y, hp: botHp, maxHp: botHp, team: brNormalizeTeam(botSettings.team), speed: brNormalizeSpeed(botSettings.speed), aiLevel: botLevel, ammoPerSec: botAmmo, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
                     }
 
@@ -289,11 +298,11 @@
                     const remoteMe = br.remotePlayers[myId];
                     if (remoteMe && br.myP) {
                         const serverDamage = Math.max(parseInt(br.damageByPlayer[myId]) || 0, parseInt(remoteMe.damageTaken) || 0);
-                        br.damageTaken = Math.max(br.damageTaken, serverDamage);
                         const maxHp = Math.max(1, parseInt(remoteMe.maxHp) || parseInt(br.myP.maxHp) || BR_DEFAULT_HP);
                         const legacyHp = remoteMe.hp === undefined ? maxHp : (parseInt(remoteMe.hp) || 0);
-                        const serverHp = Math.min(legacyHp, Math.max(0, maxHp - br.damageTaken));
-                        br.myP.hp = Math.min(br.myP.hp, serverHp);
+                        if (!brIsInvulnerable(br.myP)) br.damageTaken = Math.max(br.damageTaken, serverDamage);
+                        const serverHp = brIsInvulnerable(br.myP) ? maxHp : Math.min(legacyHp, Math.max(0, maxHp - br.damageTaken));
+                        br.myP.hp = brIsInvulnerable(br.myP) ? maxHp : Math.min(br.myP.hp, serverHp);
                         br.serverHp = br.myP.hp;
                         br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
                         document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
@@ -307,7 +316,7 @@
                 br.damageListener = snap => {
                     br.damageByPlayer = snap.exists() ? snap.val() : {};
                     const myDamage = Math.max(0, parseInt(br.damageByPlayer[myId]) || 0);
-                    if (br.myP && myDamage > br.damageTaken) {
+                    if (br.myP && myDamage > br.damageTaken && !brIsInvulnerable(br.myP)) {
                         br.damageTaken = myDamage;
                         br.myP.hp = Math.min(br.myP.hp, Math.max(0, (br.myP.maxHp || BR_DEFAULT_HP) - myDamage));
                         br.serverHp = br.myP.hp;
@@ -349,6 +358,7 @@
                     maxHp: br.myP.maxHp || BR_DEFAULT_HP,
                     team: brNormalizeTeam(br.myP.team),
                     speed: brNormalizeSpeed(br.myP.speed),
+                    invulnUntil: Number(br.myP.invulnUntil || br.myP.invuln || 0),
                     updatedAt: firebase.database.ServerValue.TIMESTAMP
                 };
                 if (includeHealth) {
@@ -459,6 +469,16 @@
                 db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update(brPublicPlayerState(includeHealth)).catch(() => {});
             }
 
+            function resizeBrCanvas() {
+                const c = document.getElementById('br-canvas');
+                if (!c) return null;
+                const w = Math.max(1, Math.floor(window.innerWidth || c.clientWidth || 1));
+                const h = Math.max(1, Math.floor(window.innerHeight || c.clientHeight || 1));
+                if (c.width !== w) c.width = w;
+                if (c.height !== h) c.height = h;
+                return c;
+            }
+
             function brStartShoot(e) {
                 e.preventDefault(); e.stopPropagation();
                 isShooting = true;
@@ -486,7 +506,7 @@
             }
 
             function updateBrLocalPlayer(now) {
-                if (br.myP.hp <= 0) return;
+                if (br.isSpectator || br.myP.hp <= 0) return;
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 let speed = 6 * brSpeedMultiplier(br.myP.speed);
                 const oldX = br.myP.x;
@@ -515,7 +535,7 @@
                 br.myP.vx = br.myP.x - oldX;
                 br.myP.vy = br.myP.y - oldY;
 
-                if (Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) {
+                if (!brIsInvulnerable(br.myP, now) && Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) {
                     br.myP.hp -= 0.5;
                     br.serverHp = Math.min(br.serverHp, br.myP.hp);
                     syncBrPlayerState(true);
@@ -525,8 +545,8 @@
 
             function fireBrShot(now) {
                 const mySettings = br.settings?.players?.[myId] || {};
-                const cooldown = 1000 / Math.max(1, Math.min(10, parseInt(mySettings.ammoPerSec) || 4));
-                if (!br.active || !br.myP || br.myP.hp <= 0 || now - lastShot <= cooldown) return;
+                const cooldown = 1000 / Math.max(1, Math.min(10, parseInt(mySettings.ammoPerSec) || 1));
+                if (!br.active || br.isSpectator || !br.myP || br.myP.hp <= 0 || now - lastShot <= cooldown) return;
                 const shotA = br.myP.a || 0;
                 const bullet = {
                     x: br.myP.x + Math.cos(shotA) * (BR_PLAYER_R + 8),
@@ -552,7 +572,9 @@
                 br.bots.forEach(b => {
                     if (!b.alive || b.hp <= 0) return;
                     const level = Math.max(1, Math.min(3, parseInt(b.aiLevel) || 1));
-                    const targets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0 && brIsEnemyTarget(b.id, p));
+                    const playerTargets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0 && brIsEnemyTarget(b.id, p));
+                    const botTargets = br.bots.filter(other => other.id !== b.id && other.alive && other.hp > 0 && brIsEnemyTarget(b.id, other));
+                    const targets = playerTargets.concat(botTargets);
                     const target = targets[Math.floor(Math.random() * targets.length)];
                     if (now > (b.nextThink || 0)) {
                         if (target && level === 3) {
@@ -591,7 +613,7 @@
             }
 
             function brBotTryShoot(bot, now) {
-                const cooldown = 1000 / Math.max(1, Math.min(10, parseInt(bot.ammoPerSec) || 4));
+                const cooldown = 1000 / Math.max(1, Math.min(10, parseInt(bot.ammoPerSec) || 1));
                 if (now < (bot.nextShot || 0)) return;
                 bot.nextShot = now + cooldown;
                 br.bullets.push({
@@ -619,14 +641,20 @@
                     br.bots.forEach(b => {
                         if (hit || !b.alive || b.hp <= 0) return;
                         if (!brIsEnemyTarget(bul.owner, b)) return;
+                        if (brIsInvulnerable(b, now)) return;
                         if (Math.hypot(bul.x - b.x, bul.y - b.y) < BR_PLAYER_R) {
                             b.hp -= 25;
                             hit = true;
                             if (b.hp <= 0) {
                                 b.alive = false;
-                                br.kills++;
-                                document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
-                                syncBrPlayerState(false);
+                                if (bul.owner === myId) {
+                                    br.kills++;
+                                    document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
+                                    syncBrPlayerState(false);
+                                } else if (bul.isBot) {
+                                    const killerBot = br.bots.find(bot => bot.id === bul.owner);
+                                    if (killerBot) killerBot.kills = (parseInt(killerBot.kills) || 0) + 1;
+                                }
                                 if (isHost) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
                             }
                         }
@@ -635,6 +663,7 @@
                     Object.values(br.remotePlayers).forEach(p => {
                         if (hit || (!bul.isBot && p.id === myId) || !p.alive || p.hp <= 0) return;
                         if (!brIsEnemyTarget(bul.owner, p)) return;
+                        if (brIsInvulnerable(p, now)) return;
                         if (Math.hypot(bul.x - p.x, bul.y - p.y) < BR_PLAYER_R) {
                             hit = true;
                             const maxHp = Math.max(1, parseInt(p.maxHp) || BR_DEFAULT_HP);
@@ -675,7 +704,7 @@
                     const x = (Number(bul.x) || 0) + (Number(bul.vx) || 0) * steps;
                     const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
 
-                    if (br.myP && br.myP.hp > 0 && brIsEnemyTarget(bul.owner, br.myP) && Math.hypot(x - br.myP.x, y - br.myP.y) < BR_PLAYER_R) {
+                    if (br.myP && br.myP.hp > 0 && brIsEnemyTarget(bul.owner, br.myP) && !brIsInvulnerable(br.myP, now) && Math.hypot(x - br.myP.x, y - br.myP.y) < BR_PLAYER_R) {
                         delete br.remoteBullets[key];
                         return;
                     }
@@ -683,6 +712,7 @@
                     const hitRemote = Object.values(br.remotePlayers).some(p => {
                         if (!p || p.id === myId || p.id === bul.owner || !p.alive || p.hp <= 0) return false;
                         if (!brIsEnemyTarget(bul.owner, p)) return false;
+                        if (brIsInvulnerable(p, now)) return false;
                         const rp = getBrRenderablePlayer(p);
                         return Math.hypot(x - rp.x, y - rp.y) < BR_PLAYER_R;
                     });
@@ -691,14 +721,22 @@
             }
 
             function renderBR(now) {
-                let c = document.getElementById('br-canvas');
+                let c = resizeBrCanvas();
                 let ctx = c.getContext('2d');
                 ctx.clearRect(0, 0, c.width, c.height);
                 ctx.save();
 
-                let camX = br.myP.hp > 0 ? br.myP.x - c.width / 2 : br.zone.x - c.width / 2;
-                let camY = br.myP.hp > 0 ? br.myP.y - c.height / 2 : br.zone.y - c.height / 2;
-                ctx.translate(-camX, -camY);
+                if (br.isSpectator || br.myP.hp <= 0) {
+                    const scale = Math.min(c.width / BR_SIZE, c.height / BR_SIZE);
+                    const offsetX = (c.width - BR_SIZE * scale) / 2;
+                    const offsetY = (c.height - BR_SIZE * scale) / 2;
+                    ctx.translate(offsetX, offsetY);
+                    ctx.scale(scale, scale);
+                } else {
+                    const camX = br.myP.x - c.width / 2;
+                    const camY = br.myP.y - c.height / 2;
+                    ctx.translate(-camX, -camY);
+                }
 
                 ctx.strokeStyle = '#4e7a27';
                 ctx.lineWidth = 2;
@@ -715,7 +753,7 @@
                     if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, getBrRenderablePlayer(p), '#af52de', p.name || 'Игрок', p.maxHp || BR_DEFAULT_HP);
                 });
                 if (br.myP.hp > 0) {
-                    if (now < br.myP.invuln) {
+                    if (brIsInvulnerable(br.myP, now)) {
                         ctx.fillStyle = 'rgba(255,255,255,0.5)';
                         ctx.beginPath(); ctx.arc(br.myP.x, br.myP.y, BR_PLAYER_R + 10, 0, Math.PI * 2); ctx.fill();
                     }
@@ -775,23 +813,43 @@
             function checkBrEnd() {
                 if (br.placeShown) return;
                 if (br.myP.hp <= 0) {
-                    br.myP.alive = false;
-                    syncBrPlayerState(true);
-                    showBrFinal(false);
-                    return;
+                    enterBrSpectator();
                 }
                 if (br.freeRoam) return;
                 const alive = getBrAliveRows();
                 const myTeam = brNormalizeTeam(br.myP.team);
                 const winnerTeam = brWinningTeamForAliveRows(alive);
                 const mySideAlive = alive.some(r => r.id === myId || (!!myTeam && brNormalizeTeam(r.team) === myTeam));
-                if (alive.length <= 1 && alive.some(r => r.id === myId)) showBrFinal(true, '');
-                else if (winnerTeam !== null && mySideAlive) showBrFinal(true, winnerTeam);
+                if (br.isSpectator) {
+                    if (alive.length <= 1 || winnerTeam !== null) showBrFinal(false, winnerTeam || '');
+                } else if (alive.length <= 1 && alive.some(r => r.id === myId)) {
+                    showBrFinal(true, '');
+                } else if (winnerTeam !== null && mySideAlive) {
+                    showBrFinal(true, winnerTeam);
+                }
+            }
+
+            function enterBrSpectator() {
+                if (br.isSpectator || !br.myP) return;
+                br.isSpectator = true;
+                br.myP.alive = false;
+                br.myP.hp = 0;
+                br.serverHp = 0;
+                shootTouch = null;
+                isShooting = false;
+                syncBrPlayerState(true);
+                const controls = document.getElementById('br-controls');
+                if (controls) controls.style.display = 'none';
+                const spectatorLabel = document.getElementById('br-ui-spectator');
+                if (spectatorLabel) spectatorLabel.style.display = 'block';
+                setIsland("Ты выбыл. Наблюдение до конца матча.", "#ff9f0a");
             }
 
             function showBrFinal(isWin, winnerTeam = '') {
                 br.placeShown = true;
                 br.active = false;
+                const spectatorLabel = document.getElementById('br-ui-spectator');
+                if (spectatorLabel) spectatorLabel.style.display = 'none';
                 const allRows = Object.values(br.remotePlayers)
                     .map(p => ({ id: p.id, name: p.name || 'Игрок', team: brNormalizeTeam(p.team), kills: p.kills || 0, alive: !!p.alive && (p.hp || 0) > 0 }))
                     .concat(br.bots.map(b => ({ id: b.id, name: b.label || b.id, team: brNormalizeTeam(b.team), kills: b.kills || 0, alive: !!b.alive && (b.hp || 0) > 0 })))

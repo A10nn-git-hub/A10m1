@@ -8,7 +8,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-    <link rel="stylesheet" href="./css/styles.css">
+    <link rel="stylesheet" href="./css/styles.css?v=20260502-lobby-ai-settings">
 </head>
 <body>
     <div id="orientation-warning">
@@ -34,7 +34,7 @@
                 <div class="nav-icon">👥</div>
                 <div class="nav-text">Главная</div>
             </div>
-            <div class="nav-item" data-tab="profile" onclick="switchTab('profile', this); updateMyProfileUI();">
+            <div class="nav-item" data-tab="profile" style="display:none;" onclick="switchTab('profile', this); updateMyProfileUI();">
                 <div class="nav-icon">👤</div>
                 <div class="nav-text">Профиль</div>
             </div>
@@ -60,7 +60,7 @@
         <div class="main-content">
             <div id="tab-profile" class="tab-view">
                 <div class="profile-layout-container">
-                    <div class="profile-left-col">
+                    <div class="profile-left-col profile-left-col-flat">
                         <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
                         <div class="profile-name-container">
                             <div class="profile-name" id="my-name-display" onclick="changeName()">Игрок ✏️</div>
@@ -72,8 +72,10 @@
                     <div class="profile-right-col">
                         <div class="mini-tabs-header">
                             <button class="mini-tab-btn active" onclick="switchMiniTab('my-stats-all', this)">ОБЩАЯ СТАТИСТИКА</button>
+                            <button class="mini-tab-btn" onclick="switchMiniTab('my-stats-ai', this)">ИГРЫ С ИИ</button>
                         </div>
                         <div id="my-stats-all" class="mini-tab-content active" style="width:100%;"></div>
+                        <div id="my-stats-ai" class="mini-tab-content" style="width:100%;"></div>
                     </div>
                 </div>
             </div>
@@ -443,7 +445,7 @@
                     <canvas id="br-canvas"></canvas>
                     <div class="br-ui" id="br-ui-alive">Живых: ?</div>
                     <div class="br-ui" id="br-ui-kills" style="top:40px;">Киллы: 0</div>
-                    <div class="br-ui" style="top:10px; right:10px; font-size:1.5vh;">PC: WASD + Мышь. Mobile: Джойстик</div>
+                    <div class="br-ui" id="br-ui-spectator" style="top:70px; display:none; color:#ffd60a;">Зритель: карта целиком</div>
                     
                     <div id="br-death-screen">
                         <h1 style="color:#ff453a; font-size:6vh; margin-bottom:10px;" id="br-death-title">ПОТРАЧЕНО</h1>
@@ -612,9 +614,11 @@
                     <div class="mini-tabs-header" style="flex-wrap:wrap;">
                         <button class="mini-tab-btn active" id="ps-tab-btn-you" onclick="switchMiniTab('ps-tab-you', this)">ИГРА С ТОБОЙ</button>
                         <button class="mini-tab-btn" id="ps-tab-btn-all" onclick="switchMiniTab('ps-tab-all', this)">ВСЕ ИГРЫ</button>
+                        <button class="mini-tab-btn" id="ps-tab-btn-ai" onclick="switchMiniTab('ps-tab-ai', this)">ИГРЫ С ИИ</button>
                     </div>
                     <div id="ps-tab-you" class="mini-tab-content active" style="width:100%;"></div>
                     <div id="ps-tab-all" class="mini-tab-content" style="width:100%;"></div>
+                    <div id="ps-tab-ai" class="mini-tab-content" style="width:100%;"></div>
                 </div>
             </div>
             <button id="profile-stats-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:5000;padding:15px 20px;font-size:18px;" onclick="closeProfileStatsModal(event)">✖</button>
@@ -665,12 +669,12 @@
             <button id="ai-mic-btn" class="btn btn-gold" style="margin-top:40px; font-size:40px; padding:20px 40px; border-radius:50%;" onclick="startAiMic()">🎤</button>
             <button class="btn btn-red" style="margin-top:30px; font-size:20px; padding:15px 30px;" onclick="closeAiGame()">Выйти в лобби</button>
         </div>
-        <script src="./js/core.js"></script>
-        <script src="./js/admin.js"></script>
-        <script src="./js/social-lobby.js"></script>
-        <script src="./js/game_main.js"></script>
-        <script src="./js/game_coordination.js"></script>
-        <script src="./js/game_battle_royale.js"></script>
-        <script src="./js/boot.js"></script>
+        <script src="./js/core.js?v=20260502-lobby-ai-settings"></script>
+        <script src="./js/admin.js?v=20260502-lobby-ai-settings"></script>
+        <script src="./js/social-lobby.js?v=20260502-lobby-ai-settings"></script>
+        <script src="./js/game_main.js?v=20260502-lobby-ai-settings"></script>
+        <script src="./js/game_coordination.js?v=20260502-lobby-ai-settings"></script>
+        <script src="./js/game_battle_royale.js?v=20260502-lobby-ai-settings"></script>
+        <script src="./js/boot.js?v=20260502-lobby-ai-settings"></script>
 </body>
 </html>

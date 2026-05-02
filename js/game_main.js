@@ -832,7 +832,7 @@
                     if (!tttResultShown) {
                         tttResultShown = true;
                         setTimeout(() => showResult("НИЧЬЯ!", '#ffd60a', '🤝'), 300); 
-                        tttParticipants.forEach(p => { if (p.id !== myId && !isAiFriendId(p.id)) updatePvpStat(p.id, 'ttt', 'draw'); });
+                        tttParticipants.forEach(p => { if (p.id !== myId) updatePvpStat(p.id, 'ttt', 'draw'); });
                     }
                     return true;
                 } 
@@ -846,7 +846,7 @@
                         tttResultShown = true;
                         if (isMyWin) addCoins(5); 
                         setTimeout(() => showResult(wName, isMyWin ? '#34c759' : getTttColorForSymbol(winner), TTT_CHARS[winner]), 300); 
-                        tttParticipants.forEach(p => { if (p.id !== myId && !isAiFriendId(p.id)) updatePvpStat(p.id, 'ttt', isMyWin ? 'win' : 'loss'); });
+                        tttParticipants.forEach(p => { if (p.id !== myId) updatePvpStat(p.id, 'ttt', isMyWin ? 'win' : 'loss'); });
                     }
                     return true;
                 } 

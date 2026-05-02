@@ -204,7 +204,7 @@
 
             function kickPlayer(id) { 
                 if (!isHost || id === myId) return; 
-                if (confirm("Удалить игрока из лобби?")) { 
+                if (confirm("Вы уверены, что хотите кикнуть этого игрока из лобби?")) { 
                     db.ref(`lobbies/${lobbyId}/players/${id}`).remove(); 
                 } 
             }
@@ -223,6 +223,10 @@
                 lobbyPlayers.forEach((p, i) => {
                     const agent = document.createElement('div');
                     agent.className = `lobby-agent lobby-agent-${count}-${i + 1}`;
+                    if (isHost && p.id !== myId) {
+                        agent.title = 'Кикнуть из лобби';
+                        agent.onclick = () => kickPlayer(p.id);
+                    }
                     agent.innerHTML = `
                         <div class="agent-head">${getAvatarHTML(p.avatar)}</div>
                         <div class="agent-body"><div class="agent-arm left"></div><div class="agent-chest"></div><div class="agent-arm right"></div></div>
@@ -372,6 +376,8 @@
                     document.getElementById('view-lobby').style.display = 'flex'; 
                     listenLobby(); 
                     document.getElementById('top-notify').style.top = '-100px'; 
+                    if (pendingInvite.inviteKey) db.ref(`users/${myId}/lobby_invites/${pendingInvite.inviteKey}`).remove().catch(() => {});
+                    db.ref(`users/${myId}/invite`).remove().catch(() => {});
                     pendingInvite = null; 
                 } 
             }
@@ -380,21 +386,29 @@
                 if (!isHost || lobbyPlayers.length >= 5) return; 
                 closeFriendModal(); 
                 let aiNames = ['ИИ', 'ИИ2', 'ИИ3', 'ИИ4', 'ИИ5'];
-                const updates = {};
-                aiNames.forEach(aiId => {
-                    const projectedCount = lobbyPlayers.length + Object.keys(updates).length;
-                    if (projectedCount < 5 && !lobbyPlayers.some(p => p.id === aiId)) {
-                        updates[`lobbies/${lobbyId}/players/${aiId}`] = {...SYSTEM_BOT, id: aiId, name: aiId};
-                    }
-                });
-                if (Object.keys(updates).length > 0) updateDbPaths(updates, 'invite ai lobby fillers').catch(() => {});
+                const aiId = aiNames.find(id => !lobbyPlayers.some(p => p.id === id));
+                if (!aiId) return;
+                db.ref(`lobbies/${lobbyId}/players/${aiId}`).set({...SYSTEM_BOT, id: aiId, name: aiId}).catch(() => {});
             }
 
             function inviteRealFriend(id) { 
                 if (lobbyPlayers.length >= 5) return; 
                 let rawName = myEqName ? SHOP_ITEMS.find(i => i.id === myEqName)?.name || myName : myName;
-                db.ref(`users/${id}/invite`).set({lId: lobbyId, host: rawName}); 
-                tg.showAlert("Отправлено!"); 
+                const inviteRef = db.ref(`users/${id}/lobby_invites`).push();
+                const invite = {
+                    lId: lobbyId,
+                    host: rawName,
+                    hostId: myId,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+                updateDbPaths({
+                    [`users/${id}/invite`]: { ...invite, inviteKey: inviteRef.key },
+                    [`users/${id}/lobby_invites/${inviteRef.key}`]: invite
+                }, 'send lobby invite').then(() => {
+                    tg.showAlert("Отправлено!");
+                }).catch(() => {
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось отправить приглашение."));
+                }); 
                 closeFriendModal(); 
             }
 
@@ -455,7 +469,7 @@
                     renderLobbySlots(); 
                     
                     setSelectedModeUI(d.game || null);
-                    if (!document.getElementById('game-settings-modal')?.classList.contains('hidden')) {
+                    if (!document.getElementById('game-settings-modal')?.classList.contains('hidden') && !isEditingGameSettingsModal()) {
                         renderGameSettingsModal(d.game || appState.selectedGameId || pendingModeId);
                     }
 
@@ -494,7 +508,8 @@
                         } 
                     } 
                     
-                    if (d.status === 'playing' && document.getElementById('game-container').style.display !== 'block') { 
+                    if (d.status === 'playing' && d.game && document.getElementById('game-container').style.display !== 'block') {
+                        setSelectedModeUI(d.game);
                         startLocalGameUI(); 
                     } 
                 }); 
@@ -524,19 +539,48 @@
                 db.ref(`users/${myId}/message_threads`).on('value', messagesBadgeListener);
             }
 
+            function renderInviteRow(key, invite) {
+                const row = document.createElement('div');
+                row.className = 'message-friend-row lobby-invite-row';
+                row.innerHTML = `
+                    <div class="friend-row">
+                        <div class="lobby-invite-seal">AOE</div>
+                        <div class="message-friend-meta">
+                            <div>Приглашение в лобби</div>
+                            <span>${escapeHTML(invite.host || 'Игрок')} зовет в игру</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-green" style="padding:7px 10px;font-size:12px;z-index:1;" onclick="event.stopPropagation(); acceptStoredLobbyInvite('${key}')">Войти</button>`;
+                row.onclick = () => acceptStoredLobbyInvite(key);
+                return row;
+            }
+
+            function acceptStoredLobbyInvite(key) {
+                db.ref(`users/${myId}/lobby_invites/${key}`).once('value').then(s => {
+                    if (!s.exists()) return tg.showAlert("Приглашение уже недоступно.");
+                    pendingInvite = { ...s.val(), inviteKey: key };
+                    acceptLobbyInvite();
+                });
+            }
+
             function renderMessagesTab() {
                 const list = document.getElementById('messages-friends-list');
                 if (!list) return;
                 const realFriends = friendsIds.filter(id => !isAiFriendId(id));
-                if (realFriends.length === 0) {
-                    list.innerHTML = '<div class="chat-empty">Нет друзей для сообщений</div>';
-                    return;
-                }
 
                 db.ref(`users/${myId}/message_threads`).once('value').then(threadSnap => {
                     const threads = threadSnap.exists() ? threadSnap.val() : {};
                     const sorted = [...realFriends].sort((a, b) => (threads[b]?.updatedAt || 0) - (threads[a]?.updatedAt || 0));
                     list.innerHTML = '';
+                    db.ref(`users/${myId}/lobby_invites`).once('value').then(inviteSnap => {
+                        const invites = inviteSnap.exists() ? inviteSnap.val() : {};
+                        Object.keys(invites)
+                            .sort((a, b) => (invites[b]?.createdAt || 0) - (invites[a]?.createdAt || 0))
+                            .forEach(key => list.appendChild(renderInviteRow(key, invites[key] || {})));
+                        if (sorted.length === 0 && Object.keys(invites).length === 0) {
+                            list.innerHTML = '<div class="chat-empty">Нет сообщений</div>';
+                        }
+                    });
                     sorted.forEach(id => {
                         db.ref('users/' + id).once('value').then(s => {
                             if (!s.exists()) return;

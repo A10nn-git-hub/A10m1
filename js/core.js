@@ -279,7 +279,7 @@
                 Object.keys(c).forEach(k => {
                     if(stats[k] && (stats[k].w>0 || stats[k].l>0 || stats[k].d>0)) {
                         w+=stats[k].w||0; l+=stats[k].l||0; d+=stats[k].d||0;
-                        details += `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>${c[k]}</span> <span><span style="color:#3390ec">${stats[k].w||0}W</span> - <span style="color:#ff9f0a">${stats[k].l||0}L</span></span></div>`;
+                        details += `<div style="display:flex; justify-content:space-between; border-bottom:1px solid #333; padding:5px 0;"><span>${c[k]}</span> <span><span style="color:#3390ec">${stats[k].w||0}W</span> - <span style="color:#ff9f0a">${stats[k].l||0}L</span> - <span style="color:#888">${stats[k].d||0}D</span></span></div>`;
                     }
                 });
 
@@ -517,6 +517,9 @@
             }
 
             function startLocalGameUI() {
+                togglePause(false);
+                document.getElementById('result-overlay').classList.add('hidden');
+                document.getElementById('br-death-screen').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'none';
                 document.getElementById('game-container').style.display = 'block';
                 document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active'));
@@ -578,6 +581,7 @@
                     document.getElementById('ps-id').innerText = `ID: ${id}`;
                     document.getElementById('ps-tab-you').innerHTML = generateKDHTML(getInvertedStats(pvpStats[id]));
                     document.getElementById('ps-tab-all').innerHTML = generateKDHTML(buildTotalStats(d.pvpStats));
+                    document.getElementById('ps-tab-ai').innerHTML = generateKDHTML(d.aiStats);
                     switchMiniTab('ps-tab-you', document.getElementById('ps-tab-btn-you'));
                     document.getElementById('profile-stats-modal').classList.remove('hidden');
                 });
@@ -894,9 +898,9 @@
                     players.forEach(p => {
                         perPlayer[p.id] = {
                             lives: isAiFriendId(p.id) ? 150 : 200,
-                            ammoPerSec: 4,
+                            ammoPerSec: 1,
                             team: '',
-                            speed: 5,
+                            speed: 3,
                             aiLevel: isAiFriendId(p.id) ? 2 : null
                         };
                     });
@@ -928,9 +932,9 @@
                     }
                     if (gameId === 'br_2d') {
                         merged.players[p.id].lives = Math.max(1, parseInt(merged.players[p.id].lives) || (isAiFriendId(p.id) ? 150 : 200));
-                        merged.players[p.id].ammoPerSec = Math.max(1, Math.min(10, parseInt(merged.players[p.id].ammoPerSec) || 4));
+                        merged.players[p.id].ammoPerSec = Math.max(1, Math.min(10, parseInt(merged.players[p.id].ammoPerSec) || 1));
                         merged.players[p.id].team = ['1','2','3','4','5'].includes(String(merged.players[p.id].team || '')) ? String(merged.players[p.id].team) : '';
-                        merged.players[p.id].speed = Math.max(1, Math.min(20, parseInt(merged.players[p.id].speed) || 5));
+                        merged.players[p.id].speed = Math.max(1, Math.min(15, parseInt(merged.players[p.id].speed) || 3));
                         merged.players[p.id].aiLevel = isAiFriendId(p.id) ? Math.max(1, Math.min(3, parseInt(merged.players[p.id].aiLevel) || 2)) : null;
                     }
                 });
@@ -949,6 +953,13 @@
                 if (event) event.stopPropagation();
                 const modal = document.getElementById('game-settings-modal');
                 if (modal) modal.classList.add('hidden');
+            }
+
+            function isEditingGameSettingsModal() {
+                const modal = document.getElementById('game-settings-modal');
+                const active = document.activeElement;
+                if (!modal || modal.classList.contains('hidden') || !active || !modal.contains(active)) return false;
+                return ['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(active.tagName);
             }
 
             function renderGameSettingsModal(gameId = appState.selectedGameId || pendingModeId) {
@@ -996,9 +1007,9 @@
                     return `<tr>
                         <td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td>
                         <td><input class="game-settings-input" type="number" min="1" max="9999" value="${parseInt(ps.lives) || 200}" data-setting-player="${p.id}" data-setting-field="lives" ${readonly}></td>
-                        <td><input class="game-settings-input" type="number" min="1" max="10" value="${parseInt(ps.ammoPerSec) || 4}" data-setting-player="${p.id}" data-setting-field="ammoPerSec" ${readonly}></td>
+                        <td><input class="game-settings-input" type="number" min="1" max="10" value="${parseInt(ps.ammoPerSec) || 1}" data-setting-player="${p.id}" data-setting-field="ammoPerSec" ${readonly}></td>
                         <td><input class="game-settings-input" type="number" min="1" max="5" value="${ps.team || ''}" placeholder="-" data-setting-player="${p.id}" data-setting-field="team" ${readonly}></td>
-                        <td><input class="game-settings-input" type="number" min="1" max="20" value="${parseInt(ps.speed) || 5}" data-setting-player="${p.id}" data-setting-field="speed" ${readonly}></td>
+                        <td><input class="game-settings-input" type="number" min="1" max="15" value="${parseInt(ps.speed) || 3}" data-setting-player="${p.id}" data-setting-field="speed" ${readonly}></td>
                         <td>${aiCell}</td>
                     </tr>`;
                 }).join('');
@@ -1014,11 +1025,13 @@
                 const readonly = isHost ? '' : 'disabled';
                 const rows = lobbySettingsPlayers().slice(0, TTT_SETTING_SYMBOLS.length).map(p => {
                     const ps = settings.players[p.id] || {};
+                    const symbol = ps.symbol || 'x';
+                    const colorDef = TTT_SETTING_COLORS.find(c => c.id === ps.color) || TTT_SETTING_COLORS[0];
                     const colorOptions = TTT_SETTING_COLORS.map(c => `<option value="${c.id}" ${ps.color === c.id ? 'selected' : ''}>${c.name}</option>`).join('');
                     return `<tr>
                         <td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td>
-                        <td><button class="settings-cycle-btn" data-setting-player="${p.id}" data-setting-field="symbol" data-symbol="${ps.symbol || 'x'}" onclick="cycleTttSettingsSymbol(this)" ${readonly}>${TTT_SETTING_SYMBOL_CHARS[ps.symbol] || '❌'} ${TTT_SETTING_SYMBOL_LABELS[ps.symbol] || 'Крестик'}</button></td>
-                        <td><select class="game-settings-select" data-setting-player="${p.id}" data-setting-field="color" ${readonly}>${colorOptions}</select></td>
+                        <td><button class="settings-cycle-btn" data-setting-player="${p.id}" data-setting-field="symbol" data-symbol="${symbol}" onclick="cycleTttSettingsSymbol(this)" ${readonly}>${TTT_SETTING_SYMBOL_CHARS[symbol] || '❌'} ${TTT_SETTING_SYMBOL_LABELS[symbol] || 'Крестик'}</button></td>
+                        <td><div class="ttt-color-setting"><span class="ttt-color-preview" data-color-preview="${p.id}" style="color:${colorDef.value};">${TTT_SETTING_SYMBOL_CHARS[symbol] || '❌'}</span><select class="game-settings-select" data-setting-player="${p.id}" data-setting-field="color" onchange="updateTttColorPreview('${p.id}')" ${readonly}>${colorOptions}</select></div></td>
                     </tr>`;
                 }).join('');
                 const boardSize = Math.max(3, Math.min(10, parseInt(settings.boardSize) || 3));
@@ -1042,6 +1055,17 @@
                 const next = TTT_SETTING_SYMBOLS[(TTT_SETTING_SYMBOLS.indexOf(current) + 1) % TTT_SETTING_SYMBOLS.length];
                 btn.dataset.symbol = next;
                 btn.innerText = `${TTT_SETTING_SYMBOL_CHARS[next]} ${TTT_SETTING_SYMBOL_LABELS[next]}`;
+                updateTttColorPreview(btn.dataset.settingPlayer);
+            }
+
+            function updateTttColorPreview(playerId) {
+                const preview = document.querySelector(`[data-color-preview="${playerId}"]`);
+                if (!preview) return;
+                const symbol = document.querySelector(`[data-setting-player="${playerId}"][data-setting-field="symbol"]`)?.dataset.symbol || 'x';
+                const colorId = document.querySelector(`[data-setting-player="${playerId}"][data-setting-field="color"]`)?.value || 'green';
+                const colorDef = TTT_SETTING_COLORS.find(c => c.id === colorId) || TTT_SETTING_COLORS[0];
+                preview.innerText = TTT_SETTING_SYMBOL_CHARS[symbol] || '❌';
+                preview.style.color = colorDef.value;
             }
 
             async function saveGameSettings() {
@@ -1067,16 +1091,16 @@
                     const settings = { players: {}, shrinkZone: document.getElementById('setting-br-shrink')?.checked !== false };
                     lobbySettingsPlayers().forEach(p => {
                         const lives = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="lives"]`)?.value || 200);
-                        const ammo = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="ammoPerSec"]`)?.value || 4);
+                        const ammo = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="ammoPerSec"]`)?.value || 1);
                         const teamRaw = String(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="team"]`)?.value || '').trim();
-                        const speed = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="speed"]`)?.value || 5);
+                        const speed = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="speed"]`)?.value || 3);
                         const aiLevel = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="aiLevel"]`)?.value || 2);
                         if (teamRaw && !['1','2','3','4','5'].includes(teamRaw)) {
                             if (error) error.innerText = 'Команда должна быть пустой или цифрой от 1 до 5.';
                             return;
                         }
-                        if (!Number.isFinite(speed) || speed < 1 || speed > 20) {
-                            if (error) error.innerText = 'Скорость должна быть от 1 до 20.';
+                        if (!Number.isFinite(speed) || speed < 1 || speed > 15) {
+                            if (error) error.innerText = 'Скорость должна быть от 1 до 15.';
                             return;
                         }
                         settings.players[p.id] = {
@@ -1273,7 +1297,7 @@
                             db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = [SYSTEM_BOT.id]; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(!isAiFriendId(k)) friendsIds.push(k); }); } renderFriends(); renderMessagesTab(); });
                             if(vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (!isAiFriendId(fid)) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch(e){} }
                             db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c>0?'inline-block':'none'; b.innerText=c; renderFrReqs(s.val()); });
-                            db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; db.ref(`users/${myId}/invite`).remove(); pendingInvite=null; }, 3000); } });
+                            db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; }, 3000); renderMessagesTab(); } });
                             ensureHomeLobby();
                         }).catch(() => {
                             tg.showAlert(getFirebaseFriendlyMessage("Не удалось загрузить профиль из Firebase."));
@@ -1344,7 +1368,9 @@
             function updateMyStatsTab() {
                 let totalS = buildTotalStats(pvpStats);
                 let tabAll = document.getElementById('my-stats-all');
+                let tabAi = document.getElementById('my-stats-ai');
                 if(tabAll) tabAll.innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px; color:var(--coin-col);">Время в игре: ${formatPlayTime(playTimeMs)}</div>` + generateKDHTML(totalS);
+                if(tabAi) tabAi.innerHTML = generateKDHTML(aiStats);
             }
 
             function syncDBProfile() { 

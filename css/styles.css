@@ -95,6 +95,7 @@
 
         .profile-layout-container { display: flex; width: 100%; height: 100%; gap: 20px; justify-content: center; align-items: flex-start; flex-wrap: nowrap; }
         .profile-left-col { background: var(--panel-bg); padding: 30px; border-radius: 20px; text-align: center; border: 2px solid #444; width: 30%; min-width: 250px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); display: flex; flex-direction: column; align-items: center; }
+        .profile-left-col-flat { background: transparent; border: none; box-shadow: none; }
         .profile-right-col { background: var(--panel-bg); padding: 20px; border-radius: 20px; border: 2px solid #444; width: 70%; flex-grow: 1; display: flex; flex-direction: column; max-height: 100%; overflow-y: auto; }
         
         .profile-avatar { font-size: 80px; cursor: pointer; display: inline-block; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 50%; }
@@ -135,9 +136,9 @@
         .slot-name { font-weight: bold; font-size: 1.8vh; text-align: center; width: 90%; overflow: hidden; white-space: nowrap; } 
         .slot-status { font-size: 1.2vh; color: #34c759; position: absolute; bottom: -20px; font-weight: bold; }
         
-        .lobby-agents-stage { position: relative; width: 100%; height: clamp(300px, 58vh, 560px); flex: 1 1 auto; pointer-events: none; z-index: 3; }
-        .lobby-agents-stage::before { content: ''; position: absolute; left: 8%; right: 8%; bottom: 8px; height: 26%; background: radial-gradient(ellipse at center, rgba(51,144,236,0.2), rgba(0,0,0,0) 68%); }
-        .lobby-agent { --x: 50%; --y: 0px; --s: 1; position: absolute; left: var(--x); bottom: var(--y); width: 116px; height: 245px; transform: translateX(-50%) scale(var(--s)); transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; z-index: var(--z, 1); }
+        .lobby-agents-stage { --agent-fit: clamp(.72, calc(100vh / 760), 1); position: relative; width: 100%; height: clamp(250px, 58vh, 560px); flex: 1 1 auto; pointer-events: auto; z-index: 3; }
+        .lobby-agents-stage::before { content: ''; position: absolute; left: 8%; right: 8%; bottom: 8px; height: 26%; background: radial-gradient(ellipse at center, rgba(51,144,236,0.2), rgba(0,0,0,0) 68%); pointer-events: none; }
+        .lobby-agent { --x: 50%; --y: 0px; --s: 1; position: absolute; left: var(--x); bottom: var(--y); width: 116px; height: 245px; transform: translateX(-50%) scale(calc(var(--s) * var(--agent-fit))); transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; z-index: var(--z, 1); pointer-events: auto; }
         .lobby-agent::after { content: ''; position: absolute; bottom: 4px; width: 90px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.55); filter: blur(2px); z-index: -1; }
         .agent-head { width: 58px; height: 58px; border-radius: 18px 18px 22px 22px; background: linear-gradient(145deg, #3b454f, #171b20); border: 2px solid #65717c; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 8px 18px rgba(0,0,0,0.45); overflow: hidden; }
         .agent-body { position: relative; width: 86px; height: 90px; margin-top: -2px; display: flex; justify-content: center; }
@@ -147,7 +148,7 @@
         .agent-arm.right { right: 0; transform: rotate(-9deg); }
         .agent-legs { display: flex; gap: 10px; margin-top: -2px; }
         .agent-legs div { width: 22px; height: 76px; border-radius: 9px 9px 6px 6px; background: linear-gradient(#252c33, #0f1114); border: 2px solid #3a4249; }
-        .agent-label { max-width: 124px; margin-top: 7px; padding: 4px 8px; border-radius: 7px; background: rgba(0,0,0,0.55); color: white; font-size: 12px; font-weight: 800; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .agent-label { max-width: 124px; margin-top: 7px; padding: 4px 8px; border-radius: 7px; background: transparent; color: white; font-size: 12px; font-weight: 800; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 5px #000, 0 0 8px #000; }
         .lobby-agent-1-1 { --x: 50%; --y: 0px; --s: 1.12; --z: 5; }
         .lobby-agent-2-1 { --x: 46%; --y: 0px; --s: 1.06; --z: 4; }
         .lobby-agent-2-2 { --x: 54%; --y: 0px; --s: 1.06; --z: 4; }
@@ -264,6 +265,8 @@
         .game-settings-actions { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 20px 18px; border-top: 1px solid #3a3a3a; }
         .game-settings-empty { color: #8e8e93; text-align: center; padding: 30px 10px; font-weight: 800; }
         .settings-error { color: #ff453a; margin-top: 12px; font-weight: 900; min-height: 20px; }
+        .ttt-color-setting { display: flex; align-items: center; gap: 8px; }
+        .ttt-color-preview { width: 40px; height: 40px; border-radius: 10px; background: #0b0b0c; border: 1px solid #555; display: inline-flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 900; flex: 0 0 40px; box-shadow: inset 0 -3px 0 rgba(0,0,0,0.35); }
 
         .board { display: grid; gap: 4px; width: 70vh; height: 70vh; max-width: 95vw; max-height: 95vw; margin: 0 auto; box-sizing: border-box; } 
         .cell { background: #2c2c2e; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.3); box-sizing: border-box; }
@@ -337,6 +340,10 @@
         .messages-sidebar { width: 320px; flex: 0 0 320px; background: var(--panel-bg); border-radius: 12px; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; }
         .messages-friends-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
         .message-friend-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px; cursor: pointer; }
+        .lobby-invite-row { position: relative; overflow: hidden; background: linear-gradient(180deg, #2f2416, #15100a); border: 2px solid #9b6a28; color: #f7df9b; box-shadow: inset 0 0 0 1px rgba(255,230,150,0.18), 0 6px 14px rgba(0,0,0,0.35); }
+        .lobby-invite-row::before { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(247,223,155,0.25); pointer-events: none; }
+        .lobby-invite-row .message-friend-meta span { color: #d8b66a; }
+        .lobby-invite-seal { width: 38px; height: 38px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #f3cc72, #8b5419 72%); color: #221407; display: flex; align-items: center; justify-content: center; font-weight: 1000; box-shadow: 0 2px 8px rgba(0,0,0,0.5); flex-shrink: 0; }
         .message-friend-meta { min-width: 0; text-align: left; }
         .message-friend-meta span { display: block; color: #888; font-size: 12px; margin-top: 3px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .message-unread { background: #ff453a; color: white; border-radius: 999px; min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; }
