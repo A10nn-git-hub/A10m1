@@ -137,7 +137,7 @@
         .slot-name { font-weight: bold; font-size: 1.8vh; text-align: center; width: 90%; overflow: hidden; white-space: nowrap; } 
         .slot-status { font-size: 1.2vh; color: #34c759; position: absolute; bottom: -20px; font-weight: bold; }
         
-        .lobby-agents-stage { --agent-fit: clamp(.72, calc(100vh / 760), 1); position: relative; width: 100%; height: clamp(250px, 58vh, 560px); flex: 1 1 auto; pointer-events: auto; z-index: 3; }
+        .lobby-agents-stage { container-type: inline-size; --agent-fit: clamp(.42, min(calc(100vh / 900), calc((100vw - var(--nav-w) - 360px) / 800)), .9); position: relative; width: 100%; height: clamp(250px, 58vh, 560px); flex: 1 1 auto; pointer-events: auto; z-index: 3; }
         .lobby-agents-stage::before { content: ''; position: absolute; left: 8%; right: 8%; bottom: 8px; height: 26%; background: radial-gradient(ellipse at center, rgba(51,144,236,0.2), rgba(0,0,0,0) 68%); pointer-events: none; }
         .lobby-agent { --x: 50%; --y: 0px; --s: 1; position: absolute; left: var(--x); bottom: var(--y); width: 116px; height: 245px; transform: translateX(-50%) scale(calc(var(--s) * var(--agent-fit))); transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; z-index: var(--z, 1); pointer-events: auto; transition: transform 0.75s cubic-bezier(.2,.8,.2,1), bottom 0.75s cubic-bezier(.2,.8,.2,1), left 0.75s cubic-bezier(.2,.8,.2,1); }
         .lobby-agent::after { content: ''; position: absolute; bottom: 4px; width: 90px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.55); filter: blur(2px); z-index: -1; }
@@ -150,10 +150,14 @@
         .agent-legs { display: flex; gap: 10px; margin-top: -2px; transition: opacity 0.35s ease; }
         .agent-legs div { width: 22px; height: 76px; border-radius: 9px 9px 6px 6px; background: linear-gradient(#252c33, #0f1114); border: 2px solid #3a4249; }
         .agent-label { max-width: 124px; margin-top: 7px; padding: 4px 8px; border-radius: 7px; background: transparent; color: white; font-size: 12px; font-weight: 800; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 5px #000, 0 0 8px #000; }
-        .home-solo-stage { --agent-fit: clamp(.9, calc(100vh / 640), 1.18); }
-        .home-solo-stage .lobby-agent-1-1 { --x: 50%; --y: -98px; --s: clamp(1.5, calc(100vh / 430), 1.9); --z: 5; }
+        .home-solo-stage { --agent-fit: clamp(.78, min(calc(100vh / 660), calc((100vw - var(--nav-w) - 360px) / 520)), 1.18); }
+        .home-solo-stage .lobby-agent-1-1 { --x: 50%; --y: -118px; --s: clamp(1.62, min(calc(100vh / 410), calc((100vw - var(--nav-w) - 360px) / 260)), 2.12); --z: 5; }
         .home-solo-stage .lobby-agent::after { opacity: 0; }
-        .home-solo-stage .agent-legs { opacity: 0; }
+        @supports (width: 1cqw) {
+            .lobby-agents-stage { --agent-fit: clamp(.42, min(calc(100vh / 900), calc(100cqw * .00125)), .9); }
+            .home-solo-stage { --agent-fit: clamp(.78, min(calc(100vh / 660), calc(100cqw * .0019)), 1.18); }
+            .home-solo-stage .lobby-agent-1-1 { --s: clamp(1.62, min(calc(100vh / 410), calc(100cqw * .0039)), 2.12); }
+        }
         .lobby-agent-1-1 { --x: 50%; --y: 0px; --s: 1.12; --z: 5; }
         .lobby-agent-2-1 { --x: 46%; --y: 0px; --s: 1.06; --z: 4; }
         .lobby-agent-2-2 { --x: 54%; --y: 0px; --s: 1.06; --z: 4; }
