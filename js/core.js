@@ -497,7 +497,10 @@
                 if(!lobbyId) return tg.showAlert("Лобби не найдено.");
 
                 const selectedGameId = appState.selectedGameId || pendingModeId;
-                if(!selectedGameId) return tg.showAlert("Выберите режим!");
+                if(!selectedGameId) {
+                    openSO2ModeSelect();
+                    return;
+                }
 
                 try {
                     const lobbyData = await readDbOnce(`lobbies/${lobbyId}`, null, 'read lobby before start');
@@ -593,6 +596,9 @@
                     document.getElementById('ps-avatar').innerHTML = getAvatarHTML(d.avatar);
                     document.getElementById('ps-name').innerHTML = getNameHTML(d.name, d.eqName);
                     document.getElementById('ps-id').innerText = `ID: ${id}`;
+                    document.getElementById('ps-card-avatar').innerHTML = getAvatarHTML(d.avatar);
+                    document.getElementById('ps-card-name').innerHTML = getNameHTML(d.name || 'Игрок', d.eqName);
+                    document.getElementById('ps-card-medals').innerHTML = getMedalsHTML(d.pMedals);
                     document.getElementById('ps-tab-you').innerHTML = generateKDHTML(getInvertedStats(pvpStats[id]));
                     document.getElementById('ps-tab-all').innerHTML = generateKDHTML(buildTotalStats(d.pvpStats));
                     document.getElementById('ps-tab-ai').innerHTML = generateKDHTML(d.aiStats);
@@ -802,10 +808,35 @@
                 const value = String(id || '');
                 return value === 'ИИ' || value === 'БОТ' || value.startsWith('ИИ');
             }
+
+            function currentPresenceState() {
+                return document.hidden ? 'away' : 'online';
+            }
+
+            function syncPresence() {
+                if (!myId || !db) return;
+                db.ref(`users/${myId}/presence`).update({
+                    state: currentPresenceState(),
+                    lastSeenAt: firebase.database.ServerValue.TIMESTAMP
+                }).catch(() => {});
+            }
+
+            function bindPresence() {
+                if (!myId || appState.presenceTimer) return;
+                db.ref(`users/${myId}/presence`).onDisconnect().update({
+                    state: 'offline',
+                    lastSeenAt: firebase.database.ServerValue.TIMESTAMP
+                });
+                syncPresence();
+                document.addEventListener('visibilitychange', syncPresence);
+                window.addEventListener('focus', syncPresence);
+                window.addEventListener('blur', syncPresence);
+                appState.presenceTimer = setInterval(syncPresence, 30000);
+            }
             
             let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; let profileLoaded = false;
             
-            let friendsIds = []; let appState = { game: null, isPaused: false, hostPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null };
+            let friendsIds = []; let appState = { game: null, isPaused: false, hostPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null, presenceTimer: null };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
             let currentLobbySettings = {};
             let inventoryListener = null, customItemsListener = null, liveInventory = {}, inventoryLoaded = false;
@@ -1330,7 +1361,7 @@
                             // Синхронизируем профиль только после успешного чтения Firebase,
                             // иначе локальный fallback может затереть реальные данные игрока.
                             profileLoaded = true;
-                            updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile(); ensureEquippedItemsInInventory();
+                            updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile(); bindPresence(); ensureEquippedItemsInInventory();
                             db.ref('users/' + myId + '/coins').on('value', s => { if(s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try{tg.CloudStorage.setItem('player_coins', globalCoins.toString());}catch(e){} } }, err => handleFirebaseError(err, 'coins listener', null));
                             bindMessagesUnreadBadge();
                             db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = [SYSTEM_BOT.id]; if (s.exists()) { Object.keys(s.val()).forEach(k => { if(!isAiFriendId(k)) friendsIds.push(k); }); } renderFriends(); renderMessagesTab(); });
@@ -1511,9 +1542,15 @@
                 const homeAvatar = document.getElementById('home-profile-avatar');
                 const homeName = document.getElementById('home-profile-name');
                 const homeId = document.getElementById('home-profile-id');
+                const cardAvatar = document.getElementById('my-card-avatar');
+                const cardName = document.getElementById('my-card-name');
+                const cardMedals = document.getElementById('my-card-medals');
                 if (homeAvatar) homeAvatar.innerHTML = getAvatarHTML(myAvatar);
                 if (homeName) homeName.innerHTML = getNameHTML(myName, myEqName);
                 if (homeId) homeId.innerText = `ID: ${myId}`;
+                if (cardAvatar) cardAvatar.innerHTML = getAvatarHTML(myAvatar);
+                if (cardName) cardName.innerHTML = getNameHTML(myName, myEqName);
+                if (cardMedals) cardMedals.innerHTML = getMedalsHTML(myPinnedMedals);
                 if(appState.inLobby && lobbyPlayers.length>0){
                     let lp = lobbyPlayers.find(p=>p.id===myId);
                     if(lp) {

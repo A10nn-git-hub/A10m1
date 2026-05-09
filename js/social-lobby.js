@@ -5,6 +5,37 @@
             let activeChatId = null;
             let chatMessagesListener = null;
 
+            function formatPresenceDays(days) {
+                const n = Math.abs(parseInt(days) || 0);
+                const mod10 = n % 10;
+                const mod100 = n % 100;
+                if (mod10 === 1 && mod100 !== 11) return `${n} день назад`;
+                if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} дня назад`;
+                return `${n} дней назад`;
+            }
+
+            function getFriendPresenceHTML(profile = {}) {
+                const presence = profile.presence || {};
+                const lastSeenAt = Number(presence.lastSeenAt || profile.lastSeenAt || 0);
+                const days = lastSeenAt ? Math.floor((Date.now() - lastSeenAt) / 86400000) : 0;
+                if (days >= 1) return `<span class="friend-status friend-status-offline">${formatPresenceDays(days)}</span>`;
+                if (presence.state === 'online') return `<span class="friend-status friend-status-online"><span class="friend-status-dot"></span>В СЕТИ</span>`;
+                if (presence.state === 'away') return `<span class="friend-status friend-status-away"><span class="friend-status-dot"></span>ОТОШЕЛ</span>`;
+                return `<span class="friend-status friend-status-offline"><span class="friend-status-dot"></span>НЕ В СЕТИ</span>`;
+            }
+
+            function canJoinPlayingBrLobby(data = {}) {
+                const players = data.players || {};
+                return data.status === 'playing'
+                    && data.game === 'br_2d'
+                    && !players[myId]
+                    && Object.keys(players).filter(id => !isAiFriendId(id)).length < 5;
+            }
+
+            function getFriendKnownLobbyId(friend = {}) {
+                return friend.currentLobby?.lobbyId || friend.currentLobby?.id || friend.id;
+            }
+
             function renderFriends() { 
                 const list = document.getElementById('fr-list'); 
                 list.innerHTML = ''; 
@@ -36,8 +67,9 @@
                                 <div class="friend-row">
                                     <div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> 
                                     <div>${getNameHTML(p.name, p.eqName)}<br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>
-                                </div>`; 
-                            rEl.onclick = () => openFriendModal({ id: id, name: p.name || 'Игрок', avatar: p.avatar, eqName: p.eqName, pMedals: p.pMedals });
+                                </div>
+                                ${getFriendPresenceHTML(p)}`;
+                            rEl.onclick = () => openFriendModal({ id: id, name: p.name || 'Игрок', avatar: p.avatar, eqName: p.eqName, pMedals: p.pMedals, presence: p.presence, currentLobby: p.currentLobby });
                             rEl.style.display = 'flex';
                         } else { 
                             rEl.style.display = 'none'; 
@@ -113,11 +145,23 @@
                     } else {
                         a.innerHTML += `<button class="btn btn-green" onclick="inviteRealFriend('${f.id}')">Пригласить 🎮</button>`; 
                     }
+                    if (f.id !== 'ИИ') {
+                        db.ref('lobbies/' + getFriendKnownLobbyId(f)).once('value').then(s => {
+                            if (s.exists() && document.getElementById('friend-modal') && !document.getElementById('friend-modal').classList.contains('hidden') && canJoinPlayingBrLobby(s.val())) {
+                                document.getElementById('friend-actions').insertAdjacentHTML('afterbegin', `<button class="btn btn-purple" onclick="joinFriendPlayingBrLobby()">ПРИСОЕДИНИТЬСЯ</button>`);
+                            }
+                        });
+                    }
                 } else { 
                     if (f.id !== 'ИИ') {
-                        db.ref('lobbies/' + f.id).once('value').then(s => {
+                        db.ref('lobbies/' + getFriendKnownLobbyId(f)).once('value').then(s => {
                             if (s.exists() && document.getElementById('friend-modal') && !document.getElementById('friend-modal').classList.contains('hidden')) {
-                                document.getElementById('friend-actions').insertAdjacentHTML('beforeend', `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`);
+                                const data = s.val();
+                                if (canJoinPlayingBrLobby(data)) {
+                                    document.getElementById('friend-actions').insertAdjacentHTML('beforeend', `<button class="btn btn-purple" onclick="joinFriendPlayingBrLobby()">ПРИСОЕДИНИТЬСЯ</button>`);
+                                } else if (data.status !== 'playing') {
+                                    document.getElementById('friend-actions').insertAdjacentHTML('beforeend', `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`);
+                                }
                             }
                         });
                     }
@@ -303,9 +347,17 @@
             function updateLobbyChrome(data = {}) {
                 const leaveBtn = document.getElementById('lobby-leave-btn');
                 const stage = document.getElementById('lobby-agents-stage');
+                const playBtn = document.getElementById('lobby-play-btn');
+                const guestMode = document.getElementById('lobby-guest-mode');
                 const isRealLobby = hasLobbyGuestsOrInvites(data);
                 if (leaveBtn) leaveBtn.style.display = isRealLobby ? 'inline-flex' : 'none';
                 if (stage) stage.classList.toggle('home-solo-stage', !isRealLobby);
+                if (playBtn) playBtn.style.display = isHost ? 'inline-flex' : 'none';
+                if (guestMode) {
+                    guestMode.style.display = isHost ? 'none' : 'flex';
+                    guestMode.innerText = data.game && GAME_NAMES[data.game] ? GAME_NAMES[data.game] : 'РЕЖИМ НЕ ВЫБРАН';
+                    guestMode.style.color = data.game && GAME_NAMES[data.game] ? '#34c759' : '#9ca3af';
+                }
             }
 
             function maybePromoteMissingHost(data) {
@@ -398,6 +450,7 @@
                 lobbyId = null;
                 isHost = false;
                 lobbyPlayers = [];
+                db.ref(`users/${myId}/currentLobby`).remove().catch(() => {});
                 if (shouldReopen) setTimeout(ensureHomeLobby, 300);
             }
 
@@ -498,7 +551,7 @@
             }
 
             function joinFriendLobby() { 
-                lobbyId = activeFriend.id; 
+                lobbyId = getFriendKnownLobbyId(activeFriend);
                 isHost = false; 
                 pendingModeId = null;
                 setSelectedModeUI(null);
@@ -517,6 +570,65 @@
                         tg.showAlert("Лобби нет или хост вышел!"); 
                     }
                 }); 
+            }
+
+            function joinFriendPlayingBrLobby() {
+                if (!activeFriend || activeFriend.id === 'ИИ') return;
+                const targetLobbyId = getFriendKnownLobbyId(activeFriend);
+                closeFriendModal();
+                db.ref('lobbies/' + targetLobbyId).once('value').then(s => {
+                    if (!s.exists()) return tg.showAlert("Игра уже недоступна.");
+                    const data = s.val();
+                    if (!canJoinPlayingBrLobby(data)) return tg.showAlert("Свободного места в 2D Выживании уже нет.");
+
+                    if (appState.inLobby && lobbyId && lobbyId !== targetLobbyId) {
+                        closeLobby({autoReopen:false});
+                    }
+
+                    lobbyId = targetLobbyId;
+                    isHost = false;
+                    pendingModeId = null;
+                    setSelectedModeUI('br_2d');
+                    const payload = getLobbyPlayerPayload();
+                    const spawn = typeof brSpawnForId === 'function' ? brSpawnForId(myId) : {x: 1000, y: 1000};
+                    const now = Date.now();
+                    updateDbPaths({
+                        [`lobbies/${lobbyId}/players/${myId}`]: payload,
+                        [`lobbies/${lobbyId}/br/players/${myId}`]: {
+                            id: myId,
+                            name: myName,
+                            avatar: myAvatar,
+                            eqName: myEqName,
+                            x: Math.round(spawn.x),
+                            y: Math.round(spawn.y),
+                            vx: 0,
+                            vy: 0,
+                            hp: 200,
+                            maxHp: 200,
+                            team: '',
+                            speed: 3,
+                            damageTaken: 0,
+                            a: 0,
+                            kills: 0,
+                            shotSeq: 0,
+                            alive: true,
+                            invulnUntil: now + 5000,
+                            updatedAt: firebase.database.ServerValue.TIMESTAMP
+                        },
+                        [`lobbies/${lobbyId}/br/damage/${myId}`]: 0
+                    }, 'join playing br lobby').then(() => {
+                        db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
+                        db.ref(`lobbies/${lobbyId}/br/players/${myId}`).onDisconnect().update({alive: false, hp: 0});
+                        appState.inLobby = true;
+                        appState.autoLobbyPaused = false;
+                        switchTab('friends', document.querySelector('[data-tab="friends"]'));
+                        document.getElementById('main-buttons-view').style.display = 'none';
+                        document.getElementById('view-lobby').style.display = 'flex';
+                        listenLobby();
+                    }).catch(() => {
+                        tg.showAlert(getFirebaseFriendlyMessage("Не удалось присоединиться к игре."));
+                    });
+                });
             }
 
             function listenLobby() { 
@@ -539,6 +651,12 @@
                     }
                     isHost = d.host === myId;
                     if (isHost) db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
+                    db.ref(`users/${myId}/currentLobby`).set({
+                        lobbyId,
+                        game: d.game || '',
+                        status: d.status || 'waiting',
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP
+                    }).catch(() => {});
 
                     currentLobbySettings = d.settings || {};
                     lobbyPlayers = []; 

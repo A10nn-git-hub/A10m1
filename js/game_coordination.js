@@ -32,7 +32,7 @@
                             let d = document.createElement('div'); 
                             d.className = 'acc-stuck-knife'; 
                             d.style.transform = `translate(-50%, 0) rotate(${k.a}deg)`; 
-                            d.innerHTML = '<div class="acc-big-sword" style="top: 3vh; bottom: auto;"></div>';
+                            d.innerHTML = '<div class="acc-big-sword"></div>';
                             spinner.appendChild(d); 
                         }
                     } else if (currentKnives > coordState.k.length) { 
