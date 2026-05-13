@@ -95,6 +95,8 @@
         .friend-status-online { color: #34c759; }
         .friend-status-away { color: #ffd60a; }
         .friend-status-offline { color: #8e8e93; }
+        .friend-status-lobby { color: #34c759; }
+        .friend-status-playing { color: #32ade6; }
         
         #global-coins { position: fixed; top: 15px; left: 100px; font-size: 20px; font-weight: bold; color: var(--coin-col); padding: 8px 15px; border-radius: 15px; z-index: 9999; display: none; align-items: center; gap: 5px; pointer-events: none; background: rgba(0,0,0,0.35); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(14px); box-shadow: 0 10px 30px rgba(0,0,0,0.35); }
 
@@ -182,6 +184,7 @@
         .lobby-start-row { display: flex; align-items: stretch; gap: 10px; }
         .lobby-settings-btn { width: 61px; height: 61px; flex: 0 0 61px; border: none; border-radius: 12px; background: #2c2c2e; color: #fff; font-size: 30px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 #151517; display: inline-flex; align-items: center; justify-content: center; }
         .play-btn { background: #34c759; color: #fff; border: none; border-radius: 12px; padding: 9px 22px; min-width: 190px; font-size: 20px; font-weight: 900; cursor: pointer; text-transform: uppercase; box-shadow: 0 6px 0 #248a3d; display: inline-flex; align-items: center; justify-content: center; gap: 14px; line-height: .95; text-align: left; }
+        .play-btn-separator { opacity: .7; font-size: 25px; line-height: 1; }
         .play-btn span:last-child { text-align: left; font-size: 23px; }
         .lobby-guest-mode { min-width: 190px; min-height: 61px; padding: 8px 14px; border-radius: 12px; background: #202024; border: 1px solid #3a3a3c; color: #9ca3af; font-size: 14px; line-height: 1.1; font-weight: 900; text-transform: uppercase; display: none; align-items: center; justify-content: center; text-align: center; box-sizing: border-box; }
         .btn-purple { background: #af52de; color: white; }
@@ -231,6 +234,20 @@
 
         .sell-qty-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
         .sell-qty-container input { width: 80px; text-align: center; padding: 8px; border-radius: 5px; background: #111; color: white; border: 1px solid #444; font-size: 16px; font-weight: bold; }
+        .gift-send-panel { width: min(720px, 100%); display: flex; flex-direction: column; gap: 12px; background: var(--panel-bg); border: 1px solid #3a3a3c; border-radius: 12px; padding: 16px; box-sizing: border-box; }
+        .gift-send-row { display: grid; grid-template-columns: 130px minmax(0, 1fr); align-items: center; gap: 12px; text-align: left; }
+        .gift-send-row label { color: #c7c7cc; font-weight: 900; text-transform: uppercase; font-size: 12px; }
+        .gift-input { width: 100%; margin: 0; box-sizing: border-box; }
+        .gift-send-items { display: flex; flex-direction: column; gap: 8px; max-height: 34vh; overflow-y: auto; padding-right: 4px; }
+        .gift-pick-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) 86px; align-items: center; gap: 10px; background: #111; border: 1px solid #333; border-radius: 8px; padding: 8px; }
+        .gift-pick-icon { width: 44px; height: 44px; border-radius: 8px; background: #222; display: flex; align-items: center; justify-content: center; font-size: 25px; overflow: hidden; }
+        .gift-pick-meta { min-width: 0; text-align: left; }
+        .gift-pick-meta b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .gift-pick-meta span { color: #8e8e93; font-size: 12px; }
+        .gift-pick-qty { width: 100%; margin: 0; padding: 10px; box-sizing: border-box; text-align: center; }
+        .gift-anonymous-row { display: flex; align-items: center; gap: 10px; color: #e5e5ea; font-weight: 900; text-transform: uppercase; font-size: 13px; }
+        .gift-anonymous-row input { width: 18px; height: 18px; }
+        .gift-send-btn { align-self: flex-end; margin: 0; min-width: 180px; }
 
         @keyframes poopAlive { 0%, 100% { transform: scale(1, 1) translateY(0); } 15% { transform: scale(1.2, 0.8) translateY(10%); } 30% { transform: scale(0.9, 1.2) translateY(-20%); } 45% { transform: scale(1.05, 0.95) rotate(15deg); } 60% { transform: scale(1, 1) rotate(-15deg); } 75% { transform: scale(1.1, 0.9) translateY(5%); } }
         .anim-poop { display: inline-block; animation: poopAlive 1.5s ease-in-out infinite; filter: drop-shadow(0 5px 10px rgba(255,214,10,0.3)); font-size: inherit; line-height: 1; }
@@ -373,8 +390,10 @@
         .friend-preview-actions { display: none; flex-direction: column; align-items: stretch; gap: 8px; }
         .friend-preview-actions .btn { width: 100%; margin: 0; }
         .messages-sidebar { width: 320px; flex: 0 0 320px; background: var(--panel-bg); border-radius: 12px; padding: 15px; box-sizing: border-box; display: flex; flex-direction: column; min-height: 0; }
+        .messages-tabs { margin-bottom: 12px; }
         .messages-friends-list { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; min-height: 0; }
         .message-friend-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: #111; border: 1px solid #333; border-radius: 8px; padding: 10px; cursor: pointer; }
+        .system-row-icon { width: 38px; height: 38px; border-radius: 10px; background: #2c2c2e; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 1000; flex-shrink: 0; }
         .lobby-invite-row { position: relative; overflow: hidden; background: linear-gradient(180deg, #2f2416, #15100a); border: 2px solid #9b6a28; color: #f7df9b; box-shadow: inset 0 0 0 1px rgba(255,230,150,0.18), 0 6px 14px rgba(0,0,0,0.35); }
         .lobby-invite-row::before { content: ''; position: absolute; inset: 4px; border: 1px solid rgba(247,223,155,0.25); pointer-events: none; }
         .lobby-invite-row .message-friend-meta span { color: #d8b66a; }
@@ -400,6 +419,14 @@
         .chat-compose { display: flex; gap: 10px; align-items: center; border-top: 1px solid #3a3a3a; padding-top: 12px; }
         .chat-input { flex: 1; margin: 0; width: auto; }
         .chat-send-btn { flex: 0 0 48px; width: 48px; height: 48px; padding: 0; margin: 0; border-radius: 50%; font-size: 25px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+        .system-active { height: 100%; min-height: 0; display: flex; flex-direction: column; gap: 16px; text-align: left; }
+        .system-detail-title { font-size: 24px; font-weight: 1000; padding: 8px 8px 14px; border-bottom: 1px solid #3a3a3a; text-transform: uppercase; }
+        .system-detail-body { display: flex; flex-direction: column; gap: 14px; overflow-y: auto; padding: 4px 8px 12px; }
+        .system-detail-text { color: #e5e5ea; font-size: 16px; line-height: 1.35; }
+        .system-player-line, .gift-item-row { display: flex; align-items: center; gap: 12px; background: #111; border: 1px solid #333; border-radius: 8px; padding: 12px; }
+        .gift-items-list { display: flex; flex-direction: column; gap: 8px; }
+        .gift-item-icon { width: 48px; height: 48px; border-radius: 8px; background: #222; display: flex; align-items: center; justify-content: center; font-size: 28px; overflow: hidden; flex-shrink: 0; }
+        .gift-item-row span { display: block; color: #8e8e93; font-size: 12px; margin-top: 3px; }
 
         @media (max-width: 900px) {
             :root { --nav-w: 68px; }

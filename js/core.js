@@ -517,10 +517,42 @@
                         [`lobbies/${lobbyId}/status`]: 'playing',
                         [`lobbies/${lobbyId}/hostPaused`]: false
                     }, 'start lobby game');
+                    appState.suppressedGameStart = null;
                     setIsland("Запуск игры...", "#34c759");
                 } catch (err) {
                     tg.showAlert(getFirebaseFriendlyMessage("Не удалось запустить игру. Проверь доступ к Firebase."));
                 }
+            }
+
+            function suppressCurrentLobbyGameStart(gameId = appState.game) {
+                if (!lobbyId || !gameId) return;
+                appState.suppressedGameStart = { lobbyId, game: gameId };
+            }
+
+            function isGameStartSuppressed(data = {}) {
+                const suppressed = appState.suppressedGameStart;
+                return !!suppressed
+                    && suppressed.lobbyId === lobbyId
+                    && suppressed.game === data.game
+                    && data.status === 'playing';
+            }
+
+            function clearSuppressedGameStartIfStale(data = {}) {
+                const suppressed = appState.suppressedGameStart;
+                if (!suppressed) return;
+                if (suppressed.lobbyId !== lobbyId || data.status !== 'playing' || data.game !== suppressed.game) {
+                    appState.suppressedGameStart = null;
+                }
+            }
+
+            function promoteHostForActiveBrExit() {
+                if (!lobbyId || !isHost) return false;
+                const nextHost = (Array.isArray(lobbyPlayers) ? lobbyPlayers : [])
+                    .filter(p => p.id && p.id !== myId && !isAiFriendId(p.id))
+                    .sort((a, b) => Number(a.joinedAt || 0) - Number(b.joinedAt || 0))[0];
+                if (!nextHost) return false;
+                db.ref(`lobbies/${lobbyId}/host`).set(nextHost.id).catch(() => {});
+                return true;
             }
 
             function startLocalGameUI() {
@@ -561,6 +593,10 @@
             }
 
             function exitToLobby() {
+                const exitingGame = appState.game;
+                const exitingBr2d = exitingGame === 'br_2d';
+                const brContinuesAfterHost = exitingBr2d && isHost && promoteHostForActiveBrExit();
+                if (exitingGame) suppressCurrentLobbyGameStart(exitingGame);
                 togglePause(false, { localOnly: !isHost });
                 document.getElementById('game-container').style.display = 'none';
                 document.getElementById('view-lobby').style.display = 'flex';
@@ -568,9 +604,9 @@
                 document.getElementById('dynamic-island').style.display = 'none';
                 document.getElementById('ai-game-overlay').style.display = 'none';
                 document.body.classList.remove('let5-active');
-                if(appState.game==='br_2d') stopBR();
-                if(appState.game==='tictactoe' && typeof stopTicTacToeSync === 'function') stopTicTacToeSync();
-                if(isHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
+                if(exitingBr2d) stopBR();
+                if(exitingGame==='tictactoe' && typeof stopTicTacToeSync === 'function') stopTicTacToeSync();
+                if(isHost && lobbyId && !brContinuesAfterHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
                 appState.game = null;
             }
 
@@ -810,7 +846,12 @@
             }
 
             function currentPresenceState() {
-                return document.hidden ? 'away' : 'online';
+                if (document.hidden) {
+                    if (!appState.awaySinceAt) appState.awaySinceAt = Date.now();
+                    return Date.now() - appState.awaySinceAt >= 60000 ? 'offline' : 'away';
+                }
+                appState.awaySinceAt = 0;
+                return 'online';
             }
 
             function syncPresence() {
@@ -836,7 +877,7 @@
             
             let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; let profileLoaded = false;
             
-            let friendsIds = []; let appState = { game: null, isPaused: false, hostPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null, presenceTimer: null };
+            let friendsIds = []; let appState = { game: null, isPaused: false, hostPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null, presenceTimer: null, awaySinceAt: 0, suppressedGameStart: null };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
             let currentLobbySettings = {};
             let inventoryListener = null, customItemsListener = null, liveInventory = {}, inventoryLoaded = false;
@@ -958,6 +999,9 @@
                     return { players: perPlayer, shrinkZone: true };
                 }
                 if (gameId === 'tictactoe') {
+                    const playerCount = Math.max(2, players.filter(p => p && p.id).length);
+                    const boardSize = Math.max(3, Math.min(10, playerCount + 1));
+                    const winLength = Math.max(3, Math.min(boardSize, playerCount <= 2 ? 3 : Math.min(4, boardSize)));
                     const perPlayer = {};
                     players.slice(0, TTT_SETTING_SYMBOLS.length).forEach((p, i) => {
                         perPlayer[p.id] = {
@@ -965,7 +1009,7 @@
                             color: TTT_SETTING_COLORS[i % TTT_SETTING_COLORS.length].id
                         };
                     });
-                    return { players: perPlayer, boardSize: 3, winLength: 3 };
+                    return { players: perPlayer, boardSize, winLength };
                 }
                 return { players: {} };
             }
@@ -1201,6 +1245,7 @@
                 applyDeletedShopItems(deletedShopItems);
                 renderShop();
                 renderInventory();
+                renderGiftSend();
                 if (typeof refreshAdminItemControls === 'function') refreshAdminItemControls();
             }
 
@@ -1216,6 +1261,7 @@
                     applyDeletedShopItems(snap.exists() ? snap.val() : {});
                     renderShop();
                     renderInventory();
+                    renderGiftSend();
                     if (typeof refreshAdminItemControls === 'function') refreshAdminItemControls();
                 }, err => handleFirebaseError(err, 'deleted_shop_items listener', null));
             }
@@ -1244,6 +1290,7 @@
                     inventoryLoaded = true;
                     renderShop();
                     renderInventory();
+                    renderGiftSend();
                 };
                 db.ref(`users/${myId}/inventory`).on('value', inventoryListener, err => {
                     handleFirebaseError(err, 'inventory listener', null);
@@ -1251,6 +1298,7 @@
                     inventoryLoaded = true;
                     renderShop();
                     renderInventory();
+                    renderGiftSend();
                 });
             }
 
@@ -1652,6 +1700,162 @@
                 }
             }
 
+            function renderGiftSend() {
+                const panel = document.getElementById('inv-send');
+                if (!panel) return;
+                const select = document.getElementById('gift-friend-select');
+                const coinsInput = document.getElementById('gift-coins-input');
+                const itemsList = document.getElementById('gift-items-list');
+                if (!select || !coinsInput || !itemsList) return;
+
+                const selectedFriend = select.value;
+                const realFriends = friendsIds.filter(id => !isAiFriendId(id));
+                select.innerHTML = '<option value="">Выбери друга</option>';
+                realFriends.forEach(id => {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = `ID: ${id}`;
+                    select.appendChild(option);
+                    db.ref('users/' + id).once('value').then(s => {
+                        if (!s.exists()) return;
+                        const p = s.val() || {};
+                        option.textContent = `${p.name || 'Игрок'} (${id})`;
+                    });
+                });
+                if (selectedFriend && realFriends.includes(selectedFriend)) select.value = selectedFriend;
+
+                coinsInput.max = String(Math.max(0, globalCoins));
+                coinsInput.placeholder = `Макс: ${globalCoins}`;
+                if ((parseInt(coinsInput.value) || 0) > globalCoins) coinsInput.value = String(globalCoins);
+
+                const inv = inventoryLoaded ? liveInventory : {};
+                const rows = SHOP_ITEMS
+                    .filter(item => getInventoryQty(inv[item.id]) > 0)
+                    .map(item => {
+                        const qty = getInventoryQty(inv[item.id]);
+                        const visual = item.type === 'name' ? item.plainIcon : getItemVisualHTML(item);
+                        return `
+                            <div class="gift-pick-row">
+                                <div class="gift-pick-icon">${visual}</div>
+                                <div class="gift-pick-meta"><b>${item.name}</b><span>Есть: ${qty}</span></div>
+                                <input class="styled-input gift-pick-qty" type="number" min="0" max="${qty}" value="0" data-gift-item="${item.id}">
+                            </div>`;
+                    });
+                itemsList.innerHTML = rows.length ? rows.join('') : '<div class="chat-empty" style="min-height:80px;">Нет предметов для отправки</div>';
+            }
+
+            function collectGiftItems(inv) {
+                return Array.from(document.querySelectorAll('[data-gift-item]'))
+                    .map(input => {
+                        const id = input.dataset.giftItem;
+                        const item = SHOP_ITEMS.find(i => i.id === id);
+                        const qty = Math.max(0, parseInt(input.value || 0));
+                        const owned = getInventoryQty(inv[id]);
+                        return item && qty > 0 ? { id, qty: Math.min(qty, owned), name: item.name, type: item.type } : null;
+                    })
+                    .filter(Boolean);
+            }
+
+            function applyGiftSenderProfileChanges(sentItems, nextInventory) {
+                let changed = false;
+                sentItems.forEach(gift => {
+                    const item = SHOP_ITEMS.find(i => i.id === gift.id);
+                    if (!item || getInventoryQty(nextInventory[gift.id]) > 0) return;
+                    if (item.type === 'avatar' && myAvatar === item.id) { myAvatar = '😎'; changed = true; }
+                    if (item.type === 'name' && myEqName === item.id) { myEqName = ''; changed = true; }
+                    if (item.type === 'medal' && myPinnedMedals.includes(item.id)) {
+                        myPinnedMedals = myPinnedMedals.filter(id => id !== item.id);
+                        changed = true;
+                    }
+                    if (item.type === 'bg' && localStorage.getItem('eq_bg') === item.id) {
+                        localStorage.setItem('eq_bg', '');
+                        document.body.classList.remove('star-bg', 'bg-balloons');
+                        document.querySelectorAll('.balloon-bg-item').forEach(e => e.remove());
+                    }
+                });
+                if (changed) {
+                    updateMyProfileUI();
+                    syncDBProfile();
+                }
+            }
+
+            async function sendGift() {
+                const idInput = document.getElementById('gift-friend-id');
+                const select = document.getElementById('gift-friend-select');
+                const coinsInput = document.getElementById('gift-coins-input');
+                const anonymousInput = document.getElementById('gift-anonymous');
+                const targetId = (idInput?.value || '').trim() || select?.value || '';
+                if (!targetId || targetId === myId || isAiFriendId(targetId)) return tg.showAlert("Выбери игрока для подарка.");
+
+                const recipientSnap = await readDbOnceStrict(`users/${targetId}`, 'gift recipient').catch(() => null);
+                if (!recipientSnap || !recipientSnap.exists()) return tg.showAlert("Игрок не найден.");
+
+                const senderInv = inventoryLoaded ? { ...liveInventory } : await readDbOnce(`users/${myId}/inventory`, {}, 'gift sender inventory');
+                const selectedItems = collectGiftItems(senderInv);
+                const senderCoins = parseInt(await readDbOnce(`users/${myId}/coins`, globalCoins, 'gift sender coins')) || 0;
+                const coins = Math.max(0, Math.min(senderCoins, parseInt(coinsInput?.value || 0) || 0));
+                if (coins <= 0 && selectedItems.length === 0) return tg.showAlert("Выбери монеты или предметы.");
+
+                const invalidItem = selectedItems.find(gift => gift.qty <= 0 || gift.qty > getInventoryQty(senderInv[gift.id]));
+                if (invalidItem) return tg.showAlert("Недостаточно предметов для отправки.");
+
+                const recipient = recipientSnap.val() || {};
+                const recipientInv = await readDbOnce(`users/${targetId}/inventory`, {}, 'gift recipient inventory');
+                const recipientCoins = parseInt(recipient.coins || 0) || 0;
+                const updates = {};
+                const nextSenderInv = { ...senderInv };
+
+                if (coins > 0) {
+                    updates[`users/${myId}/coins`] = senderCoins - coins;
+                    updates[`users/${targetId}/coins`] = recipientCoins + coins;
+                }
+
+                selectedItems.forEach(gift => {
+                    const senderNext = getInventoryQty(senderInv[gift.id]) - gift.qty;
+                    const receiverNext = getInventoryQty(recipientInv[gift.id]) + gift.qty;
+                    nextSenderInv[gift.id] = senderNext;
+                    updates[`users/${myId}/inventory/${gift.id}`] = senderNext > 0 ? senderNext : null;
+                    updates[`users/${targetId}/inventory/${gift.id}`] = receiverNext;
+                });
+
+                const anonymous = !!anonymousInput?.checked;
+                const noteRef = db.ref(`users/${targetId}/system_notifications`).push();
+                updates[`users/${targetId}/system_notifications/${noteRef.key}`] = {
+                    id: noteRef.key,
+                    type: 'gift',
+                    title: 'ВАМ ПОДАРОК!',
+                    text: anonymous ? 'Вам отправили анонимный подарок' : `Подарок от игрока ${myName}`,
+                    anonymous,
+                    fromId: anonymous ? '' : myId,
+                    fromName: anonymous ? '' : myName,
+                    fromAvatar: anonymous ? '' : myAvatar,
+                    fromEqName: anonymous ? '' : myEqName,
+                    coins,
+                    items: selectedItems,
+                    unread: true,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                try {
+                    await updateDbPaths(updates, 'send gift');
+                    globalCoins = senderCoins - coins;
+                    liveInventory = nextSenderInv;
+                    inventoryLoaded = true;
+                    try { tg.CloudStorage.setItem('player_coins', globalCoins.toString()); } catch(e) {}
+                    updateCoinsUI();
+                    applyGiftSenderProfileChanges(selectedItems, nextSenderInv);
+                    if (coinsInput) coinsInput.value = '0';
+                    if (idInput) idInput.value = '';
+                    if (anonymousInput) anonymousInput.checked = false;
+                    renderInventory();
+                    renderShop();
+                    renderGiftSend();
+                    tg.showAlert("Подарок отправлен!");
+                } catch (err) {
+                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось отправить подарок."));
+                }
+            }
+
             let currentActionItem = null;
             let maxSellQty = 1;
             let currentSellQty = 1;
@@ -1829,8 +2033,9 @@
                 if (!coinsEl) return;
                 const invTabActive = document.getElementById('tab-inv')?.classList.contains('active');
                 const shopActive = document.getElementById('inv-shop')?.classList.contains('active');
+                const sendActive = document.getElementById('inv-send')?.classList.contains('active');
                 const adminActive = document.getElementById('tab-admin')?.classList.contains('active');
-                coinsEl.style.display = (invTabActive && shopActive) || adminActive ? 'flex' : 'none';
+                coinsEl.style.display = (invTabActive && (shopActive || sendActive)) || adminActive ? 'flex' : 'none';
             }
 
             function addCoins(a) { 

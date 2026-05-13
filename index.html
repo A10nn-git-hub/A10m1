@@ -89,12 +89,35 @@
                 <div class="sub-tabs-header">
                     <button class="sub-tab-btn active" onclick="switchSubTab('inv','bag',this); renderInventory();">Инвентарь</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('inv','shop',this); renderShop();">Магазин</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('inv','send',this); renderGiftSend();">Отправить</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('inv','promo',this)">Промокоды</button>
                 </div>
                 <div id="inv-bag" class="sub-tab-content active" style="padding-top:20px;">
                     <div class="inv-grid" id="inv-grid-container"></div>
                 </div>
                 <div id="inv-shop" class="sub-tab-content" style="flex-direction:row; flex-wrap:wrap; justify-content:center; gap:20px; padding-top:20px;"></div>
+                <div id="inv-send" class="sub-tab-content">
+                    <div class="gift-send-panel">
+                        <div class="gift-send-row">
+                            <label>Друг</label>
+                            <select id="gift-friend-select" class="styled-input gift-input"></select>
+                        </div>
+                        <div class="gift-send-row">
+                            <label>ID игрока</label>
+                            <input id="gift-friend-id" class="styled-input gift-input" type="text" inputmode="numeric" placeholder="или введи ID">
+                        </div>
+                        <div class="gift-send-row">
+                            <label>Монеты</label>
+                            <input id="gift-coins-input" class="styled-input gift-input" type="number" min="0" value="0">
+                        </div>
+                        <div class="gift-send-items" id="gift-items-list"></div>
+                        <label class="gift-anonymous-row">
+                            <input id="gift-anonymous" type="checkbox">
+                            <span>Отправить анонимно</span>
+                        </label>
+                        <button class="btn btn-green gift-send-btn" onclick="sendGift()">ОТПРАВИТЬ</button>
+                    </div>
+                </div>
                 <div id="inv-promo" class="sub-tab-content">
                     <h2>Промокод</h2>
                     <input type="text" inputmode="text" id="promo-input" class="styled-input">
@@ -105,7 +128,12 @@
             <div id="tab-messages" class="tab-view" style="flex-direction: row; gap:20px;">
                 <div class="messages-sidebar">
                     <h3 style="margin:0 0 12px 0;">Сообщения</h3>
+                    <div class="mini-tabs-header messages-tabs">
+                        <button id="messages-tab-friends" class="mini-tab-btn active" onclick="switchMessagesSubTab('friends', this)">ДРУЗЬЯ</button>
+                        <button id="messages-tab-system" class="mini-tab-btn" onclick="switchMessagesSubTab('system', this)">СИСТЕМА</button>
+                    </div>
                     <div id="messages-friends-list" class="messages-friends-list"></div>
+                    <div id="messages-system-list" class="messages-friends-list" style="display:none;"></div>
                 </div>
                 <div class="messages-chat-panel">
                     <div id="chat-empty" class="chat-empty">Выбери друга</div>
@@ -122,6 +150,10 @@
                             <input id="chat-input" class="styled-input chat-input" type="text" maxlength="300" placeholder="Сообщение">
                             <button class="btn btn-green chat-send-btn" aria-label="Отправить" title="Отправить" onclick="sendChatMessage()">➤</button>
                         </div>
+                    </div>
+                    <div id="system-active" class="system-active" style="display:none;">
+                        <div class="system-detail-title" id="system-detail-title">Система</div>
+                        <div class="system-detail-body" id="system-detail-body"></div>
                     </div>
                 </div>
             </div>
@@ -159,7 +191,7 @@
                         <div class="mode-text" id="selected-mode-text" style="font-size:18px; font-weight:bold;">Режим не выбран</div>
                         <div class="lobby-start-row">
                             <button class="lobby-settings-btn" aria-label="Настройки игры" title="Настройки игры" onclick="openGameSettingsModal()">⚙</button>
-                            <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()"><span>Выбрать<br>режим</span><span>Играть</span></button>
+                            <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()"><span>Выбрать<br>режим</span><span class="play-btn-separator">|</span><span>Играть</span></button>
                             <div class="lobby-guest-mode" id="lobby-guest-mode">РЕЖИМ НЕ ВЫБРАН</div>
                         </div>
                     </div>

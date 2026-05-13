@@ -622,9 +622,7 @@
                     };
                 }
 
-                const participants = (realPlayers.length >= 2 && aiPlayers.length === 0)
-                    ? realPlayers.slice(0, 2)
-                    : players.slice(0, TTT_SYMBOLS.length);
+                const participants = players.slice(0, TTT_SYMBOLS.length);
                 tttPlayerStyles = {};
                 participants.forEach((p, i) => {
                     const ps = settings.players[p.id] || {};

@@ -16,12 +16,38 @@
 
             function getFriendPresenceHTML(profile = {}) {
                 const presence = profile.presence || {};
+                const currentLobby = profile.currentLobby || {};
                 const lastSeenAt = Number(presence.lastSeenAt || profile.lastSeenAt || 0);
+                const awayExpired = presence.state === 'away' && lastSeenAt && Date.now() - lastSeenAt >= 60000;
+                const isOffline = presence.state === 'offline' || awayExpired;
                 const days = lastSeenAt ? Math.floor((Date.now() - lastSeenAt) / 86400000) : 0;
                 if (days >= 1) return `<span class="friend-status friend-status-offline">${formatPresenceDays(days)}</span>`;
+                if (!isOffline && currentLobby.status === 'playing' && currentLobby.game) {
+                    return `<span class="friend-status friend-status-playing"><span class="friend-status-dot"></span>ИГРАЕТ В ${formatPresenceGameName(currentLobby.game)}</span>`;
+                }
+                if (!isOffline && currentLobby.status !== 'playing' && currentLobby.isRealLobby) {
+                    return `<span class="friend-status friend-status-lobby"><span class="friend-status-dot"></span>В ЛОББИ</span>`;
+                }
                 if (presence.state === 'online') return `<span class="friend-status friend-status-online"><span class="friend-status-dot"></span>В СЕТИ</span>`;
-                if (presence.state === 'away') return `<span class="friend-status friend-status-away"><span class="friend-status-dot"></span>ОТОШЕЛ</span>`;
+                if (presence.state === 'away' && !awayExpired) return `<span class="friend-status friend-status-away"><span class="friend-status-dot"></span>ОТОШЕЛ</span>`;
                 return `<span class="friend-status friend-status-offline"><span class="friend-status-dot"></span>НЕ В СЕТИ</span>`;
+            }
+
+            function formatPresenceGameName(gameId) {
+                if (gameId === 'br_2d') return '2D ВЫЖИВАНИЕ';
+                if (gameId === 'br_3d') return '3D ВЫЖИВАНИЕ';
+                return (GAME_NAMES && GAME_NAMES[gameId] ? GAME_NAMES[gameId] : gameId).replace(/^[^\p{L}\p{N}]+/u, '').trim();
+            }
+
+            function pushSystemNotification(userId, payload) {
+                if (!userId || isAiFriendId(userId)) return Promise.resolve();
+                const ref = db.ref(`users/${userId}/system_notifications`).push();
+                return ref.set({
+                    ...payload,
+                    id: ref.key,
+                    unread: true,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                });
             }
 
             function canJoinPlayingBrLobby(data = {}) {
@@ -122,6 +148,15 @@
                 db.ref(`users/${myId}/friend_reqs/${id}`).remove(); 
                 db.ref(`users/${myId}/friends/${id}`).set(true); 
                 db.ref(`users/${id}/friends/${myId}`).set(true); 
+                pushSystemNotification(id, {
+                    type: 'friend_accepted',
+                    title: 'НОВЫЙ ДРУГ!',
+                    text: 'Этот игрок принял вашу заявку',
+                    playerId: myId,
+                    playerName: myName,
+                    playerAvatar: myAvatar,
+                    playerEqName: myEqName
+                }).catch(() => {});
                 tg.showAlert("Друг добавлен!"); 
             }
 
@@ -349,10 +384,12 @@
                 const stage = document.getElementById('lobby-agents-stage');
                 const playBtn = document.getElementById('lobby-play-btn');
                 const guestMode = document.getElementById('lobby-guest-mode');
+                const modeText = document.getElementById('selected-mode-text');
                 const isRealLobby = hasLobbyGuestsOrInvites(data);
                 if (leaveBtn) leaveBtn.style.display = isRealLobby ? 'inline-flex' : 'none';
                 if (stage) stage.classList.toggle('home-solo-stage', !isRealLobby);
                 if (playBtn) playBtn.style.display = isHost ? 'inline-flex' : 'none';
+                if (modeText) modeText.style.display = isHost ? 'block' : 'none';
                 if (guestMode) {
                     guestMode.style.display = isHost ? 'none' : 'flex';
                     guestMode.innerText = data.game && GAME_NAMES[data.game] ? GAME_NAMES[data.game] : 'РЕЖИМ НЕ ВЫБРАН';
@@ -420,6 +457,7 @@
                 const shouldReopen = !!options.autoReopen;
                 appState.autoLobbyPaused = !shouldReopen;
                 appState.inLobby = false; 
+                appState.suppressedGameStart = null;
                 const closingLobbyId = lobbyId;
                 const wasHost = isHost;
                 if (lobbyRef) lobbyRef.off(); 
@@ -463,7 +501,7 @@
             function acceptLobbyInvite() { 
                 if (pendingInvite) { 
                     const acceptedInvite = { ...pendingInvite };
-                    if (appState.inLobby && isHost && lobbyId && lobbyId !== pendingInvite.lId) {
+                    if (appState.inLobby && lobbyId && lobbyId !== pendingInvite.lId) {
                         if (lobbyRef) lobbyRef.off();
                         closeLobby({autoReopen:false});
                     }
@@ -551,7 +589,11 @@
             }
 
             function joinFriendLobby() { 
-                lobbyId = getFriendKnownLobbyId(activeFriend);
+                const targetLobbyId = getFriendKnownLobbyId(activeFriend);
+                if (appState.inLobby && lobbyId && lobbyId !== targetLobbyId) {
+                    closeLobby({autoReopen:false});
+                }
+                lobbyId = targetLobbyId;
                 isHost = false; 
                 pendingModeId = null;
                 setSelectedModeUI(null);
@@ -643,6 +685,7 @@
                         return; 
                     } 
                     let d = snap.val(); 
+                    clearSuppressedGameStartIfStale(d);
                     maybePromoteMissingHost(d);
                     if (!isHost && (!d.players || !d.players[myId])) { 
                         tg.showAlert("Вы удалены из лобби."); 
@@ -651,10 +694,15 @@
                     }
                     isHost = d.host === myId;
                     if (isHost) db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
+                    const isRealLobby = hasLobbyGuestsOrInvites(d);
+                    const clientStatus = isGameStartSuppressed(d) ? 'waiting' : (d.status || 'waiting');
                     db.ref(`users/${myId}/currentLobby`).set({
                         lobbyId,
                         game: d.game || '',
-                        status: d.status || 'waiting',
+                        status: clientStatus,
+                        isRealLobby,
+                        playersCount: Object.keys(d.players || {}).length,
+                        inviteCount: Object.keys(d.invites || {}).length,
                         updatedAt: firebase.database.ServerValue.TIMESTAMP
                     }).catch(() => {});
 
@@ -711,7 +759,7 @@
                         } 
                     } 
                     
-                    if (d.status === 'playing' && d.game && document.getElementById('game-container').style.display !== 'block') {
+                    if (d.status === 'playing' && d.game && !isGameStartSuppressed(d) && document.getElementById('game-container').style.display !== 'block') {
                         setSelectedModeUI(d.game);
                         startLocalGameUI(); 
                     } 
@@ -728,9 +776,13 @@
                 return [String(a), String(b)].sort().join('_');
             }
 
-            let messagesBadgeListener = null;
+            let activeMessagesSubTab = 'friends';
+            let messagesThreadsBadgeListener = null;
+            let systemNotificationsBadgeListener = null;
+            let messagesUnreadTotal = 0;
+            let systemUnreadTotal = 0;
 
-            function updateMessagesBadge(count) {
+            function updateMessagesBadge(count = messagesUnreadTotal + systemUnreadTotal) {
                 const badge = document.getElementById('messages-badge');
                 if (!badge) return;
                 const safeCount = parseInt(count || 0);
@@ -739,13 +791,20 @@
             }
 
             function bindMessagesUnreadBadge() {
-                if (!myId || messagesBadgeListener) return;
-                messagesBadgeListener = snap => {
+                if (!myId || messagesThreadsBadgeListener) return;
+                messagesThreadsBadgeListener = snap => {
                     const threads = snap.exists() ? snap.val() : {};
-                    const total = Object.values(threads).reduce((sum, thread) => sum + (parseInt(thread?.unread || 0) || 0), 0);
-                    updateMessagesBadge(total);
+                    messagesUnreadTotal = Object.values(threads).reduce((sum, thread) => sum + (parseInt(thread?.unread || 0) || 0), 0);
+                    updateMessagesBadge();
                 };
-                db.ref(`users/${myId}/message_threads`).on('value', messagesBadgeListener);
+                systemNotificationsBadgeListener = snap => {
+                    const notifications = snap.exists() ? snap.val() : {};
+                    systemUnreadTotal = Object.values(notifications).reduce((sum, item) => sum + (item?.unread ? 1 : 0), 0);
+                    updateMessagesBadge();
+                    if (activeMessagesSubTab === 'system') renderSystemMessagesTab();
+                };
+                db.ref(`users/${myId}/message_threads`).on('value', messagesThreadsBadgeListener);
+                db.ref(`users/${myId}/system_notifications`).on('value', systemNotificationsBadgeListener);
             }
 
             function acceptStoredLobbyInvite(key) {
@@ -756,7 +815,41 @@
                 });
             }
 
+            function switchMessagesSubTab(tab, el) {
+                activeMessagesSubTab = tab === 'system' ? 'system' : 'friends';
+                const friendsBtn = document.getElementById('messages-tab-friends');
+                const systemBtn = document.getElementById('messages-tab-system');
+                const friendsList = document.getElementById('messages-friends-list');
+                const systemList = document.getElementById('messages-system-list');
+                if (friendsBtn) friendsBtn.classList.toggle('active', activeMessagesSubTab === 'friends');
+                if (systemBtn) systemBtn.classList.toggle('active', activeMessagesSubTab === 'system');
+                if (el) el.classList.add('active');
+                if (friendsList) friendsList.style.display = activeMessagesSubTab === 'friends' ? 'flex' : 'none';
+                if (systemList) systemList.style.display = activeMessagesSubTab === 'system' ? 'flex' : 'none';
+                if (activeMessagesSubTab === 'system') {
+                    document.getElementById('chat-active').style.display = 'none';
+                    document.getElementById('system-active').style.display = 'none';
+                    document.getElementById('chat-empty').style.display = 'flex';
+                    document.getElementById('chat-empty').innerText = 'Выбери уведомление';
+                } else {
+                    document.getElementById('system-active').style.display = 'none';
+                    document.getElementById('chat-empty').innerText = 'Выбери друга';
+                    if (activeChatFriend && activeChatId) {
+                        document.getElementById('chat-empty').style.display = 'none';
+                        document.getElementById('chat-active').style.display = 'flex';
+                    } else {
+                        document.getElementById('chat-active').style.display = 'none';
+                        document.getElementById('chat-empty').style.display = 'flex';
+                    }
+                }
+                renderMessagesTab();
+            }
+
             function renderMessagesTab() {
+                if (activeMessagesSubTab === 'system') {
+                    renderSystemMessagesTab();
+                    return;
+                }
                 const list = document.getElementById('messages-friends-list');
                 if (!list) return;
                 const realFriends = friendsIds.filter(id => !isAiFriendId(id));
@@ -795,12 +888,105 @@
                 });
             }
 
+            function renderSystemMessagesTab() {
+                const list = document.getElementById('messages-system-list');
+                if (!list) return;
+                db.ref(`users/${myId}/system_notifications`).once('value').then(snap => {
+                    const notifications = snap.exists() ? snap.val() : {};
+                    const rows = Object.keys(notifications)
+                        .map(key => ({ id: key, ...notifications[key] }))
+                        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+                    list.innerHTML = '';
+                    if (rows.length === 0) {
+                        list.innerHTML = '<div class="chat-empty">Нет системных уведомлений</div>';
+                        return;
+                    }
+                    rows.forEach(item => {
+                        const row = document.createElement('div');
+                        row.className = 'message-friend-row system-row';
+                        row.innerHTML = `
+                            <div class="friend-row">
+                                <div class="system-row-icon">${getSystemNotificationIcon(item)}</div>
+                                <div class="message-friend-meta">
+                                    <div>${escapeHTML(item.title || 'СИСТЕМА')}</div>
+                                    <span>${escapeHTML(getSystemNotificationPreview(item))}</span>
+                                </div>
+                            </div>
+                            ${item.unread ? '<b class="message-unread">1</b>' : ''}`;
+                        row.onclick = () => openSystemNotification(item.id, item);
+                        list.appendChild(row);
+                    });
+                });
+            }
+
+            function getSystemNotificationIcon(item = {}) {
+                if (item.type === 'gift') return '🎁';
+                if (item.type === 'friend_accepted') return '👥';
+                return '!';
+            }
+
+            function getSystemNotificationPreview(item = {}) {
+                if (item.type === 'gift') {
+                    return item.anonymous ? 'Анонимный подарок' : `Подарок от ${item.fromName || 'игрока'}`;
+                }
+                if (item.type === 'friend_accepted') return item.text || 'Этот игрок принял вашу заявку';
+                return item.text || 'Новое уведомление';
+            }
+
+            function openSystemNotification(id, item) {
+                activeMessagesSubTab = 'system';
+                switchTab('messages', document.querySelector('[data-tab="messages"]'));
+                switchMessagesSubTab('system', document.getElementById('messages-tab-system'));
+                document.getElementById('chat-empty').style.display = 'none';
+                document.getElementById('chat-active').style.display = 'none';
+                document.getElementById('system-active').style.display = 'flex';
+                document.getElementById('system-detail-title').innerText = item.title || 'Система';
+                document.getElementById('system-detail-body').innerHTML = renderSystemNotificationDetail(item);
+                db.ref(`users/${myId}/system_notifications/${id}/unread`).set(false).catch(() => {});
+            }
+
+            function renderSystemNotificationDetail(item = {}) {
+                if (item.type === 'friend_accepted') {
+                    return `
+                        <div class="system-detail-text">${escapeHTML(item.text || 'Этот игрок принял вашу заявку')}</div>
+                        <div class="system-player-line">
+                            <div class="chat-peer-avatar">${getAvatarHTML(item.playerAvatar || '👤')}</div>
+                            <div>
+                                <div class="chat-peer-name">${getNameHTML(item.playerName || 'Игрок', item.playerEqName || '')}</div>
+                                <div class="chat-peer-id">ID: ${escapeHTML(item.playerId || '...')}</div>
+                            </div>
+                        </div>`;
+                }
+                if (item.type === 'gift') {
+                    const fromText = item.anonymous ? 'Подарок отправлен анонимно' : `Подарок от игрока ${escapeHTML(item.fromName || 'Игрок')}`;
+                    const coins = parseInt(item.coins || 0);
+                    const giftRows = [];
+                    if (coins > 0) giftRows.push(`<div class="gift-item-row"><div class="gift-item-icon">🪙</div><div><b>${coins} монет</b></div></div>`);
+                    (item.items || []).forEach(gift => giftRows.push(renderGiftItemLine(gift)));
+                    return `
+                        <div class="system-detail-text">${fromText}</div>
+                        <div class="gift-items-list">${giftRows.join('') || '<span style="color:#888;">Подарок пуст</span>'}</div>`;
+                }
+                return `<div class="system-detail-text">${escapeHTML(item.text || 'Новое системное уведомление')}</div>`;
+            }
+
+            function renderGiftItemLine(gift = {}) {
+                const item = SHOP_ITEMS.find(i => i.id === gift.id);
+                const visual = item ? (item.type === 'name' ? item.plainIcon : getItemVisualHTML(item)) : '🎁';
+                const name = gift.name || item?.name || gift.id || 'Предмет';
+                const qty = Math.max(1, parseInt(gift.qty || 1));
+                return `<div class="gift-item-row"><div class="gift-item-icon">${visual}</div><div><b>${escapeHTML(name)}</b><span>x${qty}</span></div></div>`;
+            }
+
             function openFriendChat(friendId, profile) {
                 if (isAiFriendId(friendId)) return tg.showAlert("ИИ не принимает сообщения.");
+                activeMessagesSubTab = 'friends';
                 activeChatFriend = { id: friendId, ...(profile || {}) };
                 switchTab('messages', document.querySelector('[data-tab="messages"]'));
+                switchMessagesSubTab('friends', document.getElementById('messages-tab-friends'));
                 document.getElementById('chat-empty').style.display = 'none';
                 document.getElementById('chat-active').style.display = 'flex';
+                document.getElementById('system-active').style.display = 'none';
                 document.getElementById('chat-peer-avatar').innerHTML = getAvatarHTML(activeChatFriend.avatar);
                 document.getElementById('chat-peer-name').innerHTML = getNameHTML(activeChatFriend.name || 'Игрок', activeChatFriend.eqName);
                 document.getElementById('chat-peer-id').innerText = `ID: ${friendId}`;
