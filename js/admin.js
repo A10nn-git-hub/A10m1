@@ -97,6 +97,7 @@
                     db.ref('users/' + id + '/inventory/' + it).once('value').then(qs => { 
                         let q = parseInt(qs.val()) || 0; 
                         db.ref('users/' + id + '/inventory/' + it).set(q + 1); 
+                        db.ref('users/' + id + '/new_items/' + it).set(true);
                     }); 
                 }); 
                 tg.showAlert('Выдано!'); 
@@ -151,6 +152,7 @@
                             d.items.forEach(it => {
                                 db.ref(`users/${myId}/inventory/${it}`).once('value').then(qs => {
                                     db.ref(`users/${myId}/inventory/${it}`).set((parseInt(qs.val()) || 0) + 1);
+                                    if (typeof markInventoryItemNew === 'function') markInventoryItemNew(it);
                                 });
                             });
                         }

@@ -40,6 +40,7 @@
             </div>
             <div class="nav-item" data-tab="inv" onclick="switchTab('inv', this); renderShop(); renderInventory();">
                 <div class="nav-icon">🎒</div>
+                <b id="inventory-badge" class="nav-badge">0</b>
                 <div class="nav-text">Инвентарь</div>
             </div>
             <div class="nav-item" data-tab="messages" onclick="switchTab('messages', this); renderMessagesTab();">
@@ -89,8 +90,8 @@
                 <div class="sub-tabs-header">
                     <button class="sub-tab-btn active" onclick="switchSubTab('inv','bag',this); renderInventory();">Инвентарь</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('inv','shop',this); renderShop();">Магазин</button>
-                    <button class="sub-tab-btn" onclick="switchSubTab('inv','send',this); renderGiftSend();">Отправить</button>
                     <button class="sub-tab-btn" onclick="switchSubTab('inv','promo',this)">Промокоды</button>
+                    <button class="sub-tab-btn" onclick="switchSubTab('inv','send',this); renderGiftSend();">Отправить</button>
                 </div>
                 <div id="inv-bag" class="sub-tab-content active" style="padding-top:20px;">
                     <div class="inv-grid" id="inv-grid-container"></div>
@@ -102,13 +103,16 @@
                             <label>Друг</label>
                             <select id="gift-friend-select" class="styled-input gift-input"></select>
                         </div>
-                        <div class="gift-send-row">
-                            <label>ID игрока</label>
+                        <div class="gift-send-row" id="gift-manual-id-row" style="display:none;">
+                            <label>Ввести ID</label>
                             <input id="gift-friend-id" class="styled-input gift-input" type="text" inputmode="numeric" placeholder="или введи ID">
                         </div>
                         <div class="gift-send-row">
                             <label>Монеты</label>
-                            <input id="gift-coins-input" class="styled-input gift-input" type="number" min="0" value="0">
+                            <div class="gift-coins-picker">
+                                <input id="gift-coins-input" class="styled-input gift-input" type="number" min="0" value="0">
+                                <button class="btn btn-dark gift-choose-btn" onclick="openGiftItemsModal()">ВЫБРАТЬ</button>
+                            </div>
                         </div>
                         <div class="gift-send-items" id="gift-items-list"></div>
                         <label class="gift-anonymous-row">
@@ -191,7 +195,11 @@
                         <div class="mode-text" id="selected-mode-text" style="font-size:18px; font-weight:bold;">Режим не выбран</div>
                         <div class="lobby-start-row">
                             <button class="lobby-settings-btn" aria-label="Настройки игры" title="Настройки игры" onclick="openGameSettingsModal()">⚙</button>
-                            <button class="play-btn" id="lobby-play-btn" onclick="startLobbyGame()"><span>Выбрать<br>режим</span><span class="play-btn-separator">|</span><span>Играть</span></button>
+                            <div class="play-btn" id="lobby-play-btn" role="group" aria-label="Выбор режима и запуск игры">
+                                <button class="play-split-btn play-mode-btn" onclick="openSO2ModeSelect()"><span>Выбрать<br>режим</span></button>
+                                <span class="play-btn-separator">|</span>
+                                <button class="play-split-btn play-start-btn" onclick="startLobbyGame()"><span>Играть</span></button>
+                            </div>
                             <div class="lobby-guest-mode" id="lobby-guest-mode">РЕЖИМ НЕ ВЫБРАН</div>
                         </div>
                     </div>
@@ -535,6 +543,7 @@
             <div style="background:#1c1c1e;padding:20px;border-radius:15px;width:250px;text-align:center;border:2px solid #444;" onclick="event.stopPropagation()">
                 <div id="action-modal-icon" style="font-size:60px; margin-bottom:10px;"></div>
                 <h3 id="action-modal-name" style="margin:0 0 20px 0;"></h3>
+                <div id="action-modal-collection" class="action-modal-collection"></div>
                 
                 <div id="sell-qty-wrap" style="display:none; margin-bottom:15px;">
                     <label style="color:gray; font-size:12px;">Кол-во для продажи:</label><br>
@@ -548,7 +557,21 @@
                 <div style="display:flex;flex-direction:column;gap:10px;">
                     <button id="action-btn-equip" class="btn btn-green">ПРИМЕНИТЬ</button>
                     <button id="action-btn-sell" class="btn btn-red" onclick="sellCurrentItem()">ПРОДАТЬ</button>
+                    <button id="action-btn-inspect" class="btn btn-dark">ОСМОТРЕТЬ</button>
                     <button class="btn btn-dark" onclick="closeItemAction()">ОТМЕНА</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="gift-items-modal" class="overlay glass hidden" onclick="closeGiftItemsModal()">
+            <div class="gift-items-window" onclick="event.stopPropagation()">
+                <div class="gift-items-head">
+                    <h2>Выберите предметы</h2>
+                    <button class="settings-close-btn" aria-label="Закрыть" onclick="closeGiftItemsModal()">✖</button>
+                </div>
+                <div id="gift-items-modal-grid" class="gift-items-modal-grid"></div>
+                <div class="gift-items-actions">
+                    <button class="btn btn-green" onclick="confirmGiftItemsModal()">ГОТОВО</button>
                 </div>
             </div>
         </div>

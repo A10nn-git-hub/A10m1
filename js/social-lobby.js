@@ -4,6 +4,7 @@
             let activeChatFriend = null;
             let activeChatId = null;
             let chatMessagesListener = null;
+            let lobbyAgentSlots = {};
 
             function formatPresenceDays(days) {
                 const n = Math.abs(parseInt(days) || 0);
@@ -157,6 +158,18 @@
                     playerAvatar: myAvatar,
                     playerEqName: myEqName
                 }).catch(() => {});
+                db.ref(`users/${id}`).once('value').then(s => {
+                    const p = s.exists() ? (s.val() || {}) : {};
+                    pushSystemNotification(myId, {
+                        type: 'friend_accepted',
+                        title: 'НОВЫЙ ДРУГ!',
+                        text: 'Теперь вы друзья',
+                        playerId: id,
+                        playerName: p.name || 'Игрок',
+                        playerAvatar: p.avatar || '👤',
+                        playerEqName: p.eqName || ''
+                    }).catch(() => {});
+                });
                 tg.showAlert("Друг добавлен!"); 
             }
 
@@ -171,8 +184,10 @@
                 a.innerHTML = ''; 
                 if(f.id !== 'ИИ') {
                     a.innerHTML += `<button class="btn btn-dark" onclick="openProfileStatsModal('${f.id}')">Профиль</button>`;
+                    a.innerHTML += `<div id="friend-join-lobby-slot"></div>`;
                     a.innerHTML += `<button class="btn btn-dark" onclick="openFriendChatFromModal()">Сообщение 💬</button>`;
                 }
+                maybeRenderFriendLobbyJoin(f);
                 
                 if (appState.inLobby) { 
                     if (f.id === 'ИИ') {
@@ -190,13 +205,8 @@
                 } else { 
                     if (f.id !== 'ИИ') {
                         db.ref('lobbies/' + getFriendKnownLobbyId(f)).once('value').then(s => {
-                            if (s.exists() && document.getElementById('friend-modal') && !document.getElementById('friend-modal').classList.contains('hidden')) {
-                                const data = s.val();
-                                if (canJoinPlayingBrLobby(data)) {
-                                    document.getElementById('friend-actions').insertAdjacentHTML('beforeend', `<button class="btn btn-purple" onclick="joinFriendPlayingBrLobby()">ПРИСОЕДИНИТЬСЯ</button>`);
-                                } else if (data.status !== 'playing') {
-                                    document.getElementById('friend-actions').insertAdjacentHTML('beforeend', `<button class="btn btn-green" onclick="joinFriendLobby()">Присоединиться 🚀</button>`);
-                                }
+                            if (s.exists() && document.getElementById('friend-modal') && !document.getElementById('friend-modal').classList.contains('hidden') && canJoinPlayingBrLobby(s.val())) {
+                                document.getElementById('friend-actions').insertAdjacentHTML('beforeend', `<button class="btn btn-purple" onclick="joinFriendPlayingBrLobby()">ПРИСОЕДИНИТЬСЯ</button>`);
                             }
                         });
                     }
@@ -210,6 +220,33 @@
                     a.innerHTML += `<button class="btn" onclick="closeFriendModal()" style="background: #444; color: white;">Закрыть</button>`; 
                 } 
                 document.getElementById('friend-modal').classList.remove('hidden'); 
+            }
+
+            function friendHasWaitingLobby(friend = {}, data = null) {
+                if (!friend || isAiFriendId(friend.id)) return false;
+                const known = friend.currentLobby || {};
+                if (known.status === 'playing') return false;
+                if (known.isRealLobby && known.status !== 'playing') return true;
+                if (!data || data.status === 'playing') return false;
+                const players = data.players || {};
+                return !!players[friend.id] && (Object.keys(players).length > 1 || Object.keys(data.invites || {}).length > 0);
+            }
+
+            function maybeRenderFriendLobbyJoin(friend) {
+                const slot = document.getElementById('friend-join-lobby-slot');
+                if (!slot || !friend || isAiFriendId(friend.id)) return;
+                const render = () => {
+                    slot.innerHTML = `<button class="btn btn-gold friend-join-lobby-btn" onclick="joinFriendLobby()">ПРИСОЕДИНИТЬСЯ</button>`;
+                };
+                if (friendHasWaitingLobby(friend)) {
+                    render();
+                    return;
+                }
+                db.ref('lobbies/' + getFriendKnownLobbyId(friend)).once('value').then(s => {
+                    if (!s.exists()) return;
+                    if (document.getElementById('friend-modal')?.classList.contains('hidden')) return;
+                    if (friendHasWaitingLobby(friend, s.val())) render();
+                });
             }
 
             function closeFriendModal() { document.getElementById('friend-modal').classList.add('hidden'); }
@@ -298,10 +335,9 @@
                 const stage = document.getElementById('lobby-agents-stage');
                 if (!stage) return;
                 stage.innerHTML = '';
-                const count = Math.max(1, lobbyPlayers.length);
                 lobbyPlayers.forEach((p, i) => {
                     const agent = document.createElement('div');
-                    agent.className = `lobby-agent lobby-agent-${count}-${i + 1}`;
+                    agent.className = `lobby-agent lobby-agent-slot-${getLobbyAgentSlot(p.id)}`;
                     if (isHost && p.id !== myId) {
                         agent.title = 'Кикнуть из лобби';
                         agent.onclick = () => kickPlayer(p.id);
@@ -313,6 +349,22 @@
                         <div class="agent-label">${getNameHTML(p.name, p.eqName)}</div>`;
                     stage.appendChild(agent);
                 });
+            }
+
+            function getLobbyAgentSlot(playerId) {
+                const activeIds = new Set(lobbyPlayers.map(p => p.id));
+                Object.keys(lobbyAgentSlots).forEach(id => {
+                    if (!activeIds.has(id)) delete lobbyAgentSlots[id];
+                });
+                if (lobbyAgentSlots[playerId]) return lobbyAgentSlots[playerId];
+                const used = new Set(Object.values(lobbyAgentSlots));
+                for (let i = 1; i <= 5; i++) {
+                    if (!used.has(i)) {
+                        lobbyAgentSlots[playerId] = i;
+                        return i;
+                    }
+                }
+                return 5;
             }
 
             function openInviteModal() { 
@@ -437,6 +489,7 @@
                 isHost = true; 
                 pendingModeId = null;
                 setSelectedModeUI(null);
+                lobbyAgentSlots = {};
                 lobbyPlayers = nextPlayers; 
                 
                 db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
@@ -458,6 +511,7 @@
                 appState.autoLobbyPaused = !shouldReopen;
                 appState.inLobby = false; 
                 appState.suppressedGameStart = null;
+                appState.currentContest = null;
                 const closingLobbyId = lobbyId;
                 const wasHost = isHost;
                 if (lobbyRef) lobbyRef.off(); 
@@ -488,6 +542,7 @@
                 lobbyId = null;
                 isHost = false;
                 lobbyPlayers = [];
+                lobbyAgentSlots = {};
                 db.ref(`users/${myId}/currentLobby`).remove().catch(() => {});
                 if (shouldReopen) setTimeout(ensureHomeLobby, 300);
             }
@@ -707,6 +762,7 @@
                     }).catch(() => {});
 
                     currentLobbySettings = d.settings || {};
+                    appState.currentContest = d.contest || null;
                     lobbyPlayers = []; 
                     if (d.players && d.players[d.host]) { 
                         lobbyPlayers.push({id: d.host, ...d.players[d.host]}); 

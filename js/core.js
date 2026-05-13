@@ -317,6 +317,40 @@
                 return typeof value === 'boolean' ? 1 : (parseInt(value) || 0);
             }
 
+            function markInventoryItemNew(id) {
+                if (!id || !myId) return;
+                newInventoryItems[id] = true;
+                updateInventoryBadge();
+                db.ref(`users/${myId}/new_items/${id}`).set(true).catch(() => {});
+            }
+
+            function clearInventoryItemNew(id) {
+                if (!id || !newInventoryItems[id]) return;
+                delete newInventoryItems[id];
+                updateInventoryBadge();
+                db.ref(`users/${myId}/new_items/${id}`).remove().catch(() => {});
+            }
+
+            function updateInventoryBadge() {
+                const badge = document.getElementById('inventory-badge');
+                if (!badge) return;
+                const count = Object.keys(newInventoryItems || {}).length;
+                badge.style.display = count > 0 ? 'block' : 'none';
+                badge.innerText = count > 99 ? '99+' : String(count);
+            }
+
+            function rememberInventoryIncreases(nextInv) {
+                if (!inventorySnapshotSeen) {
+                    inventorySnapshotSeen = true;
+                    return;
+                }
+                Object.keys(nextInv || {}).forEach(id => {
+                    const nextQty = getInventoryQty(nextInv[id]);
+                    const prevQty = getInventoryQty(liveInventory[id]);
+                    if (nextQty > prevQty) markInventoryItemNew(id);
+                });
+            }
+
             async function buyItem(id, price) {
                 if(purchaseInProgress) return;
                 const item = SHOP_ITEMS.find(i => i.id === id);
@@ -339,6 +373,7 @@
                     globalCoins = nextCoins;
                     liveInventory = { ...liveInventory, [id]: nextQty };
                     inventoryLoaded = true;
+                    markInventoryItemNew(id);
                     updateCoinsUI();
                     try { tg.CloudStorage.setItem('player_coins', globalCoins.toString()); } catch(e) {}
 
@@ -376,6 +411,12 @@
                 const box = SHOP_ITEMS.find(i => i.id === id && i.type === 'box');
                 if (!box) return [];
                 return SHOP_ITEMS.filter(i => !i.deleted && i.type !== 'box' && i.type !== 'case' && i.boxTarget === id);
+            }
+
+            function getItemCollectionName(item) {
+                if (!item || !item.boxTarget || item.boxTarget === 'no') return '';
+                const source = SHOP_ITEMS.find(i => i.id === item.boxTarget);
+                return source ? source.name : item.boxTarget;
             }
 
             function openBoxPre(id) {
@@ -424,6 +465,7 @@
                         else db.ref(`users/${myId}/inventory/${currentOpenedBoxId}`).remove();
                         db.ref(`users/${myId}/inventory/${win.id}`).once('value').then(ss => {
                             db.ref(`users/${myId}/inventory/${win.id}`).set((parseInt(ss.val())||0)+1);
+                            markInventoryItemNew(win.id);
                             boxRouletteActive = false;
                             tg.showAlert(`Выпало: ${win.name}!`);
                             document.getElementById('btn-close-box').style.display = 'block';
@@ -452,7 +494,7 @@
                 
                 if(cat==='math') sm.innerHTML = b('math1','📝','Ответ')+b('math2','🎴','Карточки')+b('math3','🔢','Порядок');
                 if(cat==='letters') sm.innerHTML = b('let1','🔤','АБВ')+b('let3','⌨️','Слово')+b('let4','🔗','Соедини')+b('let5','🟩','5 Букв');
-                if(cat==='coord') sm.innerHTML = b('coord1','🗡️','Ножи')+b('coord2','🐸','Лягушка')+b('coord3','🎈','Скорость')+b('coord4','⚡','Кнопка')+b('coord5','🦆','Утки');
+                if(cat==='coord') sm.innerHTML = b('coord2','🐸','Лягушка')+b('coord3','🎈','Скорость')+b('coord4','⚡','Кнопка')+b('coord5','🦆','Утки');
                 if(cat==='ttt') sm.innerHTML = `
                     <div class="so2-subcard" onclick="setPendingTttLevel('easy', this)"><div class="so2-subcard-icon">⭐</div><div class="so2-subcard-title">Уровень 1</div></div>
                     <div class="so2-subcard" onclick="setPendingTttLevel('medium', this)"><div class="so2-subcard-icon">⭐⭐</div><div class="so2-subcard-title">Уровень 2</div></div>
@@ -492,14 +534,47 @@
             }
             function closeSO2ModeSelect() { document.getElementById('so2-mode-modal').classList.add('hidden'); }
 
+            function getRealLobbyContestPlayers(players = lobbyPlayers) {
+                return (Array.isArray(players) ? players : []).filter(p => p && p.id && !isAiFriendId(p.id));
+            }
+
+            function shouldUseRealContest(gameId = appState.game) {
+                if (!lobbyId || !gameId) return false;
+                if (['clicker', 'tictactoe', 'br_2d', 'br_3d'].includes(gameId)) return false;
+                return getRealLobbyContestPlayers().length > 1 && !!appState.currentContest?.runId;
+            }
+
+            function makeContestPayload(gameId, lobbyData = {}) {
+                const players = sortedLobbyPlayerEntries(lobbyData.players || {})
+                    .filter(id => !isAiFriendId(id))
+                    .map(id => ({
+                        id,
+                        name: lobbyData.players?.[id]?.name || 'Игрок',
+                        avatar: lobbyData.players?.[id]?.avatar || '👤',
+                        eqName: lobbyData.players?.[id]?.eqName || ''
+                    }));
+                return {
+                    runId: `${Date.now()}_${myId}`,
+                    game: gameId,
+                    startedAt: firebase.database.ServerValue.TIMESTAMP,
+                    participants: players,
+                    results: null
+                };
+            }
+
             async function startLobbyGame() {
                 if(!isHost) return tg.showAlert("Только Хост может запустить!");
                 if(!lobbyId) return tg.showAlert("Лобби не найдено.");
 
                 const selectedGameId = appState.selectedGameId || pendingModeId;
                 if(!selectedGameId) {
-                    openSO2ModeSelect();
-                    return;
+                    return tg.showAlert("Сначала выбери режим слева.");
+                }
+                if (selectedGameId === 'coord1') {
+                    setSelectedModeUI(null);
+                    pendingModeId = null;
+                    if (lobbyId) db.ref(`lobbies/${lobbyId}/game`).set('').catch(() => {});
+                    return tg.showAlert("Режим ножей убран. Выбери другой режим координации.");
                 }
 
                 try {
@@ -515,7 +590,8 @@
 
                     await updateDbPaths({
                         [`lobbies/${lobbyId}/status`]: 'playing',
-                        [`lobbies/${lobbyId}/hostPaused`]: false
+                        [`lobbies/${lobbyId}/hostPaused`]: false,
+                        [`lobbies/${lobbyId}/contest`]: makeContestPayload(selectedGameId, lobbyData)
                     }, 'start lobby game');
                     appState.suppressedGameStart = null;
                     setIsland("Запуск игры...", "#34c759");
@@ -563,6 +639,13 @@
                 document.getElementById('game-container').style.display = 'block';
                 document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active'));
                 let id = appState.selectedGameId; appState.game = id;
+                appState.gameStartedAt = Date.now();
+                appState.contestResultSubmitted = false;
+                if (id === 'coord1') {
+                    setIsland("Режим ножей убран. Выбери другой режим.", "#ff453a");
+                    exitToLobby();
+                    return;
+                }
                 
                 if(id.startsWith('math')) { document.getElementById(`screen-game-math-${id.replace('math','')}`).classList.add('active'); startMathMode(parseInt(id.replace('math',''))); }
                 else if(id.startsWith('let')) { document.getElementById(`screen-game-letters-${id.replace('let','')}`).classList.add('active'); if(id==='let5') document.body.classList.add('let5-active'); startLettersMode(parseInt(id.replace('let',''))); }
@@ -604,10 +687,111 @@
                 document.getElementById('dynamic-island').style.display = 'none';
                 document.getElementById('ai-game-overlay').style.display = 'none';
                 document.body.classList.remove('let5-active');
+                unbindContestResultsListener();
                 if(exitingBr2d) stopBR();
                 if(exitingGame==='tictactoe' && typeof stopTicTacToeSync === 'function') stopTicTacToeSync();
                 if(isHost && lobbyId && !brContinuesAfterHost) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
                 appState.game = null;
+            }
+
+            function contestCategoryForGame(gameId) {
+                if (!gameId) return 'math';
+                if (gameId.startsWith('math')) return 'math';
+                if (gameId.startsWith('let')) return 'letters';
+                if (gameId.startsWith('coord')) return 'acc';
+                if (gameId === 'hidden') return 'hidden';
+                return 'math';
+            }
+
+            function extractContestScore(title, color, subtext) {
+                const text = `${title || ''}\n${subtext || ''}`;
+                const scoreMatch = text.match(/Счет:\s*(-?\d+)/i) || text.match(/Счёт:\s*(-?\d+)/i);
+                if (scoreMatch) return parseInt(scoreMatch[1]) || 0;
+                const plusMatch = text.match(/\+(-?\d+)/);
+                if (plusMatch) return parseInt(plusMatch[1]) || 0;
+                const lower = text.toLowerCase();
+                if (String(color).toLowerCase() === '#ff453a' || lower.includes('мимо') || lower.includes('не угадал')) return 0;
+                if (String(color).toLowerCase() === '#ffd60a' || lower.includes('ничья')) return 0.5;
+                return 1;
+            }
+
+            function extractContestDurationMs(subtext) {
+                const avgMatch = String(subtext || '').match(/Среднее:\s*([\d.,]+)\s*с/i);
+                if (!avgMatch) return null;
+                const seconds = parseFloat(avgMatch[1].replace(',', '.'));
+                return Number.isFinite(seconds) ? Math.max(0, Math.round(seconds * 1000)) : null;
+            }
+
+            function renderContestFinal(rows) {
+                const sorted = [...rows].sort((a, b) => (b.score - a.score) || (a.durationMs - b.durationMs));
+                const winner = sorted[0];
+                const myRow = sorted.find(r => r.id === myId);
+                const topScore = winner ? winner.score : 0;
+                const winners = sorted.filter(r => r.score === topScore && r.durationMs === winner.durationMs);
+                const isDraw = winners.length > 1;
+                const isMyWin = !isDraw && myRow && winner && winner.id === myId;
+                const category = contestCategoryForGame(appState.game || appState.currentContest?.game);
+
+                appState.finalizingContest = true;
+                sorted.forEach(row => {
+                    if (row.id === myId) return;
+                    updatePvpStat(row.id, category, isDraw ? 'draw' : (isMyWin ? 'win' : 'loss'));
+                });
+                appState.finalizingContest = false;
+
+                document.getElementById('result-text').innerText = isDraw ? 'НИЧЬЯ!' : (isMyWin ? 'ПОБЕДА!' : 'ПОРАЖЕНИЕ!');
+                document.getElementById('result-text').style.color = isDraw ? '#ffd60a' : (isMyWin ? '#34c759' : '#ff453a');
+                document.getElementById('result-emoji').innerText = isDraw ? '🤝' : '🏆';
+                document.getElementById('result-subtext').innerHTML = `
+                    <div style="text-align:center;font-weight:1000;color:var(--coin-col);margin-bottom:10px;">Победитель: ${escapeHTML(winner?.name || 'Игрок')}</div>
+                    ${sorted.map((r, i) => `${i + 1}. ${escapeHTML(r.name || r.id)} - ${r.score} (${(r.durationMs / 1000).toFixed(1)}с)`).join('\n')}`;
+                document.getElementById('result-overlay').classList.remove('hidden');
+            }
+
+            function unbindContestResultsListener() {
+                if (appState.contestResultsListener && lobbyId && appState.currentContest?.runId) {
+                    db.ref(`lobbies/${lobbyId}/contest/results`).off('value', appState.contestResultsListener);
+                }
+                appState.contestResultsListener = null;
+            }
+
+            function submitContestResult(title, color, emoji, subtext) {
+                if (!shouldUseRealContest() || appState.contestResultSubmitted) return false;
+                const contest = appState.currentContest;
+                const participants = Array.isArray(contest.participants) && contest.participants.length
+                    ? contest.participants.filter(p => p && p.id && !isAiFriendId(p.id))
+                    : getRealLobbyContestPlayers();
+                if (participants.length <= 1) return false;
+
+                appState.contestResultSubmitted = true;
+                const parsedDurationMs = extractContestDurationMs(subtext);
+                const durationMs = parsedDurationMs ?? Math.max(0, Date.now() - (appState.gameStartedAt || Date.now()));
+                const result = {
+                    id: myId,
+                    name: myName,
+                    avatar: myAvatar,
+                    eqName: myEqName,
+                    score: extractContestScore(title, color, subtext),
+                    durationMs,
+                    title,
+                    emoji,
+                    finishedAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                db.ref(`lobbies/${lobbyId}/contest/results/${myId}`).set(result).catch(() => {});
+                document.getElementById('result-subtext').innerHTML = `${subtext || ''}${subtext ? '\n\n' : ''}Ждем результаты второго игрока...`;
+
+                unbindContestResultsListener();
+                appState.contestResultsListener = snap => {
+                    const results = snap.exists() ? snap.val() : {};
+                    const rows = participants.map(p => results[p.id] ? { id: p.id, name: p.name || results[p.id].name, ...results[p.id] } : null).filter(Boolean);
+                    if (rows.length >= participants.length) {
+                        unbindContestResultsListener();
+                        renderContestFinal(rows);
+                    }
+                };
+                db.ref(`lobbies/${lobbyId}/contest/results`).on('value', appState.contestResultsListener);
+                return true;
             }
 
             function showResult(title, color, emoji, subtext = '') {
@@ -617,6 +801,7 @@
                 document.getElementById('result-subtext').innerHTML = subtext;
                 document.getElementById('result-overlay').classList.remove('hidden');
                 addGamePlayed();
+                submitContestResult(title, color, emoji, subtext);
             }
             function closeResult() { document.getElementById('result-overlay').classList.add('hidden'); exitToLobby(); }
 
@@ -629,16 +814,21 @@
                         return;
                     }
                     let d = s.val();
+                    const isSelf = id === myId;
+                    const playerCard = document.getElementById('ps-player-card');
+                    const youBtn = document.getElementById('ps-tab-btn-you');
+                    if (playerCard) playerCard.style.display = isSelf ? 'none' : 'flex';
+                    if (youBtn) youBtn.style.display = isSelf ? 'none' : '';
                     document.getElementById('ps-avatar').innerHTML = getAvatarHTML(d.avatar);
                     document.getElementById('ps-name').innerHTML = getNameHTML(d.name, d.eqName);
                     document.getElementById('ps-id').innerText = `ID: ${id}`;
                     document.getElementById('ps-card-avatar').innerHTML = getAvatarHTML(d.avatar);
                     document.getElementById('ps-card-name').innerHTML = getNameHTML(d.name || 'Игрок', d.eqName);
                     document.getElementById('ps-card-medals').innerHTML = getMedalsHTML(d.pMedals);
-                    document.getElementById('ps-tab-you').innerHTML = generateKDHTML(getInvertedStats(pvpStats[id]));
+                    document.getElementById('ps-tab-you').innerHTML = isSelf ? '' : generateKDHTML(getInvertedStats(pvpStats[id]));
                     document.getElementById('ps-tab-all').innerHTML = generateKDHTML(buildTotalStats(d.pvpStats));
                     document.getElementById('ps-tab-ai').innerHTML = generateKDHTML(d.aiStats);
-                    switchMiniTab('ps-tab-you', document.getElementById('ps-tab-btn-you'));
+                    switchMiniTab(isSelf ? 'ps-tab-all' : 'ps-tab-you', document.getElementById(isSelf ? 'ps-tab-btn-all' : 'ps-tab-btn-you'));
                     document.getElementById('profile-stats-modal').classList.remove('hidden');
                 });
             }
@@ -877,17 +1067,18 @@
             
             let globalCoins = 0; let myName = "Игрок"; let myAvatar = "😎"; let myId = "0000"; let myEqName = ''; let myPinnedMedals = []; let gamesPlayed = 0; let playTimeMs = 0; let aiStats = {}; let pvpStats = {}; let profileLoaded = false;
             
-            let friendsIds = []; let appState = { game: null, isPaused: false, hostPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null, presenceTimer: null, awaySinceAt: 0, suppressedGameStart: null };
+            let friendsIds = []; let appState = { game: null, isPaused: false, hostPaused: false, inLobby: false, selectedGameId: null, autoLobbyPaused: false, prevViewLobbyDisplay: '', prevMainButtonsDisplay: '', promosListener: null, adminListener: null, presenceTimer: null, awaySinceAt: 0, suppressedGameStart: null, currentContest: null, contestResultsListener: null, contestResultSubmitted: false, gameStartedAt: 0, finalizingContest: false };
             let lobbyId = null, lobbyPlayers = [], lobbyRef = null, isHost = false, pendingInvite = null;
             let currentLobbySettings = {};
-            let inventoryListener = null, customItemsListener = null, liveInventory = {}, inventoryLoaded = false;
+            let inventoryListener = null, customItemsListener = null, newItemsListener = null, liveInventory = {}, inventoryLoaded = false, inventorySnapshotSeen = false, newInventoryItems = {};
             let aiDifficulty = 'medium'; let currentOpenedBoxId = null; let activeFriend = null;
             let boxRouletteActive = false, boxAwaitingPrizeInspect = false;
+            let giftSelectedItems = [];
 
             const GAME_NAMES = {
                 'math1': 'МАТЕМАТИКА [ОТВЕТ]', 'math2': 'МАТЕМАТИКА [КАРТОЧКИ]', 'math3': 'МАТЕМАТИКА [ПОРЯДОК]',
                 'let1': 'БУКВЫ [АБВ]', 'let3': 'БУКВЫ [СЛОВО]', 'let4': 'БУКВЫ [СОЕДИНИ]', 'let5': 'БУКВЫ [5 БУКВ]',
-                'coord1': 'КООРДИНАЦИЯ [НОЖИ]', 'coord2': 'КООРДИНАЦИЯ [ЛЯГУШКА]', 'coord3': 'КООРДИНАЦИЯ [СКОРОСТЬ]', 'coord4': 'КООРДИНАЦИЯ [КНОПКА]', 'coord5': 'КООРДИНАЦИЯ [УТКИ]',
+                'coord2': 'КООРДИНАЦИЯ [ЛЯГУШКА]', 'coord3': 'КООРДИНАЦИЯ [СКОРОСТЬ]', 'coord4': 'КООРДИНАЦИЯ [КНОПКА]', 'coord5': 'КООРДИНАЦИЯ [УТКИ]',
                 'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br_2d': '⚔️ ВЫЖИВАНИЕ [2D]', 'br_3d': '🏃‍♂️ 3D ПАРКУР'
             };
             const TTT_SETTING_SYMBOLS = ['x', 'o', 'square', 'triangle', 'circle_solid'];
@@ -1040,6 +1231,11 @@
                 const gameId = appState.selectedGameId || pendingModeId;
                 const modal = document.getElementById('game-settings-modal');
                 if (!modal) return;
+                if (!gameId) {
+                    if (isHost) openSO2ModeSelect();
+                    else tg.showAlert("Хост еще не выбрал режим.");
+                    return;
+                }
                 modal.classList.remove('hidden');
                 renderGameSettingsModal(gameId);
             }
@@ -1281,12 +1477,15 @@
             function bindInventorySync() {
                 inventoryLoaded = false;
                 liveInventory = {};
+                inventorySnapshotSeen = false;
                 if (inventoryListener) {
                     try { db.ref(`users/${myId}/inventory`).off('value', inventoryListener); } catch (e) {}
                 }
 
                 inventoryListener = snap => {
-                    liveInventory = snap.exists() ? (snap.val() || {}) : {};
+                    const nextInventory = snap.exists() ? (snap.val() || {}) : {};
+                    rememberInventoryIncreases(nextInventory);
+                    liveInventory = nextInventory;
                     inventoryLoaded = true;
                     renderShop();
                     renderInventory();
@@ -1300,6 +1499,18 @@
                     renderInventory();
                     renderGiftSend();
                 });
+            }
+
+            function bindNewItemsSync() {
+                if (newItemsListener) {
+                    try { db.ref(`users/${myId}/new_items`).off('value', newItemsListener); } catch (e) {}
+                }
+                newItemsListener = snap => {
+                    newInventoryItems = snap.exists() ? (snap.val() || {}) : {};
+                    updateInventoryBadge();
+                    renderInventory();
+                };
+                db.ref(`users/${myId}/new_items`).on('value', newItemsListener, err => handleFirebaseError(err, 'new_items listener', null));
             }
 
             async function ensureEquippedItemsInInventory() {
@@ -1369,6 +1580,7 @@
                     
                     bindDeletedShopItemsSync();
                     bindCustomItemsSync();
+                    bindNewItemsSync();
                     bindInventorySync();
 
                     Promise.resolve().finally(() => {
@@ -1514,6 +1726,7 @@
 
             function updatePvpStat(opponentId, gameCat, result) {
                 if(opponentId.startsWith('ИИ')) { updateAiStat(gameCat, result); return; }
+                if (shouldUseRealContest() && !appState.finalizingContest) return;
                 if(!pvpStats[opponentId]) pvpStats[opponentId] = {math:{w:0,l:0,d:0}, letters:{w:0,l:0,d:0}, acc:{w:0,l:0,d:0}, ttt:{w:0,l:0,d:0}, hidden:{w:0,l:0,d:0}, clk:{w:0,l:0,d:0}, react:{w:0,l:0,d:0}};
                 if(!pvpStats[opponentId][gameCat]) pvpStats[opponentId][gameCat] = {w:0, l:0, d:0};
                 if(result === 'win') pvpStats[opponentId][gameCat].w++;
@@ -1618,6 +1831,7 @@
                         db.ref(`users/${myId}/flags/stars_received`).set(true).catch(() => {});
                         inv['bg_stars'] = 1;
                         rcvdStars = true;
+                        markInventoryItemNew('bg_stars');
                     }
                     
                     let shopHTML = ''; 
@@ -1655,7 +1869,7 @@
                             topDisp = `<div style="font-size:50px;">${getItemVisualHTML(item)}</div>`; 
                         }
                         let inspectBtnHTML = (item.type === 'box' || item.type === 'case') ? '' : `<button class="btn btn-dark" style="font-size:12px; padding:10px; margin-top:10px;" onclick="inspectItem('${item.id}','${item.type}')">ОСМОТРЕТЬ</button>`;
-                        shopHTML += `<div class="shop-item-card ${cardClass}"><div style="margin-bottom:10px; display:flex; justify-content:center; align-items:center; height:60px;">${topDisp}</div>${item.type === 'name' ? '' : `<b style="font-size:14px;">${item.name}</b>`}<span style="font-size:11px; color:gray; margin-top:5px;">${item.desc}</span>${rBar}<span style="color:var(--coin-col); font-weight:bold; font-size:16px; margin-bottom:10px;">${item.price} 🪙</span>${btnHTML}${inspectBtnHTML}</div>`; 
+                        shopHTML += `<div class="shop-item-card ${cardClass}"><div style="margin-bottom:10px; display:flex; justify-content:center; align-items:center; height:60px;">${topDisp}</div>${item.type === 'name' ? '' : `<b class="shop-card-name">${escapeHTML(item.name)}</b>`}<span style="font-size:11px; color:gray; margin-top:5px;">${escapeHTML(item.desc)}</span>${rBar}<span style="color:var(--coin-col); font-weight:bold; font-size:16px; margin-bottom:10px;">${item.price} 🪙</span>${btnHTML}${inspectBtnHTML}</div>`;
                     }); 
                     document.getElementById('inv-shop').innerHTML = shopHTML; 
                 };
@@ -1686,7 +1900,8 @@
                             
                             for(let i=0; i<qty; i++) {
                                 let isEquippedInstance = (i === 0 && eq);
-                                html += `<div class="inv-item-card ${isEquippedInstance ? 'equipped' : ''}" onclick="openItemAction('${item.id}', '${item.type}', ${isEquippedInstance}, ${qty})"><div class="inv-item-icon">${dispIcon}</div><div class="inv-item-name">${item.name}</div><div class="inv-rarity-line" style="background:${RARITIES[item.rarity]}"></div></div>`; 
+                                const newBadge = newInventoryItems[item.id] ? '<div class="item-new-label">NEW</div>' : '';
+                                html += `<div class="inv-item-card ${isEquippedInstance ? 'equipped' : ''}" onclick="openItemAction('${item.id}', '${item.type}', ${isEquippedInstance}, ${qty})">${newBadge}<div class="inv-item-icon">${dispIcon}</div><div class="inv-item-name">${escapeHTML(item.name)}</div><div class="inv-rarity-line" style="background:${RARITIES[item.rarity]}"></div></div>`;
                             }
                         } 
                     }); 
@@ -1714,46 +1929,110 @@
                 realFriends.forEach(id => {
                     const option = document.createElement('option');
                     option.value = id;
-                    option.textContent = `ID: ${id}`;
+                    option.textContent = 'Игрок';
                     select.appendChild(option);
                     db.ref('users/' + id).once('value').then(s => {
                         if (!s.exists()) return;
                         const p = s.val() || {};
-                        option.textContent = `${p.name || 'Игрок'} (${id})`;
+                        option.textContent = p.name || 'Игрок';
                     });
                 });
-                if (selectedFriend && realFriends.includes(selectedFriend)) select.value = selectedFriend;
+                const manualOption = document.createElement('option');
+                manualOption.value = '__manual__';
+                manualOption.textContent = 'Ввести ID';
+                select.appendChild(manualOption);
+                if (selectedFriend && (realFriends.includes(selectedFriend) || selectedFriend === '__manual__')) select.value = selectedFriend;
+                const manualRow = document.getElementById('gift-manual-id-row');
+                if (manualRow) manualRow.style.display = select.value === '__manual__' ? 'grid' : 'none';
+                select.onchange = () => renderGiftSend();
 
                 coinsInput.max = String(Math.max(0, globalCoins));
                 coinsInput.placeholder = `Макс: ${globalCoins}`;
                 if ((parseInt(coinsInput.value) || 0) > globalCoins) coinsInput.value = String(globalCoins);
 
                 const inv = inventoryLoaded ? liveInventory : {};
-                const rows = SHOP_ITEMS
-                    .filter(item => getInventoryQty(inv[item.id]) > 0)
-                    .map(item => {
-                        const qty = getInventoryQty(inv[item.id]);
-                        const visual = item.type === 'name' ? item.plainIcon : getItemVisualHTML(item);
-                        return `
-                            <div class="gift-pick-row">
-                                <div class="gift-pick-icon">${visual}</div>
-                                <div class="gift-pick-meta"><b>${item.name}</b><span>Есть: ${qty}</span></div>
-                                <input class="styled-input gift-pick-qty" type="number" min="0" max="${qty}" value="0" data-gift-item="${item.id}">
-                            </div>`;
-                    });
-                itemsList.innerHTML = rows.length ? rows.join('') : '<div class="chat-empty" style="min-height:80px;">Нет предметов для отправки</div>';
+                const keptCounts = {};
+                giftSelectedItems = giftSelectedItems.filter(id => {
+                    const owned = getInventoryQty(inv[id]);
+                    keptCounts[id] = keptCounts[id] || 0;
+                    if (keptCounts[id] >= owned) return false;
+                    keptCounts[id]++;
+                    return owned > 0;
+                });
+                const counts = giftSelectedItems.reduce((acc, id) => {
+                    acc[id] = (acc[id] || 0) + 1;
+                    return acc;
+                }, {});
+                const summary = Object.keys(counts).map(id => {
+                    const item = SHOP_ITEMS.find(i => i.id === id);
+                    return `${item?.name || id} x${counts[id]}`;
+                }).join(', ');
+                itemsList.innerHTML = `<div class="gift-selected-summary">${summary ? `Выбрано: ${escapeHTML(summary)}` : 'Предметы не выбраны'}</div>`;
             }
 
             function collectGiftItems(inv) {
-                return Array.from(document.querySelectorAll('[data-gift-item]'))
-                    .map(input => {
-                        const id = input.dataset.giftItem;
+                const counts = giftSelectedItems.reduce((acc, id) => {
+                    acc[id] = (acc[id] || 0) + 1;
+                    return acc;
+                }, {});
+                return Object.keys(counts)
+                    .map(id => {
                         const item = SHOP_ITEMS.find(i => i.id === id);
-                        const qty = Math.max(0, parseInt(input.value || 0));
                         const owned = getInventoryQty(inv[id]);
-                        return item && qty > 0 ? { id, qty: Math.min(qty, owned), name: item.name, type: item.type } : null;
+                        const qty = Math.min(counts[id], owned);
+                        return item && qty > 0 ? { id, qty, name: item.name, type: item.type } : null;
                     })
                     .filter(Boolean);
+            }
+
+            function openGiftItemsModal() {
+                renderGiftItemsModal();
+                document.getElementById('gift-items-modal')?.classList.remove('hidden');
+            }
+
+            function closeGiftItemsModal() {
+                document.getElementById('gift-items-modal')?.classList.add('hidden');
+            }
+
+            function confirmGiftItemsModal() {
+                closeGiftItemsModal();
+                renderGiftSend();
+            }
+
+            function toggleGiftItemCopy(id, copyIndex) {
+                const selectedCount = giftSelectedItems.filter(itemId => itemId === id).length;
+                if (copyIndex < selectedCount) {
+                    const existingIndex = giftSelectedItems.lastIndexOf(id);
+                    if (existingIndex >= 0) giftSelectedItems.splice(existingIndex, 1);
+                } else {
+                    giftSelectedItems.push(id);
+                }
+                renderGiftItemsModal();
+            }
+
+            function renderGiftItemsModal() {
+                const grid = document.getElementById('gift-items-modal-grid');
+                if (!grid) return;
+                const inv = inventoryLoaded ? liveInventory : {};
+                const selectedById = giftSelectedItems.reduce((acc, id) => {
+                    acc[id] = (acc[id] || 0) + 1;
+                    return acc;
+                }, {});
+                let html = '';
+                SHOP_ITEMS.filter(item => getInventoryQty(inv[item.id]) > 0).forEach(item => {
+                    const qty = getInventoryQty(inv[item.id]);
+                    const visual = item.type === 'name' ? item.plainIcon : getItemVisualHTML(item);
+                    for (let i = 0; i < qty; i++) {
+                        const isSelected = i < (selectedById[item.id] || 0);
+                        html += `
+                            <div class="gift-modal-item ${isSelected ? 'selected' : ''}" onclick="toggleGiftItemCopy('${item.id}', ${i})">
+                                <div class="gift-modal-item-icon">${visual}</div>
+                                <div class="gift-modal-item-name">${escapeHTML(item.name)}</div>
+                                <div class="gift-modal-item-copy">#${i + 1}</div>
+                            </div>`;
+                    }
+                });
+                grid.innerHTML = html || '<div class="chat-empty" style="grid-column:1/-1;min-height:120px;">Нет предметов для отправки</div>';
             }
 
             function applyGiftSenderProfileChanges(sentItems, nextInventory) {
@@ -1784,7 +2063,7 @@
                 const select = document.getElementById('gift-friend-select');
                 const coinsInput = document.getElementById('gift-coins-input');
                 const anonymousInput = document.getElementById('gift-anonymous');
-                const targetId = (idInput?.value || '').trim() || select?.value || '';
+                const targetId = select?.value === '__manual__' ? (idInput?.value || '').trim() : (select?.value || '');
                 if (!targetId || targetId === myId || isAiFriendId(targetId)) return tg.showAlert("Выбери игрока для подарка.");
 
                 const recipientSnap = await readDbOnceStrict(`users/${targetId}`, 'gift recipient').catch(() => null);
@@ -1816,6 +2095,7 @@
                     nextSenderInv[gift.id] = senderNext;
                     updates[`users/${myId}/inventory/${gift.id}`] = senderNext > 0 ? senderNext : null;
                     updates[`users/${targetId}/inventory/${gift.id}`] = receiverNext;
+                    updates[`users/${targetId}/new_items/${gift.id}`] = true;
                 });
 
                 const anonymous = !!anonymousInput?.checked;
@@ -1847,6 +2127,7 @@
                     if (coinsInput) coinsInput.value = '0';
                     if (idInput) idInput.value = '';
                     if (anonymousInput) anonymousInput.checked = false;
+                    giftSelectedItems = [];
                     renderInventory();
                     renderShop();
                     renderGiftSend();
@@ -1865,10 +2146,17 @@
                 maxSellQty = totalOwnedQty || 1;
                 currentSellQty = 1;
                 document.getElementById('sell-qty-input').value = currentSellQty;
+                clearInventoryItemNew(id);
 
                 let item = SHOP_ITEMS.find(i=>i.id===id);
                 document.getElementById('action-modal-icon').innerHTML = item.type==='name'? item.plainIcon : getItemVisualHTML(item);
                 document.getElementById('action-modal-name').innerText = item.name;
+                const collectionEl = document.getElementById('action-modal-collection');
+                const collectionName = getItemCollectionName(item);
+                if (collectionEl) {
+                    collectionEl.style.display = collectionName ? 'block' : 'none';
+                    collectionEl.innerText = collectionName ? `Коллекция: ${collectionName}` : '';
+                }
                 let eqBtn = document.getElementById('action-btn-equip');
                 
                 if(type === 'box' || type === 'case') {
@@ -1886,6 +2174,8 @@
                 
                 let sellBtn = document.getElementById('action-btn-sell');
                 let sellWrap = document.getElementById('sell-qty-wrap');
+                let inspectBtn = document.getElementById('action-btn-inspect');
+                if (inspectBtn) inspectBtn.onclick = () => inspectItem(id, type);
                 
                 if(item.price > 0) { 
                     sellBtn.style.display = 'block'; 
