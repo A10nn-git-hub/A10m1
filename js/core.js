@@ -482,25 +482,19 @@
             function openSO2ModeSelect() {
                 if(!isHost) return tg.showAlert("Только Хост может выбирать!");
                 document.getElementById('so2-mode-modal').classList.remove('hidden');
-                document.getElementById('so2-submodes').innerHTML = '<h2 style="color:gray;width:100%;text-align:center;margin-top:40%;">ВЫБЕРИТЕ КАТЕГОРИЮ СЛЕВА</h2>';
+                document.getElementById('so2-submodes').innerHTML = getSurvivalModeCardHTML();
                 document.querySelectorAll('.so2-card').forEach(c=>c.classList.remove('active'));
                 document.getElementById('ttt-bot-diff').style.display='none';
+            }
+
+            function getSurvivalModeCardHTML() {
+                return `<div class="so2-subcard" onclick="setPendingSO2Game('br_2d','⚔️ Выживание', this)"><div class="so2-subcard-icon">⚔️</div><div class="so2-subcard-title">Выживание</div></div>`;
             }
             
             function selectSO2Category(cat, el) {
                 document.querySelectorAll('.so2-card').forEach(c=>c.classList.remove('active')); el.classList.add('active');
                 let sm = document.getElementById('so2-submodes'); sm.innerHTML = '';
-                let b = (id,ic,t)=>`<div class="so2-subcard" onclick="setPendingSO2Game('${id}','${ic} ${t}', this)"><div class="so2-subcard-icon">${ic}</div><div class="so2-subcard-title">${t}</div></div>`;
-                
-                if(cat==='math') sm.innerHTML = b('math1','📝','Ответ')+b('math2','🎴','Карточки')+b('math3','🔢','Порядок');
-                if(cat==='letters') sm.innerHTML = b('let1','🔤','АБВ')+b('let3','⌨️','Слово')+b('let4','🔗','Соедини')+b('let5','🟩','5 Букв');
-                if(cat==='coord') sm.innerHTML = b('coord2','🐸','Лягушка')+b('coord3','🎈','Скорость')+b('coord4','⚡','Кнопка')+b('coord5','🦆','Утки');
-                if(cat==='ttt') sm.innerHTML = `
-                    <div class="so2-subcard" onclick="setPendingTttLevel('easy', this)"><div class="so2-subcard-icon">⭐</div><div class="so2-subcard-title">Уровень 1</div></div>
-                    <div class="so2-subcard" onclick="setPendingTttLevel('medium', this)"><div class="so2-subcard-icon">⭐⭐</div><div class="so2-subcard-title">Уровень 2</div></div>
-                    <div class="so2-subcard" onclick="setPendingTttLevel('hard', this)"><div class="so2-subcard-icon">⭐⭐⭐</div><div class="so2-subcard-title">Уровень 3</div></div>`;
-                if(cat==='br') sm.innerHTML = b('br_2d','🔫','2D Арена') + b('br_3d','🏃‍♂️','3D Паркур');
-
+                sm.innerHTML = getSurvivalModeCardHTML();
                 document.getElementById('ttt-bot-diff').style.display='none';
             }
 
@@ -540,7 +534,7 @@
 
             function shouldUseRealContest(gameId = appState.game) {
                 if (!lobbyId || !gameId) return false;
-                if (['clicker', 'tictactoe', 'br_2d', 'br_3d'].includes(gameId)) return false;
+                if (gameId === 'br_2d') return false;
                 return getRealLobbyContestPlayers().length > 1 && !!appState.currentContest?.runId;
             }
 
@@ -641,6 +635,11 @@
                 let id = appState.selectedGameId; appState.game = id;
                 appState.gameStartedAt = Date.now();
                 appState.contestResultSubmitted = false;
+                if (id !== 'br_2d') {
+                    setIsland("Режим недоступен. Выбери выживание.", "#ff453a");
+                    exitToLobby();
+                    return;
+                }
                 if (id === 'coord1') {
                     setIsland("Режим ножей убран. Выбери другой режим.", "#ff453a");
                     exitToLobby();
@@ -654,7 +653,7 @@
                 else if(id==='tictactoe') { document.getElementById('screen-game-tictactoe').classList.add('active'); initTicTacToe(); }
                 else if(id==='clicker') { document.getElementById('screen-game-clicker').classList.add('active'); initClickerUI(); }
                 else if(id==='br_2d') { document.getElementById('screen-game-br').classList.add('active'); initBR(); }
-                else if(id==='br_3d') { setIsland("Загрузка 3D...", "#3390ec"); window.location.href = "https://playcanv.as/b/4a505698"; }
+                else { setIsland("Режим недоступен. Выбери выживание.", "#ff453a"); exitToLobby(); return; }
                 
                 document.getElementById('pause-btn').style.display = 'flex';
                 setIsland("ИГРА НАЧАЛАСЬ!", "#34c759");
@@ -1046,8 +1045,10 @@
 
             function syncPresence() {
                 if (!myId || !db) return;
+                const state = currentPresenceState();
+                if (state === 'away' && typeof closeLobbyForAway === 'function') closeLobbyForAway();
                 db.ref(`users/${myId}/presence`).update({
-                    state: currentPresenceState(),
+                    state,
                     lastSeenAt: firebase.database.ServerValue.TIMESTAMP
                 }).catch(() => {});
             }
@@ -1076,10 +1077,7 @@
             let giftSelectedItems = [];
 
             const GAME_NAMES = {
-                'math1': 'МАТЕМАТИКА [ОТВЕТ]', 'math2': 'МАТЕМАТИКА [КАРТОЧКИ]', 'math3': 'МАТЕМАТИКА [ПОРЯДОК]',
-                'let1': 'БУКВЫ [АБВ]', 'let3': 'БУКВЫ [СЛОВО]', 'let4': 'БУКВЫ [СОЕДИНИ]', 'let5': 'БУКВЫ [5 БУКВ]',
-                'coord2': 'КООРДИНАЦИЯ [ЛЯГУШКА]', 'coord3': 'КООРДИНАЦИЯ [СКОРОСТЬ]', 'coord4': 'КООРДИНАЦИЯ [КНОПКА]', 'coord5': 'КООРДИНАЦИЯ [УТКИ]',
-                'hidden': '🔎 ПОИСК', 'tictactoe': '❌⭕ КРЕСТИКИ', 'clicker': '⏱️ КЛИКЕР', 'br_2d': '⚔️ ВЫЖИВАНИЕ [2D]', 'br_3d': '🏃‍♂️ 3D ПАРКУР'
+                'br_2d': '⚔️ ВЫЖИВАНИЕ'
             };
             const TTT_SETTING_SYMBOLS = ['x', 'o', 'square', 'triangle', 'circle_solid'];
             const TTT_SETTING_SYMBOL_LABELS = { x: 'Крестик', o: 'Нолик', square: 'Квадрат', triangle: 'Треугольник', circle_solid: 'Круг' };

@@ -627,6 +627,26 @@
                 });
             }
 
+            function applyBrBotDamage(bot, amount, ownerId, ownerIsBot = false) {
+                if (!isHost || !bot || !bot.alive || bot.hp <= 0) return;
+                bot.hp -= amount;
+                if (bot.hp <= 0) {
+                    bot.hp = 0;
+                    bot.alive = false;
+                    if (ownerId === myId) {
+                        br.kills++;
+                        document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
+                        syncBrPlayerState(false);
+                    } else if (ownerIsBot) {
+                        const killerBot = br.bots.find(b => b.id === ownerId);
+                        if (killerBot) killerBot.kills = (parseInt(killerBot.kills) || 0) + 1;
+                    } else if (ownerId) {
+                        db.ref(`lobbies/${lobbyId}/br/players/${ownerId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
+                    }
+                }
+                db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
+            }
+
             function updateBrBullets(now) {
                 for (let i = br.bullets.length - 1; i >= 0; i--) {
                     let bul = br.bullets[i];
@@ -643,20 +663,8 @@
                         if (!brIsEnemyTarget(bul.owner, b)) return;
                         if (brIsInvulnerable(b, now)) return;
                         if (Math.hypot(bul.x - b.x, bul.y - b.y) < BR_PLAYER_R) {
-                            b.hp -= 25;
                             hit = true;
-                            if (b.hp <= 0) {
-                                b.alive = false;
-                                if (bul.owner === myId) {
-                                    br.kills++;
-                                    document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
-                                    syncBrPlayerState(false);
-                                } else if (bul.isBot) {
-                                    const killerBot = br.bots.find(bot => bot.id === bul.owner);
-                                    if (killerBot) killerBot.kills = (parseInt(killerBot.kills) || 0) + 1;
-                                }
-                                if (isHost) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
-                            }
+                            applyBrBotDamage(b, 25, bul.owner, !!bul.isBot);
                         }
                     });
 
@@ -703,6 +711,21 @@
                     const steps = age / 16.67;
                     const x = (Number(bul.x) || 0) + (Number(bul.vx) || 0) * steps;
                     const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
+
+                    if (isHost) {
+                        const hitBot = br.bots.some(b => {
+                            if (!b || !b.alive || b.hp <= 0) return false;
+                            if (!brIsEnemyTarget(bul.owner, b)) return false;
+                            if (brIsInvulnerable(b, now)) return false;
+                            if (Math.hypot(x - b.x, y - b.y) >= BR_PLAYER_R) return false;
+                            applyBrBotDamage(b, 25, bul.owner, !!bul.isBot);
+                            return true;
+                        });
+                        if (hitBot) {
+                            delete br.remoteBullets[key];
+                            return;
+                        }
+                    }
 
                     if (br.myP && br.myP.hp > 0 && brIsEnemyTarget(bul.owner, br.myP) && !brIsInvulnerable(br.myP, now) && Math.hypot(x - br.myP.x, y - br.myP.y) < BR_PLAYER_R) {
                         delete br.remoteBullets[key];
@@ -879,7 +902,7 @@
                     if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
                     if (br.damageListener) db.ref(`lobbies/${lobbyId}/br/damage`).off('value', br.damageListener);
                     if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
-                    db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
+                    if (!br.placeShown) db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
                 }
                 br.syncTimer = null;
                 br.playersListener = null;

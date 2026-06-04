@@ -35,9 +35,14 @@
             }
 
             function formatPresenceGameName(gameId) {
-                if (gameId === 'br_2d') return '2D ВЫЖИВАНИЕ';
-                if (gameId === 'br_3d') return '3D ВЫЖИВАНИЕ';
+                if (gameId === 'br_2d') return 'ВЫЖИВАНИЕ';
                 return (GAME_NAMES && GAME_NAMES[gameId] ? GAME_NAMES[gameId] : gameId).replace(/^[^\p{L}\p{N}]+/u, '').trim();
+            }
+
+            function closeLobbyForAway() {
+                if (!appState.inLobby || !lobbyId) return;
+                if (!appState.currentLobby?.isRealLobby) return;
+                closeLobby({autoReopen:true});
             }
 
             function pushSystemNotification(userId, payload) {
@@ -749,6 +754,10 @@
                     }
                     isHost = d.host === myId;
                     if (isHost) db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
+                    if (d.game && !GAME_NAMES[d.game]) {
+                        if (isHost) db.ref(`lobbies/${lobbyId}/game`).set(d.status === 'playing' ? 'br_2d' : '').catch(() => {});
+                        return;
+                    }
                     const isRealLobby = hasLobbyGuestsOrInvites(d);
                     const clientStatus = isGameStartSuppressed(d) ? 'waiting' : (d.status || 'waiting');
                     db.ref(`users/${myId}/currentLobby`).set({
