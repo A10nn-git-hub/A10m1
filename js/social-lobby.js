@@ -709,11 +709,11 @@
                     let team2Count = 0;
                     if (data.br && data.br.players) {
                         Object.values(data.br.players).forEach(p => {
-                            if (p.team === '1') team1Count++;
-                            else if (p.team === '2') team2Count++;
+                            if (p.team === '1' || p.team === 'Counter-Terrorists') team1Count++;
+                            else if (p.team === '2' || p.team === 'Terrorists') team2Count++;
                         });
                     }
-                    const assignedTeam = team1Count <= team2Count ? '1' : '2';
+                    const assignedTeam = team1Count <= team2Count ? 'Counter-Terrorists' : 'Terrorists';
                     const spawn = typeof brSpawnForId === 'function' ? brSpawnForId(myId, assignedTeam) : {x: 1000, y: 1000};
                     const now = Date.now();
                     updateDbPaths({

@@ -509,6 +509,22 @@
                 <div id="br-container" style="background:#2c3e50;">
                     <canvas id="br-canvas"></canvas>
                     
+                    <!-- Standoff 2 style Scoreboard -->
+                    <div id="br-scoreboard" style="display: none; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000; font-family: sans-serif; align-items: center; background: rgba(15, 17, 24, 0.85); border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.15); overflow: hidden; box-shadow: 0 4px 25px rgba(0,0,0,0.65);">
+                        <div class="team-score ct-score" style="padding: 6px 16px; font-weight: bold; font-size: 22px; color: #32ade6; background: rgba(50, 173, 230, 0.15); min-width: 50px; text-align: center; border-right: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="font-size: 9px; color: rgba(255, 255, 255, 0.4); text-transform: uppercase; letter-spacing: 0.5px;">CT</div>
+                            <span id="br-ct-score-val">0</span>
+                        </div>
+                        <div class="match-time" style="padding: 6px 12px; text-align: center; color: white; min-width: 70px;">
+                            <div id="br-match-timer-label" style="font-size: 9px; color: rgba(255, 255, 255, 0.4); text-transform: uppercase; margin-bottom: 1px; letter-spacing: 0.5px;">TDM</div>
+                            <span id="br-match-timer-val" style="font-size: 14px; font-weight: bold;">00:00</span>
+                        </div>
+                        <div class="team-score t-score" style="padding: 6px 16px; font-weight: bold; font-size: 22px; color: #ff9f0a; background: rgba(255, 159, 10, 0.15); min-width: 50px; text-align: center; border-left: 1px solid rgba(255, 255, 255, 0.1);">
+                            <div style="font-size: 9px; color: rgba(255, 255, 255, 0.4); text-transform: uppercase; letter-spacing: 0.5px;">T</div>
+                            <span id="br-t-score-val">0</span>
+                        </div>
+                    </div>
+                    
 
 
                     <div class="br-ui" id="br-ui-alive">Живых: ?</div>

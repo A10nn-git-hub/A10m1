@@ -127,7 +127,9 @@
 
             function brNormalizeTeam(value) {
                 const team = String(value || '').trim();
-                return ['1','2','3','4','5'].includes(team) ? team : '';
+                if (team === 'Counter-Terrorists' || team === '1' || team === 'ct') return 'Counter-Terrorists';
+                if (team === 'Terrorists' || team === '2' || team === 't') return 'Terrorists';
+                return '';
             }
 
             function brNormalizeSpeed(value) {
@@ -169,8 +171,8 @@
                     team = brTeamFor(id);
                 }
                 if (!team && typeof id === 'string') {
-                    if (id.includes('_t1_')) team = '1';
-                    else if (id.includes('_t2_')) team = '2';
+                    if (id.includes('_t1_')) team = 'Counter-Terrorists';
+                    else if (id.includes('_t2_')) team = 'Terrorists';
                 }
                 if (!team && id === myId) {
                     const realPlayers = brRealLobbyPlayers();
@@ -193,23 +195,35 @@
                                 team2Real.push(p);
                             }
                         });
-                        if (team1Real.some(p => p.id === myId)) team = '1';
-                        else if (team2Real.some(p => p.id === myId)) team = '2';
+                        if (team1Real.some(p => p.id === myId)) team = 'Counter-Terrorists';
+                        else if (team2Real.some(p => p.id === myId)) team = 'Terrorists';
                     }
                 }
-                if (!team) team = '1';
+                if (!team) team = 'Counter-Terrorists';
 
                 const seed = String(id || '0').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);
                 
-                if (team === '1') {
-                    // Blue Base: x inside [100, 400], y inside [825, 1175]
-                    const x = 100 + (seed % 300);
-                    const y = 825 + ((seed * 17) % 350);
+                if (team === 'Counter-Terrorists') {
+                    // Blue Base (CT)
+                    let x, y;
+                    if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
+                        x = 600 + (seed % 150);
+                        y = 900 + ((seed * 17) % 200);
+                    } else {
+                        x = 100 + (seed % 300);
+                        y = 825 + ((seed * 17) % 350);
+                    }
                     return { x, y };
                 } else {
-                    // Orange Base: x inside [1600, 1900], y inside [825, 1175]
-                    const x = 1600 + (seed % 300);
-                    const y = 825 + ((seed * 17) % 350);
+                    // Orange Base (T)
+                    let x, y;
+                    if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
+                        x = 1250 + (seed % 150);
+                        y = 900 + ((seed * 17) % 200);
+                    } else {
+                        x = 1600 + (seed % 300);
+                        y = 825 + ((seed * 17) % 350);
+                    }
                     return { x, y };
                 }
             }
@@ -219,9 +233,9 @@
             }
 
             function getFighterColor(p) {
-                const pId = typeof p === 'object' ? p.id : p;
-                if (pId === myId) return '#3390ec';
-                if (brAreAllies(myId, pId)) return '#32ade6';
+                const team = brTeamFor(p);
+                if (team === 'Counter-Terrorists') return '#32ade6';
+                if (team === 'Terrorists') return '#ff9f0a';
                 return '#ff453a';
             }
 
@@ -246,13 +260,13 @@
                 br.kills = 0;
                 br.placeShown = false;
                 br.isSpectator = false;
-                br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: BR_SIZE };
+                br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (mode === 'duel_1v1' || mode === 'duel_2v2') ? 600 : BR_SIZE };
                 
                 br.settings = mergedSettingsForGame('br_2d');
                 const mySettings = br.settings.players?.[myId] || {};
                 const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
                 const mySpeed = brNormalizeSpeed(mySettings.speed);
-                const myTeam = brNormalizeTeam(mySettings.team) || '1';
+                const myTeam = brNormalizeTeam(mySettings.team) || 'Counter-Terrorists';
                 br.serverHp = myMaxHp;
                 br.damageTaken = 0;
                 br.lastSyncX = 0;
@@ -288,7 +302,8 @@
                 br.kills = 0;
                 br.placeShown = false;
                 br.isSpectator = false;
-                br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: BR_SIZE };
+                const submode = (appState.selectedGameId || '').startsWith('br_') ? appState.selectedGameId.replace('br_', '') : 'tdm_5v5';
+                br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (submode === 'duel_1v1' || submode === 'duel_2v2') ? 600 : BR_SIZE };
                 br.remotePlayers = {};
                 br.remotePlayerViews = {};
                 br.remoteShotSeqs = {};
@@ -455,6 +470,28 @@
             function initBrFirebaseState(mode) {
                 if (!lobbyId) {
                     generateMap();
+                    
+                    let maxTeamSize = 5;
+                    if (mode === 'duel_1v1') maxTeamSize = 1;
+                    else if (mode === 'duel_2v2') maxTeamSize = 2;
+                    else maxTeamSize = 5;
+
+                    const myTeam = br.myP.team || 'Counter-Terrorists';
+                    const enemyTeam = myTeam === 'Counter-Terrorists' ? 'Terrorists' : 'Counter-Terrorists';
+
+                    br.bots = [];
+                    // Spawn bots for my team
+                    for (let i = 0; i < maxTeamSize - 1; i++) {
+                        const botId = 'bot_t1_' + i;
+                        const sp = brSpawnForId(botId, myTeam);
+                        br.bots.push({ id: botId, label: 'Бот CT-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: myTeam, speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                    }
+                    // Spawn bots for enemy team
+                    for (let i = 0; i < maxTeamSize; i++) {
+                        const botId = 'bot_t2_' + i;
+                        const sp = brSpawnForId(botId, enemyTeam);
+                        br.bots.push({ id: botId, label: 'Бот T-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: enemyTeam, speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                    }
                     return;
                 }
                 const base = `lobbies/${lobbyId}/br`;
@@ -484,30 +521,30 @@
                     let team2BotCount = maxTeamSize - team2Real.length;
 
                     const bots = [];
-                    // Spawn bots for Team 1
+                    // Spawn bots for Team 1 (Counter-Terrorists)
                     for (let i = 0; i < team1BotCount; i++) {
                         const botId = 'bot_t1_' + i;
-                        const sp = brSpawnForId(botId, '1');
-                        bots.push({ id: botId, label: 'Бот T1-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: '1', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                        const sp = brSpawnForId(botId, 'Counter-Terrorists');
+                        bots.push({ id: botId, label: 'Бот CT-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: 'Counter-Terrorists', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
                     }
-                    // Spawn bots for Team 2
+                    // Spawn bots for Team 2 (Terrorists)
                     for (let i = 0; i < team2BotCount; i++) {
                         const botId = 'bot_t2_' + i;
-                        const sp = brSpawnForId(botId, '2');
-                        bots.push({ id: botId, label: 'Бот T2-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: '2', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                        const sp = brSpawnForId(botId, 'Terrorists');
+                        bots.push({ id: botId, label: 'Бот T-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: 'Terrorists', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
                     }
 
                     br.freeRoam = false;
 
                     let teamAssign = {};
-                    team1Real.forEach(p => { teamAssign[p.id] = '1'; });
-                    team2Real.forEach(p => { teamAssign[p.id] = '2'; });
+                    team1Real.forEach(p => { teamAssign[p.id] = 'Counter-Terrorists'; });
+                    team2Real.forEach(p => { teamAssign[p.id] = 'Terrorists'; });
 
                     const playersObj = {};
                     const damageObj = {};
 
                     realPlayers.forEach(p => {
-                        const assignedTeam = teamAssign[p.id] || '1';
+                        const assignedTeam = teamAssign[p.id] || 'Counter-Terrorists';
                         const sp = brSpawnForId(p.id, assignedTeam);
                         playersObj[p.id] = {
                             id: p.id,
@@ -783,7 +820,10 @@
             function brLoop() {
                 if (!br.active || appState.isPaused) return;
 
+                const scoreboard = document.getElementById('br-scoreboard');
+
                 if (!br.matchActive) {
+                    if (scoreboard) scoreboard.style.display = 'none';
                     const overlay = document.getElementById('so2-lobby-overlay');
                     if (overlay) overlay.style.display = 'flex';
 
@@ -797,10 +837,12 @@
                     return;
                 }
 
+                if (scoreboard) scoreboard.style.display = 'flex';
+
                 const now = Date.now();
                 updateBrLocalPlayer(now);
                 updateBrRemotePlayerViews();
-                if (isHost) updateBrBots(now);
+                if (isHost || !lobbyId) updateBrBots(now);
                 updateBrBullets(now);
                 if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
                 renderBR(now);
@@ -818,6 +860,12 @@
                  let moveX = 0;
                  let moveY = 0;
  
+                 const maxMapSize = (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) ? 1200 : BR_SIZE;
+                 const minX = (BR_SIZE - maxMapSize) / 2;
+                 const maxX = minX + maxMapSize;
+                 const minY = (BR_SIZE - maxMapSize) / 2;
+                 const maxY = minY + maxMapSize;
+
                  if (isMobile) {
                      if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
                          moveX = Math.cos(br.myP.a) * speed;
@@ -838,14 +886,14 @@
  
                  if (moveX !== 0) {
                      br.myP.x += moveX;
-                     br.myP.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.x));
+                     br.myP.x = Math.max(minX + BR_PLAYER_R, Math.min(maxX - BR_PLAYER_R, br.myP.x));
                      if (checkPlayerCollisionWithWalls(br.myP.x, br.myP.y, BR_PLAYER_R)) {
                          br.myP.x = oldX;
                      }
                  }
                  if (moveY !== 0) {
                      br.myP.y += moveY;
-                     br.myP.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.y));
+                     br.myP.y = Math.max(minY + BR_PLAYER_R, Math.min(maxY - BR_PLAYER_R, br.myP.y));
                      if (checkPlayerCollisionWithWalls(br.myP.x, br.myP.y, BR_PLAYER_R)) {
                          br.myP.y = oldY;
                      }
@@ -888,20 +936,34 @@
 
             function updateBrBots(now) {
                 let changed = false;
+                const maxMapSize = (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) ? 1200 : BR_SIZE;
+                const minX = (BR_SIZE - maxMapSize) / 2;
+                const maxX = minX + maxMapSize;
+                const minY = (BR_SIZE - maxMapSize) / 2;
+                const maxY = minY + maxMapSize;
+
                 br.bots.forEach(b => {
                     if (!b.alive || b.hp <= 0) return;
                     const level = Math.max(1, Math.min(3, parseInt(b.aiLevel) || 1));
-                    const playerTargets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0 && brIsEnemyTarget(b.id, p));
+                    let playerTargets = Object.values(br.remotePlayers).filter(p => p.alive && p.hp > 0 && brIsEnemyTarget(b.id, p));
+                    if (br.myP && br.myP.alive && br.myP.hp > 0 && brIsEnemyTarget(b.id, br.myP)) {
+                        playerTargets.push(br.myP);
+                    }
                     const botTargets = br.bots.filter(other => other.id !== b.id && other.alive && other.hp > 0 && brIsEnemyTarget(b.id, other));
                     const targets = playerTargets.concat(botTargets);
                     const target = targets[Math.floor(Math.random() * targets.length)];
+                    
                     if (now > (b.nextThink || 0)) {
                         if (target && level === 3) {
                             b.tx = target.x;
                             b.ty = target.y;
                         } else {
-                            b.tx = br.zone.x + (Math.random() * br.zone.r - br.zone.r / 2);
-                            b.ty = br.zone.y + (Math.random() * br.zone.r - br.zone.r / 2);
+                            const zoneMinX = Math.max(minX, br.zone.x - br.zone.r);
+                            const zoneMaxX = Math.min(maxX, br.zone.x + br.zone.r);
+                            const zoneMinY = Math.max(minY, br.zone.y - br.zone.r);
+                            const zoneMaxY = Math.min(maxY, br.zone.y + br.zone.r);
+                            b.tx = zoneMinX + Math.random() * (zoneMaxX - zoneMinX);
+                            b.ty = zoneMinY + Math.random() * (zoneMaxY - zoneMinY);
                         }
                         b.nextThink = now + 1000 + Math.random() * 2000;
                         changed = true;
@@ -918,14 +980,14 @@
 
                         if (moveX !== 0) {
                             b.x += moveX;
-                            b.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, b.x));
+                            b.x = Math.max(minX + BR_PLAYER_R, Math.min(maxX - BR_PLAYER_R, b.x));
                             if (checkPlayerCollisionWithWalls(b.x, b.y, BR_PLAYER_R)) {
                                 b.x = oldBx;
                             }
                         }
                         if (moveY !== 0) {
                             b.y += moveY;
-                            b.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, b.y));
+                            b.y = Math.max(minY + BR_PLAYER_R, Math.min(maxY - BR_PLAYER_R, b.y));
                             if (checkPlayerCollisionWithWalls(b.x, b.y, BR_PLAYER_R)) {
                                 b.y = oldBy;
                             }
@@ -945,7 +1007,7 @@
                         }
                     }
                 });
-                if (changed) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
+                if (changed && lobbyId) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
             }
 
             function brBotTryShoot(bot, now) {
@@ -964,7 +1026,7 @@
             }
 
             function applyBrBotDamage(bot, amount, ownerId, ownerIsBot = false) {
-                if (!isHost || !bot || !bot.alive || bot.hp <= 0) return;
+                if ((lobbyId && !isHost) || !bot || !bot.alive || bot.hp <= 0) return;
                 bot.hp -= amount;
                 if (bot.hp <= 0) {
                     bot.hp = 0;
@@ -976,11 +1038,11 @@
                     } else if (ownerIsBot) {
                         const killerBot = br.bots.find(b => b.id === ownerId);
                         if (killerBot) killerBot.kills = (parseInt(killerBot.kills) || 0) + 1;
-                    } else if (ownerId) {
+                    } else if (ownerId && lobbyId) {
                         db.ref(`lobbies/${lobbyId}/br/players/${ownerId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
                     }
                 }
-                db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
+                if (lobbyId) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
             }
 
             function updateBrBullets(now) {
@@ -1132,10 +1194,33 @@
                 ctx.fillStyle = 'rgba(50, 173, 230, 0.4)';
                 ctx.font = 'bold 24px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('СИНЯЯ БАЗА', 275, 1010);
+                ctx.fillText('БАЗА CT', 275, 1010);
 
                 ctx.fillStyle = 'rgba(255, 159, 10, 0.4)';
-                ctx.fillText('ОРАНЖЕВАЯ БАЗА', 1725, 1010);
+                ctx.fillText('БАЗА T', 1725, 1010);
+
+                // Draw duel mode limits overlay if applicable
+                if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
+                    const maxMapSize = 1200;
+                    const minX = (BR_SIZE - maxMapSize) / 2;
+                    const minY = (BR_SIZE - maxMapSize) / 2;
+                    
+                    // Semi-transparent dark overlay outside the duel zone
+                    ctx.fillStyle = 'rgba(10, 10, 12, 0.65)';
+                    ctx.fillRect(0, 0, BR_SIZE, minY);
+                    ctx.fillRect(0, minY + maxMapSize, BR_SIZE, BR_SIZE - (minY + maxMapSize));
+                    ctx.fillRect(0, minY, minX, maxMapSize);
+                    ctx.fillRect(minX + maxMapSize, minY, BR_SIZE - (minX + maxMapSize), maxMapSize);
+                    
+                    // Draw red border around the duel area
+                    ctx.strokeStyle = '#ff3b30';
+                    ctx.lineWidth = 6;
+                    ctx.strokeRect(minX, minY, maxMapSize, maxMapSize);
+                    
+                    ctx.strokeStyle = 'rgba(255, 59, 48, 0.15)';
+                    ctx.lineWidth = 14;
+                    ctx.strokeRect(minX, minY, maxMapSize, maxMapSize);
+                }
 
                 ctx.strokeStyle = 'rgba(255,0,0,0.8)';
                 ctx.lineWidth = 10;
@@ -1200,6 +1285,57 @@
 
                 const aliveCount = getBrAliveRows().length;
                 document.getElementById('br-ui-alive').innerText = `Живых: ${aliveCount}`;
+                updateBrScoreboard();
+            }
+
+            function updateBrScoreboard() {
+                if (!br.active || !br.matchActive) return;
+
+                let ctKills = 0;
+                let tKills = 0;
+
+                if (br.myP) {
+                    const team = brNormalizeTeam(br.myP.team);
+                    if (team === 'Counter-Terrorists') ctKills += br.kills || 0;
+                    else if (team === 'Terrorists') tKills += br.kills || 0;
+                }
+
+                Object.values(br.remotePlayers).forEach(p => {
+                    const team = brNormalizeTeam(p.team);
+                    if (team === 'Counter-Terrorists') ctKills += p.kills || 0;
+                    else if (team === 'Terrorists') tKills += p.kills || 0;
+                });
+
+                br.bots.forEach(b => {
+                    const team = brNormalizeTeam(b.team);
+                    if (team === 'Counter-Terrorists') ctKills += b.kills || 0;
+                    else if (team === 'Terrorists') tKills += b.kills || 0;
+                });
+
+                const ctEl = document.getElementById('br-ct-score-val');
+                const tEl = document.getElementById('br-t-score-val');
+                if (ctEl) ctEl.innerText = ctKills;
+                if (tEl) tEl.innerText = tKills;
+
+                const elapsedMs = Date.now() - br.matchStartTime;
+                const totalSec = Math.floor(elapsedMs / 1000);
+                const minutes = Math.floor(totalSec / 60);
+                const seconds = totalSec % 60;
+                const timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+
+                const timerValEl = document.getElementById('br-match-timer-val');
+                if (timerValEl) timerValEl.innerText = timeStr;
+
+                const timerLabelEl = document.getElementById('br-match-timer-label');
+                if (timerLabelEl) {
+                    let label = 'MATCH';
+                    if (typeof currentMode !== 'undefined') {
+                        if (currentMode === 'tdm_5v5') label = 'TDM 5V5';
+                        else if (currentMode === 'duel_1v1') label = 'DUEL 1V1';
+                        else if (currentMode === 'duel_2v2') label = 'DUEL 2V2';
+                    }
+                    timerLabelEl.innerText = label;
+                }
             }
 
             function drawBrFighter(ctx, p, color, label, maxHp) {
@@ -1296,6 +1432,8 @@
                  br.active = false;
                  cancelAnimationFrame(br.loop);
                  if (br.syncTimer) clearInterval(br.syncTimer);
+                 const scoreboard = document.getElementById('br-scoreboard');
+                 if (scoreboard) scoreboard.style.display = 'none';
                  if (lobbyId) {
                      if (br.matchActiveListener) {
                          db.ref(`lobbies/${lobbyId}/br/matchActive`).off('value', br.matchActiveListener);
