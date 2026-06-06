@@ -703,7 +703,17 @@
                     pendingModeId = null;
                     setSelectedModeUI('br_2d');
                     const payload = getLobbyPlayerPayload();
-                    const spawn = typeof brSpawnForId === 'function' ? brSpawnForId(myId) : {x: 1000, y: 1000};
+                    
+                    let team1Count = 0;
+                    let team2Count = 0;
+                    if (data.br && data.br.players) {
+                        Object.values(data.br.players).forEach(p => {
+                            if (p.team === '1') team1Count++;
+                            else if (p.team === '2') team2Count++;
+                        });
+                    }
+                    const assignedTeam = team1Count <= team2Count ? '1' : '2';
+                    const spawn = typeof brSpawnForId === 'function' ? brSpawnForId(myId, assignedTeam) : {x: 1000, y: 1000};
                     const now = Date.now();
                     updateDbPaths({
                         [`lobbies/${lobbyId}/players/${myId}`]: payload,
@@ -718,7 +728,7 @@
                             vy: 0,
                             hp: 200,
                             maxHp: 200,
-                            team: '',
+                            team: assignedTeam,
                             speed: 3,
                             damageTaken: 0,
                             a: 0,

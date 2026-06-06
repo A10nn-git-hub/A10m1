@@ -11,29 +11,14 @@
                 return (distanceX * distanceX + distanceY * distanceY) < (cr * cr);
             }
 
+            function rectsOverlap(r1x, r1y, r1w, r1h, r2x, r2y, r2w, r2h) {
+                return r1x < r2x + r2w && r1x + r1w > r2x && r1y < r2y + r2h && r1y + r1h > r2y;
+            }
+
             function generateMap() {
                 mapWalls = [];
                 const wallCount = 25;
                 let attempts = 0;
-                
-                const participantIds = [myId];
-                if (typeof lobbyPlayers !== 'undefined' && Array.isArray(lobbyPlayers)) {
-                    lobbyPlayers.forEach(p => {
-                        if (p.id && !isAiFriendId(p.id)) participantIds.push(p.id);
-                    });
-                }
-                
-                let maxTeamSize = 5;
-                if (typeof currentMode !== 'undefined') {
-                    if (currentMode === 'duel_1v1') maxTeamSize = 1;
-                    else if (currentMode === 'duel_2v2') maxTeamSize = 2;
-                }
-                for (let i = 0; i < maxTeamSize; i++) {
-                    participantIds.push('bot_t1_' + i);
-                    participantIds.push('bot_t2_' + i);
-                }
-
-                const spawnPoints = participantIds.map(id => brSpawnForId(id));
 
                 while (mapWalls.length < wallCount && attempts < 300) {
                     attempts++;
@@ -49,15 +34,13 @@
                         continue;
                     }
 
-                    // 2. Spawn point check (radius 100px)
-                    let overlapsSpawn = false;
-                    for (let sp of spawnPoints) {
-                        if (rectCircleOverlap(x, y, w, h, sp.x, sp.y, 100)) {
-                            overlapsSpawn = true;
-                            break;
-                        }
+                    // 2. Base checks (with 20px padding)
+                    // Blue Base (Team 1): [50-20, 500+20] x [775-20, 1225+20]
+                    if (rectsOverlap(x, y, w, h, 30, 755, 490, 490)) {
+                        continue;
                     }
-                    if (overlapsSpawn) {
+                    // Orange Base (Team 2): [1500-20, 1950+20] x [775-20, 1225+20]
+                    if (rectsOverlap(x, y, w, h, 1480, 755, 490, 490)) {
                         continue;
                     }
 
@@ -181,14 +164,54 @@
                 return !!target && Number(target.invulnUntil || target.invuln || 0) > now;
             }
 
-            function brSpawnForId(id) {
+            function brSpawnForId(id, team) {
+                if (!team) {
+                    team = brTeamFor(id);
+                }
+                if (!team && typeof id === 'string') {
+                    if (id.includes('_t1_')) team = '1';
+                    else if (id.includes('_t2_')) team = '2';
+                }
+                if (!team && id === myId) {
+                    const realPlayers = brRealLobbyPlayers();
+                    const idx = realPlayers.findIndex(p => p.id === myId);
+                    if (idx !== -1) {
+                        let maxTeamSize = 5;
+                        if (typeof currentMode !== 'undefined') {
+                            if (currentMode === 'duel_1v1') maxTeamSize = 1;
+                            else if (currentMode === 'duel_2v2') maxTeamSize = 2;
+                        }
+                        let team1Real = [];
+                        let team2Real = [];
+                        realPlayers.forEach((p, i) => {
+                            if (team1Real.length < maxTeamSize && team2Real.length < maxTeamSize) {
+                                if (i % 2 === 0) team1Real.push(p);
+                                else team2Real.push(p);
+                            } else if (team1Real.length < maxTeamSize) {
+                                team1Real.push(p);
+                            } else if (team2Real.length < maxTeamSize) {
+                                team2Real.push(p);
+                            }
+                        });
+                        if (team1Real.some(p => p.id === myId)) team = '1';
+                        else if (team2Real.some(p => p.id === myId)) team = '2';
+                    }
+                }
+                if (!team) team = '1';
+
                 const seed = String(id || '0').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);
-                const angle = (seed % 360) * Math.PI / 180;
-                const radius = 520 + (seed % 260);
-                return {
-                    x: Math.max(120, Math.min(BR_SIZE - 120, BR_SIZE / 2 + Math.cos(angle) * radius)),
-                    y: Math.max(120, Math.min(BR_SIZE - 120, BR_SIZE / 2 + Math.sin(angle) * radius))
-                };
+                
+                if (team === '1') {
+                    // Blue Base: x inside [100, 400], y inside [825, 1175]
+                    const x = 100 + (seed % 300);
+                    const y = 825 + ((seed * 17) % 350);
+                    return { x, y };
+                } else {
+                    // Orange Base: x inside [1600, 1900], y inside [825, 1175]
+                    const x = 1600 + (seed % 300);
+                    const y = 825 + ((seed * 17) % 350);
+                    return { x, y };
+                }
             }
 
             function brRealLobbyPlayers() {
@@ -229,6 +252,7 @@
                 const mySettings = br.settings.players?.[myId] || {};
                 const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
                 const mySpeed = brNormalizeSpeed(mySettings.speed);
+                const myTeam = brNormalizeTeam(mySettings.team) || '1';
                 br.serverHp = myMaxHp;
                 br.damageTaken = 0;
                 br.lastSyncX = 0;
@@ -238,9 +262,9 @@
                 isShooting = false;
                 lastShot = 0;
 
-                const spawn = brSpawnForId(myId);
+                const spawn = brSpawnForId(myId, myTeam);
                 const invulnUntil = Date.now() + 5000;
-                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: '1', speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: invulnUntil, invulnUntil };
+                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: invulnUntil, invulnUntil };
                 br.lastSyncX = br.myP.x;
                 br.lastSyncY = br.myP.y;
 
@@ -255,8 +279,8 @@
                     controls.style.display = isMobile ? 'flex' : 'none';
                 }
 
+                br.teamInitialized = true;
                 initBrFirebaseState(mode);
-                br.syncTimer = setInterval(syncBrPlayerState, 80);
             }
 
             function initBR() {
@@ -437,7 +461,6 @@
                 if (isHost) {
                     generateMap();
                     const realPlayers = brRealLobbyPlayers();
-                    const playersUpdate = {};
                     
                     let maxTeamSize = 5;
                     if (mode === 'duel_1v1') maxTeamSize = 1;
@@ -464,13 +487,13 @@
                     // Spawn bots for Team 1
                     for (let i = 0; i < team1BotCount; i++) {
                         const botId = 'bot_t1_' + i;
-                        const sp = brSpawnForId(botId);
+                        const sp = brSpawnForId(botId, '1');
                         bots.push({ id: botId, label: 'Бот T1-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: '1', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
                     }
                     // Spawn bots for Team 2
                     for (let i = 0; i < team2BotCount; i++) {
                         const botId = 'bot_t2_' + i;
-                        const sp = brSpawnForId(botId);
+                        const sp = brSpawnForId(botId, '2');
                         bots.push({ id: botId, label: 'Бот T2-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: '2', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
                     }
 
@@ -480,10 +503,13 @@
                     team1Real.forEach(p => { teamAssign[p.id] = '1'; });
                     team2Real.forEach(p => { teamAssign[p.id] = '2'; });
 
+                    const playersObj = {};
+                    const damageObj = {};
+
                     realPlayers.forEach(p => {
-                        const sp = brSpawnForId(p.id);
                         const assignedTeam = teamAssign[p.id] || '1';
-                        playersUpdate[`${base}/players/${p.id}`] = {
+                        const sp = brSpawnForId(p.id, assignedTeam);
+                        playersObj[p.id] = {
                             id: p.id,
                             name: p.name || 'Игрок',
                             avatar: p.avatar || '👤',
@@ -504,25 +530,40 @@
                             alive: true,
                             updatedAt: firebase.database.ServerValue.TIMESTAMP
                         };
-                        playersUpdate[`${base}/damage/${p.id}`] = 0;
+                        damageObj[p.id] = 0;
                     });
 
-                    updateDbPaths(Object.assign({
+                    br.teamInitialized = true;
+
+                    updateDbPaths({
                         [`${base}/zone`]: br.zone,
                         [`${base}/bots`]: bots,
                         [`${base}/walls`]: mapWalls,
-                        [`${base}/bullets`]: null
-                    }, playersUpdate), 'init br state').catch(() => {});
+                        [`${base}/bullets`]: null,
+                        [`${base}/players`]: playersObj,
+                        [`${base}/damage`]: damageObj
+                    }, 'init br state').catch(() => {});
+
+                    db.ref(`${base}/players/${myId}`).update(brPublicPlayerState(true)).catch(() => {});
+                } else {
+                    br.teamInitialized = false;
+                    db.ref(`${base}/players/${myId}`).once('value').then(snap => {
+                        if (snap.exists()) {
+                            const data = snap.val();
+                            if (data.team && br.myP) {
+                                br.myP.team = data.team;
+                                const sp = brSpawnForId(myId, data.team);
+                                br.myP.x = sp.x;
+                                br.myP.y = sp.y;
+                                br.lastSyncX = sp.x;
+                                br.lastSyncY = sp.y;
+                            }
+                        }
+                        br.teamInitialized = true;
+                        db.ref(`${base}/players/${myId}`).update(brPublicPlayerState(true)).catch(() => {});
+                    });
                 }
 
-                db.ref(`${base}/players/${myId}`).once('value').then(snap => {
-                    if (snap.exists()) {
-                        const data = snap.val();
-                        if (data.team && br.myP) br.myP.team = data.team;
-                    }
-                });
-
-                db.ref(`${base}/players/${myId}`).update(brPublicPlayerState(true)).catch(() => {});
                 db.ref(`${base}/players/${myId}`).onDisconnect().update({alive: false, hp: 0});
 
                 br.playersListener = snap => {
@@ -707,7 +748,7 @@
             }
 
             function syncBrPlayerState(includeHealth = false) {
-                if (!br.active || !lobbyId || !br.myP) return;
+                if (!br.active || !lobbyId || !br.myP || !br.teamInitialized) return;
                 const now = Date.now();
                 const dtFrames = Math.max(1, (now - (br.lastSyncAt || now)) / 16.67);
                 br.myP.vx = (br.myP.x - br.lastSyncX) / dtFrames;
@@ -1072,6 +1113,29 @@
                 ctx.lineWidth = 2;
                 for (let x = 0; x <= BR_SIZE; x += 100) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, BR_SIZE); ctx.stroke(); }
                 for (let y = 0; y <= BR_SIZE; y += 100) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(BR_SIZE, y); ctx.stroke(); }
+
+                // Draw Team 1 Base (Blue floor) on the left
+                ctx.fillStyle = 'rgba(50, 173, 230, 0.12)';
+                ctx.fillRect(50, 775, 450, 450);
+                ctx.strokeStyle = 'rgba(50, 173, 230, 0.45)';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(50, 775, 450, 450);
+
+                // Draw Team 2 Base (Orange floor) on the right
+                ctx.fillStyle = 'rgba(255, 159, 10, 0.12)';
+                ctx.fillRect(1500, 775, 450, 450);
+                ctx.strokeStyle = 'rgba(255, 159, 10, 0.45)';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(1500, 775, 450, 450);
+
+                // Base text labels
+                ctx.fillStyle = 'rgba(50, 173, 230, 0.4)';
+                ctx.font = 'bold 24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('СИНЯЯ БАЗА', 275, 1010);
+
+                ctx.fillStyle = 'rgba(255, 159, 10, 0.4)';
+                ctx.fillText('ОРАНЖЕВАЯ БАЗА', 1725, 1010);
 
                 ctx.strokeStyle = 'rgba(255,0,0,0.8)';
                 ctx.lineWidth = 10;
