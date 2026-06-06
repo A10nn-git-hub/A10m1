@@ -1,6 +1,108 @@
             // ================== ВЫЖИВАНИЕ (BATTLE ROYALE) ==================
             let currentMode = 'tdm_5v5';
 
+            let mapWalls = [];
+
+            function rectCircleOverlap(rx, ry, rw, rh, cx, cy, cr) {
+                const closestX = Math.max(rx, Math.min(cx, rx + rw));
+                const closestY = Math.max(ry, Math.min(cy, ry + rh));
+                const distanceX = cx - closestX;
+                const distanceY = cy - closestY;
+                return (distanceX * distanceX + distanceY * distanceY) < (cr * cr);
+            }
+
+            function generateMap() {
+                mapWalls = [];
+                const wallCount = 25;
+                let attempts = 0;
+                
+                const participantIds = [myId];
+                if (typeof lobbyPlayers !== 'undefined' && Array.isArray(lobbyPlayers)) {
+                    lobbyPlayers.forEach(p => {
+                        if (p.id && !isAiFriendId(p.id)) participantIds.push(p.id);
+                    });
+                }
+                
+                let maxTeamSize = 5;
+                if (typeof currentMode !== 'undefined') {
+                    if (currentMode === 'duel_1v1') maxTeamSize = 1;
+                    else if (currentMode === 'duel_2v2') maxTeamSize = 2;
+                }
+                for (let i = 0; i < maxTeamSize; i++) {
+                    participantIds.push('bot_t1_' + i);
+                    participantIds.push('bot_t2_' + i);
+                }
+
+                const spawnPoints = participantIds.map(id => brSpawnForId(id));
+
+                while (mapWalls.length < wallCount && attempts < 300) {
+                    attempts++;
+                    
+                    const w = 60 + Math.floor(Math.random() * 100);
+                    const h = 60 + Math.floor(Math.random() * 100);
+                    
+                    const x = 100 + Math.floor(Math.random() * (BR_SIZE - 200 - w));
+                    const y = 100 + Math.floor(Math.random() * (BR_SIZE - 200 - h));
+
+                    // 1. Center check (radius 250px from center)
+                    if (rectCircleOverlap(x, y, w, h, BR_SIZE / 2, BR_SIZE / 2, 250)) {
+                        continue;
+                    }
+
+                    // 2. Spawn point check (radius 100px)
+                    let overlapsSpawn = false;
+                    for (let sp of spawnPoints) {
+                        if (rectCircleOverlap(x, y, w, h, sp.x, sp.y, 100)) {
+                            overlapsSpawn = true;
+                            break;
+                        }
+                    }
+                    if (overlapsSpawn) {
+                        continue;
+                    }
+
+                    // 3. Overlap with existing walls check (AABB with 40px padding to keep walking paths)
+                    let overlapsWall = false;
+                    for (let wall of mapWalls) {
+                        if (x < wall.x + wall.w + 40 &&
+                            x + w > wall.x - 40 &&
+                            y < wall.y + wall.h + 40 &&
+                            y + h > wall.y - 40) {
+                            overlapsWall = true;
+                            break;
+                        }
+                    }
+                    if (overlapsWall) {
+                        continue;
+                    }
+
+                    mapWalls.push({ x, y, w, h });
+                }
+            }
+
+            function checkPlayerCollisionWithWalls(px, py, r) {
+                for (let wall of mapWalls) {
+                    if (rectCircleOverlap(wall.x, wall.y, wall.w, wall.h, px, py, r)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function checkBulletCollisionWithWalls(bx, by) {
+                for (let wall of mapWalls) {
+                    if (bx >= wall.x && bx <= wall.x + wall.w && by >= wall.y && by <= wall.y + wall.h) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            function bulletHitWall(x, y) {
+                // Hook for hit particles / blood decals on walls (Block 4)
+                // For now, it represents a bullet hitting a wall.
+            }
+
             function initLobby(mode) {
                 currentMode = mode;
                 if (lobbyId && isHost) {
@@ -318,8 +420,13 @@
             }
 
             function initBrFirebaseState(mode) {
+                if (!lobbyId) {
+                    generateMap();
+                    return;
+                }
                 const base = `lobbies/${lobbyId}/br`;
                 if (isHost) {
+                    generateMap();
                     const realPlayers = brRealLobbyPlayers();
                     const playersUpdate = {};
                     
@@ -394,6 +501,7 @@
                     updateDbPaths(Object.assign({
                         [`${base}/zone`]: br.zone,
                         [`${base}/bots`]: bots,
+                        [`${base}/walls`]: mapWalls,
                         [`${base}/bullets`]: null
                     }, playersUpdate), 'init br state').catch(() => {});
                 }
@@ -450,6 +558,17 @@
                 };
                 db.ref(`${base}/players`).on('child_changed', br.shotsListener);
                 db.ref(`${base}/bots`).on('value', br.botsListener);
+
+                br.wallsListener = snap => {
+                    if (snap.exists()) {
+                        const val = snap.val();
+                        mapWalls = Array.isArray(val) ? val : Object.values(val);
+                    } else {
+                        mapWalls = [];
+                    }
+                };
+                db.ref(`${base}/walls`).on('value', br.wallsListener);
+
                 br.syncTimer = setInterval(syncBrPlayerState, 80);
             }
 
@@ -636,41 +755,56 @@
             }
 
             function updateBrLocalPlayer(now) {
-                if (br.isSpectator || br.myP.hp <= 0) return;
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                let speed = 6 * brSpeedMultiplier(br.myP.speed);
-                const oldX = br.myP.x;
-                const oldY = br.myP.y;
-
-                if (isMobile) {
-                    if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
-                        br.myP.x += Math.cos(br.myP.a) * speed;
-                        br.myP.y += Math.sin(br.myP.a) * speed;
-                    }
-                } else {
-                    let dx = 0, dy = 0;
-                    if (brKeys['KeyW'] || brKeys['ArrowUp']) dy = -1;
-                    if (brKeys['KeyS'] || brKeys['ArrowDown']) dy = 1;
-                    if (brKeys['KeyA'] || brKeys['ArrowLeft']) dx = -1;
-                    if (brKeys['KeyD'] || brKeys['ArrowRight']) dx = 1;
-                    if (dx !== 0 || dy !== 0) {
-                        let len = Math.hypot(dx, dy);
-                        br.myP.x += (dx / len) * speed;
-                        br.myP.y += (dy / len) * speed;
-                    }
-                }
-
-                br.myP.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.x));
-                br.myP.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.y));
-                br.myP.vx = br.myP.x - oldX;
-                br.myP.vy = br.myP.y - oldY;
-
-                if (!brIsInvulnerable(br.myP, now) && Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) {
-                    br.myP.hp -= 0.5;
-                    br.serverHp = Math.min(br.serverHp, br.myP.hp);
-                    syncBrPlayerState(true);
-                }
-                if (isShooting) fireBrShot(now);
+                 if (br.isSpectator || br.myP.hp <= 0) return;
+                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                 let speed = 6 * brSpeedMultiplier(br.myP.speed);
+                 const oldX = br.myP.x;
+                 const oldY = br.myP.y;
+                 let moveX = 0;
+                 let moveY = 0;
+ 
+                 if (isMobile) {
+                     if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
+                         moveX = Math.cos(br.myP.a) * speed;
+                         moveY = Math.sin(br.myP.a) * speed;
+                     }
+                 } else {
+                     let dx = 0, dy = 0;
+                     if (brKeys['KeyW'] || brKeys['ArrowUp']) dy = -1;
+                     if (brKeys['KeyS'] || brKeys['ArrowDown']) dy = 1;
+                     if (brKeys['KeyA'] || brKeys['ArrowLeft']) dx = -1;
+                     if (brKeys['KeyD'] || brKeys['ArrowRight']) dx = 1;
+                     if (dx !== 0 || dy !== 0) {
+                         let len = Math.hypot(dx, dy);
+                         moveX = (dx / len) * speed;
+                         moveY = (dy / len) * speed;
+                     }
+                 }
+ 
+                 if (moveX !== 0) {
+                     br.myP.x += moveX;
+                     br.myP.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.x));
+                     if (checkPlayerCollisionWithWalls(br.myP.x, br.myP.y, BR_PLAYER_R)) {
+                         br.myP.x = oldX;
+                     }
+                 }
+                 if (moveY !== 0) {
+                     br.myP.y += moveY;
+                     br.myP.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, br.myP.y));
+                     if (checkPlayerCollisionWithWalls(br.myP.x, br.myP.y, BR_PLAYER_R)) {
+                         br.myP.y = oldY;
+                     }
+                 }
+ 
+                 br.myP.vx = br.myP.x - oldX;
+                 br.myP.vy = br.myP.y - oldY;
+ 
+                 if (!brIsInvulnerable(br.myP, now) && Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) {
+                     br.myP.hp -= 0.5;
+                     br.serverHp = Math.min(br.serverHp, br.myP.hp);
+                     syncBrPlayerState(true);
+                 }
+                 if (isShooting) fireBrShot(now);
             }
 
             function fireBrShot(now) {
@@ -722,8 +856,25 @@
                     if (dist > 10) {
                         b.a = Math.atan2(dy, dx);
                         const botSpeed = 2 * brSpeedMultiplier(b.speed);
-                        b.x += Math.cos(b.a) * botSpeed;
-                        b.y += Math.sin(b.a) * botSpeed;
+                        const moveX = Math.cos(b.a) * botSpeed;
+                        const moveY = Math.sin(b.a) * botSpeed;
+                        const oldBx = b.x;
+                        const oldBy = b.y;
+
+                        if (moveX !== 0) {
+                            b.x += moveX;
+                            b.x = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, b.x));
+                            if (checkPlayerCollisionWithWalls(b.x, b.y, BR_PLAYER_R)) {
+                                b.x = oldBx;
+                            }
+                        }
+                        if (moveY !== 0) {
+                            b.y += moveY;
+                            b.y = Math.max(BR_PLAYER_R, Math.min(BR_SIZE - BR_PLAYER_R, b.y));
+                            if (checkPlayerCollisionWithWalls(b.x, b.y, BR_PLAYER_R)) {
+                                b.y = oldBy;
+                            }
+                        }
                         changed = true;
                     }
                     if (Math.hypot(b.x - br.zone.x, b.y - br.zone.y) > br.zone.r) {
@@ -787,6 +938,12 @@
                         continue;
                     }
 
+                    if (checkBulletCollisionWithWalls(bul.x, bul.y)) {
+                        bulletHitWall(bul.x, bul.y);
+                        br.bullets.splice(i, 1);
+                        continue;
+                    }
+
                     let hit = false;
                     br.bots.forEach(b => {
                         if (hit || !b.alive || b.hp <= 0) return;
@@ -841,6 +998,12 @@
                     const steps = age / 16.67;
                     const x = (Number(bul.x) || 0) + (Number(bul.vx) || 0) * steps;
                     const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
+
+                    if (checkBulletCollisionWithWalls(x, y)) {
+                        bulletHitWall(x, y);
+                        delete br.remoteBullets[key];
+                        return;
+                    }
 
                     if (isHost) {
                         const hitBot = br.bots.some(b => {
@@ -900,6 +1063,33 @@
                 ctx.lineWidth = 10;
                 ctx.beginPath(); ctx.arc(br.zone.x, br.zone.y, br.zone.r, 0, Math.PI * 2); ctx.stroke();
                 ctx.fillStyle = 'rgba(255,0,0,0.1)'; ctx.fill();
+
+                // Draw walls
+                mapWalls.forEach(wall => {
+                    // Border shadow
+                    ctx.fillStyle = '#1c1f22';
+                    ctx.fillRect(wall.x - 2, wall.y - 2, wall.w + 4, wall.h + 4);
+
+                    // Concrete base
+                    ctx.fillStyle = '#4c525a';
+                    ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+
+                    // Inner highlight border
+                    ctx.strokeStyle = '#6e7680';
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(wall.x, wall.y, wall.w, wall.h);
+
+                    // Procedural details/cracks for concrete texture
+                    ctx.fillStyle = '#3b4046';
+                    // Scratch 1
+                    ctx.fillRect(wall.x + wall.w * 0.2, wall.y + wall.h * 0.15, 2, 10);
+                    // Scratch 2
+                    ctx.fillRect(wall.x + wall.w * 0.6, wall.y + wall.h * 0.7, 10, 2);
+                    if (wall.w > 80 && wall.h > 80) {
+                        ctx.fillRect(wall.x + wall.w * 0.4, wall.y + wall.h * 0.45, 6, 2);
+                        ctx.fillRect(wall.x + wall.w * 0.75, wall.y + wall.h * 0.25, 2, 6);
+                    }
+                });
 
                 br.bots.filter(b => b.alive && b.hp > 0).forEach(b => drawBrFighter(ctx, b, getFighterColor(b), b.label, b.maxHp || 150));
                 Object.values(br.remotePlayers).forEach(p => {
@@ -1024,31 +1214,36 @@
             }
 
             function stopBR() {
-                br.active = false;
-                cancelAnimationFrame(br.loop);
-                if (br.syncTimer) clearInterval(br.syncTimer);
-                if (lobbyId) {
-                    if (br.matchActiveListener) {
-                        db.ref(`lobbies/${lobbyId}/br/matchActive`).off('value', br.matchActiveListener);
-                        br.matchActiveListener = null;
-                    }
-                    if (isHost) {
-                        db.ref(`lobbies/${lobbyId}/br/matchActive`).remove().catch(() => {});
-                    }
-                    if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
-                    if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
-                    if (br.damageListener) db.ref(`lobbies/${lobbyId}/br/damage`).off('value', br.damageListener);
-                    if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
-                    if (!br.placeShown && br.matchActive === true) {
-                        db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
-                    }
-                }
-                br.matchActive = false;
-                br.syncTimer = null;
-                br.playersListener = null;
-                br.shotsListener = null;
-                br.damageListener = null;
-                br.botsListener = null;
-                shootTouch = null;
-                isShooting = false;
-            }
+                 br.active = false;
+                 cancelAnimationFrame(br.loop);
+                 if (br.syncTimer) clearInterval(br.syncTimer);
+                 if (lobbyId) {
+                     if (br.matchActiveListener) {
+                         db.ref(`lobbies/${lobbyId}/br/matchActive`).off('value', br.matchActiveListener);
+                         br.matchActiveListener = null;
+                     }
+                     if (br.wallsListener) {
+                         db.ref(`lobbies/${lobbyId}/br/walls`).off('value', br.wallsListener);
+                     }
+                     if (isHost) {
+                         db.ref(`lobbies/${lobbyId}/br/matchActive`).remove().catch(() => {});
+                         db.ref(`lobbies/${lobbyId}/br/walls`).remove().catch(() => {});
+                     }
+                     if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
+                     if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
+                     if (br.damageListener) db.ref(`lobbies/${lobbyId}/br/damage`).off('value', br.damageListener);
+                     if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
+                     if (!br.placeShown && br.matchActive === true) {
+                         db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
+                     }
+                 }
+                 br.matchActive = false;
+                 br.syncTimer = null;
+                 br.playersListener = null;
+                 br.shotsListener = null;
+                 br.damageListener = null;
+                 br.botsListener = null;
+                 br.wallsListener = null;
+                 shootTouch = null;
+                 isShooting = false;
+             }
