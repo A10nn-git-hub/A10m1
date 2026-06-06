@@ -61,6 +61,7 @@
 
                     mapWalls.push({ x, y, w, h });
                 }
+                initBrBackgroundCanvas();
             }
 
             function checkPlayerCollisionWithWalls(px, py, r) {
@@ -82,8 +83,289 @@
             }
 
             function bulletHitWall(x, y) {
-                // Hook for hit particles / blood decals on walls (Block 4)
-                // For now, it represents a bullet hitting a wall.
+                // Spawn minor grey sparks or dust when bullet hits a wall
+                if (!br.bloodParticles) br.bloodParticles = [];
+                for (let i = 0; i < 4; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 0.5 + Math.random() * 1.5;
+                    br.bloodParticles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        r: 1.5 + Math.random() * 1.5,
+                        alpha: 0.8,
+                        decay: 0.04 + Math.random() * 0.04,
+                        isDust: true // grey sparks rather than red blood
+                    });
+                }
+            }
+
+            function lineIntersectsCircle(ax, ay, bx, by, cx, cy, cr) {
+                const abx = bx - ax;
+                const aby = by - ay;
+                const acx = cx - ax;
+                const acy = cy - ay;
+                const abLenSq = abx * abx + aby * aby;
+                if (abLenSq === 0) {
+                    return (ax - cx) * (ax - cx) + (ay - cy) * (ay - cy) < cr * cr;
+                }
+                let t = (acx * abx + acy * aby) / abLenSq;
+                t = Math.max(0, Math.min(1, t));
+                const projX = ax + t * abx;
+                const projY = ay + t * aby;
+                const dx = projX - cx;
+                const dy = projY - cy;
+                return (dx * dx + dy * dy) < (cr * cr);
+            }
+
+            function generateSmokeZones(mode) {
+                br.smokeZones = [];
+                const count = 5;
+                const maxMapSize = (typeof mode !== 'undefined' && (mode === 'duel_1v1' || mode === 'duel_2v2')) ? 1200 : BR_SIZE;
+                const minCoord = (BR_SIZE - maxMapSize) / 2;
+                
+                const seedStr = lobbyId || 'singleplayer';
+                let seedVal = 0;
+                for (let i = 0; i < seedStr.length; i++) {
+                    seedVal += seedStr.charCodeAt(i);
+                }
+                
+                function seededRandom() {
+                    let x = Math.sin(seedVal++) * 10000;
+                    return x - Math.floor(x);
+                }
+                
+                for (let i = 0; i < count; i++) {
+                    const x = minCoord + 150 + seededRandom() * (maxMapSize - 300);
+                    const y = minCoord + 150 + seededRandom() * (maxMapSize - 300);
+                    const r = 120 + seededRandom() * 60; // radius 120-180px
+                    br.smokeZones.push({ x, y, r });
+                }
+            }
+
+            function drawSmokeZones(ctx) {
+                if (!br.smokeZones) return;
+                ctx.save();
+                br.smokeZones.forEach(smoke => {
+                    const grad = ctx.createRadialGradient(smoke.x, smoke.y, smoke.r * 0.15, smoke.x, smoke.y, smoke.r);
+                    grad.addColorStop(0, 'rgba(210, 215, 223, 0.7)');
+                    grad.addColorStop(0.5, 'rgba(180, 185, 195, 0.5)');
+                    grad.addColorStop(0.8, 'rgba(160, 165, 175, 0.25)');
+                    grad.addColorStop(1, 'rgba(160, 165, 175, 0)');
+                    
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(smoke.x, smoke.y, smoke.r, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Draw soft inner core ring
+                    ctx.strokeStyle = 'rgba(220, 225, 235, 0.05)';
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(smoke.x, smoke.y, smoke.r * 0.4, 0, Math.PI * 2);
+                    ctx.stroke();
+                });
+                ctx.restore();
+            }
+
+            function initBrBackgroundCanvas() {
+                if (!br.bgCanvas) {
+                    br.bgCanvas = document.createElement('canvas');
+                }
+                if (br.bgCanvas.width !== BR_SIZE || br.bgCanvas.height !== BR_SIZE) {
+                    br.bgCanvas.width = BR_SIZE;
+                    br.bgCanvas.height = BR_SIZE;
+                }
+                br.bgCtx = br.bgCanvas.getContext('2d');
+                drawStaticBackground();
+            }
+
+            function drawStaticBackground() {
+                const bgCtx = br.bgCtx;
+                if (!bgCtx) return;
+                
+                // Clear background
+                bgCtx.clearRect(0, 0, BR_SIZE, BR_SIZE);
+                
+                // Draw map grid
+                bgCtx.strokeStyle = '#4e7a27';
+                bgCtx.lineWidth = 2;
+                for (let x = 0; x <= BR_SIZE; x += 100) { bgCtx.beginPath(); bgCtx.moveTo(x, 0); bgCtx.lineTo(x, BR_SIZE); bgCtx.stroke(); }
+                for (let y = 0; y <= BR_SIZE; y += 100) { bgCtx.beginPath(); bgCtx.moveTo(0, y); bgCtx.lineTo(BR_SIZE, y); bgCtx.stroke(); }
+                
+                // Draw Team 1 Base (Blue floor)
+                bgCtx.fillStyle = 'rgba(50, 173, 230, 0.12)';
+                bgCtx.fillRect(50, 775, 450, 450);
+                bgCtx.strokeStyle = 'rgba(50, 173, 230, 0.45)';
+                bgCtx.lineWidth = 4;
+                bgCtx.strokeRect(50, 775, 450, 450);
+                
+                // Draw Team 2 Base (Orange floor)
+                bgCtx.fillStyle = 'rgba(255, 159, 10, 0.12)';
+                bgCtx.fillRect(1500, 775, 450, 450);
+                bgCtx.strokeStyle = 'rgba(255, 159, 10, 0.45)';
+                bgCtx.lineWidth = 4;
+                bgCtx.strokeRect(1500, 775, 450, 450);
+                
+                // Base text labels
+                bgCtx.fillStyle = 'rgba(50, 173, 230, 0.4)';
+                bgCtx.font = 'bold 24px sans-serif';
+                bgCtx.textAlign = 'center';
+                bgCtx.fillText('БАЗА CT', 275, 1010);
+                bgCtx.fillStyle = 'rgba(255, 159, 10, 0.4)';
+                bgCtx.fillText('БАЗА T', 1725, 1010);
+                
+                // Draw walls
+                mapWalls.forEach(wall => {
+                    bgCtx.fillStyle = '#1c1f22';
+                    bgCtx.fillRect(wall.x - 2, wall.y - 2, wall.w + 4, wall.h + 4);
+                    bgCtx.fillStyle = '#4c525a';
+                    bgCtx.fillRect(wall.x, wall.y, wall.w, wall.h);
+                    bgCtx.strokeStyle = '#6e7680';
+                    bgCtx.lineWidth = 2;
+                    bgCtx.strokeRect(wall.x, wall.y, wall.w, wall.h);
+                    
+                    bgCtx.fillStyle = '#3b4046';
+                    bgCtx.fillRect(wall.x + wall.w * 0.2, wall.y + wall.h * 0.15, 2, 10);
+                    bgCtx.fillRect(wall.x + wall.w * 0.6, wall.y + wall.h * 0.7, 10, 2);
+                    if (wall.w > 80 && wall.h > 80) {
+                        bgCtx.fillRect(wall.x + wall.w * 0.4, wall.y + wall.h * 0.45, 6, 2);
+                        bgCtx.fillRect(wall.x + wall.w * 0.75, wall.y + wall.h * 0.25, 2, 6);
+                    }
+                });
+                
+                // Draw blood stains
+                if (br.bloodStains) {
+                    br.bloodStains.forEach(stain => {
+                        bgCtx.fillStyle = 'rgba(139, 0, 0, 0.75)';
+                        bgCtx.beginPath();
+                        bgCtx.arc(stain.x, stain.y, stain.r, 0, Math.PI * 2);
+                        bgCtx.fill();
+                        
+                        bgCtx.fillStyle = 'rgba(110, 0, 0, 0.6)';
+                        const seed = Math.sin(stain.x) * Math.cos(stain.y);
+                        const splatterCount = 3 + Math.floor(Math.abs(seed * 3));
+                        for (let i = 0; i < splatterCount; i++) {
+                            const angle = (seed * 123.45 + i) * Math.PI;
+                            const dist = stain.r * (0.8 + Math.abs(Math.sin(i)) * 0.7);
+                            const sx = stain.x + Math.cos(angle) * dist;
+                            const sy = stain.y + Math.sin(angle) * dist;
+                            const sr = stain.r * (0.15 + Math.abs(Math.cos(i)) * 0.2);
+                            bgCtx.beginPath();
+                            bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
+                            bgCtx.fill();
+                        }
+                    });
+                }
+            }
+
+            function drawBloodStainOnBg(stain) {
+                if (!br.bgCtx) return;
+                br.bgCtx.fillStyle = 'rgba(139, 0, 0, 0.75)';
+                br.bgCtx.beginPath();
+                br.bgCtx.arc(stain.x, stain.y, stain.r, 0, Math.PI * 2);
+                br.bgCtx.fill();
+                
+                br.bgCtx.fillStyle = 'rgba(110, 0, 0, 0.6)';
+                const splatterCount = 3 + Math.floor(Math.random() * 3);
+                for (let i = 0; i < splatterCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = stain.r * (0.8 + Math.random() * 0.7);
+                    const sx = stain.x + Math.cos(angle) * dist;
+                    const sy = stain.y + Math.sin(angle) * dist;
+                    const sr = stain.r * (0.15 + Math.random() * 0.2);
+                    br.bgCtx.beginPath();
+                    br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
+                    br.bgCtx.fill();
+                }
+            }
+
+            function spawnBloodSplatter(x, y) {
+                if (!br.bloodParticles) br.bloodParticles = [];
+                const particleCount = 8 + Math.floor(Math.random() * 6);
+                for (let i = 0; i < particleCount; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = 1 + Math.random() * 4;
+                    br.bloodParticles.push({
+                        x: x,
+                        y: y,
+                        vx: Math.cos(angle) * speed,
+                        vy: Math.sin(angle) * speed,
+                        r: 2 + Math.random() * 3,
+                        alpha: 1.0,
+                        decay: 0.02 + Math.random() * 0.03
+                    });
+                }
+            }
+
+            function checkAndAddBloodDecal(entity, hitX, hitY) {
+                if (!entity) return;
+                for (let wall of mapWalls) {
+                    const closestX = Math.max(wall.x, Math.min(entity.x, wall.x + wall.w));
+                    const closestY = Math.max(wall.y, Math.min(entity.y, wall.y + wall.h));
+                    const dx = entity.x - closestX;
+                    const dy = entity.y - closestY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 50) {
+                        const stain = {
+                            x: closestX,
+                            y: closestY,
+                            r: 8 + Math.random() * 12
+                        };
+                        if (!br.bloodStains) br.bloodStains = [];
+                        br.bloodStains.push(stain);
+                        drawBloodStainOnBg(stain);
+                        break;
+                    }
+                }
+            }
+
+            function updateAndDrawBloodParticles(ctx) {
+                if (!br.bloodParticles) return;
+                ctx.save();
+                for (let i = br.bloodParticles.length - 1; i >= 0; i--) {
+                    const p = br.bloodParticles[i];
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.vx *= 0.95;
+                    p.vy *= 0.95;
+                    p.alpha -= p.decay;
+                    if (p.alpha <= 0) {
+                        br.bloodParticles.splice(i, 1);
+                        continue;
+                    }
+                    if (p.isDust) {
+                        ctx.fillStyle = `rgba(130, 135, 140, ${p.alpha})`;
+                    } else {
+                        ctx.fillStyle = `rgba(180, 0, 0, ${p.alpha})`;
+                    }
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+
+            function drawBulletWithTracer(ctx, bx, by, bvx, bvy) {
+                ctx.save();
+                const grad = ctx.createLinearGradient(bx, by, bx - bvx * 2.5, by - bvy * 2.5);
+                grad.addColorStop(0, 'rgba(255, 214, 10, 0.85)');
+                grad.addColorStop(0.2, 'rgba(220, 220, 220, 0.55)');
+                grad.addColorStop(1, 'rgba(180, 180, 180, 0)');
+                
+                ctx.strokeStyle = grad;
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.moveTo(bx, by);
+                ctx.lineTo(bx - bvx * 2.5, by - bvy * 2.5);
+                ctx.stroke();
+                ctx.restore();
+                
+                ctx.fillStyle = '#ffd60a';
+                ctx.beginPath();
+                ctx.arc(bx, by, 4, 0, Math.PI * 2);
+                ctx.fill();
             }
 
             function initLobby(mode) {
@@ -293,6 +575,9 @@
                     controls.style.display = isMobile ? 'flex' : 'none';
                 }
 
+                br.bloodStains = [];
+                br.bloodParticles = [];
+                generateSmokeZones(mode);
                 br.teamInitialized = true;
                 initBrFirebaseState(mode);
             }
@@ -302,6 +587,11 @@
                 br.kills = 0;
                 br.placeShown = false;
                 br.isSpectator = false;
+                br.bloodStains = [];
+                br.bloodParticles = [];
+                br.smokeZones = [];
+                br.bgCanvas = null;
+                br.bgCtx = null;
                 const submode = (appState.selectedGameId || '').startsWith('br_') ? appState.selectedGameId.replace('br_', '') : 'tdm_5v5';
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (submode === 'duel_1v1' || submode === 'duel_2v2') ? 600 : BR_SIZE };
                 br.remotePlayers = {};
@@ -653,6 +943,7 @@
                     } else {
                         mapWalls = [];
                     }
+                    initBrBackgroundCanvas();
                 };
                 db.ref(`${base}/walls`).on('value', br.wallsListener);
 
@@ -1069,6 +1360,8 @@
                         if (Math.hypot(bul.x - b.x, bul.y - b.y) < BR_PLAYER_R) {
                             hit = true;
                             applyBrBotDamage(b, 25, bul.owner, !!bul.isBot);
+                            spawnBloodSplatter(bul.x, bul.y);
+                            checkAndAddBloodDecal(b, bul.x, bul.y);
                         }
                     });
 
@@ -1078,6 +1371,8 @@
                         if (brIsInvulnerable(p, now)) return;
                         if (Math.hypot(bul.x - p.x, bul.y - p.y) < BR_PLAYER_R) {
                             hit = true;
+                            spawnBloodSplatter(bul.x, bul.y);
+                            checkAndAddBloodDecal(p, bul.x, bul.y);
                             const maxHp = Math.max(1, parseInt(p.maxHp) || BR_DEFAULT_HP);
                             const damageRef = db.ref(`lobbies/${lobbyId}/br/damage/${p.id}`);
                             damageRef.transaction(v => Math.min(maxHp, (parseInt(v) || 0) + 18)).then(res => {
@@ -1129,6 +1424,8 @@
                             if (brIsInvulnerable(b, now)) return false;
                             if (Math.hypot(x - b.x, y - b.y) >= BR_PLAYER_R) return false;
                             applyBrBotDamage(b, 25, bul.owner, !!bul.isBot);
+                            spawnBloodSplatter(x, y);
+                            checkAndAddBloodDecal(b, x, y);
                             return true;
                         });
                         if (hitBot) {
@@ -1138,6 +1435,8 @@
                     }
 
                     if (br.myP && br.myP.hp > 0 && brIsEnemyTarget(bul.owner, br.myP) && !brIsInvulnerable(br.myP, now) && Math.hypot(x - br.myP.x, y - br.myP.y) < BR_PLAYER_R) {
+                        spawnBloodSplatter(x, y);
+                        checkAndAddBloodDecal(br.myP, x, y);
                         delete br.remoteBullets[key];
                         return;
                     }
@@ -1147,7 +1446,12 @@
                         if (!brIsEnemyTarget(bul.owner, p)) return false;
                         if (brIsInvulnerable(p, now)) return false;
                         const rp = getBrRenderablePlayer(p);
-                        return Math.hypot(x - rp.x, y - rp.y) < BR_PLAYER_R;
+                        const isHit = Math.hypot(x - rp.x, y - rp.y) < BR_PLAYER_R;
+                        if (isHit) {
+                            spawnBloodSplatter(x, y);
+                            checkAndAddBloodDecal(rp, x, y);
+                        }
+                        return isHit;
                     });
                     if (hitRemote) delete br.remoteBullets[key];
                 });
@@ -1171,33 +1475,11 @@
                     ctx.translate(-camX, -camY);
                 }
 
-                ctx.strokeStyle = '#4e7a27';
-                ctx.lineWidth = 2;
-                for (let x = 0; x <= BR_SIZE; x += 100) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, BR_SIZE); ctx.stroke(); }
-                for (let y = 0; y <= BR_SIZE; y += 100) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(BR_SIZE, y); ctx.stroke(); }
-
-                // Draw Team 1 Base (Blue floor) on the left
-                ctx.fillStyle = 'rgba(50, 173, 230, 0.12)';
-                ctx.fillRect(50, 775, 450, 450);
-                ctx.strokeStyle = 'rgba(50, 173, 230, 0.45)';
-                ctx.lineWidth = 4;
-                ctx.strokeRect(50, 775, 450, 450);
-
-                // Draw Team 2 Base (Orange floor) on the right
-                ctx.fillStyle = 'rgba(255, 159, 10, 0.12)';
-                ctx.fillRect(1500, 775, 450, 450);
-                ctx.strokeStyle = 'rgba(255, 159, 10, 0.45)';
-                ctx.lineWidth = 4;
-                ctx.strokeRect(1500, 775, 450, 450);
-
-                // Base text labels
-                ctx.fillStyle = 'rgba(50, 173, 230, 0.4)';
-                ctx.font = 'bold 24px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.fillText('БАЗА CT', 275, 1010);
-
-                ctx.fillStyle = 'rgba(255, 159, 10, 0.4)';
-                ctx.fillText('БАЗА T', 1725, 1010);
+                // Draw pre-rendered background canvas (includes grid, bases, walls, and blood stains)
+                if (!br.bgCanvas) {
+                    initBrBackgroundCanvas();
+                }
+                ctx.drawImage(br.bgCanvas, 0, 0);
 
                 // Draw duel mode limits overlay if applicable
                 if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
@@ -1227,37 +1509,57 @@
                 ctx.beginPath(); ctx.arc(br.zone.x, br.zone.y, br.zone.r, 0, Math.PI * 2); ctx.stroke();
                 ctx.fillStyle = 'rgba(255,0,0,0.1)'; ctx.fill();
 
-                // Draw walls
-                mapWalls.forEach(wall => {
-                    // Border shadow
-                    ctx.fillStyle = '#1c1f22';
-                    ctx.fillRect(wall.x - 2, wall.y - 2, wall.w + 4, wall.h + 4);
+                // Draw smoke zones
+                drawSmokeZones(ctx);
 
-                    // Concrete base
-                    ctx.fillStyle = '#4c525a';
-                    ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+                // Draw and update blood particles
+                updateAndDrawBloodParticles(ctx);
 
-                    // Inner highlight border
-                    ctx.strokeStyle = '#6e7680';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(wall.x, wall.y, wall.w, wall.h);
+                // Local player visibility context (for smoke checks)
+                const localAlive = br.myP && br.myP.alive && br.myP.hp > 0 && !br.isSpectator;
 
-                    // Procedural details/cracks for concrete texture
-                    ctx.fillStyle = '#3b4046';
-                    // Scratch 1
-                    ctx.fillRect(wall.x + wall.w * 0.2, wall.y + wall.h * 0.15, 2, 10);
-                    // Scratch 2
-                    ctx.fillRect(wall.x + wall.w * 0.6, wall.y + wall.h * 0.7, 10, 2);
-                    if (wall.w > 80 && wall.h > 80) {
-                        ctx.fillRect(wall.x + wall.w * 0.4, wall.y + wall.h * 0.45, 6, 2);
-                        ctx.fillRect(wall.x + wall.w * 0.75, wall.y + wall.h * 0.25, 2, 6);
+                // Draw bots with smoke transparency checks
+                br.bots.filter(b => b.alive && b.hp > 0).forEach(b => {
+                    let alpha = 1.0;
+                    if (localAlive && brIsEnemyTarget(myId, b)) {
+                        if (br.smokeZones) {
+                            for (let smoke of br.smokeZones) {
+                                if (lineIntersectsCircle(br.myP.x, br.myP.y, b.x, b.y, smoke.x, smoke.y, smoke.r)) {
+                                    alpha = 0.2;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    ctx.save();
+                    ctx.globalAlpha = alpha;
+                    drawBrFighter(ctx, b, getFighterColor(b), b.label, b.maxHp || 150);
+                    ctx.restore();
+                });
+
+                // Draw remote players with smoke transparency checks
+                Object.values(br.remotePlayers).forEach(p => {
+                    if (p.id !== myId && p.alive && p.hp > 0) {
+                        const rp = getBrRenderablePlayer(p);
+                        let alpha = 1.0;
+                        if (localAlive && brIsEnemyTarget(myId, p)) {
+                            if (br.smokeZones) {
+                                for (let smoke of br.smokeZones) {
+                                    if (lineIntersectsCircle(br.myP.x, br.myP.y, rp.x, rp.y, smoke.x, smoke.y, smoke.r)) {
+                                        alpha = 0.2;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        ctx.save();
+                        ctx.globalAlpha = alpha;
+                        drawBrFighter(ctx, rp, getFighterColor(p), p.name || 'Игрок', p.maxHp || BR_DEFAULT_HP);
+                        ctx.restore();
                     }
                 });
 
-                br.bots.filter(b => b.alive && b.hp > 0).forEach(b => drawBrFighter(ctx, b, getFighterColor(b), b.label, b.maxHp || 150));
-                Object.values(br.remotePlayers).forEach(p => {
-                    if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, getBrRenderablePlayer(p), getFighterColor(p), p.name || 'Игрок', p.maxHp || BR_DEFAULT_HP);
-                });
+                // Draw local player
                 if (br.myP.hp > 0) {
                     if (brIsInvulnerable(br.myP, now)) {
                         ctx.fillStyle = 'rgba(255,255,255,0.5)';
@@ -1266,8 +1568,12 @@
                     drawBrFighter(ctx, br.myP, getFighterColor(br.myP), myName, br.myP.maxHp || BR_DEFAULT_HP);
                 }
 
-                ctx.fillStyle = '#ffd60a';
-                br.bullets.forEach(bul => { ctx.beginPath(); ctx.arc(bul.x, bul.y, 4, 0, Math.PI * 2); ctx.fill(); });
+                // Draw local bullets with tracers
+                br.bullets.forEach(bul => {
+                    drawBulletWithTracer(ctx, bul.x, bul.y, bul.vx, bul.vy);
+                });
+                
+                // Draw remote bullets with tracers
                 Object.keys(br.remoteBullets || {}).forEach(key => {
                     const bul = br.remoteBullets[key];
                     if (!bul || bul.owner === myId) return;
@@ -1279,7 +1585,7 @@
                     const steps = age / 16.67;
                     const x = (Number(bul.x) || 0) + (Number(bul.vx) || 0) * steps;
                     const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
-                    ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fill();
+                    drawBulletWithTracer(ctx, x, y, Number(bul.vx) || 0, Number(bul.vy) || 0);
                 });
                 ctx.restore();
 
@@ -1463,4 +1769,9 @@
                  br.wallsListener = null;
                  shootTouch = null;
                  isShooting = false;
+                 br.bloodStains = [];
+                 br.bloodParticles = [];
+                 br.smokeZones = [];
+                 br.bgCanvas = null;
+                 br.bgCtx = null;
              }
