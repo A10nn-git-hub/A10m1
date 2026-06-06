@@ -6,6 +6,12 @@
             let chatMessagesListener = null;
             let lobbyAgentSlots = {};
 
+            function getMaxPlayersForMode(mode) {
+                if (mode === 'duel_1v1') return 2;
+                if (mode === 'duel_2v2') return 4;
+                return 10; // 'tdm_5v5' is default
+            }
+
             function formatPresenceDays(days) {
                 const n = Math.abs(parseInt(days) || 0);
                 const mod10 = n % 10;
@@ -58,10 +64,12 @@
 
             function canJoinPlayingBrLobby(data = {}) {
                 const players = data.players || {};
+                const mode = data.currentMode || 'tdm_5v5';
+                const maxPlayers = getMaxPlayersForMode(mode);
                 return data.status === 'playing'
                     && data.game === 'br_2d'
                     && !players[myId]
-                    && Object.keys(players).filter(id => !isAiFriendId(id)).length < 5;
+                    && Object.keys(players).filter(id => !isAiFriendId(id)).length < maxPlayers;
             }
 
             function getFriendKnownLobbyId(friend = {}) {
@@ -373,7 +381,8 @@
             }
 
             function openInviteModal() { 
-                if (lobbyPlayers.length >= 5) return tg.showAlert("Полно!"); 
+                const maxPlayers = getMaxPlayersForMode(typeof currentMode !== 'undefined' ? currentMode : 'tdm_5v5');
+                if (lobbyPlayers.length >= maxPlayers) return tg.showAlert("Полно!"); 
                 
                 let l = document.getElementById('invite-friends-list'); 
                 l.innerHTML = ''; 
@@ -594,7 +603,8 @@
             }
 
             function inviteBotLobby() { 
-                if (lobbyPlayers.length >= 5) return; 
+                const maxPlayers = getMaxPlayersForMode(typeof currentMode !== 'undefined' ? currentMode : 'tdm_5v5');
+                if (lobbyPlayers.length >= maxPlayers) return; 
                 closeFriendModal(); 
                 let aiNames = ['ИИ', 'ИИ2', 'ИИ3', 'ИИ4', 'ИИ5'];
                 const aiId = aiNames.find(id => !lobbyPlayers.some(p => p.id === id));
@@ -603,7 +613,8 @@
             }
 
             function inviteRealFriend(id) { 
-                if (lobbyPlayers.length >= 5) return; 
+                const maxPlayers = getMaxPlayersForMode(typeof currentMode !== 'undefined' ? currentMode : 'tdm_5v5');
+                if (lobbyPlayers.length >= maxPlayers) return; 
                 let rawName = myEqName ? SHOP_ITEMS.find(i => i.id === myEqName)?.name || myName : myName;
                 const inviteRef = db.ref(`users/${id}/lobby_invites`).push();
                 const chatId = getDmChatId(myId, id);
@@ -753,6 +764,11 @@
                         return; 
                     }
                     isHost = d.host === myId;
+                    if (d.currentMode) {
+                        currentMode = d.currentMode;
+                    } else {
+                        currentMode = 'tdm_5v5';
+                    }
                     if (isHost) db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                     if (d.game && !GAME_NAMES[d.game]) {
                         if (isHost) db.ref(`lobbies/${lobbyId}/game`).set(d.status === 'playing' ? 'br_2d' : '').catch(() => {});

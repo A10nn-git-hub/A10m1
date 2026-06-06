@@ -1,4 +1,13 @@
             // ================== ВЫЖИВАНИЕ (BATTLE ROYALE) ==================
+            let currentMode = 'tdm_5v5';
+
+            function initLobby(mode) {
+                currentMode = mode;
+                if (lobbyId && isHost) {
+                    db.ref(`lobbies/${lobbyId}/currentMode`).set(mode).catch(() => {});
+                }
+            }
+
             let br = {
                 active: false,
                 myP: null,
@@ -84,6 +93,69 @@
                 return (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).filter(p => p.id && !isAiFriendId(p.id));
             }
 
+            function getFighterColor(p) {
+                const pId = typeof p === 'object' ? p.id : p;
+                if (pId === myId) return '#3390ec';
+                if (brAreAllies(myId, pId)) return '#32ade6';
+                return '#ff453a';
+            }
+
+            function selectGameMode(mode) {
+                if (lobbyId && !isHost) {
+                    return tg.showAlert("Только хост может выбрать режим!");
+                }
+                initLobby(mode);
+                if (lobbyId && isHost) {
+                    const base = `lobbies/${lobbyId}/br`;
+                    db.ref(`${base}/currentMode`).set(mode).then(() => {
+                        db.ref(`${base}/matchActive`).set(true);
+                    }).catch(() => {});
+                } else {
+                    startBrMatchLocal(mode);
+                }
+            }
+
+            function startBrMatchLocal(mode) {
+                br.matchActive = true;
+                br.kills = 0;
+                br.placeShown = false;
+                br.isSpectator = false;
+                br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: BR_SIZE };
+                
+                br.settings = mergedSettingsForGame('br_2d');
+                const mySettings = br.settings.players?.[myId] || {};
+                const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                const mySpeed = brNormalizeSpeed(mySettings.speed);
+                br.serverHp = myMaxHp;
+                br.damageTaken = 0;
+                br.lastSyncX = 0;
+                br.lastSyncY = 0;
+                br.lastSyncAt = Date.now();
+                shootTouch = null;
+                isShooting = false;
+                lastShot = 0;
+
+                const spawn = brSpawnForId(myId);
+                const invulnUntil = Date.now() + 5000;
+                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: '1', speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: invulnUntil, invulnUntil };
+                br.lastSyncX = br.myP.x;
+                br.lastSyncY = br.myP.y;
+
+                // Hide the Standoff 2 overlay menu!
+                const overlay = document.getElementById('so2-lobby-overlay');
+                if (overlay) overlay.style.display = 'none';
+                
+                // Show controls if mobile
+                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                const controls = document.getElementById('br-controls');
+                if (controls) {
+                    controls.style.display = isMobile ? 'flex' : 'none';
+                }
+
+                initBrFirebaseState(mode);
+                br.syncTimer = setInterval(syncBrPlayerState, 80);
+            }
+
             function initBR() {
                 br.active = true;
                 br.kills = 0;
@@ -107,16 +179,6 @@
                 br.damageTaken = 0;
                 br.lastSyncX = 0;
                 br.lastSyncY = 0;
-                br.lastSyncAt = Date.now();
-                shootTouch = null;
-                isShooting = false;
-                lastShot = 0;
-
-                const spawn = brSpawnForId(myId);
-                const invulnUntil = Date.now() + 5000;
-                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: invulnUntil, invulnUntil };
-                br.lastSyncX = br.myP.x;
-                br.lastSyncY = br.myP.y;
 
                 document.getElementById('br-ui-alive').innerText = 'Живых: ?';
                 document.getElementById('br-ui-kills').innerText = 'Киллы: 0';
@@ -126,9 +188,27 @@
 
                 let c = document.getElementById('br-canvas');
                 resizeBrCanvas();
-
                 bindBrControls();
-                initBrFirebaseState();
+
+                // Show the Standoff 2 overlay menu!
+                const overlay = document.getElementById('so2-lobby-overlay');
+                if (overlay) overlay.style.display = 'flex';
+
+                // Listen to host starting the game
+                if (lobbyId) {
+                    db.ref(`lobbies/${lobbyId}/br/matchActive`).off();
+                    br.matchActiveListener = snap => {
+                        if (snap.exists() && snap.val() === true) {
+                            db.ref(`lobbies/${lobbyId}/br/currentMode`).once('value').then(modeSnap => {
+                                const mode = modeSnap.val() || 'tdm_5v5';
+                                currentMode = mode;
+                                startBrMatchLocal(mode);
+                            });
+                        }
+                    };
+                    db.ref(`lobbies/${lobbyId}/br/matchActive`).on('value', br.matchActiveListener);
+                }
+
                 br.loop = requestAnimationFrame(brLoop);
             }
 
@@ -237,13 +317,56 @@
                 shootBtn.addEventListener('mouseleave', stopShoot);
             }
 
-            function initBrFirebaseState() {
+            function initBrFirebaseState(mode) {
                 const base = `lobbies/${lobbyId}/br`;
                 if (isHost) {
                     const realPlayers = brRealLobbyPlayers();
                     const playersUpdate = {};
+                    
+                    let maxTeamSize = 5;
+                    if (mode === 'duel_1v1') maxTeamSize = 1;
+                    else if (mode === 'duel_2v2') maxTeamSize = 2;
+                    else maxTeamSize = 5;
+
+                    let team1Real = [];
+                    let team2Real = [];
+                    realPlayers.forEach((p, idx) => {
+                        if (team1Real.length < maxTeamSize && team2Real.length < maxTeamSize) {
+                            if (idx % 2 === 0) team1Real.push(p);
+                            else team2Real.push(p);
+                        } else if (team1Real.length < maxTeamSize) {
+                            team1Real.push(p);
+                        } else if (team2Real.length < maxTeamSize) {
+                            team2Real.push(p);
+                        }
+                    });
+
+                    let team1BotCount = maxTeamSize - team1Real.length;
+                    let team2BotCount = maxTeamSize - team2Real.length;
+
+                    const bots = [];
+                    // Spawn bots for Team 1
+                    for (let i = 0; i < team1BotCount; i++) {
+                        const botId = 'bot_t1_' + i;
+                        const sp = brSpawnForId(botId);
+                        bots.push({ id: botId, label: 'Бот T1-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: '1', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                    }
+                    // Spawn bots for Team 2
+                    for (let i = 0; i < team2BotCount; i++) {
+                        const botId = 'bot_t2_' + i;
+                        const sp = brSpawnForId(botId);
+                        bots.push({ id: botId, label: 'Бот T2-' + (i + 1), x: sp.x, y: sp.y, hp: 200, maxHp: 200, team: '2', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                    }
+
+                    br.freeRoam = false;
+
+                    let teamAssign = {};
+                    team1Real.forEach(p => { teamAssign[p.id] = '1'; });
+                    team2Real.forEach(p => { teamAssign[p.id] = '2'; });
+
                     realPlayers.forEach(p => {
                         const sp = brSpawnForId(p.id);
+                        const assignedTeam = teamAssign[p.id] || '1';
                         playersUpdate[`${base}/players/${p.id}`] = {
                             id: p.id,
                             name: p.name || 'Игрок',
@@ -255,7 +378,7 @@
                             vy: 0,
                             hp: Math.max(1, parseInt(br.settings.players?.[p.id]?.lives) || BR_DEFAULT_HP),
                             maxHp: Math.max(1, parseInt(br.settings.players?.[p.id]?.lives) || BR_DEFAULT_HP),
-                            team: brNormalizeTeam(br.settings.players?.[p.id]?.team),
+                            team: assignedTeam,
                             speed: brNormalizeSpeed(br.settings.players?.[p.id]?.speed),
                             invulnUntil: Date.now() + 5000,
                             damageTaken: 0,
@@ -268,27 +391,19 @@
                         playersUpdate[`${base}/damage/${p.id}`] = 0;
                     });
 
-                    const hasAiParticipant = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).some(p => p.id && isAiFriendId(p.id));
-                    const botCount = hasAiParticipant ? Math.max(0, 6 - realPlayers.length) : 0;
-                    br.freeRoam = realPlayers.length <= 1 && botCount === 0;
-                    const bots = [];
-                    for (let i = 0; i < botCount; i++) {
-                        const sp = brSpawnForId('bot' + i);
-                        const aiLobby = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).filter(p => p.id && isAiFriendId(p.id));
-                        const sourceAi = aiLobby[i % Math.max(1, aiLobby.length)];
-                        const botSettings = br.settings.players?.[sourceAi?.id] || {};
-                        const botHp = Math.max(1, parseInt(botSettings.lives) || 150);
-                        const botLevel = Math.max(1, Math.min(3, parseInt(botSettings.aiLevel) || 2));
-                        const botAmmo = Math.max(1, Math.min(10, parseInt(botSettings.ammoPerSec) || 1));
-                        bots.push({ id: 'bot' + i, label: 'Бот ' + (i + 1), sourcePlayerId: sourceAi?.id || '', x: sp.x, y: sp.y, hp: botHp, maxHp: botHp, team: brNormalizeTeam(botSettings.team), speed: brNormalizeSpeed(botSettings.speed), aiLevel: botLevel, ammoPerSec: botAmmo, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
-                    }
-
                     updateDbPaths(Object.assign({
                         [`${base}/zone`]: br.zone,
                         [`${base}/bots`]: bots,
                         [`${base}/bullets`]: null
                     }, playersUpdate), 'init br state').catch(() => {});
                 }
+
+                db.ref(`${base}/players/${myId}`).once('value').then(snap => {
+                    if (snap.exists()) {
+                        const data = snap.val();
+                        if (data.team && br.myP) br.myP.team = data.team;
+                    }
+                });
 
                 db.ref(`${base}/players/${myId}`).update(brPublicPlayerState(true)).catch(() => {});
                 db.ref(`${base}/players/${myId}`).onDisconnect().update({alive: false, hp: 0});
@@ -307,6 +422,7 @@
                         br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
                         document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
                         br.myP.alive = remoteMe.alive !== false && br.myP.hp > 0;
+                        if (remoteMe.team) br.myP.team = remoteMe.team;
                     }
                 };
                 br.botsListener = snap => {
@@ -492,6 +608,20 @@
 
             function brLoop() {
                 if (!br.active || appState.isPaused) return;
+
+                if (!br.matchActive) {
+                    const overlay = document.getElementById('so2-lobby-overlay');
+                    if (overlay) overlay.style.display = 'flex';
+
+                    let c = document.getElementById('br-canvas');
+                    if (c) {
+                        let ctx = c.getContext('2d');
+                        ctx.fillStyle = '#0e1118';
+                        ctx.fillRect(0, 0, c.width, c.height);
+                    }
+                    if (br.active) br.loop = requestAnimationFrame(brLoop);
+                    return;
+                }
 
                 const now = Date.now();
                 updateBrLocalPlayer(now);
@@ -771,16 +901,16 @@
                 ctx.beginPath(); ctx.arc(br.zone.x, br.zone.y, br.zone.r, 0, Math.PI * 2); ctx.stroke();
                 ctx.fillStyle = 'rgba(255,0,0,0.1)'; ctx.fill();
 
-                br.bots.filter(b => b.alive && b.hp > 0).forEach(b => drawBrFighter(ctx, b, '#ff453a', b.label, b.maxHp || 150));
+                br.bots.filter(b => b.alive && b.hp > 0).forEach(b => drawBrFighter(ctx, b, getFighterColor(b), b.label, b.maxHp || 150));
                 Object.values(br.remotePlayers).forEach(p => {
-                    if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, getBrRenderablePlayer(p), '#af52de', p.name || 'Игрок', p.maxHp || BR_DEFAULT_HP);
+                    if (p.id !== myId && p.alive && p.hp > 0) drawBrFighter(ctx, getBrRenderablePlayer(p), getFighterColor(p), p.name || 'Игрок', p.maxHp || BR_DEFAULT_HP);
                 });
                 if (br.myP.hp > 0) {
                     if (brIsInvulnerable(br.myP, now)) {
                         ctx.fillStyle = 'rgba(255,255,255,0.5)';
                         ctx.beginPath(); ctx.arc(br.myP.x, br.myP.y, BR_PLAYER_R + 10, 0, Math.PI * 2); ctx.fill();
                     }
-                    drawBrFighter(ctx, br.myP, '#3390ec', myName, br.myP.maxHp || BR_DEFAULT_HP);
+                    drawBrFighter(ctx, br.myP, getFighterColor(br.myP), myName, br.myP.maxHp || BR_DEFAULT_HP);
                 }
 
                 ctx.fillStyle = '#ffd60a';
@@ -898,12 +1028,22 @@
                 cancelAnimationFrame(br.loop);
                 if (br.syncTimer) clearInterval(br.syncTimer);
                 if (lobbyId) {
+                    if (br.matchActiveListener) {
+                        db.ref(`lobbies/${lobbyId}/br/matchActive`).off('value', br.matchActiveListener);
+                        br.matchActiveListener = null;
+                    }
+                    if (isHost) {
+                        db.ref(`lobbies/${lobbyId}/br/matchActive`).remove().catch(() => {});
+                    }
                     if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
                     if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
                     if (br.damageListener) db.ref(`lobbies/${lobbyId}/br/damage`).off('value', br.damageListener);
                     if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
-                    if (!br.placeShown) db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
+                    if (!br.placeShown && br.matchActive === true) {
+                        db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
+                    }
                 }
+                br.matchActive = false;
                 br.syncTimer = null;
                 br.playersListener = null;
                 br.shotsListener = null;

@@ -532,3 +532,172 @@
         #ai-game-status { font-size: 2vh; color: var(--coin-col); margin-top: 20px; animation: pulse 1s infinite; }
         @keyframes pulse { 0% {opacity:0.5;} 50% {opacity:1;} 100% {opacity:0.5;} }
         .word-highlight { color: var(--coin-col); }
+
+        /* Standoff 2 Lobby Overlay Styles */
+        #so2-lobby-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 12, 0.85);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            font-family: 'Segoe UI', -apple-system, sans-serif;
+            color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .so2-menu-container {
+            width: 90%;
+            max-width: 900px;
+            background: linear-gradient(135deg, rgba(20, 20, 25, 0.95) 0%, rgba(15, 15, 18, 0.98) 100%);
+            border: 1px solid rgba(255, 107, 0, 0.25);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 107, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .so2-menu-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, #ff6b00, #ff9f0a);
+        }
+
+        .so2-menu-title {
+            font-size: 28px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #fff;
+            margin-bottom: 30px;
+            margin-top: 0;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(90deg, #ffffff 0%, #ff9f0a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .so2-mode-cards {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .so2-mode-card {
+            flex: 1;
+            min-width: 220px;
+            max-width: 260px;
+            background: rgba(30, 30, 35, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 24px 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .so2-mode-card:hover {
+            transform: translateY(-8px);
+            background: rgba(40, 40, 48, 0.8);
+            border-color: #ff6b00;
+            box-shadow: 0 12px 24px rgba(255, 107, 0, 0.15);
+        }
+
+        .so2-mode-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0px;
+            background: #ff6b00;
+            transition: height 0.25s ease;
+        }
+
+        .so2-mode-card:hover::after {
+            height: 3px;
+        }
+
+        .so2-card-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: rgba(255, 107, 0, 0.2);
+            border: 1px solid rgba(255, 107, 0, 0.4);
+            color: #ff9f0a;
+            font-size: 11px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .so2-card-icon {
+            font-size: 48px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+            transition: transform 0.3s ease;
+        }
+
+        .so2-mode-card:hover .so2-card-icon {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        .so2-card-name {
+            font-size: 18px;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .so2-card-desc {
+            font-size: 13px;
+            color: #9ca3af;
+            line-height: 1.4;
+        }
+
+        .so2-back-btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #9ca3af;
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .so2-back-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.4);
+        }

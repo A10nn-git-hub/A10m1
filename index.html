@@ -499,6 +499,38 @@
             <div class="game-screen" id="screen-game-br">
                 <div id="br-container" style="background:#2c3e50;">
                     <canvas id="br-canvas"></canvas>
+                    
+                    <!-- Standoff 2 Lobby Mode Selection Menu Overlay -->
+                    <div id="so2-lobby-overlay" style="display: none;">
+                        <div class="so2-menu-container">
+                            <h2 class="so2-menu-title">Выбор режима</h2>
+                            <div class="so2-mode-cards">
+                                <!-- TDM 5v5 Card -->
+                                <div class="so2-mode-card" onclick="selectGameMode('tdm_5v5')">
+                                    <div class="so2-card-badge">5 vs 5</div>
+                                    <div class="so2-card-icon">⚔️</div>
+                                    <div class="so2-card-name">Командный бой</div>
+                                    <div class="so2-card-desc">Классическое сражение 5 на 5 с ботами</div>
+                                </div>
+                                <!-- Duel 1v1 Card -->
+                                <div class="so2-mode-card" onclick="selectGameMode('duel_1v1')">
+                                    <div class="so2-card-badge">1 vs 1</div>
+                                    <div class="so2-card-icon">🎯</div>
+                                    <div class="so2-card-name">Дуэль 1х1</div>
+                                    <div class="so2-card-desc">Дуэль один на один на равных условиях</div>
+                                </div>
+                                <!-- Duel 2v2 Card -->
+                                <div class="so2-mode-card" onclick="selectGameMode('duel_2v2')">
+                                    <div class="so2-card-badge">2 vs 2</div>
+                                    <div class="so2-card-icon">👥</div>
+                                    <div class="so2-card-name">Дуэль 2х2</div>
+                                    <div class="so2-card-desc">Командное противостояние два на два</div>
+                                </div>
+                            </div>
+                            <button class="so2-back-btn" onclick="exitToLobby()">Выйти в лобби</button>
+                        </div>
+                    </div>
+
                     <div class="br-ui" id="br-ui-alive">Живых: ?</div>
                     <div class="br-ui" id="br-ui-kills" style="top:40px;">Киллы: 0</div>
                     <div class="br-ui" id="br-ui-spectator" style="top:70px; display:none; color:#ffd60a;">Зритель: карта целиком</div>
