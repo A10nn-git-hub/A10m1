@@ -430,8 +430,8 @@
 
             function sortedLobbyPlayerEntries(players) {
                 return Object.keys(players || {}).sort((a, b) => {
-                    const aj = Number(players[a]?.joinedAt || 0);
-                    const bj = Number(players[b]?.joinedAt || 0);
+                    const aj = safeGetJoinedAt(players[a]);
+                    const bj = safeGetJoinedAt(players[b]);
                     if (aj !== bj) return aj - bj;
                     return String(a).localeCompare(String(b));
                 });
@@ -537,7 +537,7 @@
                 if (closingLobbyId && wasHost) { 
                     let rem = lobbyPlayers
                         .filter(p => p.id !== myId && !p.id.startsWith('ИИ'))
-                        .sort((a, b) => (Number(a.joinedAt || 0) - Number(b.joinedAt || 0)));
+                        .sort((a, b) => safeGetJoinedAt(a) - safeGetJoinedAt(b));
                     if (rem.length > 0) {
                         let newHost = rem[0].id; 
                         db.ref(`lobbies/${closingLobbyId}/host`).set(newHost); 

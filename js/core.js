@@ -1,7 +1,7 @@
             const tg = window.Telegram.WebApp; try { tg.expand(); if(tg.requestFullscreen) tg.requestFullscreen(); } catch(e){} tg.ready();
             const APP_VERSION_INFO = {
-                label: 'Обновление магазина, паузы и сообщений',
-                note: 'Режим разработчика: создание/удаление предметов без ручных ID и HTML. Пауза хоста блокирует всех. Сообщения: Enter и статус принятого приглашения.'
+                label: 'Блок 2: Процедурная генерация стен, коллизии и выбор режимов Выживания',
+                note: 'Реализованы процедурные бетонные стены на Canvas, AABB-коллизии со скольжением для игроков/ботов, уничтожение пуль о стены, выбор режимов Командный бой 5х5, Дуэль 1х1, Дуэль 2х2 в лобби.'
             };
             const firebaseConfig = JSON.parse('{"apiKey":"AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg","authDomain":"mini-games-b9400.firebaseapp.com","databaseURL":"https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app","projectId":"mini-games-b9400","storageBucket":"mini-games-b9400.firebasestorage.app","messagingSenderId":"523964322575","appId":"1:523964322575:web:a5502d0bf28f17b10f247a"}'); 
             firebase.initializeApp(firebaseConfig); const db = firebase.database();
@@ -20,6 +20,17 @@
                     mainEl.title = APP_VERSION_INFO.note;
                     subEl.title = APP_VERSION_INFO.note;
                 });
+            }
+
+            function safeGetJoinedAt(p) {
+                if (!p) return 0;
+                const val = p.joinedAt;
+                if (!val) return 0;
+                if (typeof val === 'object' && val['.sv'] !== undefined) {
+                    return Date.now();
+                }
+                const num = Number(val);
+                return isNaN(num) ? Date.now() : num;
             }
 
             function escapeHTML(value) {
@@ -483,12 +494,25 @@
                 if(!isHost) return tg.showAlert("Только Хост может выбирать!");
                 document.getElementById('so2-mode-modal').classList.remove('hidden');
                 document.getElementById('so2-submodes').innerHTML = getSurvivalModeCardHTML();
-                document.querySelectorAll('.so2-card').forEach(c=>c.classList.remove('active'));
+                document.querySelectorAll('.so2-card').forEach(c=>c.classList.add('active'));
                 document.getElementById('ttt-bot-diff').style.display='none';
             }
 
             function getSurvivalModeCardHTML() {
-                return `<div class="so2-subcard" onclick="setPendingSO2Game('br_2d','⚔️ Выживание', this)"><div class="so2-subcard-icon">⚔️</div><div class="so2-subcard-title">Выживание</div></div>`;
+                return `
+                    <div class="so2-subcard" onclick="setPendingSO2Game('br_tdm_5v5','⚔️ Командный бой 5х5', this)">
+                        <div class="so2-subcard-icon">⚔️</div>
+                        <div class="so2-subcard-title">Командный бой 5х5</div>
+                    </div>
+                    <div class="so2-subcard" onclick="setPendingSO2Game('br_duel_1v1','🎯 Дуэль 1х1', this)">
+                        <div class="so2-subcard-icon">🎯</div>
+                        <div class="so2-subcard-title">Дуэль 1х1</div>
+                    </div>
+                    <div class="so2-subcard" onclick="setPendingSO2Game('br_duel_2v2','👥 Дуэль 2х2', this)">
+                        <div class="so2-subcard-icon">👥</div>
+                        <div class="so2-subcard-title">Дуэль 2х2</div>
+                    </div>
+                `;
             }
             
             function selectSO2Category(cat, el) {
@@ -601,16 +625,24 @@
 
             function isGameStartSuppressed(data = {}) {
                 const suppressed = appState.suppressedGameStart;
-                return !!suppressed
-                    && suppressed.lobbyId === lobbyId
-                    && suppressed.game === data.game
-                    && data.status === 'playing';
+                if (!suppressed) return false;
+                if (suppressed.lobbyId !== lobbyId) return false;
+                if (data.status !== 'playing') return false;
+                
+                const g1 = suppressed.game || '';
+                const g2 = data.game || '';
+                if (g1 === g2) return true;
+                if (g1.startsWith('br_') && g2.startsWith('br_')) return true;
+                return false;
             }
 
             function clearSuppressedGameStartIfStale(data = {}) {
                 const suppressed = appState.suppressedGameStart;
                 if (!suppressed) return;
-                if (suppressed.lobbyId !== lobbyId || data.status !== 'playing' || data.game !== suppressed.game) {
+                const g1 = suppressed.game || '';
+                const g2 = data.game || '';
+                const gamesMatch = (g1 === g2) || (g1.startsWith('br_') && g2.startsWith('br_'));
+                if (suppressed.lobbyId !== lobbyId || data.status !== 'playing' || !gamesMatch) {
                     appState.suppressedGameStart = null;
                 }
             }
@@ -619,7 +651,7 @@
                 if (!lobbyId || !isHost) return false;
                 const nextHost = (Array.isArray(lobbyPlayers) ? lobbyPlayers : [])
                     .filter(p => p.id && p.id !== myId && !isAiFriendId(p.id))
-                    .sort((a, b) => Number(a.joinedAt || 0) - Number(b.joinedAt || 0))[0];
+                    .sort((a, b) => safeGetJoinedAt(a) - safeGetJoinedAt(b))[0];
                 if (!nextHost) return false;
                 db.ref(`lobbies/${lobbyId}/host`).set(nextHost.id).catch(() => {});
                 return true;
@@ -632,10 +664,15 @@
                 document.getElementById('view-lobby').style.display = 'none';
                 document.getElementById('game-container').style.display = 'block';
                 document.querySelectorAll('.game-screen').forEach(s=>s.classList.remove('active'));
-                let id = appState.selectedGameId; appState.game = id;
+                let id = appState.selectedGameId;
+                if (id && id.startsWith('br_')) {
+                    appState.game = 'br_2d';
+                } else {
+                    appState.game = id;
+                }
                 appState.gameStartedAt = Date.now();
                 appState.contestResultSubmitted = false;
-                if (id !== 'br_2d') {
+                if (id !== 'br_2d' && (!id || !id.startsWith('br_'))) {
                     setIsland("Режим недоступен. Выбери выживание.", "#ff453a");
                     exitToLobby();
                     return;
@@ -652,7 +689,7 @@
                 else if(id==='hidden') { document.getElementById('screen-game-hidden').classList.add('active'); initHiddenGame(); }
                 else if(id==='tictactoe') { document.getElementById('screen-game-tictactoe').classList.add('active'); initTicTacToe(); }
                 else if(id==='clicker') { document.getElementById('screen-game-clicker').classList.add('active'); initClickerUI(); }
-                else if(id==='br_2d') { document.getElementById('screen-game-br').classList.add('active'); initBR(); }
+                else if(id==='br_2d' || (id && id.startsWith('br_'))) { document.getElementById('screen-game-br').classList.add('active'); initBR(); }
                 else { setIsland("Режим недоступен. Выбери выживание.", "#ff453a"); exitToLobby(); return; }
                 
                 document.getElementById('pause-btn').style.display = 'flex';
@@ -1077,7 +1114,10 @@
             let giftSelectedItems = [];
 
             const GAME_NAMES = {
-                'br_2d': '⚔️ ВЫЖИВАНИЕ'
+                'br_2d': '⚔️ ВЫЖИВАНИЕ',
+                'br_tdm_5v5': '⚔️ КОМАНДНЫЙ БОЙ 5х5',
+                'br_duel_1v1': '🎯 ДУЭЛЬ 1х1',
+                'br_duel_2v2': '👥 ДУЭЛЬ 2х2'
             };
             const TTT_SETTING_SYMBOLS = ['x', 'o', 'square', 'triangle', 'circle_solid'];
             const TTT_SETTING_SYMBOL_LABELS = { x: 'Крестик', o: 'Нолик', square: 'Квадрат', triangle: 'Треугольник', circle_solid: 'Круг' };
@@ -1174,7 +1214,7 @@
             }
 
             function defaultSettingsForGame(gameId, players = lobbySettingsPlayers()) {
-                if (gameId === 'br_2d') {
+                if (gameId === 'br_2d' || (gameId && gameId.startsWith('br_'))) {
                     const perPlayer = {};
                     players.forEach(p => {
                         perPlayer[p.id] = {
@@ -1204,17 +1244,18 @@
             }
 
             function mergedSettingsForGame(gameId) {
+                const effectiveId = (gameId && gameId.startsWith('br_')) ? 'br_2d' : gameId;
                 const players = lobbySettingsPlayers();
-                const defaults = defaultSettingsForGame(gameId, players);
-                const saved = (currentLobbySettings && currentLobbySettings[gameId]) || {};
+                const defaults = defaultSettingsForGame(effectiveId, players);
+                const saved = (currentLobbySettings && currentLobbySettings[effectiveId]) || {};
                 const merged = Object.assign({}, defaults, saved, { players: Object.assign({}, defaults.players, saved.players || {}) });
                 players.forEach((p, i) => {
                     if (!merged.players[p.id]) merged.players[p.id] = defaults.players[p.id] || {};
-                    if (gameId === 'tictactoe') {
+                    if (effectiveId === 'tictactoe') {
                         merged.players[p.id].symbol = merged.players[p.id].symbol || TTT_SETTING_SYMBOLS[i % TTT_SETTING_SYMBOLS.length];
                         merged.players[p.id].color = merged.players[p.id].color || TTT_SETTING_COLORS[i % TTT_SETTING_COLORS.length].id;
                     }
-                    if (gameId === 'br_2d') {
+                    if (effectiveId === 'br_2d') {
                         merged.players[p.id].lives = Math.max(1, parseInt(merged.players[p.id].lives) || (isAiFriendId(p.id) ? 150 : 200));
                         merged.players[p.id].ammoPerSec = Math.max(1, Math.min(10, parseInt(merged.players[p.id].ammoPerSec) || 1));
                         merged.players[p.id].team = ['1','2','3','4','5'].includes(String(merged.players[p.id].team || '')) ? String(merged.players[p.id].team) : '';
@@ -1226,7 +1267,8 @@
             }
 
             function openGameSettingsModal() {
-                const gameId = appState.selectedGameId || pendingModeId;
+                let gameId = appState.selectedGameId || pendingModeId;
+                if (gameId && gameId.startsWith('br_')) gameId = 'br_2d';
                 const modal = document.getElementById('game-settings-modal');
                 if (!modal) return;
                 if (!gameId) {
@@ -1266,12 +1308,15 @@
                     body.innerHTML = '<div class="game-settings-empty">Сначала выберите режим игры.</div>';
                     return;
                 }
-                if (gameId === 'br_2d') {
-                    body.innerHTML = renderBrSettingsTable(mergedSettingsForGame(gameId));
+                let effectiveId = gameId;
+                if (gameId && gameId.startsWith('br_')) effectiveId = 'br_2d';
+
+                if (effectiveId === 'br_2d') {
+                    body.innerHTML = renderBrSettingsTable(mergedSettingsForGame(effectiveId));
                     return;
                 }
-                if (gameId === 'tictactoe') {
-                    body.innerHTML = renderTttSettingsTable(mergedSettingsForGame(gameId));
+                if (effectiveId === 'tictactoe') {
+                    body.innerHTML = renderTttSettingsTable(mergedSettingsForGame(effectiveId));
                     return;
                 }
                 body.innerHTML = renderGenericSettingsTable();
@@ -1359,7 +1404,8 @@
 
             async function saveGameSettings() {
                 if (!isHost) return;
-                const gameId = appState.selectedGameId || pendingModeId;
+                let gameId = appState.selectedGameId || pendingModeId;
+                if (gameId && gameId.startsWith('br_')) gameId = 'br_2d';
                 if (!gameId || !lobbyId) return tg.showAlert("Выберите режим игры.");
                 const settings = collectGameSettings(gameId);
                 if (!settings) return;
@@ -1374,9 +1420,11 @@
             }
 
             function collectGameSettings(gameId) {
+                let effectiveId = gameId;
+                if (gameId && gameId.startsWith('br_')) effectiveId = 'br_2d';
                 const error = document.getElementById('settings-error');
                 if (error) error.innerText = '';
-                if (gameId === 'br_2d') {
+                if (effectiveId === 'br_2d') {
                     const settings = { players: {}, shrinkZone: document.getElementById('setting-br-shrink')?.checked !== false };
                     lobbySettingsPlayers().forEach(p => {
                         const lives = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="lives"]`)?.value || 200);

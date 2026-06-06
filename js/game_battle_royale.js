@@ -292,9 +292,9 @@
                 resizeBrCanvas();
                 bindBrControls();
 
-                // Show the Standoff 2 overlay menu!
+                // Hide the Standoff 2 overlay menu!
                 const overlay = document.getElementById('so2-lobby-overlay');
-                if (overlay) overlay.style.display = 'flex';
+                if (overlay) overlay.style.display = 'none';
 
                 // Listen to host starting the game
                 if (lobbyId) {
@@ -309,6 +309,14 @@
                         }
                     };
                     db.ref(`lobbies/${lobbyId}/br/matchActive`).on('value', br.matchActiveListener);
+
+                    if (isHost) {
+                        const submode = (appState.selectedGameId || '').startsWith('br_') ? appState.selectedGameId.replace('br_', '') : 'tdm_5v5';
+                        selectGameMode(submode);
+                    }
+                } else {
+                    const submode = (appState.selectedGameId || '').startsWith('br_') ? appState.selectedGameId.replace('br_', '') : 'tdm_5v5';
+                    startBrMatchLocal(submode);
                 }
 
                 br.loop = requestAnimationFrame(brLoop);
@@ -1154,6 +1162,7 @@
             }
 
             function checkBrEnd() {
+                if (Date.now() - br.matchStartTime < 4000) return;
                 if (br.placeShown) return;
                 if (br.myP.hp <= 0) {
                     enterBrSpectator();
