@@ -1,4 +1,4 @@
-            // ================== ВЫЖИВАНИЕ (BATTLE ROYALE) ==================
+﻿            // ================== ВЫЖИВАНИЕ (BATTLE ROYALE) ==================
             let currentMode = 'tdm_5v5';
 
             let mapWalls = [];
@@ -22,10 +22,10 @@
 
                 while (mapWalls.length < wallCount && attempts < 300) {
                     attempts++;
-                    
+
                     const w = 60 + Math.floor(Math.random() * 100);
                     const h = 60 + Math.floor(Math.random() * 100);
-                    
+
                     const x = 100 + Math.floor(Math.random() * (BR_SIZE - 200 - w));
                     const y = 100 + Math.floor(Math.random() * (BR_SIZE - 200 - h));
 
@@ -124,18 +124,18 @@
                 const count = 5;
                 const maxMapSize = (typeof mode !== 'undefined' && (mode === 'duel_1v1' || mode === 'duel_2v2')) ? 1200 : BR_SIZE;
                 const minCoord = (BR_SIZE - maxMapSize) / 2;
-                
+
                 const seedStr = lobbyId || 'singleplayer';
                 let seedVal = 0;
                 for (let i = 0; i < seedStr.length; i++) {
                     seedVal += seedStr.charCodeAt(i);
                 }
-                
+
                 function seededRandom() {
                     let x = Math.sin(seedVal++) * 10000;
                     return x - Math.floor(x);
                 }
-                
+
                 for (let i = 0; i < count; i++) {
                     const x = minCoord + 150 + seededRandom() * (maxMapSize - 300);
                     const y = minCoord + 150 + seededRandom() * (maxMapSize - 300);
@@ -153,12 +153,12 @@
                     grad.addColorStop(0.5, 'rgba(180, 185, 195, 0.5)');
                     grad.addColorStop(0.8, 'rgba(160, 165, 175, 0.25)');
                     grad.addColorStop(1, 'rgba(160, 165, 175, 0)');
-                    
+
                     ctx.fillStyle = grad;
                     ctx.beginPath();
                     ctx.arc(smoke.x, smoke.y, smoke.r, 0, Math.PI * 2);
                     ctx.fill();
-                    
+
                     // Draw soft inner core ring
                     ctx.strokeStyle = 'rgba(220, 225, 235, 0.05)';
                     ctx.lineWidth = 4;
@@ -184,30 +184,30 @@
             function drawStaticBackground() {
                 const bgCtx = br.bgCtx;
                 if (!bgCtx) return;
-                
+
                 // Clear background
                 bgCtx.clearRect(0, 0, BR_SIZE, BR_SIZE);
-                
+
                 // Draw map grid
                 bgCtx.strokeStyle = '#4e7a27';
                 bgCtx.lineWidth = 2;
                 for (let x = 0; x <= BR_SIZE; x += 100) { bgCtx.beginPath(); bgCtx.moveTo(x, 0); bgCtx.lineTo(x, BR_SIZE); bgCtx.stroke(); }
                 for (let y = 0; y <= BR_SIZE; y += 100) { bgCtx.beginPath(); bgCtx.moveTo(0, y); bgCtx.lineTo(BR_SIZE, y); bgCtx.stroke(); }
-                
+
                 // Draw Team 1 Base (Blue floor)
                 bgCtx.fillStyle = 'rgba(50, 173, 230, 0.12)';
                 bgCtx.fillRect(50, 775, 450, 450);
                 bgCtx.strokeStyle = 'rgba(50, 173, 230, 0.45)';
                 bgCtx.lineWidth = 4;
                 bgCtx.strokeRect(50, 775, 450, 450);
-                
+
                 // Draw Team 2 Base (Orange floor)
                 bgCtx.fillStyle = 'rgba(255, 159, 10, 0.12)';
                 bgCtx.fillRect(1500, 775, 450, 450);
                 bgCtx.strokeStyle = 'rgba(255, 159, 10, 0.45)';
                 bgCtx.lineWidth = 4;
                 bgCtx.strokeRect(1500, 775, 450, 450);
-                
+
                 // Base text labels
                 bgCtx.fillStyle = 'rgba(50, 173, 230, 0.4)';
                 bgCtx.font = 'bold 24px sans-serif';
@@ -215,7 +215,7 @@
                 bgCtx.fillText('БАЗА CT', 275, 1010);
                 bgCtx.fillStyle = 'rgba(255, 159, 10, 0.4)';
                 bgCtx.fillText('БАЗА T', 1725, 1010);
-                
+
                 // Draw walls
                 mapWalls.forEach(wall => {
                     bgCtx.fillStyle = '#1c1f22';
@@ -225,7 +225,7 @@
                     bgCtx.strokeStyle = '#6e7680';
                     bgCtx.lineWidth = 2;
                     bgCtx.strokeRect(wall.x, wall.y, wall.w, wall.h);
-                    
+
                     bgCtx.fillStyle = '#3b4046';
                     bgCtx.fillRect(wall.x + wall.w * 0.2, wall.y + wall.h * 0.15, 2, 10);
                     bgCtx.fillRect(wall.x + wall.w * 0.6, wall.y + wall.h * 0.7, 10, 2);
@@ -234,7 +234,7 @@
                         bgCtx.fillRect(wall.x + wall.w * 0.75, wall.y + wall.h * 0.25, 2, 6);
                     }
                 });
-                
+
                 // Draw blood stains
                 if (br.bloodStains) {
                     br.bloodStains.forEach(stain => {
@@ -242,7 +242,7 @@
                         bgCtx.beginPath();
                         bgCtx.arc(stain.x, stain.y, stain.r, 0, Math.PI * 2);
                         bgCtx.fill();
-                        
+
                         bgCtx.fillStyle = 'rgba(110, 0, 0, 0.6)';
                         const seed = Math.sin(stain.x) * Math.cos(stain.y);
                         const splatterCount = 3 + Math.floor(Math.abs(seed * 3));
@@ -266,7 +266,7 @@
                 br.bgCtx.beginPath();
                 br.bgCtx.arc(stain.x, stain.y, stain.r, 0, Math.PI * 2);
                 br.bgCtx.fill();
-                
+
                 br.bgCtx.fillStyle = 'rgba(110, 0, 0, 0.6)';
                 const splatterCount = 3 + Math.floor(Math.random() * 3);
                 for (let i = 0; i < splatterCount; i++) {
@@ -276,12 +276,13 @@
                     const sy = stain.y + Math.sin(angle) * dist;
                     const sr = stain.r * (0.15 + Math.random() * 0.2);
                     br.bgCtx.beginPath();
-                    br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
+br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     br.bgCtx.fill();
                 }
             }
 
             function spawnBloodSplatter(x, y) {
+                if (br.lowPerformanceMode) return;
                 if (!br.bloodParticles) br.bloodParticles = [];
                 const particleCount = 8 + Math.floor(Math.random() * 6);
                 for (let i = 0; i < particleCount; i++) {
@@ -348,20 +349,22 @@
             }
 
             function drawBulletWithTracer(ctx, bx, by, bvx, bvy) {
-                ctx.save();
-                const grad = ctx.createLinearGradient(bx, by, bx - bvx * 2.5, by - bvy * 2.5);
-                grad.addColorStop(0, 'rgba(255, 214, 10, 0.85)');
-                grad.addColorStop(0.2, 'rgba(220, 220, 220, 0.55)');
-                grad.addColorStop(1, 'rgba(180, 180, 180, 0)');
-                
-                ctx.strokeStyle = grad;
-                ctx.lineWidth = 3.5;
-                ctx.beginPath();
-                ctx.moveTo(bx, by);
-                ctx.lineTo(bx - bvx * 2.5, by - bvy * 2.5);
-                ctx.stroke();
-                ctx.restore();
-                
+                if (!br.lowPerformanceMode) {
+                    ctx.save();
+                    const grad = ctx.createLinearGradient(bx, by, bx - bvx * 2.5, by - bvy * 2.5);
+                    grad.addColorStop(0, 'rgba(255, 214, 10, 0.85)');
+                    grad.addColorStop(0.2, 'rgba(220, 220, 220, 0.55)');
+                    grad.addColorStop(1, 'rgba(180, 180, 180, 0)');
+
+                    ctx.strokeStyle = grad;
+                    ctx.lineWidth = 3.5;
+                    ctx.beginPath();
+                    ctx.moveTo(bx, by);
+                    ctx.lineTo(bx - bvx * 2.5, by - bvy * 2.5);
+                    ctx.stroke();
+                    ctx.restore();
+                }
+
                 ctx.fillStyle = '#ffd60a';
                 ctx.beginPath();
                 ctx.arc(bx, by, 4, 0, Math.PI * 2);
@@ -406,6 +409,104 @@
             const BR_PLAYER_R = 20;
             const BR_DEFAULT_HP = 200;
             let joyTouch = null, shootTouch = null, jx = 0, jy = 0, isShooting = false, lastShot = 0;
+
+            let brAudioCtx = null;
+
+            function playBrSound(type) {
+                try {
+                    if (!brAudioCtx) {
+                        brAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    if (brAudioCtx.state === 'suspended') {
+                        brAudioCtx.resume();
+                    }
+
+                    const now = brAudioCtx.currentTime;
+
+                    if (type === 'shoot') {
+                        const bufferSize = brAudioCtx.sampleRate * 0.12;
+                        const buffer = brAudioCtx.createBuffer(1, bufferSize, brAudioCtx.sampleRate);
+                        const data = buffer.getChannelData(0);
+                        for (let i = 0; i < bufferSize; i++) {
+                            data[i] = Math.random() * 2 - 1;
+                        }
+
+                        const noise = brAudioCtx.createBufferSource();
+                        noise.buffer = buffer;
+
+                        const noiseFilter = brAudioCtx.createBiquadFilter();
+                        noiseFilter.type = 'bandpass';
+                        noiseFilter.frequency.setValueAtTime(1200, now);
+                        noiseFilter.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+
+                        const noiseGain = brAudioCtx.createGain();
+                        noiseGain.gain.setValueAtTime(0.25, now);
+                        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.11);
+
+                        noise.connect(noiseFilter);
+                        noiseFilter.connect(noiseGain);
+                        noiseGain.connect(brAudioCtx.destination);
+
+                        const osc = brAudioCtx.createOscillator();
+                        const oscGain = brAudioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(180, now);
+                        osc.frequency.exponentialRampToValueAtTime(60, now + 0.08);
+
+                        oscGain.gain.setValueAtTime(0.4, now);
+                        oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+                        osc.connect(oscGain);
+                        oscGain.connect(brAudioCtx.destination);
+
+                        noise.start(now);
+                        osc.start(now);
+                        noise.stop(now + 0.12);
+                        osc.stop(now + 0.08);
+                    }
+                    else if (type === 'hit') {
+                        const osc = brAudioCtx.createOscillator();
+                        const gain = brAudioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(950, now);
+                        osc.frequency.exponentialRampToValueAtTime(300, now + 0.06);
+
+                        gain.gain.setValueAtTime(0.12, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+                        osc.connect(gain);
+                        gain.connect(brAudioCtx.destination);
+
+                        osc.start(now);
+                        osc.stop(now + 0.06);
+                    }
+                    else if (type === 'death') {
+                        const osc = brAudioCtx.createOscillator();
+                        const gain = brAudioCtx.createGain();
+                        const filter = brAudioCtx.createBiquadFilter();
+
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(160, now);
+                        osc.frequency.exponentialRampToValueAtTime(35, now + 0.45);
+
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(350, now);
+                        filter.frequency.exponentialRampToValueAtTime(80, now + 0.4);
+
+                        gain.gain.setValueAtTime(0.35, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+                        osc.connect(filter);
+                        filter.connect(gain);
+                        gain.connect(brAudioCtx.destination);
+
+                        osc.start(now);
+                        osc.stop(now + 0.45);
+                    }
+                } catch (err) {
+                    console.warn("AudioContext playback failed", err);
+                }
+            }
 
             function brNormalizeTeam(value) {
                 const team = String(value || '').trim();
@@ -484,7 +585,7 @@
                 if (!team) team = 'Counter-Terrorists';
 
                 const seed = String(id || '0').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);
-                
+
                 if (team === 'Counter-Terrorists') {
                     // Blue Base (CT)
                     let x, y;
@@ -542,8 +643,9 @@
                 br.kills = 0;
                 br.placeShown = false;
                 br.isSpectator = false;
+                br.aliveTracker = {};
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (mode === 'duel_1v1' || mode === 'duel_2v2') ? 600 : BR_SIZE };
-                
+
                 br.settings = mergedSettingsForGame('br_2d');
                 const mySettings = br.settings.players?.[myId] || {};
                 const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
@@ -567,7 +669,7 @@
                 // Hide the Standoff 2 overlay menu!
                 const overlay = document.getElementById('so2-lobby-overlay');
                 if (overlay) overlay.style.display = 'none';
-                
+
                 // Show controls if mobile
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 const controls = document.getElementById('br-controls');
@@ -587,6 +689,7 @@
                 br.kills = 0;
                 br.placeShown = false;
                 br.isSpectator = false;
+                br.aliveTracker = {};
                 br.bloodStains = [];
                 br.bloodParticles = [];
                 br.smokeZones = [];
@@ -672,28 +775,62 @@
                 }
                 jStick.style.transform = `translate(0px, 0px)`;
 
-                jBox.ontouchstart = jBox.onmousedown = (e) => {
+                // Prevent default page scroll on mobile Telegram when battle royale game is active
+                if (!window._brTouchmoveBound) {
+                    window._brTouchmoveBound = true;
+                    document.addEventListener('touchmove', (e) => {
+                        if (br && br.active) {
+                            e.preventDefault();
+                        }
+                    }, { passive: false });
+                }
+
+                jBox.addEventListener('touchstart', (e) => {
                     e.preventDefault();
-                    let ev = e.changedTouches ? e.changedTouches[0] : (e.touches ? e.touches[0] : e);
+                    let ev = e.changedTouches ? e.changedTouches[0] : e;
                     joyTouch = ev.identifier !== undefined ? ev.identifier : 'm';
                     updateJoy(ev);
-                };
-                jBox.ontouchmove = jBox.onmousemove = (e) => {
+                }, { passive: false });
+
+                jBox.addEventListener('touchmove', (e) => {
                     if (joyTouch === null) return;
                     e.preventDefault();
                     let ev = e.touches ? Array.from(e.touches).find(t => t.identifier === joyTouch) : e;
                     if (ev) updateJoy(ev);
-                };
-                jBox.ontouchend = jBox.ontouchcancel = (e) => {
+                }, { passive: false });
+
+                jBox.addEventListener('touchend', (e) => {
                     if (joyTouch === null) return;
                     const ended = e.changedTouches ? Array.from(e.changedTouches).some(t => t.identifier === joyTouch) : true;
                     if (!ended) return;
                     resetJoy();
-                };
-                jBox.onmouseup = jBox.onmouseleave = () => {
+                }, { passive: false });
+
+                jBox.addEventListener('touchcancel', (e) => {
+                    if (joyTouch === null) return;
+                    resetJoy();
+                }, { passive: false });
+
+                jBox.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    joyTouch = 'm';
+                    updateJoy(e);
+                });
+
+                jBox.addEventListener('mousemove', (e) => {
+                    if (joyTouch !== 'm') return;
+                    updateJoy(e);
+                });
+
+                jBox.addEventListener('mouseup', (e) => {
                     if (joyTouch !== 'm') return;
                     resetJoy();
-                };
+                });
+
+                jBox.addEventListener('mouseleave', (e) => {
+                    if (joyTouch !== 'm') return;
+                    resetJoy();
+                });
 
                 function resetJoy() {
                     joyTouch = null;
@@ -760,7 +897,7 @@
             function initBrFirebaseState(mode) {
                 if (!lobbyId) {
                     generateMap();
-                    
+
                     let maxTeamSize = 5;
                     if (mode === 'duel_1v1') maxTeamSize = 1;
                     else if (mode === 'duel_2v2') maxTeamSize = 2;
@@ -788,7 +925,7 @@
                 if (isHost) {
                     generateMap();
                     const realPlayers = brRealLobbyPlayers();
-                    
+
                     let maxTeamSize = 5;
                     if (mode === 'duel_1v1') maxTeamSize = 1;
                     else if (mode === 'duel_2v2') maxTeamSize = 2;
@@ -1024,6 +1161,7 @@
                 const seq = Number(p.shotSeq) || 0;
                 if (!seq || br.remoteShotSeqs[p.id] === seq) return;
                 br.remoteShotSeqs[p.id] = seq;
+                playBrSound('shoot');
                 const angle = Number(p.shotA !== undefined ? p.shotA : p.a) || 0;
                 const vx = Number(p.shotVx) || Math.cos(angle) * 20;
                 const vy = Number(p.shotVy) || Math.sin(angle) * 20;
@@ -1131,12 +1269,61 @@
                 if (scoreboard) scoreboard.style.display = 'flex';
 
                 const now = Date.now();
+
+                // FPS Tracker for low performance mode
+                if (!br._fpsLastUpdate) {
+                    br._fpsLastUpdate = now;
+                    br._fpsFrameCount = 0;
+                    br.lowPerformanceMode = false;
+                }
+                br._fpsFrameCount++;
+                if (now - br._fpsLastUpdate >= 1000) {
+                    const fps = (br._fpsFrameCount * 1000) / (now - br._fpsLastUpdate);
+                    br.lowPerformanceMode = (fps < 45);
+                    br._fpsFrameCount = 0;
+                    br._fpsLastUpdate = now;
+                }
+
                 updateBrLocalPlayer(now);
                 updateBrRemotePlayerViews();
                 if (isHost || !lobbyId) updateBrBots(now);
                 updateBrBullets(now);
                 if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
                 renderBR(now);
+
+                // Frame-by-frame tracker to play death sounds
+                if (br.aliveTracker) {
+                    // Track local player
+                    if (br.myP) {
+                        const wasAlive = br.aliveTracker[myId] !== false;
+                        const isAlive = br.myP.hp > 0 && br.myP.alive && !br.isSpectator;
+                        br.aliveTracker[myId] = isAlive;
+                        if (wasAlive && !isAlive) {
+                            playBrSound('death');
+                        }
+                    }
+
+                    // Track remote players
+                    Object.values(br.remotePlayers).forEach(p => {
+                        const wasAlive = br.aliveTracker[p.id] !== false;
+                        const isAlive = p.hp > 0 && p.alive;
+                        br.aliveTracker[p.id] = isAlive;
+                        if (wasAlive && !isAlive) {
+                            playBrSound('death');
+                        }
+                    });
+
+                    // Track bots
+                    br.bots.forEach(b => {
+                        const wasAlive = br.aliveTracker[b.id] !== false;
+                        const isAlive = b.hp > 0 && b.alive;
+                        br.aliveTracker[b.id] = isAlive;
+                        if (wasAlive && !isAlive) {
+                            playBrSound('death');
+                        }
+                    });
+                }
+
                 checkBrEnd();
 
                 if (br.active) br.loop = requestAnimationFrame(brLoop);
@@ -1150,7 +1337,7 @@
                  const oldY = br.myP.y;
                  let moveX = 0;
                  let moveY = 0;
- 
+
                  const maxMapSize = (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) ? 1200 : BR_SIZE;
                  const minX = (BR_SIZE - maxMapSize) / 2;
                  const maxX = minX + maxMapSize;
@@ -1174,7 +1361,7 @@
                          moveY = (dy / len) * speed;
                      }
                  }
- 
+
                  if (moveX !== 0) {
                      br.myP.x += moveX;
                      br.myP.x = Math.max(minX + BR_PLAYER_R, Math.min(maxX - BR_PLAYER_R, br.myP.x));
@@ -1189,10 +1376,10 @@
                          br.myP.y = oldY;
                      }
                  }
- 
+
                  br.myP.vx = br.myP.x - oldX;
                  br.myP.vy = br.myP.y - oldY;
- 
+
                  if (!brIsInvulnerable(br.myP, now) && Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) {
                      br.myP.hp -= 0.5;
                      br.serverHp = Math.min(br.serverHp, br.myP.hp);
@@ -1223,6 +1410,7 @@
                 br.myP.shotA = shotA;
                 syncBrPlayerState();
                 lastShot = now;
+                playBrSound('shoot');
             }
 
             function updateBrBots(now) {
@@ -1243,7 +1431,7 @@
                     const botTargets = br.bots.filter(other => other.id !== b.id && other.alive && other.hp > 0 && brIsEnemyTarget(b.id, other));
                     const targets = playerTargets.concat(botTargets);
                     const target = targets[Math.floor(Math.random() * targets.length)];
-                    
+
                     if (now > (b.nextThink || 0)) {
                         if (target && level === 3) {
                             b.tx = target.x;
@@ -1314,6 +1502,7 @@
                     isBot: true,
                     createdAt: now
                 });
+                playBrSound('shoot');
             }
 
             function applyBrBotDamage(bot, amount, ownerId, ownerIsBot = false) {
@@ -1362,6 +1551,7 @@
                             applyBrBotDamage(b, 25, bul.owner, !!bul.isBot);
                             spawnBloodSplatter(bul.x, bul.y);
                             checkAndAddBloodDecal(b, bul.x, bul.y);
+                            if (bul.owner === myId) playBrSound('hit');
                         }
                     });
 
@@ -1373,6 +1563,7 @@
                             hit = true;
                             spawnBloodSplatter(bul.x, bul.y);
                             checkAndAddBloodDecal(p, bul.x, bul.y);
+                            if (bul.owner === myId || p.id === myId) playBrSound('hit');
                             const maxHp = Math.max(1, parseInt(p.maxHp) || BR_DEFAULT_HP);
                             const damageRef = db.ref(`lobbies/${lobbyId}/br/damage/${p.id}`);
                             damageRef.transaction(v => Math.min(maxHp, (parseInt(v) || 0) + 18)).then(res => {
@@ -1437,6 +1628,7 @@
                     if (br.myP && br.myP.hp > 0 && brIsEnemyTarget(bul.owner, br.myP) && !brIsInvulnerable(br.myP, now) && Math.hypot(x - br.myP.x, y - br.myP.y) < BR_PLAYER_R) {
                         spawnBloodSplatter(x, y);
                         checkAndAddBloodDecal(br.myP, x, y);
+                        playBrSound('hit');
                         delete br.remoteBullets[key];
                         return;
                     }
@@ -1470,8 +1662,12 @@
                     ctx.translate(offsetX, offsetY);
                     ctx.scale(scale, scale);
                 } else {
-                    const camX = br.myP.x - c.width / 2;
-                    const camY = br.myP.y - c.height / 2;
+                    let targetSize = 1000;
+                    let scale = Math.min(c.width / targetSize, c.height / targetSize);
+                    scale = Math.max(0.4, scale);
+                    ctx.scale(scale, scale);
+                    const camX = br.myP.x - (c.width / scale) / 2;
+                    const camY = br.myP.y - (c.height / scale) / 2;
                     ctx.translate(-camX, -camY);
                 }
 
@@ -1486,19 +1682,19 @@
                     const maxMapSize = 1200;
                     const minX = (BR_SIZE - maxMapSize) / 2;
                     const minY = (BR_SIZE - maxMapSize) / 2;
-                    
+
                     // Semi-transparent dark overlay outside the duel zone
                     ctx.fillStyle = 'rgba(10, 10, 12, 0.65)';
                     ctx.fillRect(0, 0, BR_SIZE, minY);
                     ctx.fillRect(0, minY + maxMapSize, BR_SIZE, BR_SIZE - (minY + maxMapSize));
                     ctx.fillRect(0, minY, minX, maxMapSize);
                     ctx.fillRect(minX + maxMapSize, minY, BR_SIZE - (minX + maxMapSize), maxMapSize);
-                    
+
                     // Draw red border around the duel area
                     ctx.strokeStyle = '#ff3b30';
                     ctx.lineWidth = 6;
                     ctx.strokeRect(minX, minY, maxMapSize, maxMapSize);
-                    
+
                     ctx.strokeStyle = 'rgba(255, 59, 48, 0.15)';
                     ctx.lineWidth = 14;
                     ctx.strokeRect(minX, minY, maxMapSize, maxMapSize);
@@ -1572,7 +1768,7 @@
                 br.bullets.forEach(bul => {
                     drawBulletWithTracer(ctx, bul.x, bul.y, bul.vx, bul.vy);
                 });
-                
+
                 // Draw remote bullets with tracers
                 Object.keys(br.remoteBullets || {}).forEach(key => {
                     const bul = br.remoteBullets[key];
