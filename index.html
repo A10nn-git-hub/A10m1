@@ -500,36 +500,7 @@
                 <div id="br-container" style="background:#2c3e50;">
                     <canvas id="br-canvas"></canvas>
                     
-                    <!-- Standoff 2 Lobby Mode Selection Menu Overlay -->
-                    <div id="so2-lobby-overlay" style="display: none;">
-                        <div class="so2-menu-container">
-                            <h2 class="so2-menu-title">Выбор режима</h2>
-                            <div class="so2-mode-cards">
-                                <!-- TDM 5v5 Card -->
-                                <div class="so2-mode-card" onclick="selectGameMode('tdm_5v5')">
-                                    <div class="so2-card-badge">5 vs 5</div>
-                                    <div class="so2-card-icon">⚔️</div>
-                                    <div class="so2-card-name">Командный бой</div>
-                                    <div class="so2-card-desc">Классическое сражение 5 на 5 с ботами</div>
-                                </div>
-                                <!-- Duel 1v1 Card -->
-                                <div class="so2-mode-card" onclick="selectGameMode('duel_1v1')">
-                                    <div class="so2-card-badge">1 vs 1</div>
-                                    <div class="so2-card-icon">🎯</div>
-                                    <div class="so2-card-name">Дуэль 1х1</div>
-                                    <div class="so2-card-desc">Дуэль один на один на равных условиях</div>
-                                </div>
-                                <!-- Duel 2v2 Card -->
-                                <div class="so2-mode-card" onclick="selectGameMode('duel_2v2')">
-                                    <div class="so2-card-badge">2 vs 2</div>
-                                    <div class="so2-card-icon">👥</div>
-                                    <div class="so2-card-name">Дуэль 2х2</div>
-                                    <div class="so2-card-desc">Командное противостояние два на два</div>
-                                </div>
-                            </div>
-                            <button class="so2-back-btn" onclick="exitToLobby()">Выйти в лобби</button>
-                        </div>
-                    </div>
+
 
                     <div class="br-ui" id="br-ui-alive">Живых: ?</div>
                     <div class="br-ui" id="br-ui-kills" style="top:40px;">Киллы: 0</div>
@@ -608,26 +579,36 @@
             </div>
         </div>
 
-        <div id="so2-mode-modal" class="overlay hidden" style="background:rgba(0,0,0,0.9); z-index:2500;">
-            <div class="so2-modal">
-                <div class="so2-left">
-                    <div class="so2-card" onclick="selectSO2Category('br', this)"><div style="font-size:30px;">⚔️</div><b>ВЫЖИВАНИЕ</b></div>
+        <div id="so2-mode-modal" class="overlay hidden" style="background:rgba(10, 10, 12, 0.85); backdrop-filter: blur(10px); z-index: 2500;">
+            <div class="so2-menu-container">
+                <h2 class="so2-menu-title">Выбор режима</h2>
+                <div class="so2-mode-cards">
+                    <!-- TDM 5v5 Card -->
+                    <div class="so2-mode-card" data-mode-card="br_tdm_5v5" onclick="setPendingSO2Game('br_tdm_5v5','⚔️ Командный бой 5х5', this)">
+                        <div class="so2-card-badge">5 vs 5</div>
+                        <div class="so2-card-icon">⚔️</div>
+                        <div class="so2-card-name">Командный бой</div>
+                        <div class="so2-card-desc">Классическое сражение 5 на 5 с ботами</div>
+                    </div>
+                    <!-- Duel 1v1 Card -->
+                    <div class="so2-mode-card" data-mode-card="br_duel_1v1" onclick="setPendingSO2Game('br_duel_1v1','🎯 Дуэль 1х1', this)">
+                        <div class="so2-card-badge">1 vs 1</div>
+                        <div class="so2-card-icon">🎯</div>
+                        <div class="so2-card-name">Дуэль 1х1</div>
+                        <div class="so2-card-desc">Дуэль один на один на равных условиях</div>
+                    </div>
+                    <!-- Duel 2v2 Card -->
+                    <div class="so2-mode-card" data-mode-card="br_duel_2v2" onclick="setPendingSO2Game('br_duel_2v2','👥 Дуэль 2х2', this)">
+                        <div class="so2-card-badge">2 vs 2</div>
+                        <div class="so2-card-icon">👥</div>
+                        <div class="so2-card-name">Дуэль 2х2</div>
+                        <div class="so2-card-desc">Командное противостояние два на два</div>
+                    </div>
                 </div>
-                <div class="so2-right" id="so2-submodes">
-                    <h2 style="color:gray; width:100%; text-align:center; margin-top:40%;">ВЫБЕРИТЕ КАТЕГОРИЮ СЛЕВА</h2>
+                <div style="display:flex; gap:15px; width:100%; justify-content:center;">
+                    <button class="so2-back-btn" style="border:1px solid #ff453a; color:#ff453a;" onclick="closeSO2ModeSelect()">НАЗАД</button>
+                    <button class="so2-back-btn" style="border:1px solid #34c759; color:#34c759;" onclick="confirmSO2Mode()">ВЫБРАТЬ</button>
                 </div>
-            </div>
-            <div style="position:absolute; bottom:20px; right:20px; display:flex; gap:10px; align-items:center;">
-                <div id="ttt-bot-diff" style="display:none; margin-right:20px; background:rgba(0,0,0,0.5); padding:10px; border-radius:10px;">
-                    <b style="color:var(--coin-col);">Уровень:</b>
-                    <select id="ttt-bot-select" class="styled-input" style="padding:10px; margin-left:10px; font-size:16px; margin-bottom:0;">
-                        <option value="easy">⭐ УРОВЕНЬ 1</option>
-                        <option value="medium" selected>⭐⭐ УРОВЕНЬ 2</option>
-                        <option value="hard">⭐⭐⭐ УРОВЕНЬ 3</option>
-                    </select>
-                </div>
-                <button class="btn btn-red" style="font-size:20px; padding:15px 30px;" onclick="closeSO2ModeSelect()">НАЗАД</button>
-                <button class="btn btn-green" style="font-size:20px; padding:15px 30px;" onclick="confirmSO2Mode()">ДАЛЕЕ</button>
             </div>
         </div>
 

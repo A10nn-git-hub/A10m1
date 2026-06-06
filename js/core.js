@@ -493,54 +493,28 @@
             function openSO2ModeSelect() {
                 if(!isHost) return tg.showAlert("Только Хост может выбирать!");
                 document.getElementById('so2-mode-modal').classList.remove('hidden');
-                document.getElementById('so2-submodes').innerHTML = getSurvivalModeCardHTML();
-                document.querySelectorAll('.so2-card').forEach(c=>c.classList.add('active'));
-                document.getElementById('ttt-bot-diff').style.display='none';
-            }
-
-            function getSurvivalModeCardHTML() {
-                return `
-                    <div class="so2-subcard" onclick="setPendingSO2Game('br_tdm_5v5','⚔️ Командный бой 5х5', this)">
-                        <div class="so2-subcard-icon">⚔️</div>
-                        <div class="so2-subcard-title">Командный бой 5х5</div>
-                    </div>
-                    <div class="so2-subcard" onclick="setPendingSO2Game('br_duel_1v1','🎯 Дуэль 1х1', this)">
-                        <div class="so2-subcard-icon">🎯</div>
-                        <div class="so2-subcard-title">Дуэль 1х1</div>
-                    </div>
-                    <div class="so2-subcard" onclick="setPendingSO2Game('br_duel_2v2','👥 Дуэль 2х2', this)">
-                        <div class="so2-subcard-icon">👥</div>
-                        <div class="so2-subcard-title">Дуэль 2х2</div>
-                    </div>
-                `;
-            }
-            
-            function selectSO2Category(cat, el) {
-                document.querySelectorAll('.so2-card').forEach(c=>c.classList.remove('active')); el.classList.add('active');
-                let sm = document.getElementById('so2-submodes'); sm.innerHTML = '';
-                sm.innerHTML = getSurvivalModeCardHTML();
-                document.getElementById('ttt-bot-diff').style.display='none';
-            }
-
-            function setPendingTttLevel(level, el) {
-                aiDifficulty = level;
-                pendingModeId = 'tictactoe';
-                document.querySelectorAll('.so2-subcard').forEach(c=>c.classList.remove('active'));
-                if(el) el.classList.add('active');
-                document.getElementById('ttt-bot-diff').style.display='none';
+                
+                const currentMode = appState.selectedGameId || 'br_tdm_5v5';
+                pendingModeId = currentMode;
+                
+                document.querySelectorAll('.so2-mode-card').forEach(card => {
+                    if (card.getAttribute('data-mode-card') === currentMode) {
+                        card.classList.add('active');
+                    } else {
+                        card.classList.remove('active');
+                    }
+                });
             }
             
             function setPendingSO2Game(id, name, el) {
                 pendingModeId = id;
-                document.querySelectorAll('.so2-subcard, .so2-card').forEach(c=>{ if(c.classList.contains('so2-subcard')||c.innerHTML.includes(name.split(' ')[1])) c.classList.remove('active'); });
+                document.querySelectorAll('.so2-mode-card').forEach(c => c.classList.remove('active'));
                 if(el) el.classList.add('active');
-                document.getElementById('ttt-bot-diff').style.display = id==='tictactoe' ? 'block' : 'none';
             }
             
             async function confirmSO2Mode() {
                 if(!pendingModeId) return tg.showAlert("Выберите режим!");
                 if(!lobbyId) return tg.showAlert("Лобби не найдено.");
-                if(pendingModeId==='tictactoe' && document.getElementById('ttt-bot-diff').style.display !== 'none') aiDifficulty = document.getElementById('ttt-bot-select').value;
 
                 try {
                     await writeDb(`lobbies/${lobbyId}/game`, pendingModeId, 'set lobby game');

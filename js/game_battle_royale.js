@@ -219,6 +219,7 @@
 
             function startBrMatchLocal(mode) {
                 br.matchActive = true;
+                br.matchStartTime = Date.now();
                 br.kills = 0;
                 br.placeShown = false;
                 br.isSpectator = false;
@@ -537,7 +538,7 @@
                         br.serverHp = br.myP.hp;
                         br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
                         document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
-                        br.myP.alive = remoteMe.alive !== false && br.myP.hp > 0;
+                        br.myP.alive = (brIsInvulnerable(br.myP) || remoteMe.alive !== false) && br.myP.hp > 0;
                         if (remoteMe.team) br.myP.team = remoteMe.team;
                     }
                 };
@@ -691,6 +692,11 @@
 
             function normalizeBrPlayerHealth(p) {
                 if (!p) return p;
+                if (brIsInvulnerable(p)) {
+                    p.hp = Math.max(1, parseInt(p.maxHp) || BR_DEFAULT_HP);
+                    p.alive = true;
+                    return p;
+                }
                 const damageTaken = Math.max(parseInt(br.damageByPlayer[p.id]) || 0, parseInt(p.damageTaken) || 0);
                 const maxHp = Math.max(1, parseInt(p.maxHp) || BR_DEFAULT_HP);
                 const damageHp = Math.max(0, maxHp - damageTaken);
