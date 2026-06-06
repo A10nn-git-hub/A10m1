@@ -227,7 +227,7 @@
 
             function selectGameMode(mode) {
                 if (lobbyId && !isHost) {
-                    return tg.showAlert("Только хост может выбрать режим!");
+                    return showNegativeAlert("Только хост может выбрать режим!");
                 }
                 initLobby(mode);
                 if (lobbyId && isHost) {
@@ -812,7 +812,7 @@
             function updateBrLocalPlayer(now) {
                  if (br.isSpectator || br.myP.hp <= 0) return;
                  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                 let speed = 6 * brSpeedMultiplier(br.myP.speed);
+                 let speed = 6 * brSpeedMultiplier(br.myP.speed) * ((window.gameSensitivity !== undefined ? window.gameSensitivity : 5) / 5);
                  const oldX = br.myP.x;
                  const oldY = br.myP.y;
                  let moveX = 0;

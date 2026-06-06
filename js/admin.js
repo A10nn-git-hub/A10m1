@@ -61,13 +61,13 @@
                 let id = document.getElementById('dev-add-admin-id').value; 
                 if (!id) return; 
                 db.ref('admins/' + id).set(true); 
-                tg.showAlert('Добавлен!'); 
+                setIsland('Добавлен!', '#34c759'); 
                 renderAdminList(); 
             }
 
             function removeSingleAdmin(id) { 
                 db.ref('admins/' + id).remove(); 
-                tg.showAlert('Удален!'); 
+                setIsland('Удален!', '#34c759'); 
                 renderAdminList(); 
             }
 
@@ -78,7 +78,7 @@
                         for (let k in a) { 
                             if (k !== myId) db.ref('admins/' + k).remove(); 
                         } 
-                        tg.showAlert('Все удалены (кроме вас)'); 
+                        setIsland('Все удалены', '#34c759'); 
                         renderAdminList(); 
                     } 
                 }); 
@@ -100,7 +100,7 @@
                         db.ref('users/' + id + '/new_items/' + it).set(true);
                     }); 
                 }); 
-                tg.showAlert('Выдано!'); 
+                setIsland('Выдано!', '#34c759'); 
             }
 
             function takeCoinsDev() { 
@@ -115,7 +115,7 @@
                 adminSelectedItems.forEach(it => { 
                     db.ref('users/' + id + '/inventory/' + it).remove(); 
                 }); 
-                tg.showAlert('Забрано!'); 
+                setIsland('Забрано!', '#34c759'); 
             }
 
             function createPromoDev() { 
@@ -126,24 +126,24 @@
                 if (!n || isNaN(a)) return; 
                 let exp = days > 0 ? Date.now() + (days * 86400000) : 0; 
                 db.ref('promos/' + n).set({ acts: a, rew: r, items: adminSelectedItems, exp: exp }); 
-                tg.showAlert('Промокод создан!'); 
+                setIsland('Промокод создан!', '#34c759'); 
             }
 
             function redeemPromo() { 
                 let c = document.getElementById('promo-input').value.toUpperCase(); 
                 if (!c) return; 
                 db.ref(`users/${myId}/used_promos/${c}`).once('value').then(us => { 
-                    if (us.exists()) return tg.showAlert("Уже юзал!"); 
+                    if (us.exists()) return showNegativeAlert("Уже юзал!"); 
                     db.ref(`promos/${c}`).once('value').then(ps => { 
-                        if (!ps.exists()) return tg.showAlert("Нет кода!"); 
+                        if (!ps.exists()) return showNegativeAlert("Нет кода!"); 
                         let d = ps.val(); 
                         if (d.exp > 0 && Date.now() > d.exp) { 
                             db.ref(`promos/${c}`).remove(); 
-                            return tg.showAlert("Срок истек!"); 
+                            return showNegativeAlert("Срок истек!"); 
                         } 
                         if (d.acts <= 0) { 
                             db.ref(`promos/${c}`).remove(); 
-                            return tg.showAlert("Лимит исчерпан!"); 
+                            return showNegativeAlert("Лимит исчерпан!"); 
                         } 
                         db.ref(`promos/${c}/acts`).set(d.acts - 1); 
                         db.ref(`users/${myId}/used_promos/${c}`).set(true); 
@@ -156,7 +156,7 @@
                                 });
                             });
                         }
-                        tg.showAlert(`Промокод применен!`); 
+                        setIsland(`Промокод применен!`, '#34c759'); 
                     }); 
                 }); 
             }
@@ -212,7 +212,7 @@
                 let id = makeCustomItemId(name);
                 let icon = generatedItemIconHTML(name, type, rarity);
 
-                if(!name || !type) return tg.showAlert("Заполните название и тип");
+                if(!name || !type) return showNegativeAlert("Заполните название и тип");
 
                 let itemObj = {
                     id: id,
@@ -229,7 +229,7 @@
                 };
 
                 db.ref('custom_items/' + id).set(itemObj);
-                tg.showAlert("Предмет добавлен!");
+                setIsland("Предмет добавлен!", "#34c759");
                 document.getElementById('ci-name').value = '';
                 refreshAdminItemControls();
             }
@@ -238,7 +238,7 @@
                 const id = document.getElementById('ci-delete-select')?.value;
                 if (!id) return;
                 const item = SHOP_ITEMS.find(i => i.id === id);
-                if (!item) return tg.showAlert("Предмет не найден.");
+                if (!item) return showNegativeAlert("Предмет не найден.");
                 if (!confirm(`Удалить "${item.name}" из магазина навсегда? У владельцев предмет останется.`)) return;
 
                 const updates = {};
@@ -246,9 +246,9 @@
                 else updates[`deleted_shop_items/${id}`] = true;
 
                 db.ref().update(updates).then(() => {
-                    tg.showAlert("Предмет удален из магазина.");
+                    setIsland("Предмет удален.", "#34c759");
                     refreshAdminItemControls();
                 }).catch(() => {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось удалить предмет."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось удалить предмет."));
                 });
             }

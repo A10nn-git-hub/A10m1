@@ -125,7 +125,7 @@
                                     mathCorrect++;
                                     generateMathTask();
                                 } else {
-                                    tg.showAlert("Неправильно!");
+                                    showNegativeAlert("Неправильно!");
                                 }
                             }; 
                             c.appendChild(d); 
@@ -248,7 +248,7 @@
                     showResult('ОТЛИЧНО!', '#34c759', '🎓', '+10 🪙');
                     lobbyPlayers.forEach(p => { if (p.id !== myId) updatePvpStat(p.id, 'letters', 'win'); });
                 } else {
-                    tg.showAlert("Попробуй еще раз!");
+                    showNegativeAlert("Попробуй еще раз!");
                 }
             }
 
@@ -282,7 +282,7 @@
             }
 
             function connectPicClick(i) { 
-                if (!cActiveWord) return tg.showAlert("Сначала выбери слово!"); 
+                if (!cActiveWord) return showNegativeAlert("Сначала выбери слово!"); 
                 let kDel = []; 
                 for (let k in cConnections) { 
                     if (k === cActiveWord || cConnections[k] === i) kDel.push(k); 
@@ -326,7 +326,7 @@
             }
 
             function checkLet4Connect() { 
-                if (Object.keys(cConnections).length < 4) return tg.showAlert("Соедини все 4 слова!"); 
+                if (Object.keys(cConnections).length < 4) return showNegativeAlert("Соедини все 4 слова!"); 
                 let err = 0; 
                 for (let w in cConnections) { 
                     let i = cConnections[w]; 
@@ -347,7 +347,7 @@
                     setTimeout(() => showResult('ПОБЕДА!', '#34c759', '🎓', 'Ошибок: 0\n+15 🪙'), 800);
                     lobbyPlayers.forEach(p => { if (p.id !== myId) updatePvpStat(p.id, 'letters', 'win'); });
                 } else {
-                    tg.showAlert(`Ошибок: ${err}. Исправь красные!`);
+                    showNegativeAlert(`Ошибок: ${err}. Исправь красные!`);
                     setTimeout(drawConnectLines, 500);
                 } 
             }
@@ -401,9 +401,9 @@
             }
 
             function wEnter() { 
-                if (wdlCol < 5) return tg.showAlert("Слово короткое!"); 
+                if (wdlCol < 5) return showNegativeAlert("Слово короткое!"); 
                 let guess = wdlGrid[wdlRow].join(''); 
-                if (!VALID_5_LETTER_WORDS.includes(guess)) return tg.showAlert("НЕТ ТАКОГО СЛОВА!"); 
+                if (!VALID_5_LETTER_WORDS.includes(guess)) return showNegativeAlert("НЕТ ТАКОГО СЛОВА!"); 
                 
                 let tArr = wdlTarget.split('');
                 let rArr = new Array(5).fill('w-absent'); 
@@ -518,7 +518,7 @@
 
             function changeClickTime(delta) { 
                 if (clickActive || appState.isPaused) return; 
-                if (!isHost) return tg.showAlert("Только Хост меняет время!"); 
+                if (!isHost) return showNegativeAlert("Только Хост меняет время!"); 
                 let n = Math.max(5, Math.min(100, clickTimeSetting + delta)); 
                 db.ref(`lobbies/${lobbyId}/clickTime`).set(n); 
             }
@@ -541,7 +541,7 @@
                 if (appState.isPaused) return; 
                 if (!clickActive) {
                     if (isHost) db.ref(`lobbies/${lobbyId}/clickState`).set('playing');
-                    else tg.showAlert("Жди хоста!");
+                    else showNegativeAlert("Жди хоста!");
                 } else {
                     clicks++;
                     document.getElementById('click-score').innerText = clicks;

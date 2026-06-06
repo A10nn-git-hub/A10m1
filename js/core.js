@@ -365,8 +365,8 @@
             async function buyItem(id, price) {
                 if(purchaseInProgress) return;
                 const item = SHOP_ITEMS.find(i => i.id === id);
-                if(!item || item.deleted) return tg.showAlert("Предмет больше не продается.");
-                if(globalCoins < price) return tg.showAlert("Не хватает монет!");
+                if(!item || item.deleted) return showNegativeAlert("Предмет больше не продается.");
+                if(globalCoins < price) return showNegativeAlert("Не хватает монет!");
 
                 purchaseInProgress = true;
                 try {
@@ -390,9 +390,9 @@
 
                     renderInventory();
                     renderShop();
-                    tg.showAlert("Куплено!");
+                    setIsland("Куплено!", "#34c759");
                 } catch (err) {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось купить предмет."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось купить предмет."));
                 } finally {
                     purchaseInProgress = false;
                 }
@@ -457,7 +457,7 @@
                     boxRouletteActive = false;
                     document.getElementById('btn-start-roulette').style.display = 'block';
                     document.getElementById('btn-close-box').style.display = 'block';
-                    return tg.showAlert("В этом боксе нет предметов.");
+                    return showNegativeAlert("В этом боксе нет предметов.");
                 }
                 
                 let win = boxItems[Math.floor(Math.random()*boxItems.length)];
@@ -478,7 +478,7 @@
                             db.ref(`users/${myId}/inventory/${win.id}`).set((parseInt(ss.val())||0)+1);
                             markInventoryItemNew(win.id);
                             boxRouletteActive = false;
-                            tg.showAlert(`Выпало: ${win.name}!`);
+                            setIsland(`Выпало: ${win.name}!`, "#34c759");
                             document.getElementById('btn-close-box').style.display = 'block';
                             renderInventory(); renderShop();
                         });
@@ -491,7 +491,7 @@
             }
 
             function openSO2ModeSelect() {
-                if(!isHost) return tg.showAlert("Только Хост может выбирать!");
+                if(!isHost) return showNegativeAlert("Только Хост может выбирать!");
                 document.getElementById('so2-mode-modal').classList.remove('hidden');
                 
                 const currentMode = appState.selectedGameId || 'br_tdm_5v5';
@@ -513,15 +513,15 @@
             }
             
             async function confirmSO2Mode() {
-                if(!pendingModeId) return tg.showAlert("Выберите режим!");
-                if(!lobbyId) return tg.showAlert("Лобби не найдено.");
+                if(!pendingModeId) return showNegativeAlert("Выберите режим!");
+                if(!lobbyId) return showNegativeAlert("Лобби не найдено.");
 
                 try {
                     await writeDb(`lobbies/${lobbyId}/game`, pendingModeId, 'set lobby game');
                     setSelectedModeUI(pendingModeId);
                     closeSO2ModeSelect();
                 } catch (err) {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось сохранить выбранный режим."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось сохранить выбранный режим."));
                 }
             }
             function closeSO2ModeSelect() { document.getElementById('so2-mode-modal').classList.add('hidden'); }
@@ -555,24 +555,24 @@
             }
 
             async function startLobbyGame() {
-                if(!isHost) return tg.showAlert("Только Хост может запустить!");
-                if(!lobbyId) return tg.showAlert("Лобби не найдено.");
+                if(!isHost) return showNegativeAlert("Только Хост может запустить!");
+                if(!lobbyId) return showNegativeAlert("Лобби не найдено.");
 
                 const selectedGameId = appState.selectedGameId || pendingModeId;
                 if(!selectedGameId) {
-                    return tg.showAlert("Сначала выбери режим слева.");
+                    return showNegativeAlert("Сначала выбери режим слева.");
                 }
                 if (selectedGameId === 'coord1') {
                     setSelectedModeUI(null);
                     pendingModeId = null;
                     if (lobbyId) db.ref(`lobbies/${lobbyId}/game`).set('').catch(() => {});
-                    return tg.showAlert("Режим ножей убран. Выбери другой режим координации.");
+                    return showNegativeAlert("Режим ножей убран. Выбери другой режим координации.");
                 }
 
                 try {
                     const lobbyData = await readDbOnce(`lobbies/${lobbyId}`, null, 'read lobby before start');
                     if(!lobbyData || !lobbyData.players || !lobbyData.players[myId]) {
-                        return tg.showAlert("Лобби больше не активно.");
+                        return showNegativeAlert("Лобби больше не активно.");
                     }
 
                     if(!lobbyData.game && selectedGameId) {
@@ -588,7 +588,7 @@
                     appState.suppressedGameStart = null;
                     setIsland("Запуск игры...", "#34c759");
                 } catch (err) {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось запустить игру. Проверь доступ к Firebase."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось запустить игру. Проверь доступ к Firebase."));
                 }
             }
 
@@ -819,7 +819,7 @@
                 db.ref(`users/${id}`).once('value').then(s => {
                     if(!s.exists()) {
                         if (id === 'ИИ') {
-                            tg.showAlert("Профиль ИИ недоступен.");
+                            showNegativeAlert("Профиль ИИ недоступен.");
                         }
                         return;
                     }
@@ -867,7 +867,7 @@
             }
 
             function startAiMic() {
-                if(!SpeechRec) return tg.showAlert("Микрофон не поддерживается браузером!");
+                if(!SpeechRec) return showNegativeAlert("Микрофон не поддерживается браузером!");
                 let rec = new SpeechRec();
                 rec.lang = 'ru-RU';
                 rec.interimResults = false;
@@ -978,9 +978,9 @@
                 exitToLobby();
             }
 
-            function banPlayer() { let id=document.getElementById('ban-id-input').value; if(id){db.ref(`beta_bans/${id}`).set(true); tg.showAlert("Забанен!");} }
-            function unbanPlayer() { let id=document.getElementById('unban-id-input').value; if(id){db.ref(`beta_bans/${id}`).remove(); tg.showAlert("Разбанен!");} }
-            function unbanPlayerSpecific(id) { db.ref(`beta_bans/${id}`).remove(); tg.showAlert("Разбанен!"); }
+            function banPlayer() { let id=document.getElementById('ban-id-input').value; if(id){db.ref(`beta_bans/${id}`).set(true); setIsland("Забанен!", "#34c759");} }
+            function unbanPlayer() { let id=document.getElementById('unban-id-input').value; if(id){db.ref(`beta_bans/${id}`).remove(); setIsland("Разбанен!", "#34c759");} }
+            function unbanPlayerSpecific(id) { db.ref(`beta_bans/${id}`).remove(); setIsland("Разбанен!", "#34c759"); }
             function banAllPlayers() { if(confirm("ЗАБАНИТЬ ВСЕХ?")) db.ref(`beta_bans/all`).set(true); }
             function unbanAllPlayers() { if(confirm("РАЗБАНИТЬ ВСЕХ?")) db.ref('beta_bans').remove(); }
 
@@ -1109,7 +1109,7 @@
             let SHOP_ITEMS = [ 
                 {id: 'case_upgrade', type:'case', name: 'UPGRADE CASE', desc: 'Пока нельзя открыть', price: 10000, plainIcon: '📦', icon: '📦', rarity: 'LEGENDARY'},
                 {id: 'case_chameleon', type:'case', name: 'CHAMELEON CASE', desc: 'Пока нельзя открыть', price: 10000, plainIcon: '🎁', icon: '🎁', rarity: 'LEGENDARY'},
-                {id: 'box_chameleon', type:'box', name: 'Chameleon Box', desc: 'Только имена и медали', price: 1000, plainIcon: '🎁', icon: '🎁', rarity: 'LEGENDARY'},
+                {id: 'box_chameleon', type:'box', name: 'Chameleon Box', desc: 'Только имена и медали', price: 1000, plainIcon: '🎁', icon: '🎁', rarity: 'LEGENDARY', archived: true},
                 {id: 'box_upgrade', type:'box', name: 'Upgrade Box', desc: 'Только аватары и фоны', price: 1000, plainIcon: '📦', icon: '📦', rarity: 'LEGENDARY'},
                 {id: 'gif_poop', type:'avatar', name: 'Живая какашка', desc: 'GIF аватарка', price: 500, plainIcon: '💩', icon: '<span class="anim-poop">💩</span>', rarity: 'EPIC', boxTarget: 'box_upgrade'}, 
                 {id: 'anim_clown', type:'avatar', name: 'Бешеный Клоун', desc: 'GIF аватарка', price: 1500, plainIcon: '🤡', icon: '<span class="anim-clown">🤡</span>', rarity: 'EPIC', boxTarget: 'box_upgrade'},
@@ -1247,7 +1247,7 @@
                 if (!modal) return;
                 if (!gameId) {
                     if (isHost) openSO2ModeSelect();
-                    else tg.showAlert("Хост еще не выбрал режим.");
+                    else showNegativeAlert("Хост еще не выбрал режим.");
                     return;
                 }
                 modal.classList.remove('hidden');
@@ -1303,6 +1303,54 @@
                 return `<div class="game-settings-table-wrap"><table class="game-settings-table"><thead><tr><th>Игрок</th></tr></thead><tbody>${rows}</tbody></table></div>`;
             }
 
+            function applyPreset(presetType) {
+                if (!isHost) return;
+                const players = lobbySettingsPlayers();
+                players.forEach(p => {
+                    const isBot = isAiFriendId(p.id);
+                    let livesInput = document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="lives"]`);
+                    let ammoInput = document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="ammoPerSec"]`);
+                    let speedInput = document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="speed"]`);
+                    
+                    if (presetType === 'winning') {
+                        if (isBot) {
+                            if (livesInput) livesInput.value = 150;
+                            if (ammoInput) ammoInput.value = 1;
+                            if (speedInput) speedInput.value = 3;
+                        } else {
+                            if (livesInput) livesInput.value = 9999;
+                            if (ammoInput) ammoInput.value = 10;
+                            if (speedInput) speedInput.value = 3;
+                        }
+                    } else if (presetType === 'speedy') {
+                        if (isBot) {
+                            if (livesInput) livesInput.value = 150;
+                        } else {
+                            if (livesInput) livesInput.value = 200;
+                        }
+                        if (ammoInput) ammoInput.value = 10;
+                        if (speedInput) speedInput.value = 15;
+                    }
+                });
+                
+                setIsland("Пресет применен", "#34c759");
+                saveGameSettings();
+            }
+
+            function toggleCustomBrSettings() {
+                const container = document.getElementById('custom-settings-table-container');
+                if (container) {
+                    if (container.style.display === 'none') {
+                        container.style.display = 'block';
+                    } else {
+                        container.style.display = 'none';
+                    }
+                }
+            }
+
+            window.applyPreset = applyPreset;
+            window.toggleCustomBrSettings = toggleCustomBrSettings;
+
             function renderBrSettingsTable(settings) {
                 const readonly = isHost ? '' : 'disabled';
                 const rows = lobbySettingsPlayers().map(p => {
@@ -1321,11 +1369,19 @@
                         <td>${aiCell}</td>
                     </tr>`;
                 }).join('');
-                return `<div class="game-settings-table-wrap"><table class="game-settings-table">
-                    <thead><tr><th title="Игрок">👤</th><th title="Патронов в секунду">🔫</th><th title="Кол-во ХП">❤️</th><th title="Команда">🤝</th><th title="Скорость">🏃</th><th title="Уровень ИИ">🤖</th></tr></thead>
-                    <tbody>${rows}</tbody>
-                </table></div>
-                <label class="game-settings-extra"><input id="setting-br-shrink" type="checkbox" ${settings.shrinkZone !== false ? 'checked' : ''} ${readonly}>уменьшение поля</label>
+                return `
+                <div class="preset-buttons-container" style="display:flex; flex-direction:column; gap:12px; margin-bottom:20px; width:100%; align-items:center;">
+                    <button class="btn preset-btn" style="width:85%; max-width:400px; padding:15px; font-size:16px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; border-radius:12px; border:2px solid #ffd60a; cursor:pointer; background:rgba(255,214,10,0.1); color:#ffd60a; transition:all 0.2s;" onclick="applyPreset('winning')" ${readonly}>ПОБЕДНЫЙ</button>
+                    <button class="btn preset-btn" style="width:85%; max-width:400px; padding:15px; font-size:16px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; border-radius:12px; border:2px solid #34c759; cursor:pointer; background:rgba(52,199,89,0.1); color:#34c759; transition:all 0.2s;" onclick="applyPreset('speedy')" ${readonly}>СКОРОСТНОЙ</button>
+                    <button class="btn preset-btn" style="width:85%; max-width:400px; padding:15px; font-size:16px; font-weight:bold; letter-spacing:1px; text-transform:uppercase; border-radius:12px; border:2px solid #555; cursor:pointer; background:#222; color:#fff; transition:all 0.2s;" onclick="toggleCustomBrSettings()">ПОЛЬЗОВАТЕЛЬСКИЕ</button>
+                </div>
+                <div id="custom-settings-table-container" style="display:none; width:100%;">
+                    <div class="game-settings-table-wrap"><table class="game-settings-table">
+                        <thead><tr><th title="Игрок">👤</th><th title="Патронов в секунду">🔫</th><th title="Кол-во ХП">❤️</th><th title="Команда">🤝</th><th title="Скорость">🏃</th><th title="Уровень ИИ">🤖</th></tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table></div>
+                    <label class="game-settings-extra"><input id="setting-br-shrink" type="checkbox" ${settings.shrinkZone !== false ? 'checked' : ''} ${readonly}>уменьшение поля</label>
+                </div>
                 <div id="settings-error" class="settings-error"></div>`;
             }
 
@@ -1380,7 +1436,7 @@
                 if (!isHost) return;
                 let gameId = appState.selectedGameId || pendingModeId;
                 if (gameId && gameId.startsWith('br_')) gameId = 'br_2d';
-                if (!gameId || !lobbyId) return tg.showAlert("Выберите режим игры.");
+                if (!gameId || !lobbyId) return showNegativeAlert("Выберите режим игры.");
                 const settings = collectGameSettings(gameId);
                 if (!settings) return;
                 try {
@@ -1389,7 +1445,7 @@
                     setIsland("Настройки сохранены", "#34c759");
                     closeGameSettingsModal();
                 } catch (err) {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось сохранить настройки."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось сохранить настройки."));
                 }
             }
 
@@ -1584,6 +1640,23 @@
             }, 1000);
 
             function initApp() {
+                const savedSens = localStorage.getItem('game_sensitivity');
+                window.gameSensitivity = savedSens !== null ? parseFloat(savedSens) : 5.0;
+                
+                setTimeout(() => {
+                    const rangeInput = document.getElementById('sensitivity-range');
+                    const valDisplay = document.getElementById('sensitivity-value');
+                    if (rangeInput && valDisplay) {
+                        rangeInput.value = window.gameSensitivity;
+                        valDisplay.innerText = window.gameSensitivity.toFixed(1);
+                        rangeInput.addEventListener('input', function() {
+                            window.gameSensitivity = parseFloat(this.value);
+                            valDisplay.innerText = window.gameSensitivity.toFixed(1);
+                            localStorage.setItem('game_sensitivity', this.value);
+                        });
+                    }
+                }, 50);
+
                 let isInit = false;
                 async function startData(vals) {
                     if(isInit) return; isInit = true;
@@ -1650,7 +1723,7 @@
                             db.ref(`users/${myId}/invite`).on('value', s => { if(s.exists()){ pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(()=>{ n.style.top = '-100px'; }, 3000); renderMessagesTab(); } });
                             ensureHomeLobby();
                         }).catch(() => {
-                            tg.showAlert(getFirebaseFriendlyMessage("Не удалось загрузить профиль из Firebase."));
+                            showNegativeAlert(getFirebaseFriendlyMessage("Не удалось загрузить профиль из Firebase."));
                         });
                     });
 
@@ -1703,6 +1776,32 @@
                     is.style.display = 'none';
                 }, 5000);
             }
+
+            let customErrorTimeout;
+            function showCustomErrorWidget(message) {
+                let widget = document.getElementById('custom-error-widget');
+                if (!widget) return;
+                widget.innerHTML = `<span style="font-size:18px;">🚨</span> <span>${escapeHTML(message)}</span>`;
+                widget.classList.remove('hidden');
+                clearTimeout(customErrorTimeout);
+                customErrorTimeout = setTimeout(() => {
+                    widget.classList.add('hidden');
+                }, 4000);
+            }
+
+            function showNegativeAlert(message) {
+                const msg = String(message || '');
+                if (msg.includes("Полно!") || msg.includes("Свободного места") || msg.includes("заполнена")) {
+                    showCustomErrorWidget("Игра заполнена");
+                } else if (msg.includes("Не найден!") || msg.includes("Некорректный ID")) {
+                    showCustomErrorWidget("Некорректный ID");
+                } else {
+                    showCustomErrorWidget(msg);
+                }
+            }
+
+            window.showCustomErrorWidget = showCustomErrorWidget;
+            window.showNegativeAlert = showNegativeAlert;
 
             function spawnBalloons() {
                 document.body.classList.add('bg-balloons');
@@ -1761,7 +1860,7 @@
                 if(n && n.trim().length > 0) { 
                     if(n.trim().length > 15) {
                         setIsland("Максимум 15 символов!", "#ff453a");
-                        return tg.showAlert("Имя слишком длинное! Максимум 15 символов.");
+                        return showNegativeAlert("Имя слишком длинное! Максимум 15 символов.");
                     }
                     myName = n.trim(); myEqName = ''; 
                     try{tg.CloudStorage.setItem('my_name', myName);}catch(e){} 
@@ -1855,7 +1954,7 @@
                     }
                     
                     let shopHTML = ''; 
-                    SHOP_ITEMS.filter(item => !item.deleted).forEach(item => { 
+                    SHOP_ITEMS.filter(item => !item.deleted && !item.archived).forEach(item => { 
                         let qty = typeof inv[item.id] === 'boolean' ? 1 : (parseInt(inv[item.id])||0);
                         let owned = qty > 0; 
                         let eq = false;
@@ -2084,19 +2183,19 @@
                 const coinsInput = document.getElementById('gift-coins-input');
                 const anonymousInput = document.getElementById('gift-anonymous');
                 const targetId = select?.value === '__manual__' ? (idInput?.value || '').trim() : (select?.value || '');
-                if (!targetId || targetId === myId || isAiFriendId(targetId)) return tg.showAlert("Выбери игрока для подарка.");
+                if (!targetId || targetId === myId || isAiFriendId(targetId)) return showNegativeAlert("Выбери игрока для подарка.");
 
                 const recipientSnap = await readDbOnceStrict(`users/${targetId}`, 'gift recipient').catch(() => null);
-                if (!recipientSnap || !recipientSnap.exists()) return tg.showAlert("Игрок не найден.");
+                if (!recipientSnap || !recipientSnap.exists()) return showNegativeAlert("Игрок не найден.");
 
                 const senderInv = inventoryLoaded ? { ...liveInventory } : await readDbOnce(`users/${myId}/inventory`, {}, 'gift sender inventory');
                 const selectedItems = collectGiftItems(senderInv);
                 const senderCoins = parseInt(await readDbOnce(`users/${myId}/coins`, globalCoins, 'gift sender coins')) || 0;
                 const coins = Math.max(0, Math.min(senderCoins, parseInt(coinsInput?.value || 0) || 0));
-                if (coins <= 0 && selectedItems.length === 0) return tg.showAlert("Выбери монеты или предметы.");
+                if (coins <= 0 && selectedItems.length === 0) return showNegativeAlert("Выбери монеты или предметы.");
 
                 const invalidItem = selectedItems.find(gift => gift.qty <= 0 || gift.qty > getInventoryQty(senderInv[gift.id]));
-                if (invalidItem) return tg.showAlert("Недостаточно предметов для отправки.");
+                if (invalidItem) return showNegativeAlert("Недостаточно предметов для отправки.");
 
                 const recipient = recipientSnap.val() || {};
                 const recipientInv = await readDbOnce(`users/${targetId}/inventory`, {}, 'gift recipient inventory');
@@ -2151,9 +2250,9 @@
                     renderInventory();
                     renderShop();
                     renderGiftSend();
-                    tg.showAlert("Подарок отправлен!");
+                    setIsland("Подарок отправлен!", "#34c759");
                 } catch (err) {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось отправить подарок."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось отправить подарок."));
                 }
             }
 
@@ -2182,7 +2281,7 @@
                 if(type === 'box' || type === 'case') {
                     if(type === 'case') {
                         eqBtn.innerText = 'ЗАКРЫТО';
-                        eqBtn.onclick = () => { tg.showAlert("Этот кейс пока нельзя открыть!"); };
+                        eqBtn.onclick = () => { showNegativeAlert("Этот кейс пока нельзя открыть!"); };
                     } else {
                         eqBtn.innerText = 'ОТКРЫТЬ';
                         eqBtn.onclick = () => { closeItemAction(); openBoxPre(id); };
@@ -2231,7 +2330,7 @@
             function sellCurrentItem() {
                 if(!currentActionItem) return;
                 let item = SHOP_ITEMS.find(i=>i.id===currentActionItem.id);
-                if(item.price <= 0) return tg.showAlert("Этот предмет нельзя продать!");
+                if(item.price <= 0) return showNegativeAlert("Этот предмет нельзя продать!");
                 
                 let sellPrice = Math.floor(item.price * 0.8) * currentSellQty;
                 let qtyToSell = currentSellQty;
@@ -2253,7 +2352,7 @@
                         if(currentActionItem.type === 'medal' && myPinnedMedals.includes(item.id)) toggleEquip(item.id, currentActionItem.type);
                         if(currentActionItem.type === 'bg' && localStorage.getItem('eq_bg') === item.id) toggleEquip(item.id, currentActionItem.type);
                     }
-                    tg.showAlert(`Продано ${qtyToSell} шт!`); 
+                    setIsland(`Продано ${qtyToSell} шт!`, "#34c759"); 
                     renderInventory(); renderShop();
                 });
             }
@@ -2265,7 +2364,7 @@
                     if (myPinnedMedals.includes(id)) {
                         myPinnedMedals = myPinnedMedals.filter(m => m !== id); 
                     } else { 
-                        if (myPinnedMedals.length >= 5) return tg.showAlert("Максимум 5 медалей!"); 
+                        if (myPinnedMedals.length >= 5) return showNegativeAlert("Максимум 5 медалей!"); 
                         myPinnedMedals.push(id); 
                     } 
                 } 

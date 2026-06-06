@@ -24,6 +24,8 @@
         <span>Тебя зовут в игру!</span>
     </div>
     
+    <div id="custom-error-widget" class="hidden"></div>
+    
     <div id="global-coins" class="glass">
         🪙 <span id="global-coins-val">0</span>
     </div>
@@ -210,6 +212,13 @@
                 <div class="profile-layout-container">
                     <div class="profile-left-col" style="width:100%; max-width:520px; margin:0 auto;">
                         <h2 style="margin-top:0;">НАСТРОЙКИ</h2>
+                        <div class="settings-item" style="margin-top: 15px; margin-bottom: 15px; background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); width: 100%; box-sizing: border-box; text-align: left;">
+                            <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold;">
+                                <span>Чувствительность</span>
+                                <span id="sensitivity-value">5.0</span>
+                            </div>
+                            <input type="range" id="sensitivity-range" min="0" max="10" step="0.1" value="5.0" style="width:100%; accent-color:var(--coin-col); cursor:pointer;">
+                        </div>
                         <div class="profile-version" style="margin-top:12px;">
                             <div class="profile-version-label">Версия программы</div>
                             <div class="profile-version-main" id="app-version-main-settings">commit ...</div>

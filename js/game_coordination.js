@@ -136,7 +136,7 @@
                     
                     if (collision) { 
                         ready.style.display = 'block';
-                        tg.showAlert("Дзинь! Попал в меч!"); 
+                        setIsland("Дзинь! Попал в меч!", "#ff453a"); 
                         showResult(`НОЖИ: ${coordState.k.length}`, '#ff453a', '🗡️'); 
                         lobbyPlayers.forEach(p => { if (p.id !== myId) updatePvpStat(p.id, 'acc', 'loss'); });
                     } else { 

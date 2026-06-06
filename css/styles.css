@@ -745,3 +745,61 @@
             50% { left: 150%; }
             100% { left: 150%; }
         }
+
+        /* Lobby Presets Styles */
+        .preset-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            filter: brightness(1.2);
+        }
+        .preset-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+        .preset-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            border-color: #444 !important;
+            color: #888 !important;
+            background: #111 !important;
+        }
+
+        /* Neon Shimmer Error Notification Widget */
+        #custom-error-widget {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(0);
+            background: linear-gradient(135deg, #10b981, #059669, #047857);
+            background-size: 200% 200%;
+            animation: shimmerGlow 3s ease infinite, slideInWidget 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 15px;
+            z-index: 9999;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.6), 0 4px 10px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: none;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        #custom-error-widget.hidden {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-20px);
+            pointer-events: none;
+        }
+
+        @keyframes shimmerGlow {
+            0% { background-position: 0% 50%; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
+            50% { background-position: 100% 50%; box-shadow: 0 0 25px rgba(52, 199, 89, 0.8); }
+            100% { background-position: 0% 50%; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
+        }
+
+        @keyframes slideInWidget {
+            from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }

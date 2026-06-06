@@ -42,6 +42,7 @@
 
             function formatPresenceGameName(gameId) {
                 if (gameId === 'br_2d') return 'ВЫЖИВАНИЕ';
+                if (gameId === 'br_tdm_5v5') return 'КОМАНДНЫЙ БОЙ';
                 return (GAME_NAMES && GAME_NAMES[gameId] ? GAME_NAMES[gameId] : gameId).replace(/^[^\p{L}\p{N}]+/u, '').trim();
             }
 
@@ -121,12 +122,12 @@
             function addFriendBtn() { 
                 let id = prompt("ID друга:"); 
                 if (id && id !== myId) { 
-                    if (friendsIds.includes(id)) return tg.showAlert("Уже в списке!"); 
+                    if (friendsIds.includes(id)) return showNegativeAlert("Уже в списке!"); 
                     db.ref('users/' + id).once('value').then(s => { 
                         if (s.exists()) { 
                             openFriendPreview(id, s.val(), false);
                         } else {
-                            tg.showAlert("Не найден!"); 
+                            showNegativeAlert("Некорректный ID"); 
                         }
                     }); 
                 } 
@@ -183,7 +184,7 @@
                         playerEqName: p.eqName || ''
                     }).catch(() => {});
                 });
-                tg.showAlert("Друг добавлен!"); 
+                setIsland("Друг добавлен", "#34c759"); 
             }
 
             function openFriendModal(f) { 
@@ -292,7 +293,7 @@
             function sendFriendRequestFromPreview() {
                 if (!activePreviewPlayer || activePreviewPlayer.id === myId) return;
                 db.ref(`users/${activePreviewPlayer.id}/friend_reqs/${myId}`).set(true);
-                tg.showAlert("Заявка отправлена!");
+                setIsland("Заявка отправлена", "#34c759");
                 document.getElementById('friend-preview-add').style.display = 'none';
                 showFriendPreviewActions();
             }
@@ -304,14 +305,14 @@
 
             function invitePreviewToLobby() {
                 if (!activePreviewPlayer) return;
-                if (!appState.inLobby) return tg.showAlert("Сначала зайди в лобби.");
+                if (!appState.inLobby) return showNegativeAlert("Сначала зайди в лобби.");
                 inviteRealFriend(activePreviewPlayer.id);
                 closeFriendPreview();
             }
 
             function messagePreviewPlayer() {
                 if (!activePreviewPlayer) return;
-                if (isAiFriendId(activePreviewPlayer.id)) return tg.showAlert("ИИ не принимает сообщения.");
+                if (isAiFriendId(activePreviewPlayer.id)) return showNegativeAlert("ИИ не принимает сообщения.");
                 closeFriendPreview();
                 openFriendChat(activePreviewPlayer.id, activePreviewPlayer);
             }
@@ -382,7 +383,7 @@
 
             function openInviteModal() { 
                 const maxPlayers = getMaxPlayersForMode(typeof currentMode !== 'undefined' ? currentMode : 'tdm_5v5');
-                if (lobbyPlayers.length >= maxPlayers) return tg.showAlert("Полно!"); 
+                if (lobbyPlayers.length >= maxPlayers) return showNegativeAlert("Игра заполнена"); 
                 
                 let l = document.getElementById('invite-friends-list'); 
                 l.innerHTML = ''; 
@@ -493,7 +494,7 @@
                         }
                     }, 'create lobby');
                 } catch (err) {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось создать лобби."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось создать лобби."));
                     return;
                 }
 
@@ -652,9 +653,9 @@
                     [`users/${id}/message_threads/${myId}/friendId`]: myId
                 }, 'send lobby invite').then(() => {
                     db.ref(`users/${id}/message_threads/${myId}/unread`).transaction(v => (parseInt(v) || 0) + 1);
-                    tg.showAlert("Отправлено!");
+                    setIsland("Приглашение отправлено", "#34c759");
                 }).catch(() => {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось отправить приглашение."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось отправить приглашение."));
                 }); 
                 closeFriendModal(); 
             }
@@ -680,7 +681,7 @@
                         document.getElementById('view-lobby').style.display = 'flex'; 
                         listenLobby(); 
                     } else {
-                        tg.showAlert("Лобби нет или хост вышел!"); 
+                        showNegativeAlert("Лобби нет или хост вышел!"); 
                     }
                 }); 
             }
@@ -690,9 +691,9 @@
                 const targetLobbyId = getFriendKnownLobbyId(activeFriend);
                 closeFriendModal();
                 db.ref('lobbies/' + targetLobbyId).once('value').then(s => {
-                    if (!s.exists()) return tg.showAlert("Игра уже недоступна.");
+                    if (!s.exists()) return showNegativeAlert("Игра уже недоступна.");
                     const data = s.val();
-                    if (!canJoinPlayingBrLobby(data)) return tg.showAlert("Свободного места в 2D Выживании уже нет.");
+                    if (!canJoinPlayingBrLobby(data)) return showNegativeAlert("Игра заполнена");
 
                     if (appState.inLobby && lobbyId && lobbyId !== targetLobbyId) {
                         closeLobby({autoReopen:false});
@@ -749,7 +750,7 @@
                         document.getElementById('view-lobby').style.display = 'flex';
                         listenLobby();
                     }).catch(() => {
-                        tg.showAlert(getFirebaseFriendlyMessage("Не удалось присоединиться к игре."));
+                        showNegativeAlert(getFirebaseFriendlyMessage("Не удалось присоединиться к игре."));
                     });
                 });
             }
@@ -760,7 +761,7 @@
                 lobbyRef.on('value', snap => { 
                     if (!snap.exists()) { 
                         if (!isHost) {
-                            tg.showAlert("Хост закрыл лобби!"); 
+                            showNegativeAlert("Хост закрыл лобби!"); 
                             closeLobby({autoReopen:true});
                         } 
                         return; 
@@ -769,7 +770,7 @@
                     clearSuppressedGameStartIfStale(d);
                     maybePromoteMissingHost(d);
                     if (!isHost && (!d.players || !d.players[myId])) { 
-                        tg.showAlert("Вы удалены из лобби."); 
+                        showNegativeAlert("Вы удалены из лобби."); 
                         closeLobby({autoReopen:true});
                         return; 
                     }
@@ -900,7 +901,7 @@
 
             function acceptStoredLobbyInvite(key) {
                 db.ref(`users/${myId}/lobby_invites/${key}`).once('value').then(s => {
-                    if (!s.exists()) return tg.showAlert("Приглашение уже недоступно.");
+                    if (!s.exists()) return showNegativeAlert("Приглашение уже недоступно.");
                     pendingInvite = { ...s.val(), inviteKey: key };
                     acceptLobbyInvite();
                 });
@@ -1070,7 +1071,7 @@
             }
 
             function openFriendChat(friendId, profile) {
-                if (isAiFriendId(friendId)) return tg.showAlert("ИИ не принимает сообщения.");
+                if (isAiFriendId(friendId)) return showNegativeAlert("ИИ не принимает сообщения.");
                 activeMessagesSubTab = 'friends';
                 activeChatFriend = { id: friendId, ...(profile || {}) };
                 switchTab('messages', document.querySelector('[data-tab="messages"]'));
@@ -1157,6 +1158,6 @@
                     db.ref(`users/${friendId}/message_threads/${myId}/unread`).transaction(v => (parseInt(v) || 0) + 1);
                     renderMessagesTab();
                 }).catch(() => {
-                    tg.showAlert(getFirebaseFriendlyMessage("Не удалось отправить сообщение."));
+                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось отправить сообщение."));
                 });
             }
