@@ -16,14 +16,18 @@
             }
 
             function getBrSize() {
-                return (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') ? 3500 : 2000;
+                return (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') ? 17500 : 2000;
             }
 
             function getBrBaseRects() {
                 if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
+                    const ctX = 100;
+                    const ctY = BR_SIZE / 2 - 225;
+                    const tX = BR_SIZE - 550;
+                    const tY = BR_SIZE / 2 - 225;
                     return {
-                        ct: { x: 100, y: 1525, w: 450, h: 450, textX: 325, textY: 1760 },
-                        t: { x: 2950, y: 1525, w: 450, h: 450, textX: 3175, textY: 1760 }
+                        ct: { x: ctX, y: ctY, w: 450, h: 450, textX: ctX + 225, textY: ctY + 235 },
+                        t: { x: tX, y: tY, w: 450, h: 450, textX: tX + 225, textY: tY + 235 }
                     };
                 }
                 return {
@@ -34,15 +38,60 @@
 
             function generateMap() {
                 mapWalls = [];
-                const wallCount = 25;
+                const midX = BR_SIZE / 2;
+                const passagesCount = (BR_SIZE === 17500) ? 8 : 3;
+                const gap = 140; // width of passage gap
+                const wallWidth = 60; // thickness of long central walls
+
+                // Define passage y-positions
+                const passageYPositions = [];
+                for (let i = 1; i <= passagesCount; i++) {
+                    const ratio = i / (passagesCount + 1);
+                    // Add slight random offset to keep it organic
+                    const offset = -40 + Math.floor(Math.random() * 80);
+                    passageYPositions.push(Math.round(BR_SIZE * ratio) + offset);
+                }
+                // Sort just in case
+                passageYPositions.sort((a, b) => a - b);
+
+                // Build long divider walls on midX, keeping passages clear
+                const yMin = 100;
+                const yMax = BR_SIZE - 100;
+
+                // Segment 1
+                let yStart = yMin;
+                let yEnd = passageYPositions[0] - gap / 2;
+                if (yEnd > yStart + 40) {
+                    mapWalls.push({ x: midX - wallWidth / 2, y: yStart, w: wallWidth, h: yEnd - yStart });
+                }
+
+                // Middle Segments
+                for (let i = 0; i < passagesCount - 1; i++) {
+                    yStart = passageYPositions[i] + gap / 2;
+                    yEnd = passageYPositions[i + 1] - gap / 2;
+                    if (yEnd > yStart + 40) {
+                        mapWalls.push({ x: midX - wallWidth / 2, y: yStart, w: wallWidth, h: yEnd - yStart });
+                    }
+                }
+
+                // Last Segment
+                yStart = passageYPositions[passagesCount - 1] + gap / 2;
+                yEnd = yMax;
+                if (yEnd > yStart + 40) {
+                    mapWalls.push({ x: midX - wallWidth / 2, y: yStart, w: wallWidth, h: yEnd - yStart });
+                }
+
+                // Add regular cover blocks randomly on both sides of the divider
+                const totalWallCount = 25;
                 let attempts = 0;
 
-                while (mapWalls.length < wallCount && attempts < 300) {
+                while (mapWalls.length < totalWallCount && attempts < 300) {
                     attempts++;
 
                     const w = 60 + Math.floor(Math.random() * 100);
                     const h = 60 + Math.floor(Math.random() * 100);
 
+                    // Random coordinate
                     const x = 100 + Math.floor(Math.random() * (BR_SIZE - 200 - w));
                     const y = 100 + Math.floor(Math.random() * (BR_SIZE - 200 - h));
 
@@ -60,7 +109,22 @@
                         continue;
                     }
 
-                    // 3. Overlap with existing walls check (AABB with 40px padding to keep walking paths)
+                    // 3. Clear range check around central passages to prevent blocking them
+                    let blocksPassage = false;
+                    const clearRangeX = 140; // width of horizontal clear zone around midX
+                    if (x + w > midX - clearRangeX && x < midX + clearRangeX) {
+                        for (let py of passageYPositions) {
+                            if (y + h > py - gap / 2 - 20 && y < py + gap / 2 + 20) {
+                                blocksPassage = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (blocksPassage) {
+                        continue;
+                    }
+
+                    // 4. Overlap with existing walls check (AABB with 40px padding to keep walking paths)
                     let overlapsWall = false;
                     for (let wall of mapWalls) {
                         if (x < wall.x + wall.w + 40 &&
@@ -610,34 +674,17 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 if (!team) team = 'Counter-Terrorists';
 
                 const seed = String(id || '0').split('').reduce((a, ch) => a + ch.charCodeAt(0), 0);
+                const bases = getBrBaseRects();
 
                 if (team === 'Counter-Terrorists') {
                     // Blue Base (CT)
-                    let x, y;
-                    if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
-                        x = 100 + (seed % 250);
-                        y = 875 + ((seed * 17) % 250);
-                    } else if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
-                        x = 150 + (seed % 300);
-                        y = 1575 + ((seed * 17) % 300);
-                    } else {
-                        x = 100 + (seed % 300);
-                        y = 825 + ((seed * 17) % 350);
-                    }
+                    const x = bases.ct.x + 50 + (seed % (bases.ct.w - 150));
+                    const y = bases.ct.y + 50 + ((seed * 17) % (bases.ct.h - 150));
                     return { x, y };
                 } else {
                     // Orange Base (T)
-                    let x, y;
-                    if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
-                        x = 1600 + (seed % 250);
-                        y = 875 + ((seed * 17) % 250);
-                    } else if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
-                        x = 3000 + (seed % 300);
-                        y = 1575 + ((seed * 17) % 300);
-                    } else {
-                        x = 1600 + (seed % 300);
-                        y = 825 + ((seed * 17) % 350);
-                    }
+                    const x = bases.t.x + 50 + (seed % (bases.t.w - 150));
+                    const y = bases.t.y + 50 + ((seed * 17) % (bases.t.h - 150));
                     return { x, y };
                 }
             }
@@ -673,7 +720,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     mode = mode.replace('br_', '');
                 }
                 currentMode = mode;
-                BR_SIZE = (mode === 'tdm_5v5') ? 3500 : 2000;
+                BR_SIZE = (mode === 'tdm_5v5') ? 17500 : 2000;
                 br.matchActive = true;
                 br.matchStartTime = Date.now();
                 br.kills = 0;
@@ -762,7 +809,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.bgCtx = null;
                 const submode = (appState.selectedGameId || '').startsWith('br_') ? appState.selectedGameId.replace('br_', '') : 'tdm_5v5';
                 currentMode = submode;
-                BR_SIZE = (submode === 'tdm_5v5') ? 3500 : 2000;
+                BR_SIZE = (submode === 'tdm_5v5') ? 17500 : 2000;
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (submode === 'duel_1v1' || submode === 'duel_2v2') ? 600 : BR_SIZE };
                 br.joystickTargetAngle = null;
                 br.remotePlayers = {};

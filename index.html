@@ -5,6 +5,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Игровой Центр</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+      // Mock Telegram WebApp if not running inside Telegram
+      if (typeof window !== 'undefined') {
+        const tg = window.Telegram ? window.Telegram.WebApp : null;
+        if (!tg || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+          const mockId = localStorage.getItem('my_id') || Math.floor(1000 + Math.random() * 9000).toString();
+          localStorage.setItem('my_id', mockId);
+          window.Telegram = window.Telegram || {};
+          window.Telegram.WebApp = {
+            initDataUnsafe: { user: { id: parseInt(mockId), first_name: 'DebugUser' } },
+            expand() {},
+            requestFullscreen() {},
+            ready() {},
+            showAlert(msg) { alert(msg); },
+            showConfirm(msg, callback) { callback(confirm(msg)); },
+            CloudStorage: {
+              getKeys(cb) { cb(null, ['my_id']); },
+              getItems(keys, cb) { cb(null, { my_id: mockId }); },
+              setItem(k, v) { localStorage.setItem(k, String(v)); },
+              removeItem(k) { localStorage.removeItem(k); }
+            }
+          };
+        }
+      }
+    </script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
