@@ -777,6 +777,18 @@
             <button id="ai-mic-btn" class="btn btn-gold" style="margin-top:40px; font-size:40px; padding:20px 40px; border-radius:50%;" onclick="startAiMic()">🎤</button>
             <button class="btn btn-red" style="margin-top:30px; font-size:20px; padding:15px 30px;" onclick="closeAiGame()">Выйти в лобби</button>
         </div>
+        
+        <div id="custom-confirm-modal" class="overlay glass hidden" style="z-index: 5500;">
+            <div style="background:#1c1c1e; padding:30px; border-radius:20px; width:320px; text-align:center; border:2px solid #444; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" onclick="event.stopPropagation()">
+                <div style="font-size: 50px; margin-bottom: 15px;">❓</div>
+                <h3 id="custom-confirm-message" style="color:#fff; margin: 0 0 25px 0; font-size: 18px; line-height: 1.4; font-family: sans-serif;">Вы уверены?</h3>
+                <div style="display: flex; gap: 15px; justify-content: center;">
+                    <button id="custom-confirm-btn-yes" class="btn btn-green" style="flex: 1; margin: 0; padding: 10px;">Да</button>
+                    <button id="custom-confirm-btn-no" class="btn btn-red" style="flex: 1; margin: 0; padding: 10px;">Отмена</button>
+                </div>
+            </div>
+        </div>
+
         <script src="./js/core.js?v=20260502-lobby-zoom-direction"></script>
         <script src="./js/admin.js?v=20260502-lobby-zoom-direction"></script>
         <script src="./js/social-lobby.js?v=20260502-lobby-zoom-direction"></script>

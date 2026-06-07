@@ -234,12 +234,12 @@
                 refreshAdminItemControls();
             }
 
-            function deleteShopItemDev() {
+            async function deleteShopItemDev() {
                 const id = document.getElementById('ci-delete-select')?.value;
                 if (!id) return;
                 const item = SHOP_ITEMS.find(i => i.id === id);
                 if (!item) return showNegativeAlert("Предмет не найден.");
-                if (!confirm(`Удалить "${item.name}" из магазина навсегда? У владельцев предмет останется.`)) return;
+                if (!await showCustomConfirm(`Удалить "${item.name}" из магазина навсегда? У владельцев предмет останется.`)) return;
 
                 const updates = {};
                 if (item.isCustom) updates[`custom_items/${id}/deleted`] = true;

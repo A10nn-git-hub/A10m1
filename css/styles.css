@@ -768,10 +768,9 @@
             position: fixed;
             top: 20px;
             left: 50%;
-            transform: translateX(-50%) translateY(0);
+            transform: translateX(-50%) translateY(-50px);
             background: linear-gradient(135deg, #10b981, #059669, #047857);
             background-size: 200% 200%;
-            animation: shimmerGlow 3s ease infinite, slideInWidget 0.4s cubic-bezier(0.18, 0.89, 0.32, 1.28) forwards;
             padding: 12px 24px;
             border-radius: 12px;
             color: #ffffff;
@@ -784,24 +783,21 @@
             gap: 8px;
             border: 1px solid rgba(255, 255, 255, 0.2);
             pointer-events: none;
-            transition: opacity 0.3s, transform 0.3s;
+            opacity: 0;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.4s ease;
         }
 
-        #custom-error-widget.hidden {
-            opacity: 0;
-            transform: translateX(-50%) translateY(-20px);
-            pointer-events: none;
+        #custom-error-widget.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+            pointer-events: auto;
+            animation: shimmerGlow 3s ease infinite;
         }
 
         @keyframes shimmerGlow {
             0% { background-position: 0% 50%; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
             50% { background-position: 100% 50%; box-shadow: 0 0 25px rgba(52, 199, 89, 0.8); }
             100% { background-position: 0% 50%; box-shadow: 0 0 15px rgba(16, 185, 129, 0.5); }
-        }
-
-        @keyframes slideInWidget {
-            from { transform: translateX(-50%) translateY(-20px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
 
         /* Standoff 2 style Scoreboard */

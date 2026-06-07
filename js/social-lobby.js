@@ -324,17 +324,17 @@
                 openFriendChat(friend.id, friend);
             }
 
-            function removeFriend() { 
-                if (confirm(`Удалить?`)) { 
+            async function removeFriend() { 
+                if (await showCustomConfirm(`Удалить?`)) { 
                     db.ref(`users/${myId}/friends/${activeFriend.id}`).remove(); 
                     db.ref(`users/${activeFriend.id}/friends/${myId}`).remove(); 
                     closeFriendModal(); 
                 } 
             }
 
-            function kickPlayer(id) { 
+            async function kickPlayer(id) { 
                 if (!isHost || id === myId) return; 
-                if (confirm("Вы уверены, что хотите кикнуть этого игрока из лобби?")) { 
+                if (await showCustomConfirm("Вы уверены, что хотите кикнуть этого игрока из лобби?")) { 
                     db.ref(`lobbies/${lobbyId}/players/${id}`).remove(); 
                 } 
             }
@@ -767,6 +767,7 @@
                         return; 
                     } 
                     let d = snap.val(); 
+                    appState.lastLobbyStatus = d.status || 'waiting';
                     clearSuppressedGameStartIfStale(d);
                     maybePromoteMissingHost(d);
                     if (!isHost && (!d.players || !d.players[myId])) { 
@@ -860,6 +861,9 @@
                         if (hostPaused !== appState.hostPaused || (hostPaused && !appState.isPaused)) {
                             setPauseUI(hostPaused, hostPaused);
                         }
+                    }
+                    if (d.status === 'waiting' && document.getElementById('game-container').style.display === 'block') {
+                        exitToLobby();
                     }
                 }); 
             }
