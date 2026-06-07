@@ -303,6 +303,7 @@
                     <div class="mini-tabs-header">
                         <button class="mini-tab-btn active" onclick="switchMiniTab('beta-ban',this)">БАН</button>
                         <button class="mini-tab-btn" onclick="switchMiniTab('beta-unban',this)">РАЗБАН</button>
+                        <button class="mini-tab-btn" onclick="switchMiniTab('beta-version',this)">ВЕРСИЯ</button>
                     </div>
                     <div id="beta-ban" class="mini-tab-content active" style="width:100%; max-width:400px;">
                         <input type="text" id="ban-id-input" class="styled-input" placeholder="ID игрока">
@@ -319,6 +320,28 @@
                         <h4 style="margin:5px 0;">Кого можно разбанить:</h4>
                         <div id="unban-list" style="width:100%; max-height:150px; overflow-y:auto; margin-bottom:10px; background:#111; padding:5px; border-radius:10px;"></div>
                         <button class="btn btn-green" style="width:100%;" onclick="unbanAllPlayers()">РАЗБАНИТЬ ВСЕХ</button>
+                    </div>
+                    <div id="beta-version" class="mini-tab-content" style="width:100%; max-width:400px; text-align:left;">
+                        <div style="margin-bottom:15px;">
+                            <label style="font-weight:bold; color:var(--coin-col);">Текущая версия:</label>
+                            <span id="dev-current-version-text" style="font-family:monospace; margin-left:10px;">...</span>
+                        </div>
+                        <div style="margin-bottom:15px;">
+                            <label style="font-weight:bold; color:var(--coin-col);">Текущий патчноут:</label>
+                            <div id="dev-current-patchnote-text" style="font-size:12px; color:gray; background:#111; padding:10px; border-radius:8px; margin-top:5px; max-height:100px; overflow-y:auto;">...</div>
+                        </div>
+                        <hr style="border-color:#333; margin:15px 0;">
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <label style="font-weight:bold;">Ручное изменение версии:</label>
+                            <input type="text" id="dev-version-input" class="styled-input" placeholder="Например: 5.9">
+                            <button class="btn btn-green" onclick="saveVersionDev()">Сохранить версию</button>
+                        </div>
+                        <hr style="border-color:#333; margin:15px 0;">
+                        <div style="display:flex; flex-direction:column; gap:10px;">
+                            <label style="font-weight:bold;">Автоматическое обновление:</label>
+                            <button class="btn btn-gold" onclick="triggerAiVersionUpdate()">ИИ-генерация и авто-инкремент</button>
+                            <div id="dev-ai-status" style="font-size:12px; color:#ffd60a;"></div>
+                        </div>
                     </div>
                 </div>
 

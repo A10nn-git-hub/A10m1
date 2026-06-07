@@ -512,13 +512,33 @@ function setPendingSO2Game(id, name, el) {
     if (el) el.classList.add('active');
 }
 
+async function resetLobbySettingsToDefault(gameId) {
+    if (!lobbyId) return;
+    const effectiveId = (gameId && gameId.startsWith('br_')) ? 'br_2d' : gameId;
+    const defaults = defaultSettingsForGame(effectiveId, lobbySettingsPlayers());
+    try {
+        await writeDb(`lobbies/${lobbyId}/settings/${effectiveId}`, defaults, 'reset game settings');
+        if (currentLobbySettings) {
+            currentLobbySettings[effectiveId] = defaults;
+        }
+    } catch (e) {
+        console.error("Failed to reset settings", e);
+    }
+}
+
 async function confirmSO2Mode() {
     if (!pendingModeId) return showNegativeAlert("Выберите режим!");
     if (!lobbyId) return showNegativeAlert("Лобби не найдено.");
 
     try {
+        const oldMode = appState.selectedGameId;
         await writeDb(`lobbies/${lobbyId}/game`, pendingModeId, 'set lobby game');
         setSelectedModeUI(pendingModeId);
+
+        if (oldMode === 'br_tdm_5v5' && pendingModeId !== 'br_tdm_5v5') {
+            await resetLobbySettingsToDefault('br_2d');
+        }
+
         closeSO2ModeSelect();
     } catch (err) {
         showNegativeAlert(getFirebaseFriendlyMessage("Не удалось сохранить выбранный режим."));
@@ -1553,6 +1573,36 @@ function bindCustomItemsSync() {
     });
 }
 
+function bindAppVersionSync() {
+    db.ref('app_version').on('value', snap => {
+        if (snap.exists()) {
+            let data = snap.val();
+            let ver = data.version || "1.0";
+            let patchnote = data.patchnote || "Нет описания изменений.";
+            
+            // Settings page
+            let mainSettings = document.getElementById('app-version-main-settings');
+            if (mainSettings) mainSettings.innerText = "Версия " + ver;
+            
+            let subSettings = document.getElementById('app-version-sub-settings');
+            if (subSettings) subSettings.innerText = "Патчноут:\n" + patchnote;
+            
+            // Dev/Admin panel
+            let devVer = document.getElementById('dev-current-version-text');
+            if (devVer) devVer.innerText = ver;
+            
+            let devPatchnote = document.getElementById('dev-current-patchnote-text');
+            if (devPatchnote) devPatchnote.innerText = patchnote;
+            
+            // Sync dev version input field as default placeholder/value
+            let devVerInput = document.getElementById('dev-version-input');
+            if (devVerInput && !devVerInput.value) {
+                devVerInput.value = ver;
+            }
+        }
+    });
+}
+
 function bindInventorySync() {
     inventoryLoaded = false;
     liveInventory = {};
@@ -1678,6 +1728,7 @@ function initApp() {
         bindCustomItemsSync();
         bindNewItemsSync();
         bindInventorySync();
+        bindAppVersionSync();
 
         Promise.resolve().finally(() => {
             db.ref('beta_bans').on('value', snap => {

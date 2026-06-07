@@ -252,3 +252,77 @@
                     showNegativeAlert(getFirebaseFriendlyMessage("Не удалось удалить предмет."));
                 });
             }
+
+            function incrementVersionString(vStr) {
+                vStr = String(vStr).trim();
+                let match = vStr.match(/^(\d+)\.(\d+)$/);
+                if (!match) {
+                    let num = parseFloat(vStr);
+                    if (isNaN(num)) return "1.0";
+                    return (num + 0.1).toFixed(1);
+                }
+                let major = parseInt(match[1]);
+                let minorStr = match[2];
+                let numDigits = minorStr.length;
+                let minor = parseInt(minorStr);
+                minor += 1;
+                let nextMinorStr = String(minor).padStart(numDigits, '0');
+                return `${major}.${nextMinorStr}`;
+            }
+
+            function saveVersionDev() {
+                let verInput = document.getElementById('dev-version-input').value.trim();
+                if (!verInput) return showNegativeAlert("Введите версию!");
+                
+                db.ref('app_version').once('value').then(snap => {
+                    let currentData = snap.val() || {};
+                    let patchnote = currentData.patchnote || "Ручное изменение версии";
+                    db.ref('app_version').set({
+                        version: verInput,
+                        patchnote: patchnote
+                    }).then(() => {
+                        setIsland("Версия сохранена!", "#34c759");
+                    }).catch(err => {
+                        showNegativeAlert("Ошибка сохранения!");
+                    });
+                });
+            }
+
+            async function triggerAiVersionUpdate() {
+                const statusEl = document.getElementById('dev-ai-status');
+                if (statusEl) statusEl.innerText = "Генерация патчноута с помощью ИИ...";
+                
+                try {
+                    const snap = await db.ref('app_version').once('value');
+                    let currentVer = "1.0";
+                    if (snap.exists() && snap.val().version) {
+                        currentVer = snap.val().version;
+                    } else {
+                        let uiVerText = document.getElementById('app-version-main-settings')?.innerText || "";
+                        let match = uiVerText.match(/(\d+\.\d+)/);
+                        if (match) currentVer = match[1];
+                    }
+                    
+                    let newVer = incrementVersionString(currentVer);
+                    
+                    const planRes = await fetch('Update_plan.md');
+                    if (!planRes.ok) throw new Error("Не удалось загрузить Update_plan.md");
+                    const planText = await planRes.text();
+                    
+                    const prompt = `Проанализируй данный документ Update_plan.md и составь очень краткий список изменений (патчноут) на русском языке для версии ${newVer}. Верни только сам список изменений в виде текста или маркированного списка (максимум 4-5 коротких пунктов), без лишних предисловий или мета-комментариев. Документ:\n\n${planText}`;
+                    
+                    const patchnote = await fetchGeminiAPI(prompt);
+                    
+                    await db.ref('app_version').set({
+                        version: newVer,
+                        patchnote: patchnote
+                    });
+                    
+                    if (statusEl) statusEl.innerText = `Успешно обновлено до ${newVer}!`;
+                    setIsland(`Версия обновлена до ${newVer}`, "#34c759");
+                } catch (e) {
+                    console.error(e);
+                    if (statusEl) statusEl.innerText = "Ошибка обновления!";
+                    showNegativeAlert("Не удалось обновить версию через ИИ");
+                }
+            }

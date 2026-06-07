@@ -135,27 +135,34 @@
                 return (dx * dx + dy * dy) < (cr * cr);
             }
 
+            function getBrPlayerSmokeAlpha(px, py) {
+                let minAlpha = 1.0;
+                if (br.smokeZones) {
+                    br.smokeZones.forEach(smoke => {
+                        const dx = px - smoke.x;
+                        const dy = py - smoke.y;
+                        const dist = Math.hypot(dx, dy);
+                        if (dist < smoke.r) {
+                            const ratio = dist / smoke.r;
+                            if (ratio < minAlpha) {
+                                minAlpha = ratio;
+                            }
+                        }
+                    });
+                }
+                return minAlpha;
+            }
+
             function generateSmokeZones(mode) {
                 br.smokeZones = [];
                 const count = 5;
                 const maxMapSize = (typeof mode !== 'undefined' && (mode === 'duel_1v1' || mode === 'duel_2v2')) ? 1200 : BR_SIZE;
                 const minCoord = (BR_SIZE - maxMapSize) / 2;
 
-                const seedStr = lobbyId || 'singleplayer';
-                let seedVal = 0;
-                for (let i = 0; i < seedStr.length; i++) {
-                    seedVal += seedStr.charCodeAt(i);
-                }
-
-                function seededRandom() {
-                    let x = Math.sin(seedVal++) * 10000;
-                    return x - Math.floor(x);
-                }
-
                 for (let i = 0; i < count; i++) {
-                    const x = minCoord + 150 + seededRandom() * (maxMapSize - 300);
-                    const y = minCoord + 150 + seededRandom() * (maxMapSize - 300);
-                    const r = 120 + seededRandom() * 60; // radius 120-180px
+                    const x = minCoord + 150 + Math.random() * (maxMapSize - 300);
+                    const y = minCoord + 150 + Math.random() * (maxMapSize - 300);
+                    const r = 120 + Math.random() * 60; // radius 120-180px
                     br.smokeZones.push({ x, y, r });
                 }
             }
@@ -608,8 +615,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     // Blue Base (CT)
                     let x, y;
                     if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
-                        x = 600 + (seed % 150);
-                        y = 900 + ((seed * 17) % 200);
+                        x = 100 + (seed % 250);
+                        y = 875 + ((seed * 17) % 250);
                     } else if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
                         x = 150 + (seed % 300);
                         y = 1575 + ((seed * 17) % 300);
@@ -622,8 +629,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     // Orange Base (T)
                     let x, y;
                     if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
-                        x = 1250 + (seed % 150);
-                        y = 900 + ((seed * 17) % 200);
+                        x = 1600 + (seed % 250);
+                        y = 875 + ((seed * 17) % 250);
                     } else if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
                         x = 3000 + (seed % 300);
                         y = 1575 + ((seed * 17) % 300);
@@ -662,6 +669,9 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function startBrMatchLocal(mode) {
+                if (mode && mode.startsWith('br_')) {
+                    mode = mode.replace('br_', '');
+                }
                 currentMode = mode;
                 BR_SIZE = (mode === 'tdm_5v5') ? 3500 : 2000;
                 br.matchActive = true;
@@ -671,6 +681,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.isSpectator = false;
                 br.aliveTracker = {};
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (mode === 'duel_1v1' || mode === 'duel_2v2') ? 600 : BR_SIZE };
+                br.bgCanvas = null;
+                br.bgCtx = null;
 
                 br.settings = mergedSettingsForGame('br_2d');
                 const mySettings = br.settings.players?.[myId] || {};
@@ -1061,6 +1073,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         [`${base}/zone`]: br.zone,
                         [`${base}/bots`]: bots,
                         [`${base}/walls`]: mapWalls,
+                        [`${base}/smokes`]: br.smokeZones,
                         [`${base}/bullets`]: null,
                         [`${base}/players`]: playersObj,
                         [`${base}/damage`]: damageObj
@@ -1069,6 +1082,16 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     db.ref(`${base}/players/${myId}`).update(brPublicPlayerState(true)).catch(() => {});
                 } else {
                     br.teamInitialized = false;
+                    br.smokesListener = snap => {
+                        if (snap.exists()) {
+                            const val = snap.val();
+                            br.smokeZones = Array.isArray(val) ? val : Object.values(val);
+                        } else {
+                            br.smokeZones = [];
+                        }
+                    };
+                    db.ref(`${base}/smokes`).on('value', br.smokesListener);
+
                     db.ref(`${base}/players/${myId}`).once('value').then(snap => {
                         if (snap.exists()) {
                             const data = snap.val();
@@ -1798,6 +1821,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             }
                         }
                     }
+                    const insideAlpha = getBrPlayerSmokeAlpha(b.x, b.y);
+                    alpha = Math.min(alpha, insideAlpha);
                     ctx.save();
                     ctx.globalAlpha = alpha;
                     drawBrFighter(ctx, b, getFighterColor(b), b.label, b.maxHp || 150);
@@ -1819,6 +1844,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                 }
                             }
                         }
+                        const insideAlpha = getBrPlayerSmokeAlpha(rp.x, rp.y);
+                        alpha = Math.min(alpha, insideAlpha);
                         ctx.save();
                         ctx.globalAlpha = alpha;
                         drawBrFighter(ctx, rp, getFighterColor(p), p.name || 'Игрок', p.maxHp || BR_DEFAULT_HP);
@@ -1828,11 +1855,15 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
                 // Draw local player
                 if (br.myP.hp > 0) {
+                    ctx.save();
+                    const localAlpha = getBrPlayerSmokeAlpha(br.myP.x, br.myP.y);
+                    ctx.globalAlpha = localAlpha;
                     if (brIsInvulnerable(br.myP, now)) {
                         ctx.fillStyle = 'rgba(255,255,255,0.5)';
                         ctx.beginPath(); ctx.arc(br.myP.x, br.myP.y, BR_PLAYER_R + 10, 0, Math.PI * 2); ctx.fill();
                     }
                     drawBrFighter(ctx, br.myP, getFighterColor(br.myP), myName, br.myP.maxHp || BR_DEFAULT_HP);
+                    ctx.restore();
                 }
 
                 // Draw local bullets with tracers
@@ -2015,9 +2046,13 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                      if (br.wallsListener) {
                          db.ref(`lobbies/${lobbyId}/br/walls`).off('value', br.wallsListener);
                      }
+                     if (br.smokesListener) {
+                         db.ref(`lobbies/${lobbyId}/br/smokes`).off('value', br.smokesListener);
+                     }
                      if (isHost) {
                          db.ref(`lobbies/${lobbyId}/br/matchActive`).remove().catch(() => {});
                          db.ref(`lobbies/${lobbyId}/br/walls`).remove().catch(() => {});
+                         db.ref(`lobbies/${lobbyId}/br/smokes`).remove().catch(() => {});
                      }
                      if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
                      if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
@@ -2034,6 +2069,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                  br.damageListener = null;
                  br.botsListener = null;
                  br.wallsListener = null;
+                 br.smokesListener = null;
                  shootTouch = null;
                  isShooting = false;
                  br.bloodStains = [];
