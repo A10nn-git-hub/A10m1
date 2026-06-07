@@ -1176,7 +1176,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     }
                 };
                 br.botsListener = snap => {
-                    br.bots = snap.exists() ? Object.values(snap.val()) : [];
+                    if (isHost && lobbyId) return;
+                    applyBrBotViews(snap.exists() ? Object.values(snap.val()) : []);
                 };
                 db.ref(`${base}/players`).on('value', br.playersListener);
                 br.damageListener = snap => {
@@ -1245,7 +1246,6 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 }
                 return state;
             }
-
             function applyBrRemotePlayers(nextPlayers) {
                 br.remotePlayers = nextPlayers || {};
                 Object.keys(br.remotePlayerViews).forEach(id => {
@@ -1263,26 +1263,114 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     const vy = Number(p.vy) || 0;
                     const view = br.remotePlayerViews[p.id];
                     if (!view) {
-                        br.remotePlayerViews[p.id] = { x, y, a: p.a || 0, snapshotX: x, snapshotY: y, vx, vy, targetX: x, targetY: y, targetA: p.a || 0, receivedAt: Date.now(), lastSeen: Date.now() };
+                        br.remotePlayerViews[p.id] = { 
+                            x, y, a: p.a || 0, 
+                            snapshotX: x, snapshotY: y, 
+                            vx, vy, 
+                            targetX: x, targetY: y, 
+                            targetA: p.a || 0, 
+                            receivedAt: Date.now(), 
+                            lastSeen: Date.now(),
+                            lastUpdatedAt: p.updatedAt || 0
+                        };
                         applyBrRemoteShot(p);
                         return;
                     }
-                    view.snapshotX = x;
-                    view.snapshotY = y;
-                    view.vx = vx;
-                    view.vy = vy;
-                    view.targetX = x;
-                    view.targetY = y;
-                    view.targetA = p.a || 0;
-                    view.receivedAt = Date.now();
-                    view.lastSeen = Date.now();
-                    if (Math.hypot(view.x - x, view.y - y) > 320) {
-                        view.x = x;
-                        view.y = y;
-                        view.a = view.targetA;
+                    const isNewUpdate = (p.updatedAt !== undefined && view.lastUpdatedAt !== p.updatedAt) ||
+                                        view.snapshotX !== x ||
+                                        view.snapshotY !== y ||
+                                        view.vx !== vx ||
+                                        view.vy !== vy ||
+                                        view.targetA !== (p.a || 0);
+                    if (isNewUpdate) {
+                        view.snapshotX = x;
+                        view.snapshotY = y;
+                        view.vx = vx;
+                        view.vy = vy;
+                        view.targetX = x;
+                        view.targetY = y;
+                        view.targetA = p.a || 0;
+                        view.receivedAt = Date.now();
+                        view.lastSeen = Date.now();
+                        view.lastUpdatedAt = p.updatedAt || 0;
+                        if (Math.hypot(view.x - x, view.y - y) > 320) {
+                            view.x = x;
+                            view.y = y;
+                            view.a = view.targetA;
+                        }
                     }
                     applyBrRemoteShot(p);
                 });
+            }
+
+            function applyBrBotViews(nextBots) {
+                br.bots = nextBots || [];
+                if (!br.botViews) br.botViews = {};
+                Object.keys(br.botViews).forEach(id => {
+                    if (!br.bots.some(b => b.id === id)) delete br.botViews[id];
+                });
+                br.bots.forEach(b => {
+                    if (!b.alive || b.hp <= 0) return;
+                    const x = Number(b.x) || 0;
+                    const y = Number(b.y) || 0;
+                    const vx = Number(b.vx) || 0;
+                    const vy = Number(b.vy) || 0;
+                    const view = br.botViews[b.id];
+                    if (!view) {
+                        br.botViews[b.id] = {
+                            x, y, a: b.a || 0,
+                            snapshotX: x, snapshotY: y,
+                            vx, vy,
+                            targetX: x, targetY: y,
+                            targetA: b.a || 0,
+                            receivedAt: Date.now(),
+                            lastSeen: Date.now(),
+                            lastUpdatedAt: b.updatedAt || 0
+                        };
+                        return;
+                    }
+                    const isNewUpdate = view.lastUpdatedAt !== b.updatedAt ||
+                                        view.snapshotX !== x ||
+                                        view.snapshotY !== y ||
+                                        view.vx !== vx ||
+                                        view.vy !== vy ||
+                                        view.targetA !== (b.a || 0);
+                    if (isNewUpdate) {
+                        view.snapshotX = x;
+                        view.snapshotY = y;
+                        view.vx = vx;
+                        view.vy = vy;
+                        view.targetX = x;
+                        view.targetY = y;
+                        view.targetA = b.a || 0;
+                        view.receivedAt = Date.now();
+                        view.lastSeen = Date.now();
+                        view.lastUpdatedAt = b.updatedAt || 0;
+                    }
+                });
+            }
+
+            function updateBrBotViews() {
+                if (isHost || !lobbyId) return;
+                if (!br.botViews) br.botViews = {};
+                Object.values(br.botViews).forEach(view => {
+                    const framesAhead = Math.min(8, Math.max(0, (Date.now() - (view.receivedAt || Date.now())) / 16.67));
+                    view.targetX = (view.snapshotX || view.targetX || 0) + (view.vx || 0) * framesAhead;
+                    view.targetY = (view.snapshotY || view.targetY || 0) + (view.vy || 0) * framesAhead;
+                    view.x += (view.targetX - view.x) * 0.22;
+                    view.y += (view.targetY - view.y) * 0.22;
+                    let da = (view.targetA || 0) - (view.a || 0);
+                    while (da > Math.PI) da -= Math.PI * 2;
+                    while (da < -Math.PI) da += Math.PI * 2;
+                    view.a = (view.a || 0) + da * 0.25;
+                });
+            }
+
+            function getBrRenderableBot(b) {
+                if (isHost || !lobbyId) return b;
+                if (!br.botViews) br.botViews = {};
+                const view = br.botViews[b.id];
+                return view ? Object.assign({}, b, {x: view.x, y: view.y, a: view.a}) : b;
             }
 
             function applyBrRemoteShot(p) {
@@ -1414,6 +1502,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
                 updateBrLocalPlayer(now);
                 updateBrRemotePlayerViews();
+                updateBrBotViews();
                 if (isHost || !lobbyId) updateBrBots(now);
                 updateBrBullets(now);
                 if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
@@ -1595,6 +1684,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         const botSpeed = 2 * brSpeedMultiplier(b.speed);
                         const moveX = Math.cos(b.a) * botSpeed;
                         const moveY = Math.sin(b.a) * botSpeed;
+                        b.vx = moveX;
+                        b.vy = moveY;
                         const oldBx = b.x;
                         const oldBy = b.y;
 
@@ -1603,6 +1694,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             b.x = Math.max(minX + BR_PLAYER_R, Math.min(maxX - BR_PLAYER_R, b.x));
                             if (checkPlayerCollisionWithWalls(b.x, b.y, BR_PLAYER_R)) {
                                 b.x = oldBx;
+                                b.vx = 0;
                             }
                         }
                         if (moveY !== 0) {
@@ -1610,9 +1702,13 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             b.y = Math.max(minY + BR_PLAYER_R, Math.min(maxY - BR_PLAYER_R, b.y));
                             if (checkPlayerCollisionWithWalls(b.x, b.y, BR_PLAYER_R)) {
                                 b.y = oldBy;
+                                b.vy = 0;
                             }
                         }
                         changed = true;
+                    } else {
+                        b.vx = 0;
+                        b.vy = 0;
                     }
                     if (Math.hypot(b.x - br.zone.x, b.y - br.zone.y) > br.zone.r) {
                         b.hp -= 0.5;
@@ -1626,8 +1722,14 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             brBotTryShoot(b, now);
                         }
                     }
+                    b.updatedAt = now;
                 });
-                if (changed && lobbyId) db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
+                if (changed && lobbyId) {
+                    if (!br.lastBotSyncAt || now - br.lastBotSyncAt >= 80) {
+                        db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
+                        br.lastBotSyncAt = now;
+                    }
+                }
             }
 
             function brBotTryShoot(bot, now) {
@@ -1687,11 +1789,12 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         if (hit || !b.alive || b.hp <= 0) return;
                         if (!brIsEnemyTarget(bul.owner, b)) return;
                         if (brIsInvulnerable(b, now)) return;
-                        if (Math.hypot(bul.x - b.x, bul.y - b.y) < BR_PLAYER_R) {
+                        const rb = getBrRenderableBot(b);
+                        if (Math.hypot(bul.x - rb.x, bul.y - rb.y) < BR_PLAYER_R) {
                             hit = true;
                             applyBrBotDamage(b, 25, bul.owner, !!bul.isBot);
                             spawnBloodSplatter(bul.x, bul.y);
-                            checkAndAddBloodDecal(b, bul.x, bul.y);
+                            checkAndAddBloodDecal(rb, bul.x, bul.y);
                             if (bul.owner === myId) playBrSound('hit');
                         }
                     });
@@ -1803,7 +1906,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     ctx.translate(offsetX, offsetY);
                     ctx.scale(scale, scale);
                 } else {
-                    let targetSize = 1000;
+                    let targetSize = 200;
                     let scale = Math.min(c.width / targetSize, c.height / targetSize);
                     scale = Math.max(0.4, scale);
                     ctx.scale(scale, scale);
@@ -1857,22 +1960,23 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
                 // Draw bots with smoke transparency checks
                 br.bots.filter(b => b.alive && b.hp > 0).forEach(b => {
+                    const rb = getBrRenderableBot(b);
                     let alpha = 1.0;
                     if (localAlive && brIsEnemyTarget(myId, b)) {
                         if (br.smokeZones) {
                             for (let smoke of br.smokeZones) {
-                                if (lineIntersectsCircle(br.myP.x, br.myP.y, b.x, b.y, smoke.x, smoke.y, smoke.r)) {
+                                if (lineIntersectsCircle(br.myP.x, br.myP.y, rb.x, rb.y, smoke.x, smoke.y, smoke.r)) {
                                     alpha = 0.2;
                                     break;
                                 }
                             }
                         }
                     }
-                    const insideAlpha = getBrPlayerSmokeAlpha(b.x, b.y);
+                    const insideAlpha = getBrPlayerSmokeAlpha(rb.x, rb.y);
                     alpha = Math.min(alpha, insideAlpha);
                     ctx.save();
                     ctx.globalAlpha = alpha;
-                    drawBrFighter(ctx, b, getFighterColor(b), b.label, b.maxHp || 150);
+                    drawBrFighter(ctx, rb, getFighterColor(b), b.label, b.maxHp || 150);
                     ctx.restore();
                 });
 
@@ -2124,4 +2228,6 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                  br.smokeZones = [];
                  br.bgCanvas = null;
                  br.bgCtx = null;
+                 br.botViews = {};
+                 br.lastBotSyncAt = null;
              }

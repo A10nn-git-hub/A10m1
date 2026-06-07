@@ -1080,7 +1080,6 @@ function currentPresenceState() {
 function syncPresence() {
     if (!myId || !db) return;
     const state = currentPresenceState();
-    if (state === 'away' && typeof closeLobbyForAway === 'function') closeLobbyForAway();
     db.ref(`users/${myId}/presence`).update({
         state,
         lastSeenAt: firebase.database.ServerValue.TIMESTAMP
