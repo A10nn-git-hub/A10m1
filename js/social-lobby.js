@@ -778,6 +778,8 @@
                     isHost = d.host === myId;
                     if (d.currentMode) {
                         currentMode = d.currentMode;
+                    } else if (d.br && d.br.currentMode) {
+                        currentMode = d.br.currentMode;
                     } else {
                         currentMode = 'tdm_5v5';
                     }

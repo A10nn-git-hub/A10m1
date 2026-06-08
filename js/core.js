@@ -214,7 +214,7 @@ async function fetchGeminiAPI(promptStr) {
     let retries = 5, delay = 1000;
     while (retries > 0) {
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] })
@@ -606,7 +606,7 @@ async function startLobbyGame() {
             [`lobbies/${lobbyId}/contest`]: makeContestPayload(selectedGameId, lobbyData)
         }, 'start lobby game');
         appState.suppressedGameStart = null;
-        setIsland("Запуск игры...", "#34c759");
+        setIsland("Запуск игры...", "#34c759", 3000);
     } catch (err) {
         showNegativeAlert(getFirebaseFriendlyMessage("Не удалось запустить игру. Проверь доступ к Firebase."));
     }
@@ -698,8 +698,99 @@ function setPauseUI(paused, hostLocked = false) {
     appState.isPaused = !!paused;
     appState.hostPaused = !!hostLocked;
     document.getElementById('pause-overlay').classList.toggle('hidden', !paused);
-    const resumeBtn = document.getElementById('pause-resume-btn');
-    if (resumeBtn) resumeBtn.style.display = hostLocked && !isHost ? 'none' : 'block';
+    
+    if (paused) {
+        switchPauseTab('teams');
+    }
+}
+
+function switchPauseTab(tabName) {
+    document.querySelectorAll('.pause-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    document.querySelectorAll('.pause-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    
+    if (tabName === 'teams') {
+        document.getElementById('pause-tab-btn-teams')?.classList.add('active');
+        document.getElementById('pause-tab-teams')?.classList.add('active');
+        renderPauseTeamsList();
+    } else if (tabName === 'settings') {
+        document.getElementById('pause-tab-btn-settings')?.classList.add('active');
+        document.getElementById('pause-tab-settings')?.classList.add('active');
+        
+        // Load sensitivity value
+        const sens = localStorage.getItem('game_sensitivity') || '5.0';
+        const slider = document.getElementById('pause-sens-range');
+        const display = document.getElementById('pause-sens-val');
+        if (slider && display) {
+            slider.value = sens;
+            display.innerText = parseFloat(sens).toFixed(1);
+        }
+    }
+}
+
+function updatePauseSens(val) {
+    const sens = Math.max(0.1, parseFloat(val));
+    window.gameSensitivity = sens;
+    const display = document.getElementById('pause-sens-val');
+    if (display) display.innerText = sens.toFixed(1);
+    
+    // Update main sensitivity slider too
+    const mainSlider = document.getElementById('sensitivity-range');
+    const mainDisplay = document.getElementById('sensitivity-value');
+    if (mainSlider && mainDisplay) {
+        mainSlider.value = sens;
+        mainDisplay.innerText = sens.toFixed(1);
+    }
+    
+    localStorage.setItem('game_sensitivity', sens.toFixed(1));
+}
+
+function renderPauseTeamsList() {
+    const ctList = document.getElementById('pause-ct-list');
+    const tList = document.getElementById('pause-t-list');
+    if (!ctList || !tList) return;
+    
+    ctList.innerHTML = '';
+    tList.innerHTML = '';
+    
+    if (appState.game !== 'br_2d' || typeof br === 'undefined' || !br.active) {
+        ctList.innerHTML = '<div style="padding: 10px; color: gray;">Нет данных</div>';
+        tList.innerHTML = '<div style="padding: 10px; color: gray;">Нет данных</div>';
+        return;
+    }
+    
+    const renderRow = (name, isSelf, kills) => {
+        const row = document.createElement('div');
+        row.className = 'pause-player-row' + (isSelf ? ' local-player' : '');
+        row.innerHTML = `<span>${escapeHTML(name)}</span><span style="color: gray;">${kills} K</span>`;
+        return row;
+    };
+    
+    if (br.myP) {
+        const row = renderRow(myName, true, br.kills || 0);
+        const team = brNormalizeTeam(br.myP.team);
+        if (team === 'Counter-Terrorists') ctList.appendChild(row);
+        else if (team === 'Terrorists') tList.appendChild(row);
+    }
+    
+    Object.values(br.remotePlayers).forEach(p => {
+        if (p.id !== myId) {
+            const row = renderRow(p.name || 'Игрок', false, p.kills || 0);
+            const team = brNormalizeTeam(p.team);
+            if (team === 'Counter-Terrorists') ctList.appendChild(row);
+            else if (team === 'Terrorists') tList.appendChild(row);
+        }
+    });
+    
+    br.bots.forEach(b => {
+        const row = renderRow(b.label || b.id, false, b.kills || 0);
+        const team = brNormalizeTeam(b.team);
+        if (team === 'Counter-Terrorists') ctList.appendChild(row);
+        else if (team === 'Terrorists') tList.appendChild(row);
+    });
 }
 
 function togglePause(p, options = {}) {
@@ -860,7 +951,8 @@ function openProfileStatsModal(id) {
         document.getElementById('ps-card-medals').innerHTML = getMedalsHTML(d.pMedals);
         document.getElementById('ps-tab-you').innerHTML = isSelf ? '' : generateKDHTML(getInvertedStats(pvpStats[id]));
         document.getElementById('ps-tab-all').innerHTML = generateKDHTML(buildTotalStats(d.pvpStats));
-        document.getElementById('ps-tab-ai').innerHTML = generateKDHTML(d.aiStats);
+        const psTabAi = document.getElementById('ps-tab-ai');
+        if (psTabAi) psTabAi.innerHTML = generateKDHTML(d.aiStats);
         switchMiniTab(isSelf ? 'ps-tab-all' : 'ps-tab-you', document.getElementById(isSelf ? 'ps-tab-btn-all' : 'ps-tab-btn-you'));
         document.getElementById('profile-stats-modal').classList.remove('hidden');
     });
@@ -1693,7 +1785,7 @@ setInterval(() => {
 
 function initApp() {
     const savedSens = localStorage.getItem('game_sensitivity');
-    window.gameSensitivity = savedSens !== null ? parseFloat(savedSens) : 5.0;
+    window.gameSensitivity = savedSens !== null ? Math.max(0.1, parseFloat(savedSens)) : 5.0;
 
     setTimeout(() => {
         const rangeInput = document.getElementById('sensitivity-range');
@@ -1702,9 +1794,9 @@ function initApp() {
             rangeInput.value = window.gameSensitivity;
             valDisplay.innerText = window.gameSensitivity.toFixed(1);
             rangeInput.addEventListener('input', function () {
-                window.gameSensitivity = parseFloat(this.value);
+                window.gameSensitivity = Math.max(0.1, parseFloat(this.value));
                 valDisplay.innerText = window.gameSensitivity.toFixed(1);
-                localStorage.setItem('game_sensitivity', this.value);
+                localStorage.setItem('game_sensitivity', window.gameSensitivity.toFixed(1));
             });
         }
     }, 50);
@@ -1818,16 +1910,18 @@ function initApp() {
 }
 
 let islandHideTimeout;
-function setIsland(t, c = '#fff') {
+function setIsland(t, c = '#fff', timeout = 5000) {
     let is = document.getElementById('dynamic-island');
-    document.getElementById('island-text').innerText = t;
+    if (!is) return;
+    const islandText = document.getElementById('island-text');
+    if (islandText) islandText.innerText = t;
     is.style.display = 'block';
     is.style.border = `2px solid ${c}`;
 
     clearTimeout(islandHideTimeout);
     islandHideTimeout = setTimeout(() => {
         is.style.display = 'none';
-    }, 5000);
+    }, timeout);
 }
 
 let customErrorTimeout;

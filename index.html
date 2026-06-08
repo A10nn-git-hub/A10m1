@@ -40,6 +40,22 @@
         <h2 id="orient-warn-text">ПОВЕРНИ УСТРОЙСТВО 🔄<br><br>Правильная ориентация экрана обязательна!</h2>
     </div>
 
+    <!-- loading Splash Screen -->
+    <div id="br-splash-screen" class="splash-screen">
+        <div class="splash-bg"></div>
+        <div class="splash-content">
+            <div class="splash-logo">🎯</div>
+            <h1 class="splash-title">STANDOFF 2D</h1>
+            <div class="splash-loader-container">
+                <div class="splash-status" id="splash-status-text">Checking for data update</div>
+                <div class="splash-percentage" id="splash-percentage-text">10.0%</div>
+                <div class="splash-progress-track">
+                    <div class="splash-progress-bar" id="splash-progress-bar" style="width: 10%;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="beta-ban-overlay">
         <div style="font-size: 80px; margin-bottom: 20px;">🚫</div>
         <h1>ИГРА ЗАКРЫТА<br>НА БЕТА-ТЕСТ</h1>
@@ -105,10 +121,8 @@
                     <div class="profile-right-col">
                         <div class="mini-tabs-header">
                             <button class="mini-tab-btn active" onclick="switchMiniTab('my-stats-all', this)">ОБЩАЯ СТАТИСТИКА</button>
-                            <button class="mini-tab-btn" onclick="switchMiniTab('my-stats-ai', this)">ИГРЫ С ИИ</button>
                         </div>
                         <div id="my-stats-all" class="mini-tab-content active" style="width:100%;"></div>
-                        <div id="my-stats-ai" class="mini-tab-content" style="width:100%;"></div>
                     </div>
                 </div>
             </div>
@@ -242,8 +256,9 @@
                                 <span>Чувствительность</span>
                                 <span id="sensitivity-value">5.0</span>
                             </div>
-                            <input type="range" id="sensitivity-range" min="0" max="10" step="0.1" value="5.0" style="width:100%; accent-color:var(--coin-col); cursor:pointer;">
+                            <input type="range" id="sensitivity-range" min="0.1" max="10" step="0.1" value="5.0" style="width:100%; accent-color:var(--coin-col); cursor:pointer;">
                         </div>
+                        <button class="btn btn-green" id="hud-customization-btn" onclick="openHUDCustomizer()" style="width:100%; margin: 15px 0; background:#3390ec;">КАСТОМИЗАЦИЯ</button>
                         <div class="profile-version" style="margin-top:12px;">
                             <div class="profile-version-label">Версия программы</div>
                             <div class="profile-version-main" id="app-version-main-settings">commit ...</div>
@@ -556,6 +571,17 @@
             <div class="game-screen" id="screen-game-br">
                 <div id="br-container" style="background:#0e1118; width: 100%; height: 100%; position: relative; overflow: hidden;">
                     <canvas id="br-canvas"></canvas>
+                    <canvas id="br-minimap-canvas" style="display: none;"></canvas>
+                    <div id="br-fullscreen-map-overlay" class="overlay hidden" onclick="closeFullscreenMap()">
+                        <div class="fullscreen-map-window" onclick="event.stopPropagation()">
+                            <div class="fullscreen-map-header">
+                                <h3>ТАКТИЧЕСКАЯ КАРТА</h3>
+                                <button class="btn btn-red" onclick="closeFullscreenMap()">✖</button>
+                            </div>
+                            <canvas id="br-fullscreen-map-canvas"></canvas>
+                            <div class="fullscreen-map-footer">Зажми и нажми на карту, чтобы поставить метку</div>
+                        </div>
+                    </div>
                     
                     <!-- Standoff 2 style Scoreboard -->
                     <div id="br-scoreboard" style="display: none; position: absolute; top: 12px; left: 50%; transform: translateX(-50%); z-index: 1000; font-family: sans-serif; align-items: center; background: rgba(15, 17, 24, 0.85); border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.15); overflow: hidden; box-shadow: 0 4px 25px rgba(0,0,0,0.65);">
@@ -717,11 +743,38 @@
             </div>
         </div>
         
-        <div id="pause-overlay" class="overlay glass hidden">
-            <h2>ПАУЗА ⏸️</h2>
-            <div style="width:300px;display:flex;flex-direction:column;gap:10px;">
-                <button id="pause-resume-btn" class="btn btn-green" onclick="togglePause(false)">ПРОДОЛЖИТЬ</button>
-                <button class="btn btn-red" onclick="exitToLobby()">В ЛОББИ</button>
+        <div id="pause-overlay" class="overlay glass hidden" onclick="togglePause(false)">
+            <div class="pause-menu-container" onclick="event.stopPropagation()">
+                <!-- Left Tabs Sidebar -->
+                <div class="pause-tabs-sidebar">
+                    <button class="pause-tab-btn active" id="pause-tab-btn-teams" onclick="switchPauseTab('teams')">▶</button>
+                    <button class="pause-tab-btn" id="pause-tab-btn-settings" onclick="switchPauseTab('settings')">⚙</button>
+                </div>
+                <!-- Right Content Area -->
+                <div class="pause-tab-content active" id="pause-tab-teams">
+                    <div class="pause-teams-columns">
+                        <div class="pause-team-col ct-col">
+                            <h3>Counter-Terrorists</h3>
+                            <div class="pause-team-list" id="pause-ct-list"></div>
+                            <button id="pause-cancel-btn" class="btn btn-green pause-action-btn" onclick="togglePause(false)">ОТМЕНА</button>
+                        </div>
+                        <div class="pause-team-col t-col">
+                            <h3>Terrorists</h3>
+                            <div class="pause-team-list" id="pause-t-list"></div>
+                            <button id="pause-exit-btn" class="btn btn-red pause-action-btn" onclick="exitToLobby()">ВЫЙТИ</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="pause-tab-content" id="pause-tab-settings">
+                    <h3>Настройки</h3>
+                    <div class="pause-setting-row" style="margin-top: 20px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px; font-weight:bold; width: 100%;">
+                            <span>Чувствительность</span>
+                            <span id="pause-sens-val">5.0</span>
+                        </div>
+                        <input type="range" id="pause-sens-range" min="0.1" max="10" step="0.1" value="5.0" style="width:100%; accent-color:var(--coin-col); cursor:pointer;" oninput="updatePauseSens(this.value)">
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -770,11 +823,9 @@
                     <div class="mini-tabs-header" style="flex-wrap:wrap;">
                         <button class="mini-tab-btn active" id="ps-tab-btn-you" onclick="switchMiniTab('ps-tab-you', this)">ИГРА С ТОБОЙ</button>
                         <button class="mini-tab-btn" id="ps-tab-btn-all" onclick="switchMiniTab('ps-tab-all', this)">ВСЕ ИГРЫ</button>
-                        <button class="mini-tab-btn" id="ps-tab-btn-ai" onclick="switchMiniTab('ps-tab-ai', this)">ИГРЫ С ИИ</button>
                     </div>
                     <div id="ps-tab-you" class="mini-tab-content active" style="width:100%;"></div>
                     <div id="ps-tab-all" class="mini-tab-content" style="width:100%;"></div>
-                    <div id="ps-tab-ai" class="mini-tab-content" style="width:100%;"></div>
                 </div>
             </div>
             <button id="profile-stats-modal-close" class="btn btn-red" style="position:fixed;bottom:20px;right:20px;z-index:5000;padding:15px 20px;font-size:18px;" onclick="closeProfileStatsModal(event)">✖</button>
@@ -833,6 +884,49 @@
                 <div style="display: flex; gap: 15px; justify-content: center;">
                     <button id="custom-confirm-btn-yes" class="btn btn-green" style="flex: 1; margin: 0; padding: 10px;">Да</button>
                     <button id="custom-confirm-btn-no" class="btn btn-red" style="flex: 1; margin: 0; padding: 10px;">Отмена</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="br-customizer-screen" style="display: none;">
+            <div class="customizer-header">
+                <h2>НАСТРОЙКА ИНТЕРФЕЙСА</h2>
+                <div class="customizer-actions">
+                    <button class="btn btn-green" onclick="saveHUDLayout()">СОХРАНИТЬ</button>
+                    <button class="btn btn-dark" onclick="resetHUDLayout()">СБРОС</button>
+                    <button class="btn btn-red" onclick="closeHUDCustomizer()">ЗАКРЫТЬ</button>
+                </div>
+            </div>
+            
+            <div class="cust-mock" id="br-cust-joystick" onclick="showCustContext('joystick', event)">
+                <div class="cust-label">ДЖОЙСТИК</div>
+                <div class="mock-joystick-ring">
+                    <div class="mock-joystick-dot"></div>
+                </div>
+            </div>
+            
+            <div class="cust-mock" id="br-cust-shoot" onclick="showCustContext('shoot', event)">
+                <div class="cust-label">СТРЕЛЬБА</div>
+                <div class="mock-shoot-btn">ОГОНЬ</div>
+            </div>
+            
+            <div class="cust-mock" id="br-cust-minimap" onclick="showCustContext('minimap', event)">
+                <div class="cust-label">РАДАР</div>
+                <div class="mock-minimap-box"></div>
+            </div>
+            
+            <div id="br-cust-context-menu" style="display: none;" onclick="event.stopPropagation()">
+                <h4 id="br-cust-context-title">Параметры</h4>
+                <div class="context-group">
+                    <label>Размер:</label>
+                    <div class="context-size-btns">
+                        <button class="context-size-btn" id="size-btn-small" onclick="setCustSize('small')">Маленький</button>
+                        <button class="context-size-btn" id="size-btn-standard" onclick="setCustSize('standard')">Стандартный</button>
+                        <button class="context-size-btn" id="size-btn-large" onclick="setCustSize('large')">Большой</button>
+                    </div>
+                </div>
+                <div class="context-group" id="context-options-group">
+                    <!-- Dynamic inputs added here -->
                 </div>
             </div>
         </div>

@@ -305,13 +305,19 @@
                     
                     let newVer = incrementVersionString(currentVer);
                     
-                    const planRes = await fetch('Update_plan.md');
-                    if (!planRes.ok) throw new Error("Не удалось загрузить Update_plan.md");
-                    const planText = await planRes.text();
+                    let planText = "";
+                    try {
+                        const planRes = await fetch('Update_plan.md');
+                        if (planRes.ok) planText = await planRes.text();
+                    } catch (e) {
+                        console.warn("Could not fetch Update_plan.md", e);
+                    }
                     
-                    const prompt = `Проанализируй данный документ Update_plan.md и составь очень краткий список изменений (патчноут) на русском языке для версии ${newVer}. Верни только сам список изменений в виде текста или маркированного списка (максимум 4-5 коротких пунктов), без лишних предисловий или мета-комментариев. Документ:\n\n${planText}`;
-                    
-                    const patchnote = await fetchGeminiAPI(prompt);
+                    let patchnote = "Автоматическое обновление версии.";
+                    if (planText) {
+                        const prompt = `Проанализируй данный документ Update_plan.md и составь очень краткий список изменений (патчноут) на русском языке для версии ${newVer}. Верни только сам список изменений в виде текста или маркированного списка (максимум 4-5 коротких пунктов), без лишних предисловий или мета-комментариев. Документ:\n\n${planText}`;
+                        patchnote = await fetchGeminiAPI(prompt);
+                    }
                     
                     await db.ref('app_version').set({
                         version: newVer,

@@ -205,6 +205,59 @@
                 return (dx * dx + dy * dy) < (cr * cr);
             }
 
+            function lineIntersectsLine(x1, y1, x2, y2, x3, y3, x4, y4) {
+                const det = (x2 - x1) * (y4 - y3) - (y2 - y1) * (x4 - x3);
+                if (det === 0) return false;
+                const lambda = ((y4 - y3) * (x4 - x1) + (x3 - x4) * (y4 - y1)) / det;
+                const gamma = ((y1 - y2) * (x4 - x1) + (x2 - x1) * (y4 - y1)) / det;
+                return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+            }
+
+            function lineIntersectsWall(x1, y1, x2, y2, wall) {
+                const rx = wall.x, ry = wall.y, rw = wall.w, rh = wall.h;
+                if (x1 >= rx && x1 <= rx + rw && y1 >= ry && y1 <= ry + rh) return true;
+                if (x2 >= rx && x2 <= rx + rw && y2 >= ry && y2 <= ry + rh) return true;
+                if (lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx + rw, ry)) return true;
+                if (lineIntersectsLine(x1, y1, x2, y2, rx, ry + rh, rx + rw, ry + rh)) return true;
+                if (lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx, ry + rh)) return true;
+                if (lineIntersectsLine(x1, y1, x2, y2, rx + rw, ry, rx + rw, ry + rh)) return true;
+                return false;
+            }
+
+            function brCheckVisibility(fromP, toP) {
+                for (let wall of mapWalls) {
+                    if (lineIntersectsWall(fromP.x, fromP.y, toP.x, toP.y, wall)) return false;
+                }
+                if (br.smokeZones) {
+                    for (let smoke of br.smokeZones) {
+                        if (lineIntersectsCircle(fromP.x, fromP.y, toP.x, toP.y, smoke.x, smoke.y, smoke.r)) return false;
+                    }
+                }
+                return true;
+            }
+
+            function brIsEnemyVisibleToTeam(enemy) {
+                if (br.myP && br.myP.hp > 0 && !br.isSpectator) {
+                    if (brCheckVisibility(br.myP, enemy)) return true;
+                }
+                const myTeam = brNormalizeTeam(br.myP.team);
+                for (let p of Object.values(br.remotePlayers)) {
+                    if (p.id !== myId && p.alive && (p.hp || 0) > 0) {
+                        if (brNormalizeTeam(p.team) === myTeam) {
+                            if (brCheckVisibility(p, enemy)) return true;
+                        }
+                    }
+                }
+                for (let b of br.bots) {
+                    if (b.alive && (b.hp || 0) > 0) {
+                        if (brNormalizeTeam(b.team) === myTeam) {
+                            if (brCheckVisibility(b, enemy)) return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
             function getBrPlayerSmokeAlpha(px, py) {
                 let minAlpha = 1.0;
                 if (br.smokeZones) {
@@ -604,8 +657,107 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         osc.start(now);
                         osc.stop(now + 0.45);
                     }
+                } catch (e) {
+                    console.error(e);
+                }
+            }
+
+            function playSquelchSound() {
+                try {
+                    if (!brAudioCtx) return;
+                    const now = brAudioCtx.currentTime;
+                    const osc = brAudioCtx.createOscillator();
+                    const filter = brAudioCtx.createBiquadFilter();
+                    const gain = brAudioCtx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, now);
+                    osc.frequency.exponentialRampToValueAtTime(110, now + 0.1);
+                    
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(brAudioCtx.destination);
+                    osc.start(now);
+                    osc.stop(now + 0.12);
+
+                    const bufferSize = brAudioCtx.sampleRate * 0.1;
+                    const buffer = brAudioCtx.createBuffer(1, bufferSize, brAudioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = brAudioCtx.createBufferSource();
+                    noise.buffer = buffer;
+                    const noiseFilter = brAudioCtx.createBiquadFilter();
+                    noiseFilter.type = 'bandpass';
+                    noiseFilter.frequency.setValueAtTime(1500, now);
+                    const noiseGain = brAudioCtx.createGain();
+                    noiseGain.gain.setValueAtTime(0.04, now);
+                    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                    
+                    noise.connect(noiseFilter);
+                    noiseFilter.connect(noiseGain);
+                    noiseGain.connect(brAudioCtx.destination);
+                    noise.start(now);
+                    noise.stop(now + 0.1);
+                } catch (e) {
+                    console.error("Squelch sound error", e);
+                }
+            }
+
+            function playFactionWinSound(winnerTeam) {
+                try {
+                    if (!brAudioCtx) {
+                        brAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    if (brAudioCtx.state === 'suspended') {
+                        brAudioCtx.resume();
+                    }
+                    const now = brAudioCtx.currentTime;
+
+                    // 1. Static noise burst (radio turn on beep)
+                    const bufferSize = brAudioCtx.sampleRate * 0.15;
+                    const buffer = brAudioCtx.createBuffer(1, bufferSize, brAudioCtx.sampleRate);
+                    const data = buffer.getChannelData(0);
+                    for (let i = 0; i < bufferSize; i++) {
+                        data[i] = Math.random() * 2 - 1;
+                    }
+                    const noise = brAudioCtx.createBufferSource();
+                    noise.buffer = buffer;
+
+                    const filter = brAudioCtx.createBiquadFilter();
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(1000, now);
+
+                    const gain = brAudioCtx.createGain();
+                    gain.gain.setValueAtTime(0.08, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+                    noise.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(brAudioCtx.destination);
+                    noise.start(now);
+                    noise.stop(now + 0.15);
+
+                    // 2. Play speech synthesis after a short delay
+                    setTimeout(() => {
+                        if ('speechSynthesis' in window) {
+                            const text = winnerTeam === 'Counter-Terrorists' ? 'Counter-Terrorists win' : (winnerTeam === 'Terrorists' ? 'Terrorists win' : 'Round draw');
+                            const utterance = new SpeechSynthesisUtterance(text);
+                            utterance.lang = 'en-US';
+                            utterance.rate = 0.85;
+                            utterance.pitch = 0.75;
+                            utterance.onend = () => {
+                                playSquelchSound();
+                            };
+                            window.speechSynthesis.speak(utterance);
+                        }
+                    }, 150);
                 } catch (err) {
-                    console.warn("AudioContext playback failed", err);
+                    console.warn("Win sound playback failed", err);
                 }
             }
 
@@ -861,6 +1013,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 let c = document.getElementById('br-canvas');
                 resizeBrCanvas();
                 bindBrControls();
+                applyHUDLayout();
 
                 // Hide the Standoff 2 overlay menu!
                 const overlay = document.getElementById('so2-lobby-overlay');
@@ -1001,6 +1154,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         e.preventDefault();
                         e.stopPropagation();
                     }
+                    if (br.myP) br.myP.hasFiredThisPress = false;
                     const touch = e && e.changedTouches ? e.changedTouches[0] : null;
                     shootTouch = touch ? touch.identifier : 'm';
                     isShooting = true;
@@ -1033,7 +1187,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function initBrFirebaseState(mode) {
-                const botHp = (mode === 'tdm_5v5') ? 100 : 200;
+                const botHp = BR_DEFAULT_HP / 2;
                 if (!lobbyId) {
                     generateMap();
 
@@ -1251,12 +1405,22 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             br.tRounds = data.tRounds || 0;
                             br.currentRound = data.currentRound || 1;
                             
-                            if (br.ctRounds > oldCt) {
-                                setIsland("РАУНД ВЫИГРАЛИ: CT (синие)", "#32ade6");
-                            } else if (br.tRounds > oldT) {
-                                setIsland("РАУНД ВЫИГРАЛИ: T (оранжевые)", "#ff9f0a");
-                            } else if (br.currentRound > oldRound && br.ctRounds === oldCt && br.tRounds === oldT) {
-                                setIsland("НИЧЬЯ В РАУНДЕ", "#fff");
+                            if (data.roundEnding && data.roundEnding.until) {
+                                if (!br.roundEnding) {
+                                    br.roundEnding = true;
+                                    br.roundWinner = data.roundEnding.winner;
+                                    br.roundEndTransitionUntil = data.roundEnding.until;
+                                    
+                                    playFactionWinSound(br.roundWinner);
+                                    
+                                    const myTeam = brNormalizeTeam(br.myP.team);
+                                    const isWin = (myTeam === br.roundWinner);
+                                    setIsland(isWin ? "ПОБЕДА" : "ПОРАЖЕНИЕ", isWin ? "#34c759" : "#ff453a", 3000);
+                                }
+                            } else {
+                                if (br.roundEnding) {
+                                    br.roundEnding = false;
+                                }
                             }
                             
                             if (br.currentRound > oldRound) {
@@ -1285,7 +1449,10 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     br.myP.alive = true;
                     br.myP.invulnUntil = Date.now() + 3000;
                     br.damageTaken = 0;
+                    br.isSpectator = false;
                 }
+                const spectatorLabel = document.getElementById('br-ui-spectator');
+                if (spectatorLabel) spectatorLabel.style.display = 'none';
                 
                 if (isHost || !lobbyId) {
                     br.bots.forEach(b => {
@@ -1294,7 +1461,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         b.y = sp.y;
                         b.tx = sp.x;
                         b.ty = sp.y;
-                        b.hp = b.maxHp || 200;
+                        b.hp = b.maxHp || (BR_DEFAULT_HP / 2);
                         b.alive = true;
                         b.invulnUntil = Date.now() + 3000;
                         b.respawning = false;
@@ -1305,6 +1472,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         Object.keys(br.remotePlayers).forEach(pid => {
                             updates[`lobbies/${lobbyId}/br/damage/${pid}`] = 0;
                         });
+                        updates[`lobbies/${lobbyId}/br/damage/${myId}`] = 0;
                         updateDbPaths(updates, 'reset round damage').catch(() => {});
                     }
                 }
@@ -1737,7 +1905,13 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
             function fireBrShot(now) {
                 const mySettings = br.settings?.players?.[myId] || {};
-                const cooldown = 1000 / Math.max(1, Math.min(10, parseInt(mySettings.ammoPerSec) || 1));
+                let cooldown = 1000 / Math.max(1, Math.min(10, parseInt(mySettings.ammoPerSec) || 1));
+                if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
+                    cooldown *= 2;
+                }
+                const allowHoldToShoot = localStorage.getItem('br_hold_to_shoot') !== 'false';
+                if (!allowHoldToShoot && br.myP && br.myP.hasFiredThisPress) return;
+
                 if (!br.active || br.isSpectator || !br.myP || br.myP.hp <= 0 || now - lastShot <= cooldown) return;
                 const shotA = br.myP.a || 0;
                 const bullet = {
@@ -1755,6 +1929,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.myP.shotVx = bullet.vx;
                 br.myP.shotVy = bullet.vy;
                 br.myP.shotA = shotA;
+                if (br.myP) br.myP.hasFiredThisPress = true;
                 syncBrPlayerState();
                 lastShot = now;
                 playBrSound('shoot');
@@ -1872,7 +2047,10 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function brBotTryShoot(bot, now) {
-                const cooldown = 1000 / Math.max(1, Math.min(10, parseInt(bot.ammoPerSec) || 1));
+                let cooldown = 1000 / Math.max(1, Math.min(10, parseInt(bot.ammoPerSec) || 1));
+                if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
+                    cooldown *= 2;
+                }
                 if (now < (bot.nextShot || 0)) return;
                 bot.nextShot = now + cooldown;
                 br.bullets.push({
@@ -2191,6 +2369,101 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     const y = (Number(bul.y) || 0) + (Number(bul.vy) || 0) * steps;
                     drawBulletWithTracer(ctx, x, y, Number(bul.vx) || 0, Number(bul.vy) || 0);
                 });
+
+                // Update enemy radar tracking
+                if (!br.enemyLastKnownPositions) br.enemyLastKnownPositions = {};
+                const mTeam = brNormalizeTeam(br.myP.team);
+                const enms = [];
+                Object.values(br.remotePlayers).forEach(p => {
+                    if (p.id !== myId && p.alive && p.hp > 0 && brNormalizeTeam(p.team) !== mTeam) {
+                        enms.push({ id: p.id, x: p.x, y: p.y, isBot: false, team: p.team });
+                    }
+                });
+                br.bots.forEach(b => {
+                    if (b.alive && b.hp > 0 && brNormalizeTeam(b.team) !== mTeam) {
+                        enms.push({ id: b.id, x: b.x, y: b.y, isBot: true, team: b.team });
+                    }
+                });
+                
+                const curTime = Date.now();
+                enms.forEach(enemy => {
+                    const visible = brIsEnemyVisibleToTeam(enemy);
+                    if (visible) {
+                        br.enemyLastKnownPositions[enemy.id] = {
+                            x: enemy.x,
+                            y: enemy.y,
+                            visible: true,
+                            lastSeen: curTime
+                        };
+                    } else {
+                        const prev = br.enemyLastKnownPositions[enemy.id];
+                        if (prev && prev.visible) {
+                            prev.visible = false;
+                            prev.lastSeen = curTime;
+                        }
+                    }
+                });
+                
+                Object.keys(br.enemyLastKnownPositions).forEach(id => {
+                    const pt = br.enemyLastKnownPositions[id];
+                    if (!pt.visible && curTime - pt.lastSeen > 5000) {
+                        delete br.enemyLastKnownPositions[id];
+                    }
+                    const stillAlive = enms.some(e => e.id === id);
+                    if (!stillAlive) {
+                        delete br.enemyLastKnownPositions[id];
+                    }
+                });
+
+                // Render floating minimap
+                renderFloatingMinimap();
+                
+                // Render fullscreen map overlay
+                renderFullscreenMap();
+
+                // Draw Center Screen Animated Round Ending Banner
+                if (br.roundEnding && br.roundWinner) {
+                    const totalDur = 3000;
+                    const remaining = Math.max(0, br.roundEndTransitionUntil - Date.now());
+                    const elapsed = totalDur - remaining;
+                    
+                    let scale = 1.5;
+                    if (elapsed < 500) {
+                        scale = 0.2 + (1.3 * (elapsed / 500));
+                    }
+                    
+                    const opacity = Math.max(0, 1 - (elapsed / totalDur));
+                    
+                    ctx.save();
+                    ctx.translate(c.width / 2, c.height / 2);
+                    ctx.scale(scale, scale);
+                    
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+                    ctx.shadowBlur = 10;
+                    ctx.shadowOffsetX = 3;
+                    ctx.shadowOffsetY = 3;
+                    
+                    ctx.font = 'bold 36px "Segoe UI", "Inter", sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    
+                    const winTeam = br.roundWinner;
+                    let text = '';
+                    if (winTeam === 'Counter-Terrorists') {
+                        ctx.fillStyle = `rgba(50, 173, 230, ${opacity})`;
+                        text = 'Counter-Terrorists win';
+                    } else if (winTeam === 'Terrorists') {
+                        ctx.fillStyle = `rgba(255, 159, 10, ${opacity})`;
+                        text = 'Terrorists win';
+                    } else {
+                        ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                        text = 'Round Draw';
+                    }
+                    
+                    ctx.fillText(text, 0, 0);
+                    ctx.restore();
+                }
+
                 ctx.restore();
 
                 const aliveCount = getBrAliveRows().length;
@@ -2288,7 +2561,13 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 ctx.fillStyle = '#fff';
                 ctx.font = '14px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(label, p.x, p.y - 38);
+                
+                let displayLabel = label;
+                if (br.roundEnding) {
+                    const hpPercent = Math.max(0, Math.round(((p.hp || 0) / maxHp) * 100));
+                    displayLabel = `[${hpPercent}%] / 100`;
+                }
+                ctx.fillText(displayLabel, p.x, p.y - 38);
             }
 
             function getBrAliveRows() {
@@ -2393,13 +2672,23 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                 else if (tAliveCount === 0 && ctAliveCount > 0) winnerTeam = 'Counter-Terrorists';
 
                                 br.roundEnding = true;
-                                br.roundEndTransitionUntil = Date.now() + 2000;
+                                br.roundEndTransitionUntil = Date.now() + 3000;
                                 br.roundWinner = winnerTeam;
 
-                                if (winnerTeam) {
-                                    setIsland("РАУНД ВЫИГРАЛИ: " + (winnerTeam === 'Counter-Terrorists' ? 'CT (синие)' : 'T (оранжевые)'), winnerTeam === 'Counter-Terrorists' ? '#32ade6' : '#ff9f0a');
-                                } else {
-                                    setIsland("НИЧЬЯ В РАУНДЕ", "#fff");
+                                // Play win sound locally for host
+                                playFactionWinSound(winnerTeam);
+
+                                // Show Top Island notification locally for host
+                                const myTeam = brNormalizeTeam(br.myP.team);
+                                const isWin = (myTeam === winnerTeam);
+                                setIsland(isWin ? "ПОБЕДА" : "ПОРАЖЕНИЕ", isWin ? "#34c759" : "#ff453a", 3000);
+
+                                if (lobbyId) {
+                                    const base = `lobbies/${lobbyId}/br`;
+                                    db.ref(`${base}/roundEnding`).set({
+                                        winner: winnerTeam,
+                                        until: br.roundEndTransitionUntil
+                                    }).catch(() => {});
                                 }
                             }
                         } else if (Date.now() >= br.roundEndTransitionUntil) {
@@ -2414,15 +2703,18 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                     const base = `lobbies/${lobbyId}/br`;
                                     db.ref(`${base}/ctRounds`).set(br.ctRounds);
                                     db.ref(`${base}/tRounds`).set(br.tRounds);
+                                    db.ref(`${base}/roundEnding`).remove().catch(() => {});
                                 }
                             } else {
-                                br.currentRound = (br.currentRound || 1) + 1;
+                                const nextRound = (br.currentRound || 1) + 1;
                                 if (lobbyId) {
                                     const base = `lobbies/${lobbyId}/br`;
                                     db.ref(`${base}/ctRounds`).set(br.ctRounds);
                                     db.ref(`${base}/tRounds`).set(br.tRounds);
-                                    db.ref(`${base}/currentRound`).set(br.currentRound);
+                                    db.ref(`${base}/currentRound`).set(nextRound);
+                                    db.ref(`${base}/roundEnding`).remove().catch(() => {});
                                 } else {
+                                    br.currentRound = nextRound;
                                     resetBrRoundClient();
                                 }
                             }
@@ -2492,6 +2784,13 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     </div>`;
                 addCoins(isWin ? 50 + br.kills * 5 : br.kills * 5);
                 addGamePlayed();
+
+                // Auto exit back to lobby after 3 seconds
+                setTimeout(() => {
+                    if (br.placeShown) {
+                        exitToLobby();
+                    }
+                }, 3000);
             }
 
             function stopBR() {
@@ -2549,3 +2848,595 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                  br.botViews = {};
                  br.lastBotSyncAt = null;
              }
+
+              // ================== HUD Layout Customizer & Floating Minimap ==================
+              let currentCustElement = null;
+              let hudLayoutState = {
+                  joystick: { x: 50, y: window.innerHeight - 180, size: 'standard' },
+                  shoot: { x: window.innerWidth - 150, y: window.innerHeight - 150, size: 'standard', allowHold: true },
+                  minimap: { x: window.innerWidth - 160, y: 15, size: 'standard', allowClick: true }
+              };
+
+              function applyHUDLayout() {
+                  let layout = null;
+                  try {
+                      layout = JSON.parse(localStorage.getItem('br_hud_layout'));
+                  } catch (e) {}
+                  
+                  if (!layout) {
+                      layout = {
+                          joystick: { x: 50, y: window.innerHeight - 180, size: 'standard' },
+                          shoot: { x: window.innerWidth - 150, y: window.innerHeight - 150, size: 'standard', allowHold: true },
+                          minimap: { x: window.innerWidth - 160, y: 15, size: 'standard', allowClick: true }
+                      };
+                  }
+                  
+                  // Clamp bounds
+                  layout.joystick.x = Math.max(0, Math.min(window.innerWidth - 130, layout.joystick.x));
+                  layout.joystick.y = Math.max(0, Math.min(window.innerHeight - 130, layout.joystick.y));
+                  layout.shoot.x = Math.max(0, Math.min(window.innerWidth - 100, layout.shoot.x));
+                  layout.shoot.y = Math.max(0, Math.min(window.innerHeight - 100, layout.shoot.y));
+                  layout.minimap.x = Math.max(0, Math.min(window.innerWidth - 140, layout.minimap.x));
+                  layout.minimap.y = Math.max(0, Math.min(window.innerHeight - 140, layout.minimap.y));
+                  
+                  // Joystick
+                  const jBox = document.getElementById('br-joystick');
+                  const stick = document.getElementById('br-stick');
+                  if (jBox && stick) {
+                      jBox.style.position = 'absolute';
+                      jBox.style.left = layout.joystick.x + 'px';
+                      jBox.style.top = layout.joystick.y + 'px';
+                      jBox.style.bottom = 'auto';
+                      jBox.style.right = 'auto';
+                      
+                      let w = 130, sw = 50;
+                      if (layout.joystick.size === 'small') { w = 90; sw = 35; }
+                      else if (layout.joystick.size === 'large') { w = 170; sw = 65; }
+                      
+                      jBox.style.width = w + 'px';
+                      jBox.style.height = w + 'px';
+                      stick.style.width = sw + 'px';
+                      stick.style.height = sw + 'px';
+                      stick.style.left = ((w - sw) / 2) + 'px';
+                      stick.style.top = ((w - sw) / 2) + 'px';
+                  }
+                  
+                  // Shoot Button
+                  const shootBtn = document.getElementById('br-shoot-btn');
+                  if (shootBtn) {
+                      shootBtn.style.position = 'absolute';
+                      shootBtn.style.left = layout.shoot.x + 'px';
+                      shootBtn.style.top = layout.shoot.y + 'px';
+                      shootBtn.style.bottom = 'auto';
+                      shootBtn.style.right = 'auto';
+                      
+                      let w = 100, fs = 20;
+                      if (layout.shoot.size === 'small') { w = 70; fs = 14; }
+                      else if (layout.shoot.size === 'large') { w = 130; fs = 24; }
+                      
+                      shootBtn.style.width = w + 'px';
+                      shootBtn.style.height = w + 'px';
+                      shootBtn.style.fontSize = fs + 'px';
+                      
+                      localStorage.setItem('br_hold_to_shoot', layout.shoot.allowHold !== false ? 'true' : 'false');
+                  }
+                  
+                  // Minimap canvas
+                  const minimapCanvas = document.getElementById('br-minimap-canvas');
+                  if (minimapCanvas) {
+                      minimapCanvas.style.position = 'absolute';
+                      minimapCanvas.style.left = layout.minimap.x + 'px';
+                      minimapCanvas.style.top = layout.minimap.y + 'px';
+                      minimapCanvas.style.bottom = 'auto';
+                      minimapCanvas.style.right = 'auto';
+                      
+                      let w = 140;
+                      if (layout.minimap.size === 'small') { w = 100; }
+                      else if (layout.minimap.size === 'large') { w = 180; }
+                      
+                      minimapCanvas.width = w;
+                      minimapCanvas.height = w;
+                      minimapCanvas.style.width = w + 'px';
+                      minimapCanvas.style.height = w + 'px';
+                      
+                      minimapCanvas.dataset.allowClick = layout.minimap.allowClick !== false ? 'true' : 'false';
+                      minimapCanvas.onclick = openFullscreenMap;
+                  }
+              }
+
+              function openHUDCustomizer() {
+                  document.getElementById('br-customizer-screen').style.display = 'block';
+                  
+                  let saved = null;
+                  try {
+                      saved = JSON.parse(localStorage.getItem('br_hud_layout'));
+                  } catch(e) {}
+                  
+                  if (saved) {
+                      hudLayoutState = saved;
+                  } else {
+                      hudLayoutState = {
+                          joystick: { x: 50, y: window.innerHeight - 180, size: 'standard' },
+                          shoot: { x: window.innerWidth - 150, y: window.innerHeight - 150, size: 'standard', allowHold: true },
+                          minimap: { x: window.innerWidth - 160, y: 15, size: 'standard', allowClick: true }
+                      };
+                  }
+                  
+                  positionMockElement('joystick', hudLayoutState.joystick);
+                  positionMockElement('shoot', hudLayoutState.shoot);
+                  positionMockElement('minimap', hudLayoutState.minimap);
+                  
+                  makeMockDraggable('joystick');
+                  makeMockDraggable('shoot');
+                  makeMockDraggable('minimap');
+                  
+                  document.getElementById('br-cust-context-menu').style.display = 'none';
+              }
+
+              function positionMockElement(name, data) {
+                  const el = document.getElementById('br-cust-' + name);
+                  if (!el) return;
+                  
+                  let w = 130;
+                  if (name === 'joystick') {
+                      w = data.size === 'small' ? 90 : (data.size === 'large' ? 170 : 130);
+                  } else if (name === 'shoot') {
+                      w = data.size === 'small' ? 70 : (data.size === 'large' ? 130 : 100);
+                  } else if (name === 'minimap') {
+                      w = data.size === 'small' ? 100 : (data.size === 'large' ? 180 : 140);
+                  }
+                  
+                  el.style.width = w + 'px';
+                  el.style.height = w + 'px';
+                  
+                  const x = Math.max(0, Math.min(window.innerWidth - w, data.x));
+                  const y = Math.max(0, Math.min(window.innerHeight - w, data.y));
+                  
+                  el.style.left = x + 'px';
+                  el.style.top = y + 'px';
+              }
+
+              function makeMockDraggable(name) {
+                  const el = document.getElementById('br-cust-' + name);
+                  if (!el) return;
+                  
+                  let startX = 0, startY = 0;
+                  
+                  const dragStart = (e) => {
+                      e.stopPropagation();
+                      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                      
+                      startX = clientX - el.offsetLeft;
+                      startY = clientY - el.offsetTop;
+                      
+                      const dragMove = (moveEv) => {
+                          moveEv.preventDefault();
+                          const curX = moveEv.touches ? moveEv.touches[0].clientX : moveEv.clientX;
+                          const curY = moveEv.touches ? moveEv.touches[0].clientY : moveEv.clientY;
+                          
+                          let left = curX - startX;
+                          let top = curY - startY;
+                          
+                          left = Math.max(0, Math.min(window.innerWidth - el.offsetWidth, left));
+                          top = Math.max(0, Math.min(window.innerHeight - el.offsetHeight, top));
+                          
+                          el.style.left = left + 'px';
+                          el.style.top = top + 'px';
+                          
+                          hudLayoutState[name].x = left;
+                          hudLayoutState[name].y = top;
+                          
+                          if (currentCustElement === name) {
+                              positionContextMenu(el);
+                          }
+                      };
+                      
+                      const dragEnd = () => {
+                          document.removeEventListener('mousemove', dragMove);
+                          document.removeEventListener('mouseup', dragEnd);
+                          document.removeEventListener('touchmove', dragMove);
+                          document.removeEventListener('touchend', dragEnd);
+                      };
+                      
+                      document.addEventListener('mousemove', dragMove);
+                      document.addEventListener('mouseup', dragEnd);
+                      document.addEventListener('touchmove', dragMove, { passive: false });
+                      document.addEventListener('touchend', dragEnd);
+                  };
+                  
+                  el.onmousedown = dragStart;
+                  el.ontouchstart = dragStart;
+              }
+
+              function showCustContext(name, event) {
+                  event.stopPropagation();
+                  currentCustElement = name;
+                  
+                  const menu = document.getElementById('br-cust-context-menu');
+                  const title = document.getElementById('br-cust-context-title');
+                  const optionsGroup = document.getElementById('context-options-group');
+                  if (!menu || !title || !optionsGroup) return;
+                  
+                  title.innerText = name === 'joystick' ? 'Настройки джойстика' : (name === 'shoot' ? 'Настройки кнопки стрельбы' : 'Настройки радара');
+                  
+                  const size = hudLayoutState[name].size || 'standard';
+                  document.querySelectorAll('.context-size-btn').forEach(btn => {
+                      btn.classList.remove('active');
+                  });
+                  document.getElementById('size-btn-' + size)?.classList.add('active');
+                  
+                  optionsGroup.innerHTML = '';
+                  if (name === 'shoot') {
+                      const row = document.createElement('label');
+                      row.className = 'context-checkbox-row';
+                      const active = hudLayoutState.shoot.allowHold !== false;
+                      row.innerHTML = `<input type="checkbox" id="shoot-hold-chk" ${active ? 'checked' : ''} onchange="toggleCustOption('shoot', this.checked)"> <span>Разрешить зажимать кнопку</span>`;
+                      optionsGroup.appendChild(row);
+                  } else if (name === 'minimap') {
+                      const row = document.createElement('label');
+                      row.className = 'context-checkbox-row';
+                      const active = hudLayoutState.minimap.allowClick !== false;
+                      row.innerHTML = `<input type="checkbox" id="minimap-click-chk" ${active ? 'checked' : ''} onchange="toggleCustOption('minimap', this.checked)"> <span>Разрешить нажимать на карту</span>`;
+                      optionsGroup.appendChild(row);
+                  }
+                  
+                  const el = document.getElementById('br-cust-' + name);
+                  positionContextMenu(el);
+                  menu.style.display = 'block';
+              }
+
+              function positionContextMenu(targetEl) {
+                  const menu = document.getElementById('br-cust-context-menu');
+                  if (!menu || !targetEl) return;
+                  
+                  let left = targetEl.offsetLeft + targetEl.offsetWidth + 10;
+                  let top = targetEl.offsetTop;
+                  
+                  if (left + 260 > window.innerWidth) {
+                      left = targetEl.offsetLeft - 260 - 10;
+                  }
+                  if (left < 0) left = 10;
+                  
+                  menu.style.left = left + 'px';
+                  menu.style.top = top + 'px';
+              }
+
+              function setCustSize(size) {
+                  if (!currentCustElement) return;
+                  hudLayoutState[currentCustElement].size = size;
+                  
+                  document.querySelectorAll('.context-size-btn').forEach(btn => {
+                      btn.classList.remove('active');
+                  });
+                  document.getElementById('size-btn-' + size)?.classList.add('active');
+                  
+                  positionMockElement(currentCustElement, hudLayoutState[currentCustElement]);
+              }
+
+              function toggleCustOption(elementName, checked) {
+                  if (elementName === 'shoot') {
+                      hudLayoutState.shoot.allowHold = checked;
+                  } else if (elementName === 'minimap') {
+                      hudLayoutState.minimap.allowClick = checked;
+                  }
+              }
+
+              function saveHUDLayout() {
+                  localStorage.setItem('br_hud_layout', JSON.stringify(hudLayoutState));
+                  closeHUDCustomizer();
+                  applyHUDLayout();
+              }
+
+              function resetHUDLayout() {
+                  hudLayoutState = {
+                      joystick: { x: 50, y: window.innerHeight - 180, size: 'standard' },
+                      shoot: { x: window.innerWidth - 150, y: window.innerHeight - 150, size: 'standard', allowHold: true },
+                      minimap: { x: window.innerWidth - 160, y: 15, size: 'standard', allowClick: true }
+                  };
+                  positionMockElement('joystick', hudLayoutState.joystick);
+                  positionMockElement('shoot', hudLayoutState.shoot);
+                  positionMockElement('minimap', hudLayoutState.minimap);
+                  document.getElementById('br-cust-context-menu').style.display = 'none';
+              }
+
+              function closeHUDCustomizer() {
+                  document.getElementById('br-customizer-screen').style.display = 'none';
+              }
+
+              // Minimap rendering logic
+              function renderFloatingMinimap() {
+                  const canvas = document.getElementById('br-minimap-canvas');
+                  if (!canvas) return;
+                  
+                  if (!br.active || !br.matchActive) {
+                      canvas.style.display = 'none';
+                      return;
+                  }
+                  
+                  canvas.style.display = 'block';
+                  const ctx = canvas.getContext('2d');
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  
+                  ctx.save();
+                  ctx.beginPath();
+                  ctx.arc(canvas.width / 2, canvas.height / 2, canvas.width / 2 - 2, 0, Math.PI * 2);
+                  ctx.clip();
+                  
+                  ctx.fillStyle = 'rgba(10, 10, 15, 0.85)';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  
+                  const cx = canvas.width / 2;
+                  const cy = canvas.height / 2;
+                  const minimapScale = 0.07;
+                  
+                  ctx.translate(cx, cy);
+                  ctx.scale(minimapScale, minimapScale);
+                  ctx.translate(-br.myP.x, -br.myP.y);
+                  
+                  mapWalls.forEach(wall => {
+                      ctx.fillStyle = '#3a3a45';
+                      ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+                  });
+                  
+                  if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
+                      const maxMapSize = 1200;
+                      const minCoord = (BR_SIZE - maxMapSize) / 2;
+                      ctx.strokeStyle = '#ff3b30';
+                      ctx.lineWidth = 15;
+                      ctx.strokeRect(minCoord, minCoord, maxMapSize, maxMapSize);
+                  }
+                  
+                  if (br.pings) {
+                      const now = Date.now();
+                      Object.values(br.pings).forEach(ping => {
+                          const age = now - ping.time;
+                          if (age < 5000) {
+                              const pulse = (age % 1000) / 1000;
+                              const radius = 20 + pulse * 40;
+                              const opacity = 1 - (age / 5000);
+                              ctx.save();
+                              ctx.strokeStyle = `rgba(0, 122, 255, ${opacity})`;
+                              ctx.lineWidth = 10;
+                              ctx.beginPath();
+                              ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+                              ctx.stroke();
+                              ctx.restore();
+                          }
+                      });
+                  }
+                  
+                  const myTeam = brNormalizeTeam(br.myP.team);
+                  Object.values(br.remotePlayers).forEach(p => {
+                      if (p.id !== myId && p.alive && p.hp > 0 && brNormalizeTeam(p.team) === myTeam) {
+                          ctx.fillStyle = '#34c759';
+                          ctx.beginPath();
+                          ctx.arc(p.x, p.y, 45, 0, Math.PI * 2);
+                          ctx.fill();
+                      }
+                  });
+                  
+                  br.bots.forEach(b => {
+                      if (b.alive && b.hp > 0 && brNormalizeTeam(b.team) === myTeam) {
+                          ctx.fillStyle = '#34c759';
+                          ctx.beginPath();
+                          ctx.arc(b.x, b.y, 45, 0, Math.PI * 2);
+                          ctx.fill();
+                      }
+                  });
+                  
+                  if (br.enemyLastKnownPositions) {
+                      Object.keys(br.enemyLastKnownPositions).forEach(id => {
+                          const pt = br.enemyLastKnownPositions[id];
+                          ctx.save();
+                          ctx.strokeStyle = '#ff453a';
+                          ctx.fillStyle = '#ff453a';
+                          ctx.lineWidth = 10;
+                          ctx.beginPath();
+                          ctx.arc(pt.x, pt.y, 45, 0, Math.PI * 2);
+                          if (pt.visible) {
+                              ctx.fill();
+                          } else {
+                              ctx.stroke();
+                          }
+                          ctx.restore();
+                      });
+                  }
+                  
+                  ctx.fillStyle = '#ffd60a';
+                  ctx.beginPath();
+                  ctx.arc(br.myP.x, br.myP.y, 50, 0, Math.PI * 2);
+                  ctx.fill();
+                  
+                  ctx.strokeStyle = '#fff';
+                  ctx.lineWidth = 12;
+                  ctx.beginPath();
+                  ctx.moveTo(br.myP.x, br.myP.y);
+                  ctx.lineTo(br.myP.x + Math.cos(br.myP.a || 0) * 110, br.myP.y + Math.sin(br.myP.a || 0) * 110);
+                  ctx.stroke();
+                  
+                  ctx.restore();
+              }
+
+              // Fullscreen map rendering and interaction logic
+              function renderFullscreenMap() {
+                  const overlay = document.getElementById('br-fullscreen-map-overlay');
+                  const canvas = document.getElementById('br-fullscreen-map-canvas');
+                  if (!overlay || overlay.classList.contains('hidden') || !canvas) return;
+                  
+                  const ctx = canvas.getContext('2d');
+                  const d = Math.min(overlay.offsetWidth * 0.9, overlay.offsetHeight * 0.7);
+                  canvas.width = d;
+                  canvas.height = d;
+                  
+                  ctx.clearRect(0, 0, canvas.width, canvas.height);
+                  
+                  ctx.fillStyle = '#0d0d12';
+                  ctx.fillRect(0, 0, canvas.width, canvas.height);
+                  
+                  ctx.save();
+                  const mapScale = canvas.width / BR_SIZE;
+                  ctx.scale(mapScale, mapScale);
+                  
+                  mapWalls.forEach(wall => {
+                      ctx.fillStyle = '#3a3a45';
+                      ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+                  });
+                  
+                  if (br.smokeZones) {
+                      br.smokeZones.forEach(smoke => {
+                          ctx.fillStyle = 'rgba(128, 128, 128, 0.45)';
+                          ctx.beginPath();
+                          ctx.arc(smoke.x, smoke.y, smoke.r, 0, Math.PI * 2);
+                          ctx.fill();
+                      });
+                  }
+                  
+                  if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
+                      const maxMapSize = 1200;
+                      const minCoord = (BR_SIZE - maxMapSize) / 2;
+                      ctx.strokeStyle = '#ff3b30';
+                      ctx.lineWidth = 15;
+                      ctx.strokeRect(minCoord, minCoord, maxMapSize, maxMapSize);
+                  }
+                  
+                  if (br.pings) {
+                      const now = Date.now();
+                      Object.values(br.pings).forEach(ping => {
+                          const age = now - ping.time;
+                          if (age < 5000) {
+                              const pulse = (age % 1000) / 1000;
+                              const radius = 25 + pulse * 45;
+                              const opacity = 1 - (age / 5000);
+                              ctx.save();
+                              ctx.strokeStyle = `rgba(0, 122, 255, ${opacity})`;
+                              ctx.lineWidth = 10;
+                              ctx.beginPath();
+                              ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+                              ctx.stroke();
+                              ctx.restore();
+                          }
+                      });
+                  }
+                  
+                  const myTeam = brNormalizeTeam(br.myP.team);
+                  Object.values(br.remotePlayers).forEach(p => {
+                      if (p.id !== myId && p.alive && p.hp > 0 && brNormalizeTeam(p.team) === myTeam) {
+                          ctx.fillStyle = '#34c759';
+                          ctx.beginPath();
+                          ctx.arc(p.x, p.y, 45, 0, Math.PI * 2);
+                          ctx.fill();
+                      }
+                  });
+                  
+                  br.bots.forEach(b => {
+                      if (b.alive && b.hp > 0 && brNormalizeTeam(b.team) === myTeam) {
+                          ctx.fillStyle = '#34c759';
+                          ctx.beginPath();
+                          ctx.arc(b.x, b.y, 45, 0, Math.PI * 2);
+                          ctx.fill();
+                      }
+                  });
+                  
+                  if (br.enemyLastKnownPositions) {
+                      Object.keys(br.enemyLastKnownPositions).forEach(id => {
+                          const pt = br.enemyLastKnownPositions[id];
+                          ctx.save();
+                          ctx.strokeStyle = '#ff453a';
+                          ctx.fillStyle = '#ff453a';
+                          ctx.lineWidth = 10;
+                          ctx.beginPath();
+                          ctx.arc(pt.x, pt.y, 45, 0, Math.PI * 2);
+                          if (pt.visible) {
+                              ctx.fill();
+                          } else {
+                              ctx.stroke();
+                          }
+                          ctx.restore();
+                      });
+                  }
+                  
+                  ctx.fillStyle = '#ffd60a';
+                  ctx.beginPath();
+                  ctx.arc(br.myP.x, br.myP.y, 50, 0, Math.PI * 2);
+                  ctx.fill();
+                  
+                  ctx.strokeStyle = '#fff';
+                  ctx.lineWidth = 12;
+                  ctx.beginPath();
+                  ctx.moveTo(br.myP.x, br.myP.y);
+                  ctx.lineTo(br.myP.x + Math.cos(br.myP.a || 0) * 110, br.myP.y + Math.sin(br.myP.a || 0) * 110);
+                  ctx.stroke();
+                  
+                  ctx.restore();
+              }
+
+              function openFullscreenMap() {
+                  const canvas = document.getElementById('br-minimap-canvas');
+                  if (canvas && canvas.dataset.allowClick === 'false') return;
+                  
+                  const overlay = document.getElementById('br-fullscreen-map-overlay');
+                  if (overlay) {
+                      overlay.classList.remove('hidden');
+                      renderFullscreenMap();
+                      const fCanvas = document.getElementById('br-fullscreen-map-canvas');
+                      if (fCanvas) {
+                          fCanvas.onmousedown = handleFullscreenMapInteraction;
+                          fCanvas.ontouchstart = handleFullscreenMapInteraction;
+                      }
+                  }
+              }
+
+              function closeFullscreenMap() {
+                  const overlay = document.getElementById('br-fullscreen-map-overlay');
+                  if (overlay) {
+                      overlay.classList.add('hidden');
+                  }
+              }
+
+              function handleFullscreenMapInteraction(e) {
+                  e.preventDefault();
+                  const canvas = document.getElementById('br-fullscreen-map-canvas');
+                  if (!canvas) return;
+                  
+                  const rect = canvas.getBoundingClientRect();
+                  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                  
+                  const clickX = clientX - rect.left;
+                  const clickY = clientY - rect.top;
+                  
+                  const mapScale = canvas.width / BR_SIZE;
+                  const pingX = Math.round(clickX / mapScale);
+                  const pingY = Math.round(clickY / mapScale);
+                  
+                  if (lobbyId) {
+                      const base = `lobbies/${lobbyId}/br`;
+                      db.ref(`${base}/pings/${myId}`).set({
+                          x: pingX,
+                          y: pingY,
+                          time: Date.now()
+                      }).catch(() => {});
+                  } else {
+                      if (!br.pings) br.pings = {};
+                      br.pings[myId] = {
+                          x: pingX,
+                          y: pingY,
+                          time: Date.now()
+                      };
+                  }
+              }
+
+              // Export functions to global scope
+              window.openHUDCustomizer = openHUDCustomizer;
+              window.closeHUDCustomizer = closeHUDCustomizer;
+              window.saveHUDLayout = saveHUDLayout;
+              window.resetHUDLayout = resetHUDLayout;
+              window.showCustContext = showCustContext;
+              window.setCustSize = setCustSize;
+              window.toggleCustOption = toggleCustOption;
+              window.closeFullscreenMap = closeFullscreenMap;
+              window.openFullscreenMap = openFullscreenMap;
+              window.applyHUDLayout = applyHUDLayout;
+              window.renderFloatingMinimap = renderFloatingMinimap;
+              window.renderFullscreenMap = renderFullscreenMap;

@@ -119,7 +119,7 @@ async function main() {
             console.log("Генерация патчноута через Gemini API...");
             const prompt = `Проанализируй данный документ Update_plan.md и составь очень краткий список изменений (патчноут) на русском языке для версии ${targetVer}. Верни только сам список изменений в виде текста или маркированного списка (максимум 4-5 коротких пунктов), без лишних предисловий или мета-комментариев. Документ:\n\n${planText}`;
             
-            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+            const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
             const requestBody = {
                 contents: [{ parts: [{ text: prompt }] }]
             };
