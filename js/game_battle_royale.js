@@ -16,7 +16,7 @@
             }
 
             function getBrSize() {
-                return (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') ? 17500 : 2000;
+                return (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') ? 3500 : 2000;
             }
 
             function getBrBaseRects() {
@@ -30,6 +30,12 @@
                         t: { x: tX, y: tY, w: 450, h: 450, textX: tX + 225, textY: tY + 235 }
                     };
                 }
+                if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
+                    return {
+                        ct: { x: 450, y: 850, w: 300, h: 300, textX: 600, textY: 1010 },
+                        t: { x: 1250, y: 850, w: 300, h: 300, textX: 1400, textY: 1010 }
+                    };
+                }
                 return {
                     ct: { x: 50, y: 775, w: 450, h: 450, textX: 275, textY: 1010 },
                     t: { x: 1500, y: 775, w: 450, h: 450, textX: 1725, textY: 1010 }
@@ -39,7 +45,7 @@
             function generateMap() {
                 mapWalls = [];
                 const midX = BR_SIZE / 2;
-                const passagesCount = (BR_SIZE === 17500) ? 8 : 3;
+                const passagesCount = (BR_SIZE === 3500) ? 8 : 3;
                 const gap = 140; // width of passage gap
                 const wallWidth = 60; // thickness of long central walls
 
@@ -720,7 +726,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     mode = mode.replace('br_', '');
                 }
                 currentMode = mode;
-                BR_SIZE = (mode === 'tdm_5v5') ? 17500 : 2000;
+                BR_SIZE = (mode === 'tdm_5v5') ? 3500 : 2000;
                 br.matchActive = true;
                 br.matchStartTime = Date.now();
                 br.kills = 0;
@@ -809,7 +815,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.bgCtx = null;
                 const submode = (appState.selectedGameId || '').startsWith('br_') ? appState.selectedGameId.replace('br_', '') : 'tdm_5v5';
                 currentMode = submode;
-                BR_SIZE = (submode === 'tdm_5v5') ? 17500 : 2000;
+                BR_SIZE = (submode === 'tdm_5v5') ? 3500 : 2000;
                 br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (submode === 'duel_1v1' || submode === 'duel_2v2') ? 600 : BR_SIZE };
                 br.joystickTargetAngle = null;
                 br.remotePlayers = {};
@@ -1115,6 +1121,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     });
 
                     br.teamInitialized = true;
+                    br.bots = bots;
 
                     updateDbPaths({
                         [`${base}/zone`]: br.zone,
@@ -1906,7 +1913,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     ctx.translate(offsetX, offsetY);
                     ctx.scale(scale, scale);
                 } else {
-                    let targetSize = 200;
+                    let targetSize = 600;
                     let scale = Math.min(c.width / targetSize, c.height / targetSize);
                     scale = Math.max(0.4, scale);
                     ctx.scale(scale, scale);

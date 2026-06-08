@@ -168,7 +168,7 @@ function ensureFirebaseReady() {
 }
 
 // ИСПРАВЛЕНИЕ ИИ: Полноценное API и TTS (озвучка) без заглушек
-const apiKey = ""; // Ключ прокидывается на сервере
+const apiKey = localStorage.getItem('gemini_api_key') || ""; // Ключ прокидывается на сервере
 
 // Конвертация PCM16 в WAV для воспроизведения браузером
 function pcmToWav(base64, sampleRate) {
