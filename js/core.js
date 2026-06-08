@@ -1,4 +1,5 @@
 const tg = window.Telegram.WebApp; try { tg.expand(); if (tg.requestFullscreen) tg.requestFullscreen(); } catch (e) { } tg.ready();
+var currentMode = 'tdm_5v5';
 const APP_VERSION_INFO = {
     label: 'Блок 2: Процедурная генерация стен, коллизии и выбор режимов Выживания',
     note: 'Реализованы процедурные бетонные стены на Canvas, AABB-коллизии со скольжением для игроков/ботов, уничтожение пуль о стены, выбор режимов Командный бой 5х5, Дуэль 1х1, Дуэль 2х2 в лобби.'
@@ -1899,12 +1900,15 @@ function initApp() {
                 br.myP.a = Math.atan2(my - cy, mx - cx);
             }
         });
-        document.getElementById('br-canvas').addEventListener('mousedown', (e) => {
-            if (appState.game === 'br_2d' && !isMobile) { isShooting = true; }
-        });
-        document.getElementById('br-canvas').addEventListener('mouseup', (e) => {
-            if (appState.game === 'br_2d' && !isMobile) { isShooting = false; }
-        });
+        const brCanvas = document.getElementById('br-canvas');
+        if (brCanvas) {
+            brCanvas.addEventListener('mousedown', (e) => {
+                if (appState.game === 'br_2d' && !isMobile) { isShooting = true; }
+            });
+            brCanvas.addEventListener('mouseup', (e) => {
+                if (appState.game === 'br_2d' && !isMobile) { isShooting = false; }
+            });
+        }
     }
     try { tg.CloudStorage.getKeys((err, keys) => { if (err || !keys || keys.length === 0) return startData({}); tg.CloudStorage.getItems(keys, (err, vals) => { startData(vals || {}); }); }); } catch (e) { startData({}); } setTimeout(() => startData({}), 1000);
 }

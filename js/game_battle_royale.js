@@ -1,5 +1,5 @@
             // ================== ВЫЖИВАНИЕ (BATTLE ROYALE) ==================
-            let currentMode = 'tdm_5v5';
+            currentMode = 'tdm_5v5';
 
             let mapWalls = [];
 
