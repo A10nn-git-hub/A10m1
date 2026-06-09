@@ -476,6 +476,41 @@
             .play-split-btn { padding: 7px 10px; }
             .play-start-btn { font-size: 20px; }
             .lobby-guest-mode { min-width: 166px; min-height: 50px; font-size: 12px; }
+
+            /* Pause menu responsive adjustments */
+            .pause-menu-container {
+                width: 90vw;
+                height: 90vh;
+                max-height: 480px;
+            }
+            .pause-tab-content {
+                padding: 12px;
+            }
+            .pause-teams-columns {
+                gap: 10px;
+            }
+            .pause-team-col {
+                padding: 10px;
+            }
+            .pause-team-col h3 {
+                margin: 0 0 8px 0;
+                font-size: 14px;
+            }
+            .pause-team-list {
+                margin-bottom: 8px;
+            }
+            .pause-player-row {
+                padding: 5px 6px;
+                font-size: 12px;
+            }
+            .pause-action-btn {
+                padding: 8px;
+                font-size: 12px;
+            }
+            .pause-setting-row {
+                padding: 10px;
+                margin-top: 10px !important;
+            }
         }
 
         @media (max-width: 680px) {

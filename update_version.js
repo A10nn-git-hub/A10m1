@@ -4,7 +4,34 @@ const https = require('https');
 
 // Configuration
 const DB_URL = "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app/app_version.json";
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+let geminiApiKey = process.env.GEMINI_API_KEY;
+if (!geminiApiKey) {
+    const envPath = path.join(__dirname, '.env');
+    if (fs.existsSync(envPath)) {
+        try {
+            const envContent = fs.readFileSync(envPath, 'utf8');
+            const lines = envContent.split(/\r?\n/);
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (trimmed && !trimmed.startsWith('#')) {
+                    const idx = trimmed.indexOf('=');
+                    if (idx !== -1) {
+                        const key = trimmed.substring(0, idx).trim();
+                        const val = trimmed.substring(idx + 1).trim();
+                        if (key === 'GEMINI_API_KEY') {
+                            geminiApiKey = val.replace(/^["']|["']$/g, '');
+                            break;
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Предупреждение: Не удалось прочитать локальный файл .env:", e.message);
+        }
+    }
+}
+const GEMINI_API_KEY = geminiApiKey;
 
 // Helper to make HTTPS requests
 function makeRequest(url, method, data = null, headers = {}) {

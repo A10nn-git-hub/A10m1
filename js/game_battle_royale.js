@@ -618,6 +618,22 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         noise.stop(now + 0.12);
                         osc.stop(now + 0.08);
                     }
+                    else if (type === 'ping') {
+                        const osc = brAudioCtx.createOscillator();
+                        const gain = brAudioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(1500, now);
+                        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
+
+                        gain.gain.setValueAtTime(0.15, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+                        osc.connect(gain);
+                        gain.connect(brAudioCtx.destination);
+
+                        osc.start(now);
+                        osc.stop(now + 0.08);
+                    }
                     else if (type === 'hit') {
                         const osc = brAudioCtx.createOscillator();
                         const gain = brAudioCtx.createGain();
@@ -749,7 +765,26 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             const utterance = new SpeechSynthesisUtterance(text);
                             utterance.lang = 'en-US';
                             utterance.rate = 0.85;
-                            utterance.pitch = 0.75;
+                            utterance.pitch = 0.7;
+                            utterance.volume = 0.5;
+
+                            if (window.speechSynthesis && window.speechSynthesis.getVoices) {
+                                const voices = window.speechSynthesis.getVoices();
+                                const englishMaleVoice = voices.find(v => {
+                                    const nameLower = v.name.toLowerCase();
+                                    const langLower = v.lang.toLowerCase();
+                                    return langLower.startsWith('en') && 
+                                           (nameLower.includes('male') || 
+                                            nameLower.includes('david') || 
+                                            nameLower.includes('guy') || 
+                                            nameLower.includes('microsoft') || 
+                                            nameLower.includes('google'));
+                                });
+                                if (englishMaleVoice) {
+                                    utterance.voice = englishMaleVoice;
+                                }
+                            }
+
                             utterance.onend = () => {
                                 playSquelchSound();
                             };
@@ -1003,6 +1038,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.damageTaken = 0;
                 br.lastSyncX = 0;
                 br.lastSyncY = 0;
+                br.roundStartCountdownUntil = Date.now() + 3000;
 
                 document.getElementById('br-ui-alive').innerText = 'Живых: ?';
                 document.getElementById('br-ui-kills').innerText = 'Киллы: 0';
@@ -1394,6 +1430,26 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 db.ref(`${base}/walls`).on('value', br.wallsListener);
 
                 if (lobbyId) {
+                    br.pingsListener = snap => {
+                        const val = snap.exists() ? snap.val() : {};
+                        let newPingFound = false;
+                        const oldPings = br.pings || {};
+                        Object.keys(val).forEach(playerId => {
+                            const newPing = val[playerId];
+                            const oldPing = oldPings[playerId];
+                            if (newPing && (!oldPing || oldPing.time !== newPing.time)) {
+                                if (Date.now() - newPing.time < 3000) {
+                                    newPingFound = true;
+                                }
+                            }
+                        });
+                        br.pings = val;
+                        if (newPingFound) {
+                            playBrSound('ping');
+                        }
+                    };
+                    db.ref(`${base}/pings`).on('value', br.pingsListener);
+
                     br.roundsListener = snap => {
                         if (snap.exists()) {
                             const data = snap.val();
@@ -1440,6 +1496,10 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.bloodStains = [];
                 br.bloodParticles = [];
                 initBrBackgroundCanvas();
+                
+                const submode = typeof currentMode !== 'undefined' ? currentMode : 'tdm_5v5';
+                br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (submode === 'duel_1v1' || submode === 'duel_2v2') ? 600 : BR_SIZE };
+                br.roundStartCountdownUntil = Date.now() + 3000;
 
                 if (br.myP) {
                     const spawn = brSpawnForId(myId, br.myP.team);
@@ -1811,6 +1871,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function updateBrLocalPlayer(now) {
+                 if (!br.myP) return;
                  if (br.isSpectator || br.myP.hp <= 0) {
                      if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5' && br.myP && br.myP.hp <= 0) {
                          if (!br.myP.respawning) {
@@ -1847,7 +1908,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                      }
                  }
 
-                 let speed = 6 * brSpeedMultiplier(br.myP.speed);
+                 let inCountdown = br.roundStartCountdownUntil && now < br.roundStartCountdownUntil;
+                 let speed = inCountdown ? 0 : 6 * brSpeedMultiplier(br.myP.speed);
                  const oldX = br.myP.x;
                  const oldY = br.myP.y;
                  let moveX = 0;
@@ -1904,6 +1966,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function fireBrShot(now) {
+                if (br.roundStartCountdownUntil && now < br.roundStartCountdownUntil) return;
                 const mySettings = br.settings?.players?.[myId] || {};
                 let cooldown = 1000 / Math.max(1, Math.min(10, parseInt(mySettings.ammoPerSec) || 1));
                 if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
@@ -1936,6 +1999,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function updateBrBots(now) {
+                if (br.roundStartCountdownUntil && now < br.roundStartCountdownUntil) return;
                 let changed = false;
                 const maxMapSize = (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) ? 1200 : BR_SIZE;
                 const minX = (BR_SIZE - maxMapSize) / 2;
@@ -2227,6 +2291,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function renderBR(now) {
+                if (!br.myP) return;
                 let c = resizeBrCanvas();
                 let ctx = c.getContext('2d');
                 ctx.clearRect(0, 0, c.width, c.height);
@@ -2370,6 +2435,50 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     drawBulletWithTracer(ctx, x, y, Number(bul.vx) || 0, Number(bul.vy) || 0);
                 });
 
+                // Draw tactical pings in map space
+                if (br.pings) {
+                    const nowTime = Date.now();
+                    Object.values(br.pings).forEach(ping => {
+                        const age = nowTime - ping.time;
+                        if (age < 5000) {
+                            const pulse = (age % 1000) / 1000;
+                            const radius = 20 + pulse * 30;
+                            const opacity = 1 - (age / 5000);
+                            
+                            ctx.save();
+                            
+                            // Pulse Ring
+                            ctx.strokeStyle = `rgba(0, 122, 255, ${opacity})`;
+                            ctx.lineWidth = 4;
+                            ctx.beginPath();
+                            ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
+                            ctx.stroke();
+                            
+                            // Diamond marker
+                            ctx.fillStyle = `rgba(0, 122, 255, ${opacity})`;
+                            ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
+                            ctx.lineWidth = 2;
+                            ctx.beginPath();
+                            ctx.moveTo(ping.x, ping.y - 12);
+                            ctx.lineTo(ping.x + 8, ping.y);
+                            ctx.lineTo(ping.x, ping.y + 12);
+                            ctx.lineTo(ping.x - 8, ping.y);
+                            ctx.closePath();
+                            ctx.fill();
+                            ctx.stroke();
+                            
+                            // METKA label
+                            ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
+                            ctx.font = 'bold 10px "Segoe UI", sans-serif';
+                            ctx.textAlign = 'center';
+                            ctx.textBaseline = 'bottom';
+                            ctx.fillText("METKA", ping.x, ping.y - 15);
+                            
+                            ctx.restore();
+                        }
+                    });
+                }
+
                 // Update enemy radar tracking
                 if (!br.enemyLastKnownPositions) br.enemyLastKnownPositions = {};
                 const mTeam = brNormalizeTeam(br.myP.team);
@@ -2465,6 +2574,38 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 }
 
                 ctx.restore();
+
+                // Draw countdown if active
+                if (br.roundStartCountdownUntil && now < br.roundStartCountdownUntil) {
+                    const timeLeft = br.roundStartCountdownUntil - now;
+                    const secondsLeft = Math.ceil(timeLeft / 1000);
+                    
+                    if (secondsLeft > 0 && secondsLeft <= 3) {
+                        ctx.save();
+                        
+                        const cx = c.width / 2;
+                        const cy = c.height / 2;
+                        
+                        const pulseProgress = (timeLeft % 1000) / 1000;
+                        const scale = 1.0 + (1.5 * pulseProgress);
+                        const opacity = 1.0 - pulseProgress;
+                        
+                        ctx.translate(cx, cy);
+                        ctx.scale(scale, scale);
+                        
+                        ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+                        ctx.shadowBlur = 20;
+                        
+                        ctx.font = 'bold 80px "Outfit", "Segoe UI", sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        
+                        ctx.fillStyle = `rgba(255, 204, 0, ${opacity})`;
+                        ctx.fillText(secondsLeft.toString(), 0, 0);
+                        
+                        ctx.restore();
+                    }
+                }
 
                 const aliveCount = getBrAliveRows().length;
                 document.getElementById('br-ui-alive').innerText = `Живых: ${aliveCount}`;
@@ -2814,6 +2955,10 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                          db.ref(`lobbies/${lobbyId}/br`).off('value', br.roundsListener);
                          br.roundsListener = null;
                      }
+                     if (br.pingsListener) {
+                         db.ref(`lobbies/${lobbyId}/br/pings`).off('value', br.pingsListener);
+                         br.pingsListener = null;
+                     }
                      if (isHost) {
                          db.ref(`lobbies/${lobbyId}/br/matchActive`).remove().catch(() => {});
                          db.ref(`lobbies/${lobbyId}/br/walls`).remove().catch(() => {});
@@ -2821,6 +2966,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                          db.ref(`lobbies/${lobbyId}/br/ctRounds`).remove().catch(() => {});
                          db.ref(`lobbies/${lobbyId}/br/tRounds`).remove().catch(() => {});
                          db.ref(`lobbies/${lobbyId}/br/currentRound`).remove().catch(() => {});
+                         db.ref(`lobbies/${lobbyId}/br/pings`).remove().catch(() => {});
                      }
                      if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
                      if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
@@ -2838,6 +2984,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                  br.botsListener = null;
                  br.wallsListener = null;
                  br.smokesListener = null;
+                 br.pingsListener = null;
+                 br.pings = {};
                  shootTouch = null;
                  isShooting = false;
                  br.bloodStains = [];
@@ -2863,11 +3011,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                       layout = JSON.parse(localStorage.getItem('br_hud_layout'));
                   } catch (e) {}
                   
+                  const defaultLayout = {
+                      joystick: { x: 50, y: window.innerHeight - 180, size: 'standard' },
+                      shoot: { x: window.innerWidth - 150, y: window.innerHeight - 150, size: 'standard', allowHold: true },
+                      minimap: { x: window.innerWidth - 160, y: 15, size: 'standard', allowClick: true }
+                  };
+                  
                   if (!layout) {
+                      layout = defaultLayout;
+                  } else {
                       layout = {
-                          joystick: { x: 50, y: window.innerHeight - 180, size: 'standard' },
-                          shoot: { x: window.innerWidth - 150, y: window.innerHeight - 150, size: 'standard', allowHold: true },
-                          minimap: { x: window.innerWidth - 160, y: 15, size: 'standard', allowClick: true }
+                          joystick: Object.assign({}, defaultLayout.joystick, layout.joystick),
+                          shoot: Object.assign({}, defaultLayout.shoot, layout.shoot),
+                          minimap: Object.assign({}, defaultLayout.minimap, layout.minimap)
                       };
                   }
                   
@@ -2952,14 +3108,20 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                       saved = JSON.parse(localStorage.getItem('br_hud_layout'));
                   } catch(e) {}
                   
+                  const defaultLayout = {
+                      joystick: { x: 50, y: window.innerHeight - 180, size: 'standard' },
+                      shoot: { x: window.innerWidth - 150, y: window.innerHeight - 150, size: 'standard', allowHold: true },
+                      minimap: { x: window.innerWidth - 160, y: 15, size: 'standard', allowClick: true }
+                  };
+                  
                   if (saved) {
-                      hudLayoutState = saved;
-                  } else {
                       hudLayoutState = {
-                          joystick: { x: 50, y: window.innerHeight - 180, size: 'standard' },
-                          shoot: { x: window.innerWidth - 150, y: window.innerHeight - 150, size: 'standard', allowHold: true },
-                          minimap: { x: window.innerWidth - 160, y: 15, size: 'standard', allowClick: true }
+                          joystick: Object.assign({}, defaultLayout.joystick, saved.joystick),
+                          shoot: Object.assign({}, defaultLayout.shoot, saved.shoot),
+                          minimap: Object.assign({}, defaultLayout.minimap, saved.minimap)
                       };
+                  } else {
+                      hudLayoutState = defaultLayout;
                   }
                   
                   positionMockElement('joystick', hudLayoutState.joystick);
@@ -3004,16 +3166,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   
                   const dragStart = (e) => {
                       e.stopPropagation();
-                      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                      const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : null;
+                      if (e.touches && !touch) return;
+                      const clientX = touch ? touch.clientX : e.clientX;
+                      const clientY = touch ? touch.clientY : e.clientY;
                       
                       startX = clientX - el.offsetLeft;
                       startY = clientY - el.offsetTop;
                       
                       const dragMove = (moveEv) => {
                           moveEv.preventDefault();
-                          const curX = moveEv.touches ? moveEv.touches[0].clientX : moveEv.clientX;
-                          const curY = moveEv.touches ? moveEv.touches[0].clientY : moveEv.clientY;
+                          const moveTouch = (moveEv.touches && moveEv.touches.length > 0) ? moveEv.touches[0] : null;
+                          const curX = moveTouch ? moveTouch.clientX : moveEv.clientX;
+                          const curY = moveTouch ? moveTouch.clientY : moveEv.clientY;
                           
                           let left = curX - startX;
                           let top = curY - startY;
@@ -3187,6 +3352,14 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                       ctx.strokeRect(minCoord, minCoord, maxMapSize, maxMapSize);
                   }
                   
+                  if (br.zone) {
+                      ctx.strokeStyle = '#ff3b30';
+                      ctx.lineWidth = 15;
+                      ctx.beginPath();
+                      ctx.arc(br.zone.x, br.zone.y, br.zone.r, 0, Math.PI * 2);
+                      ctx.stroke();
+                  }
+                  
                   if (br.pings) {
                       const now = Date.now();
                       Object.values(br.pings).forEach(ping => {
@@ -3271,17 +3444,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   
                   ctx.clearRect(0, 0, canvas.width, canvas.height);
                   
-                  ctx.fillStyle = '#0d0d12';
-                  ctx.fillRect(0, 0, canvas.width, canvas.height);
-                  
                   ctx.save();
                   const mapScale = canvas.width / BR_SIZE;
                   ctx.scale(mapScale, mapScale);
                   
-                  mapWalls.forEach(wall => {
-                      ctx.fillStyle = '#3a3a45';
-                      ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
-                  });
+                  if (!br.bgCanvas) {
+                      initBrBackgroundCanvas();
+                  }
+                  if (br.bgCanvas) {
+                      ctx.drawImage(br.bgCanvas, 0, 0);
+                  } else {
+                      ctx.fillStyle = '#0d0d12';
+                      ctx.fillRect(0, 0, BR_SIZE, BR_SIZE);
+                  }
                   
                   if (br.smokeZones) {
                       br.smokeZones.forEach(smoke => {
@@ -3298,6 +3473,14 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                       ctx.strokeStyle = '#ff3b30';
                       ctx.lineWidth = 15;
                       ctx.strokeRect(minCoord, minCoord, maxMapSize, maxMapSize);
+                  }
+                  
+                  if (br.zone) {
+                      ctx.strokeStyle = '#ff3b30';
+                      ctx.lineWidth = 15;
+                      ctx.beginPath();
+                      ctx.arc(br.zone.x, br.zone.y, br.zone.r, 0, Math.PI * 2);
+                      ctx.stroke();
                   }
                   
                   if (br.pings) {
@@ -3400,8 +3583,10 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   if (!canvas) return;
                   
                   const rect = canvas.getBoundingClientRect();
-                  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-                  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                  const touch = (e.touches && e.touches.length > 0) ? e.touches[0] : null;
+                  if (e.touches && !touch) return;
+                  const clientX = touch ? touch.clientX : e.clientX;
+                  const clientY = touch ? touch.clientY : e.clientY;
                   
                   const clickX = clientX - rect.left;
                   const clickY = clientY - rect.top;
@@ -3424,6 +3609,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                           y: pingY,
                           time: Date.now()
                       };
+                      playBrSound('ping');
                   }
               }
 

@@ -1,3 +1,8 @@
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+if (isMobile) {
+    document.body.classList.add('is-mobile');
+}
+
 function runSplashScreen() {
     const splash = document.getElementById('br-splash-screen');
     const statusText = document.getElementById('splash-status-text');
@@ -57,8 +62,34 @@ function runSplashScreen() {
     initApp();
 }
 
-// Start splash screen
-runSplashScreen();
+function checkOrientationAndRun() {
+    const splash = document.getElementById('br-splash-screen');
+    const needsOrientationAdjustment = isMobile && (window.innerHeight > window.innerWidth);
+    
+    if (needsOrientationAdjustment) {
+        if (splash) splash.style.display = 'none';
+        window.addEventListener('resize', onResizeCheck);
+        window.addEventListener('orientationchange', onResizeCheck);
+    } else {
+        if (splash) splash.style.display = 'flex';
+        runSplashScreen();
+    }
+}
+
+let checkCalled = false;
+function onResizeCheck() {
+    if (checkCalled) return;
+    const needsOrientationAdjustment = isMobile && (window.innerHeight > window.innerWidth);
+    if (!needsOrientationAdjustment) {
+        checkCalled = true;
+        window.removeEventListener('resize', onResizeCheck);
+        window.removeEventListener('orientationchange', onResizeCheck);
+        checkOrientationAndRun();
+    }
+}
+
+// Start checks
+checkOrientationAndRun();
 
 document.getElementById('chat-input')?.addEventListener('keydown', (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {

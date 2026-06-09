@@ -105,11 +105,6 @@
             <div id="tab-profile" class="tab-view">
                 <div class="profile-layout-container">
                     <div class="profile-left-col profile-left-col-flat">
-                        <div id="my-profile-visual-card" class="profile-visual-card">
-                            <div id="my-card-avatar" class="profile-visual-avatar">😎</div>
-                            <div id="my-card-name" class="profile-visual-name">Игрок</div>
-                            <div id="my-card-medals" class="medals-container"></div>
-                        </div>
                         <div class="profile-avatar dynamic-avatar" id="my-avatar" onclick="openAvatarModal()">😎</div><br>
                         <div class="profile-name-container">
                             <div class="profile-name" id="my-name-display" onclick="changeName()">Игрок ✏️</div>
@@ -369,6 +364,10 @@
                         <div style="margin-bottom:15px;">
                             <label style="font-weight:bold; color:var(--coin-col);">Текущий патчноут:</label>
                             <div id="dev-current-patchnote-text" style="font-size:12px; color:gray; background:#111; padding:10px; border-radius:8px; margin-top:5px; max-height:100px; overflow-y:auto;">...</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:15px;">
+                            <label style="font-weight:bold; color:var(--coin-col);">Ключ Gemini API:</label>
+                            <input type="password" id="dev-gemini-key-input" class="styled-input" placeholder="AIzaSy..." onchange="localStorage.setItem('gemini_api_key', this.value)">
                         </div>
                         <hr style="border-color:#333; margin:15px 0;">
                         <div style="display:flex; flex-direction:column; gap:10px;">
@@ -773,6 +772,12 @@
                             <span id="pause-sens-val">5.0</span>
                         </div>
                         <input type="range" id="pause-sens-range" min="0.1" max="10" step="0.1" value="5.0" style="width:100%; accent-color:var(--coin-col); cursor:pointer;" oninput="updatePauseSens(this.value)">
+                    </div>
+                    <button class="btn btn-green" onclick="togglePause(false); openHUDCustomizer();" style="width:100%; margin: 15px 0; background:#3390ec;">КАСТОМИЗАЦИЯ</button>
+                    <div class="profile-version" style="margin-top:12px; text-align: center;">
+                        <div class="profile-version-label" style="color: #8e8e93; font-size: 12px;">Версия программы</div>
+                        <div class="profile-version-main" id="app-version-main-pause" style="color: #fff; font-weight: bold; margin-top: 4px;">commit ...</div>
+                        <div class="profile-version-sub" id="app-version-sub-pause" style="color: #8e8e93; font-size: 11px; margin-top: 2px;">Последнее обновление: ...</div>
                     </div>
                 </div>
             </div>

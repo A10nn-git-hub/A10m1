@@ -12,7 +12,8 @@ let firebaseAuthUnavailable = false;
 
 function renderAppVersionInfo() {
     const versionTargets = [
-        [document.getElementById('app-version-main-settings'), document.getElementById('app-version-sub-settings')]
+        [document.getElementById('app-version-main-settings'), document.getElementById('app-version-sub-settings')],
+        [document.getElementById('app-version-main-pause'), document.getElementById('app-version-sub-pause')]
     ];
     versionTargets.forEach(([mainEl, subEl]) => {
         if (!mainEl || !subEl) return;
@@ -212,10 +213,11 @@ function pcmToWav(base64, sampleRate) {
 }
 
 async function fetchGeminiAPI(promptStr) {
+    const activeApiKey = localStorage.getItem('gemini_api_key') || apiKey || "";
     let retries = 5, delay = 1000;
     while (retries > 0) {
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${activeApiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ contents: [{ parts: [{ text: promptStr }] }] })
@@ -1679,6 +1681,13 @@ function bindAppVersionSync() {
             let subSettings = document.getElementById('app-version-sub-settings');
             if (subSettings) subSettings.innerText = "Патчноут:\n" + patchnote;
             
+            // Pause settings page
+            let mainPause = document.getElementById('app-version-main-pause');
+            if (mainPause) mainPause.innerText = "Версия " + ver;
+            
+            let subPause = document.getElementById('app-version-sub-pause');
+            if (subPause) subPause.innerText = "Патчноут:\n" + patchnote;
+            
             // Dev/Admin panel
             let devVer = document.getElementById('dev-current-version-text');
             if (devVer) devVer.innerText = ver;
@@ -1897,13 +1906,18 @@ function initApp() {
                 let mx = e.clientX - rect.left;
                 let my = e.clientY - rect.top;
                 let cx = c.width / 2; let cy = c.height / 2;
-                br.myP.a = Math.atan2(my - cy, mx - cx);
+                if (br.myP) {
+                    br.myP.a = Math.atan2(my - cy, mx - cx);
+                }
             }
         });
         const brCanvas = document.getElementById('br-canvas');
         if (brCanvas) {
             brCanvas.addEventListener('mousedown', (e) => {
-                if (appState.game === 'br_2d' && !isMobile) { isShooting = true; }
+                if (appState.game === 'br_2d' && !isMobile) {
+                    isShooting = true;
+                    if (br.myP) br.myP.hasFiredThisPress = false;
+                }
             });
             brCanvas.addEventListener('mouseup', (e) => {
                 if (appState.game === 'br_2d' && !isMobile) { isShooting = false; }
@@ -2127,6 +2141,8 @@ function updateMyProfileUI() {
             db.ref(`lobbies/${lobbyId}/players/${myId}`).update({ avatar: myAvatar, name: myName, eqName: myEqName, pMedals: myPinnedMedals });
         }
     }
+    const geminiInput = document.getElementById('dev-gemini-key-input');
+    if (geminiInput) geminiInput.value = localStorage.getItem('gemini_api_key') || "";
 }
 
 function renderShop() {
