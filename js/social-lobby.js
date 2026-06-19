@@ -5,6 +5,133 @@
             let activeChatId = null;
             let chatMessagesListener = null;
             let lobbyAgentSlots = {};
+            let friendsCache = {};
+
+            async function checkGitHubVersionAndUpdate() {
+                try {
+                    const response = await fetch('https://api.github.com/repos/A10nn-git-hub/A10m1/commits?per_page=1');
+                    if (!response.ok) {
+                        console.warn('GitHub API request failed:', response.status);
+                        return;
+                    }
+                    const commits = await response.json();
+                    if (!commits || commits.length === 0) return;
+                    
+                    const latestCommit = commits[0];
+                    const sha = latestCommit.sha;
+                    const commitMsg = latestCommit.commit.message || '';
+                    
+                    const snap = await db.ref('app_version').once('value');
+                    const currentData = snap.exists() ? snap.val() : {};
+                    const currentSha = currentData.sha || '';
+                    
+                    if (sha && sha !== currentSha) {
+                        const currentVer = currentData.version || '1.0';
+                        // Check for feature keywords
+                        const featureKeywords = ['feat', 'feature', 'major', 'release', 'breaking', 'add', 'implement'];
+                        const isFeature = featureKeywords.some(keyword => commitMsg.toLowerCase().includes(keyword));
+                        
+                        let num = parseFloat(currentVer);
+                        if (isNaN(num)) num = 1.0;
+                        let increment = isFeature ? 0.1 : 0.01;
+                        let nextVer = (Math.round((num + increment) * 100) / 100).toFixed(2);
+                        
+                        await db.ref('app_version').set({
+                            version: nextVer,
+                            patchnote: commitMsg,
+                            sha: sha,
+                            commitMsg: commitMsg,
+                            updatedAt: firebase.database.ServerValue.TIMESTAMP
+                        });
+                        console.log(`Updated app version to ${nextVer} based on GitHub commit ${sha}`);
+                    }
+                } catch (err) {
+                    console.error('Error in checkGitHubVersionAndUpdate:', err);
+                }
+            }
+
+            function getFriendGroup(id, profile = {}) {
+                if (id === SYSTEM_BOT.id) return 1;
+                
+                const presence = profile.presence || {};
+                const currentLobby = profile.currentLobby || {};
+                const lastSeenAt = Number(presence.lastSeenAt || profile.lastSeenAt || 0);
+                const awayExpired = presence.state === 'away' && lastSeenAt && Date.now() - lastSeenAt >= 60000;
+                const isOffline = presence.state === 'offline' || awayExpired;
+                const days = lastSeenAt ? Math.floor((Date.now() - lastSeenAt) / 86400000) : 0;
+                
+                if (!isOffline) {
+                    if (presence.state === 'away') return 3; // AFK
+                    return 2; // Online / Playing / In Lobby
+                }
+                
+                if (days < 1) return 4; // Offline < 1 day
+                return 5; // Offline >= 1 day
+            }
+
+            function compareFriends(aId, bId) {
+                const aProfile = friendsCache[aId] || {};
+                const bProfile = friendsCache[bId] || {};
+                const aGroup = getFriendGroup(aId, aProfile);
+                const bGroup = getFriendGroup(bId, bProfile);
+                
+                if (aGroup !== bGroup) return aGroup - bGroup;
+                
+                if (aGroup === 4 || aGroup === 5) {
+                    const aPresence = aProfile.presence || {};
+                    const bPresence = bProfile.presence || {};
+                    const aTime = Number(aPresence.lastSeenAt || aProfile.lastSeenAt || 0);
+                    const bTime = Number(bPresence.lastSeenAt || bProfile.lastSeenAt || 0);
+                    return bTime - aTime;
+                }
+                
+                const aName = String(aProfile.name || 'Игрок').toLowerCase();
+                const bName = String(bProfile.name || 'Игрок').toLowerCase();
+                return aName.localeCompare(bName);
+            }
+
+            function renderSortedFriends() {
+                const list = document.getElementById('fr-list');
+                if (!list) return;
+                
+                const allIds = [SYSTEM_BOT.id, ...friendsIds.filter(id => id !== SYSTEM_BOT.id)];
+                allIds.sort(compareFriends);
+                
+                const fragment = document.createDocumentFragment();
+                allIds.forEach(id => {
+                    if (id === SYSTEM_BOT.id) {
+                        let d = document.createElement('div'); 
+                        d.className = 'list-item'; 
+                        d.id = 'friend-row-' + id;
+                        d.innerHTML = `
+                            <div class="friend-row">
+                                <div style="font-size:30px;">${getAvatarHTML(SYSTEM_BOT.avatar)}</div>
+                                <div>${getNameHTML(SYSTEM_BOT.name, SYSTEM_BOT.eqName)}<br><span style="font-size:10px;color:gray;">ID: ${SYSTEM_BOT.id}</span></div>
+                            </div>`;
+                        d.onclick = () => openFriendModal({...SYSTEM_BOT});
+                        fragment.appendChild(d);
+                        return;
+                    }
+                    
+                    const p = friendsCache[id];
+                    if (!p) return;
+                    
+                    let d = document.createElement('div');
+                    d.className = 'list-item';
+                    d.id = 'friend-row-' + id;
+                    d.innerHTML = `
+                        <div class="friend-row">
+                            <div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> 
+                            <div>${getNameHTML(p.name, p.eqName)}<br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>
+                        </div>
+                        ${getFriendPresenceHTML(p)}`;
+                    d.onclick = () => openFriendModal({ id: id, name: p.name || 'Игрок', avatar: p.avatar, eqName: p.eqName, pMedals: p.pMedals, presence: p.presence, currentLobby: p.currentLobby });
+                    fragment.appendChild(d);
+                });
+                
+                list.innerHTML = '';
+                list.appendChild(fragment);
+            }
 
             function getMaxPlayersForMode(mode) {
                 if (mode === 'duel_1v1') return 2;
@@ -82,41 +209,24 @@
                 list.innerHTML = ''; 
                 Object.keys(friendListeners).forEach(id => db.ref('users/' + id).off('value', friendListeners[id]));
                 friendListeners = {};
+                friendsCache = {};
+                
+                friendsCache[SYSTEM_BOT.id] = { ...SYSTEM_BOT };
                 
                 friendsIds.forEach(id => { 
-                    let d = document.createElement('div'); 
-                    d.className = 'list-item'; 
-                    d.id = 'friend-row-' + id;
-                    list.appendChild(d);
-
-                    if (id === SYSTEM_BOT.id) {
-                        d.innerHTML = `
-                            <div class="friend-row">
-                                <div style="font-size:30px;">${getAvatarHTML(SYSTEM_BOT.avatar)}</div>
-                                <div>${getNameHTML(SYSTEM_BOT.name, SYSTEM_BOT.eqName)}<br><span style="font-size:10px;color:gray;">ID: ${SYSTEM_BOT.id}</span></div>
-                            </div>`;
-                        d.onclick = () => openFriendModal({...SYSTEM_BOT});
-                        return;
-                    }
+                    if (id === SYSTEM_BOT.id) return;
                     
                     friendListeners[id] = db.ref('users/' + id).on('value', s => { 
-                        let rEl = document.getElementById('friend-row-' + id);
-                        if (!rEl) return;
                         if (s.exists()) { 
-                            let p = s.val(); 
-                            rEl.innerHTML = `
-                                <div class="friend-row">
-                                    <div style="font-size:30px;">${getAvatarHTML(p.avatar)}</div> 
-                                    <div>${getNameHTML(p.name, p.eqName)}<br><span style="font-size:10px;color:gray;">ID: ${id}</span></div>
-                                </div>
-                                ${getFriendPresenceHTML(p)}`;
-                            rEl.onclick = () => openFriendModal({ id: id, name: p.name || 'Игрок', avatar: p.avatar, eqName: p.eqName, pMedals: p.pMedals, presence: p.presence, currentLobby: p.currentLobby });
-                            rEl.style.display = 'flex';
-                        } else { 
-                            rEl.style.display = 'none'; 
+                            friendsCache[id] = { id: id, ...s.val() };
+                        } else {
+                            delete friendsCache[id];
                         }
+                        renderSortedFriends();
                     }); 
                 }); 
+                
+                renderSortedFriends();
             }
 
             function addFriendBtn() { 
@@ -482,6 +592,7 @@
             }
 
             async function openLobby() { 
+                checkGitHubVersionAndUpdate().catch(err => console.error(err));
                 if (appState.inLobby && lobbyId) {
                     appState.autoLobbyPaused = false;
                     document.getElementById('main-buttons-view').style.display = 'none';
@@ -579,6 +690,7 @@
             }
 
             function acceptLobbyInvite() { 
+                checkGitHubVersionAndUpdate().catch(err => console.error(err));
                 if (pendingInvite) { 
                     const acceptedInvite = { ...pendingInvite };
                     if (appState.inLobby && lobbyId && lobbyId !== pendingInvite.lId) {
@@ -682,6 +794,7 @@
             }
 
             function joinFriendLobby() { 
+                checkGitHubVersionAndUpdate().catch(err => console.error(err));
                 const targetLobbyId = getFriendKnownLobbyId(activeFriend);
                 if (appState.inLobby && lobbyId && lobbyId !== targetLobbyId) {
                     closeLobby({autoReopen:false});

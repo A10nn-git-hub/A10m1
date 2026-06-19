@@ -1308,3 +1308,215 @@
             border-top: 1px solid #333;
         }
 
+        /* Standoff 2 Team Select Screen & Utilities */
+        .so2-team-select-container {
+            display: flex;
+            flex-direction: column;
+            width: 90vw;
+            height: 85vh;
+            max-width: 900px;
+            background: radial-gradient(circle at center, #1b1b22 0%, #0d0d12 100%);
+            border: 2px solid rgba(255, 107, 0, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.9), 0 0 30px rgba(255, 107, 0, 0.1);
+            overflow: hidden;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        .so2-team-header {
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .so2-team-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, #fff 0%, #ff9f0a 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .so2-team-columns {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            box-sizing: border-box;
+            width: 100%;
+        }
+
+        .so2-team-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 30px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .so2-ct-team {
+            background: linear-gradient(135deg, rgba(12, 27, 48, 0.8) 0%, rgba(6, 11, 19, 0.95) 100%);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .so2-ct-team:hover {
+            background: linear-gradient(135deg, rgba(20, 44, 77, 0.9) 0%, rgba(8, 16, 28, 0.98) 100%);
+            box-shadow: inset 0 0 40px rgba(50, 173, 230, 0.15);
+        }
+
+        .so2-t-team {
+            background: linear-gradient(135deg, rgba(44, 20, 6, 0.8) 0%, rgba(13, 7, 3, 0.95) 100%);
+        }
+
+        .so2-t-team:hover {
+            background: linear-gradient(135deg, rgba(71, 32, 10, 0.9) 0%, rgba(20, 11, 5, 0.98) 100%);
+            box-shadow: inset 0 0 40px rgba(255, 159, 10, 0.15);
+        }
+
+        .so2-team-icon {
+            font-size: 80px;
+            margin-bottom: 10px;
+            filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+            transition: transform 0.3s ease;
+        }
+
+        .so2-team-column:hover .so2-team-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .so2-team-name {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .so2-ct-team .so2-team-name {
+            color: #32ade6;
+        }
+
+        .so2-t-team .so2-team-name {
+            color: #ff9f0a;
+        }
+
+        .so2-team-players {
+            flex: 1;
+            width: 100%;
+            max-height: 220px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+
+        .so2-team-player-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .so2-team-count {
+            font-size: 64px;
+            font-weight: 900;
+            color: rgba(255, 255, 255, 0.08);
+            position: absolute;
+            bottom: 80px;
+            right: 20px;
+            line-height: 1;
+            pointer-events: none;
+        }
+
+        .so2-select-btn {
+            width: 160px;
+            height: 44px;
+            border: none;
+            border-radius: 22px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: all 0.2s ease;
+        }
+
+        .ct-btn {
+            background: linear-gradient(135deg, #1f78b4 0%, #32ade6 100%);
+        }
+
+        .ct-btn:hover {
+            box-shadow: 0 6px 20px rgba(50, 173, 230, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .t-btn {
+            background: linear-gradient(135deg, #e31a1c 0%, #ff9f0a 100%);
+        }
+
+        .t-btn:hover {
+            box-shadow: 0 6px 20px rgba(255, 159, 10, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .so2-team-footer {
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.7);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+            font-weight: bold;
+            color: #ffd60a;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Respawn and Reconnect overlays styling */
+        .hidden {
+            display: none !important;
+        }
+
+        #br-respawn-overlay {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        #br-respawn-countdown {
+            animation: scalePulse 1s infinite alternate;
+        }
+
+        @keyframes scalePulse {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+

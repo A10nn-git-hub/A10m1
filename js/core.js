@@ -801,6 +801,15 @@ function togglePause(p, options = {}) {
         db.ref(`lobbies/${lobbyId}/hostPaused`).set(!!p).catch(() => { });
     }
     setPauseUI(!!p, !!(p && appState.game && isHost));
+    
+    if (!p && appState.game === 'br_2d') {
+        if (typeof brLoop === 'function') {
+            if (typeof br !== 'undefined' && br) {
+                if (br.loop) cancelAnimationFrame(br.loop);
+                br.loop = requestAnimationFrame(brLoop);
+            }
+        }
+    }
 }
 
 function exitToLobby() {
@@ -1164,6 +1173,9 @@ function isAiFriendId(id) {
 }
 
 function currentPresenceState() {
+    if (typeof br !== 'undefined' && br && br.matchPausedByDisconnect) {
+        return 'away';
+    }
     if (document.hidden) {
         if (!appState.awaySinceAt) appState.awaySinceAt = Date.now();
         return Date.now() - appState.awaySinceAt >= 60000 ? 'offline' : 'away';
@@ -1357,6 +1369,8 @@ function mergedSettingsForGame(gameId) {
     return merged;
 }
 
+let settingsAutoSaveInterval = null;
+
 function openGameSettingsModal() {
     let gameId = appState.selectedGameId || pendingModeId;
     if (gameId && gameId.startsWith('br_')) gameId = 'br_2d';
@@ -1369,12 +1383,23 @@ function openGameSettingsModal() {
     }
     modal.classList.remove('hidden');
     renderGameSettingsModal(gameId);
+
+    if (isHost) {
+        if (settingsAutoSaveInterval) clearInterval(settingsAutoSaveInterval);
+        settingsAutoSaveInterval = setInterval(() => {
+            if (typeof silentSaveGameSettings === 'function') silentSaveGameSettings();
+        }, 1000);
+    }
 }
 
 function closeGameSettingsModal(event) {
     if (event) event.stopPropagation();
     const modal = document.getElementById('game-settings-modal');
     if (modal) modal.classList.add('hidden');
+    if (settingsAutoSaveInterval) {
+        clearInterval(settingsAutoSaveInterval);
+        settingsAutoSaveInterval = null;
+    }
 }
 
 function isEditingGameSettingsModal() {
@@ -1563,6 +1588,27 @@ async function saveGameSettings() {
         closeGameSettingsModal();
     } catch (err) {
         showNegativeAlert(getFirebaseFriendlyMessage("Не удалось сохранить настройки."));
+    }
+}
+
+async function silentSaveGameSettings() {
+    if (!isHost || !lobbyId) return;
+    let gameId = appState.selectedGameId || pendingModeId;
+    if (gameId && gameId.startsWith('br_')) gameId = 'br_2d';
+    if (!gameId) return;
+    const settings = collectGameSettings(gameId);
+    if (!settings) return;
+
+    // Check if settings have actually changed from the last saved ones to avoid redundant database writes
+    const currentStr = JSON.stringify(settings);
+    const lastStr = JSON.stringify(currentLobbySettings[gameId] || {});
+    if (currentStr === lastStr) return;
+
+    try {
+        await db.ref(`lobbies/${lobbyId}/settings/${gameId}`).set(settings);
+        currentLobbySettings[gameId] = settings;
+    } catch (err) {
+        console.warn("Silent save failed:", err);
     }
 }
 

@@ -598,7 +598,10 @@
                         </div>
                     </div>
                     
-
+                    <!-- Opponent Disconnect Banner -->
+                    <div id="br-reconnect-banner" style="display: none; position: absolute; top: 75px; left: 50%; transform: translateX(-50%); z-index: 1000; font-family: sans-serif; background: rgba(255, 69, 58, 0.9); border-radius: 6px; padding: 8px 16px; color: white; font-weight: bold; font-size: 14px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                        Ожидание переподключения соперников...
+                    </div>
 
                     <div class="br-ui" id="br-ui-alive">Живых: ?</div>
                     <div class="br-ui" id="br-ui-kills" style="top:40px;">Киллы: 0</div>
@@ -608,6 +611,50 @@
                         <h1 style="color:#ff453a; font-size:6vh; margin-bottom:10px;" id="br-death-title">ПОТРАЧЕНО</h1>
                         <div style="color:white; font-size:3vh; margin-bottom:30px;" id="br-death-sub"></div>
                         <button class="btn btn-dark" style="font-size:24px; padding:15px 40px; border:2px solid white;" onclick="exitToLobby()">В ЛОББИ</button>
+                    </div>
+
+                    <!-- Standoff 2 Team Select Overlay -->
+                    <div id="so2-lobby-overlay" style="display: none;">
+                        <div class="so2-team-select-container">
+                            <div class="so2-team-header">
+                                <h2>ВЫБОР КОМАНДЫ</h2>
+                            </div>
+                            <div class="so2-team-columns">
+                                <!-- Left Team: Counter-Terrorists -->
+                                <div class="so2-team-column so2-ct-team" onclick="selectTeam('Counter-Terrorists')">
+                                    <div class="so2-team-icon">👮</div>
+                                    <div class="so2-team-name">COUNTER-TERRORISTS</div>
+                                    <div class="so2-team-players" id="so2-ct-players-list">
+                                        <!-- List of CT players -->
+                                    </div>
+                                    <div class="so2-team-count" id="so2-ct-count">0</div>
+                                    <button class="so2-select-btn ct-btn">ВСТУПИТЬ</button>
+                                </div>
+                                
+                                <!-- Right Team: Terrorists -->
+                                <div class="so2-team-column so2-t-team" onclick="selectTeam('Terrorists')">
+                                    <div class="so2-team-icon">💣</div>
+                                    <div class="so2-team-name">TERRORISTS</div>
+                                    <div class="so2-team-players" id="so2-t-players-list">
+                                        <!-- List of T players -->
+                                    </div>
+                                    <div class="so2-team-count" id="so2-t-count">0</div>
+                                    <button class="so2-select-btn t-btn">ВСТУПИТЬ</button>
+                                </div>
+                            </div>
+                            <div class="so2-team-footer" id="so2-team-select-footer-text">
+                                Выберите сторону. Для старта команды должны быть сбалансированы.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Respawn Countdown Timer Overlay -->
+                    <div id="br-respawn-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.75); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1050; font-family: sans-serif; color: white; pointer-events: none;">
+                        <div class="respawn-timer-content" style="text-align: center;">
+                            <div class="respawn-timer-title" style="font-size: 18px; font-weight: 800; letter-spacing: 1px; color: #ff3b30; margin-bottom: 8px; text-transform: uppercase;">Вы погибли</div>
+                            <div style="font-size: 12px; color: #aaa; margin-bottom: 12px; text-transform: uppercase;">Возрождение через</div>
+                            <div class="respawn-timer-countdown" id="br-respawn-countdown" style="font-size: 48px; font-weight: 900; color: #fff;">1.5</div>
+                        </div>
                     </div>
 
                     <div id="br-controls" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1010;">

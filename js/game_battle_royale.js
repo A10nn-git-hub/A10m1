@@ -552,6 +552,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 shotsListener: null,
                 damageListener: null,
                 botsListener: null,
+                teamSelectListener: null,
+                matchGameplayStartedListener: null,
                 ctRounds: 0,
                 tRounds: 0,
                 currentRound: 1,
@@ -725,83 +727,11 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function playFactionWinSound(winnerTeam) {
-                const audioPath = winnerTeam === 'Counter-Terrorists' ? './assets/audio/ct_win.mp3' : './assets/audio/t_win.mp3';
+                const audioPath = winnerTeam === 'Counter-Terrorists' ? './counter-terrorists-win.mp3' : './terrorist-wins.mp3';
                 const audio = new Audio(audioPath);
                 audio.volume = 0.5;
-
-                let fallbackTriggered = false;
-                function runFallback() {
-                    if (fallbackTriggered) return;
-                    fallbackTriggered = true;
-                    // Play clean beep
-                    playCleanBeep();
-                    // Play speech synthesis after a short delay
-                    setTimeout(() => {
-                        if ('speechSynthesis' in window) {
-                            const text = winnerTeam === 'Counter-Terrorists' ? 'Counter-Terrorists win' : (winnerTeam === 'Terrorists' ? 'Terrorists win' : 'Round draw');
-                            const utterance = new SpeechSynthesisUtterance(text);
-                            utterance.lang = 'en-US';
-                            utterance.rate = 0.85;
-                            utterance.pitch = 0.7;
-                            utterance.volume = 0.5;
-
-                            if (window.speechSynthesis && window.speechSynthesis.getVoices) {
-                                const voices = window.speechSynthesis.getVoices();
-                                const englishMaleVoice = voices.find(v => {
-                                    const nameLower = v.name.toLowerCase();
-                                    const langLower = v.lang.toLowerCase();
-                                    return langLower.startsWith('en') && 
-                                           (nameLower.includes('male') || 
-                                            nameLower.includes('david') || 
-                                            nameLower.includes('guy') || 
-                                            nameLower.includes('microsoft') || 
-                                            nameLower.includes('google'));
-                                });
-                                if (englishMaleVoice) {
-                                    utterance.voice = englishMaleVoice;
-                                }
-                            }
-
-                            utterance.onend = () => {
-                                playSquelchSound();
-                            };
-                            window.speechSynthesis.speak(utterance);
-                        }
-                    }, 150);
-                }
-
-                function playCleanBeep() {
-                    try {
-                        if (!brAudioCtx) {
-                            brAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                        }
-                        if (brAudioCtx.state === 'suspended') {
-                            brAudioCtx.resume();
-                        }
-                        const now = brAudioCtx.currentTime;
-                        const osc = brAudioCtx.createOscillator();
-                        const gainNode = brAudioCtx.createGain();
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(660, now);
-                        gainNode.gain.setValueAtTime(0.1, now);
-                        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                        osc.connect(gainNode);
-                        gainNode.connect(brAudioCtx.destination);
-                        osc.start(now);
-                        osc.stop(now + 0.3);
-                    } catch (e) {
-                        console.warn("Clean beep failed", e);
-                    }
-                }
-
-                // If loading or playing fails, run the fallback
-                audio.addEventListener('error', () => {
-                    runFallback();
-                });
-
                 audio.play().catch(err => {
-                    console.warn("Audio file win playback failed, playing fallback", err);
-                    runFallback();
+                    console.error("Failed to play win sound", err);
                 });
             }
 
@@ -923,6 +853,206 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 }
             }
 
+            // Balance and Team Selection variables/methods
+            function selectTeam(teamName) {
+                if (!lobbyId) return;
+                
+                db.ref(`lobbies/${lobbyId}/br/players`).once('value').then(s => {
+                    const players = s.exists() ? s.val() : {};
+                    let ctCount = 0;
+                    let tCount = 0;
+                    
+                    Object.keys(players).forEach(id => {
+                        if (isAiFriendId(id)) return;
+                        if (id === myId) return;
+                        const t = brNormalizeTeam(players[id].team);
+                        if (t === 'Counter-Terrorists') ctCount++;
+                        else if (t === 'Terrorists') tCount++;
+                    });
+                    
+                    const newCtCount = ctCount + (teamName === 'Counter-Terrorists' ? 1 : 0);
+                    const newTCount = tCount + (teamName === 'Terrorists' ? 1 : 0);
+                    
+                    if (Math.abs(newCtCount - newTCount) > 1) {
+                        showNegativeAlert("Команды несбалансированы! Разница должна быть не более 1 игрока.");
+                        return;
+                    }
+                    
+                    db.ref(`lobbies/${lobbyId}/br/players/${myId}/team`).set(teamName);
+                });
+            }
+            window.selectTeam = selectTeam;
+
+            function finalizeMatchStart(players) {
+                if (!isHost || !lobbyId) return;
+                
+                let maxTeamSize = 5;
+                if (currentMode === 'duel_1v1') maxTeamSize = 1;
+                else if (currentMode === 'duel_2v2') maxTeamSize = 2;
+                
+                let ctRealIds = [];
+                let tRealIds = [];
+                Object.keys(players).forEach(id => {
+                    const team = brNormalizeTeam(players[id].team);
+                    if (team === 'Counter-Terrorists') ctRealIds.push(id);
+                    else if (team === 'Terrorists') tRealIds.push(id);
+                });
+                
+                let ctBotCount = maxTeamSize - ctRealIds.length;
+                let tBotCount = maxTeamSize - tRealIds.length;
+                
+                const bots = [];
+                const botHp = 100;
+                
+                for (let i = 0; i < ctBotCount; i++) {
+                    const botId = 'bot_t1_' + i;
+                    const sp = brSpawnForId(botId, 'Counter-Terrorists');
+                    bots.push({ id: botId, label: 'Бот CT-' + (i + 1), x: sp.x, y: sp.y, hp: botHp, maxHp: botHp, team: 'Counter-Terrorists', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                }
+                for (let i = 0; i < tBotCount; i++) {
+                    const botId = 'bot_t2_' + i;
+                    const sp = brSpawnForId(botId, 'Terrorists');
+                    bots.push({ id: botId, label: 'Бот T-' + (i + 1), x: sp.x, y: sp.y, hp: botHp, maxHp: botHp, team: 'Terrorists', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
+                }
+                
+                db.ref(`lobbies/${lobbyId}/br/bots`).set(bots);
+                db.ref(`lobbies/${lobbyId}/br/roundStartCountdownUntil`).set(Date.now() + 3000);
+                db.ref(`lobbies/${lobbyId}/br/matchStartTime`).set(Date.now());
+                
+                const updates = {};
+                Object.keys(players).forEach(id => {
+                    const p = players[id];
+                    const team = brNormalizeTeam(p.team);
+                    const sp = brSpawnForId(id, team);
+                    updates[`lobbies/${lobbyId}/br/players/${id}/x`] = Math.round(sp.x);
+                    updates[`lobbies/${lobbyId}/br/players/${id}/y`] = Math.round(sp.y);
+                    updates[`lobbies/${lobbyId}/br/players/${id}/hp`] = p.maxHp || 100;
+                    updates[`lobbies/${lobbyId}/br/players/${id}/maxHp`] = p.maxHp || 100;
+                    updates[`lobbies/${lobbyId}/br/players/${id}/alive`] = true;
+                });
+                db.ref().update(updates);
+                
+                db.ref(`lobbies/${lobbyId}/br/matchGameplayStarted`).set(true);
+            }
+
+            function checkMatchDisconnect() {
+                if (!lobbyId || !br.startMatchPlayerIds) return false;
+                const currentHumanIds = new Set((Array.isArray(lobbyPlayers) ? lobbyPlayers : []).map(p => p.id).filter(id => !isAiFriendId(id)));
+                for (let id of br.startMatchPlayerIds) {
+                    if (!currentHumanIds.has(id)) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            br.teamSelectListener = snap => {
+                const players = snap.exists() ? snap.val() : {};
+                
+                const ctList = document.getElementById('so2-ct-players-list');
+                const tList = document.getElementById('so2-t-players-list');
+                if (ctList && tList) {
+                    ctList.innerHTML = '';
+                    tList.innerHTML = '';
+                    let ctCount = 0;
+                    let tCount = 0;
+                    
+                    Object.keys(players).forEach(id => {
+                        if (isAiFriendId(id)) return;
+                        const p = players[id];
+                        
+                        const item = document.createElement('div');
+                        item.className = 'so2-team-player-row';
+                        item.innerHTML = `${getAvatarHTML(p.avatar)} <span>${getNameHTML(p.name, p.eqName)}</span>`;
+                        
+                        const team = brNormalizeTeam(p.team);
+                        if (team === 'Counter-Terrorists') {
+                            ctList.appendChild(item);
+                            ctCount++;
+                        } else if (team === 'Terrorists') {
+                            tList.appendChild(item);
+                            tCount++;
+                        }
+                    });
+                    
+                    const ctCountEl = document.getElementById('so2-ct-count');
+                    const tCountEl = document.getElementById('so2-t-count');
+                    if (ctCountEl) ctCountEl.innerText = ctCount;
+                    if (tCountEl) tCountEl.innerText = tCount;
+                    
+                    const allRealLobbyPlayerIds = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).map(p => p.id).filter(id => !isAiFriendId(id));
+                    const allRealChosen = allRealLobbyPlayerIds.every(id => players[id] && brNormalizeTeam(players[id].team) !== '');
+                    const isBalanced = Math.abs(ctCount - tCount) <= 1;
+                    
+                    const footerText = document.getElementById('so2-team-select-footer-text');
+                    if (allRealChosen && isBalanced) {
+                        if (footerText) footerText.innerText = 'Все игроки готовы. Игра начинается!';
+                        if (isHost && !br.spawningBotsStarted) {
+                            br.spawningBotsStarted = true;
+                            setTimeout(() => {
+                                finalizeMatchStart(players);
+                            }, 1500);
+                        }
+                    } else {
+                        if (footerText) footerText.innerText = 'Ожидание выбора команд игроками...';
+                    }
+                }
+            };
+
+            br.matchGameplayStartedListener = snap => {
+                if (snap.exists() && snap.val() === true) {
+                    const overlay = document.getElementById('so2-lobby-overlay');
+                    if (overlay) overlay.style.display = 'none';
+                    
+                    db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.teamSelectListener);
+                    db.ref(`lobbies/${lobbyId}/br/matchGameplayStarted`).off('value', br.matchGameplayStartedListener);
+                    
+                    db.ref(`lobbies/${lobbyId}/br/players/${myId}`).once('value').then(playerSnap => {
+                        const p = playerSnap.val() || {};
+                        const team = brNormalizeTeam(p.team) || 'Counter-Terrorists';
+                        const spawn = brSpawnForId(myId, team);
+                        
+                        const mySettings = br.settings?.players?.[myId] || {};
+                        const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                        const mySpeed = brNormalizeSpeed(mySettings.speed);
+                        
+                        br.myP = {
+                            id: myId,
+                            name: myName,
+                            avatar: myAvatar,
+                            eqName: myEqName,
+                            x: spawn.x,
+                            y: spawn.y,
+                            vx: 0,
+                            vy: 0,
+                            hp: myMaxHp,
+                            maxHp: myMaxHp,
+                            team: team,
+                            speed: mySpeed,
+                            a: 0,
+                            kills: 0,
+                            shotSeq: 0,
+                            alive: true,
+                            invuln: Date.now() + 5000,
+                            invulnUntil: Date.now() + 5000
+                        };
+                        
+                        br.serverHp = myMaxHp;
+                        br.damageTaken = 0;
+                        br.lastSyncX = br.myP.x;
+                        br.lastSyncY = br.myP.y;
+                        br.lastSyncAt = Date.now();
+                        shootTouch = null;
+                        isShooting = false;
+                        lastShot = 0;
+                        
+                        initBrFirebaseState(currentMode);
+                        br.roundStartCountdownUntil = Date.now() + 3000;
+                        syncBrPlayerState(true);
+                    });
+                }
+            };
+
             function startBrMatchLocal(mode) {
                 if (mode && mode.startsWith('br_')) {
                     mode = mode.replace('br_', '');
@@ -931,6 +1061,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 BR_SIZE = (mode === 'tdm_5v5') ? 3500 : 2000;
                 br.matchActive = true;
                 br.matchStartTime = Date.now();
+                br.matchAccumulatedTime = 0;
+                br.matchLastActiveTime = Date.now();
+                br.matchPausedByDisconnect = false;
+                br.spawningBotsStarted = false;
+                
+                if (typeof syncPresence === 'function') syncPresence();
+
+                if (lobbyId) {
+                    br.startMatchPlayerIds = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).map(p => p.id).filter(id => !isAiFriendId(id));
+                } else {
+                    br.startMatchPlayerIds = [myId];
+                }
+
                 br.kills = 0;
                 br.placeShown = false;
                 br.isSpectator = false;
@@ -945,56 +1088,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.roundWinner = '';
 
                 br.settings = mergedSettingsForGame('br_2d');
-                const mySettings = br.settings.players?.[myId] || {};
-                const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
-                const mySpeed = brNormalizeSpeed(mySettings.speed);
                 
-                let myTeam = brNormalizeTeam(mySettings.team);
-                if (!myTeam) {
-                    const myIdx = Array.isArray(lobbyPlayers) ? lobbyPlayers.findIndex(p => p.id === myId) : -1;
-                    if (myIdx >= 0) {
-                        let maxTeamSize = 5;
-                        if (mode === 'duel_1v1') maxTeamSize = 1;
-                        else if (mode === 'duel_2v2') maxTeamSize = 2;
-                        
-                        let team1Real = [];
-                        let team2Real = [];
-                        lobbyPlayers.forEach((p, idx) => {
-                            if (team1Real.length < maxTeamSize && team2Real.length < maxTeamSize) {
-                                if (idx % 2 === 0) team1Real.push(p);
-                                else team2Real.push(p);
-                            } else if (team1Real.length < maxTeamSize) {
-                                team1Real.push(p);
-                            } else if (team2Real.length < maxTeamSize) {
-                                team2Real.push(p);
-                            }
-                        });
-                        
-                        if (team1Real.some(p => p.id === myId)) myTeam = 'Counter-Terrorists';
-                        else if (team2Real.some(p => p.id === myId)) myTeam = 'Terrorists';
-                    }
-                }
-                if (!myTeam) myTeam = 'Counter-Terrorists';
-
-                br.serverHp = myMaxHp;
-                br.damageTaken = 0;
-                br.lastSyncX = 0;
-                br.lastSyncY = 0;
-                br.lastSyncAt = Date.now();
-                shootTouch = null;
-                isShooting = false;
-                lastShot = 0;
-
-                const spawn = brSpawnForId(myId, myTeam);
-                const invulnUntil = Date.now() + 5000;
-                br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: invulnUntil, invulnUntil };
-                br.lastSyncX = br.myP.x;
-                br.lastSyncY = br.myP.y;
-
-                // Hide the Standoff 2 overlay menu!
-                const overlay = document.getElementById('so2-lobby-overlay');
-                if (overlay) overlay.style.display = 'none';
-
                 // Show controls if mobile
                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                 const controls = document.getElementById('br-controls');
@@ -1006,7 +1100,94 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.bloodParticles = [];
                 generateSmokeZones(mode);
                 br.teamInitialized = true;
-                initBrFirebaseState(mode);
+                
+                // Reset/clear temporary states
+                br.bots = [];
+                br.remotePlayers = {};
+                br.bullets = [];
+                br.remoteBullets = {};
+
+                if (br.joinedMidGame) {
+                    br.joinedMidGame = false;
+                    const overlay = document.getElementById('so2-lobby-overlay');
+                    if (overlay) overlay.style.display = 'none';
+
+                    const mySettings = br.settings.players?.[myId] || {};
+                    const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                    const mySpeed = brNormalizeSpeed(mySettings.speed);
+                    
+                    const dbMe = br.remotePlayers[myId] || {};
+                    const myTeam = brNormalizeTeam(dbMe.team) || 'Counter-Terrorists';
+                    const spawn = brSpawnForId(myId, myTeam);
+                    
+                    br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 5000, invulnUntil: Date.now() + 5000 };
+                    
+                    br.serverHp = myMaxHp;
+                    br.damageTaken = 0;
+                    br.lastSyncX = br.myP.x;
+                    br.lastSyncY = br.myP.y;
+                    br.lastSyncAt = Date.now();
+                    shootTouch = null;
+                    isShooting = false;
+                    lastShot = 0;
+                    
+                    initBrFirebaseState(mode);
+                    return;
+                }
+
+                if (!lobbyId) {
+                    const mySettings = br.settings.players?.[myId] || {};
+                    const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                    const mySpeed = brNormalizeSpeed(mySettings.speed);
+                    const myTeam = 'Counter-Terrorists';
+                    const spawn = brSpawnForId(myId, myTeam);
+                    
+                    br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 5000, invulnUntil: Date.now() + 5000 };
+                    
+                    br.serverHp = myMaxHp;
+                    br.damageTaken = 0;
+                    br.lastSyncX = br.myP.x;
+                    br.lastSyncY = br.myP.y;
+                    br.lastSyncAt = Date.now();
+                    shootTouch = null;
+                    isShooting = false;
+                    lastShot = 0;
+
+                    const overlay = document.getElementById('so2-lobby-overlay');
+                    if (overlay) overlay.style.display = 'none';
+
+                    initBrFirebaseState(mode);
+                    br.roundStartCountdownUntil = Date.now() + 3000;
+                    return;
+                }
+
+                // Lobby: show team select screen and bind listeners
+                const overlay = document.getElementById('so2-lobby-overlay');
+                if (overlay) overlay.style.display = 'flex';
+
+                db.ref(`lobbies/${lobbyId}/br/matchGameplayStarted`).off();
+                db.ref(`lobbies/${lobbyId}/br/matchGameplayStarted`).on('value', br.matchGameplayStartedListener);
+                db.ref(`lobbies/${lobbyId}/br/players`).on('value', br.teamSelectListener);
+
+                db.ref(`lobbies/${lobbyId}/br/players/${myId}`).once('value').then(s => {
+                    if (!s.exists()) {
+                        const mySettings = br.settings.players?.[myId] || {};
+                        const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                        db.ref(`lobbies/${lobbyId}/br/players/${myId}`).set({
+                            id: myId,
+                            name: myName,
+                            avatar: myAvatar,
+                            eqName: myEqName,
+                            team: '',
+                            hp: myMaxHp,
+                            maxHp: myMaxHp,
+                            alive: true,
+                            kills: 0,
+                            damageTaken: 0,
+                            updatedAt: firebase.database.ServerValue.TIMESTAMP
+                        });
+                    }
+                });
             }
 
             function initBR() {
@@ -1232,7 +1413,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function initBrFirebaseState(mode) {
-                const botHp = BR_DEFAULT_HP / 2;
+                const botHp = 100;
                 if (!lobbyId) {
                     generateMap();
 
@@ -1387,16 +1568,9 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     applyBrRemotePlayers(snap.exists() ? snap.val() : {});
                     const remoteMe = br.remotePlayers[myId];
                     if (remoteMe && br.myP) {
-                        const serverDamage = Math.max(parseInt(br.damageByPlayer[myId]) || 0, parseInt(remoteMe.damageTaken) || 0);
-                        const maxHp = Math.max(1, parseInt(remoteMe.maxHp) || parseInt(br.myP.maxHp) || BR_DEFAULT_HP);
-                        const legacyHp = remoteMe.hp === undefined ? maxHp : (parseInt(remoteMe.hp) || 0);
-                        if (!brIsInvulnerable(br.myP)) br.damageTaken = Math.max(br.damageTaken, serverDamage);
-                        const serverHp = brIsInvulnerable(br.myP) ? maxHp : Math.min(legacyHp, Math.max(0, maxHp - br.damageTaken));
-                        br.myP.hp = brIsInvulnerable(br.myP) ? maxHp : Math.min(br.myP.hp, serverHp);
-                        br.serverHp = br.myP.hp;
+                        // In duels/TDM, do not overwrite local player's HP, serverHp, or alive status from remote database state to prevent cyclic overwriting loops
                         br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
                         document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
-                        br.myP.alive = (brIsInvulnerable(br.myP) || remoteMe.alive !== false) && br.myP.hp > 0;
                         if (remoteMe.team) br.myP.team = remoteMe.team;
                     }
                 };
@@ -1514,7 +1688,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     br.myP.y = spawn.y;
                     br.myP.hp = br.myP.maxHp || BR_DEFAULT_HP;
                     br.myP.alive = true;
-                    br.myP.invulnUntil = Date.now() + 3000;
+                    br.myP.invulnUntil = Date.now() + 5000;
                     br.damageTaken = 0;
                     br.isSpectator = false;
                 }
@@ -1523,7 +1697,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     p.alive = true;
                     p.hp = p.maxHp || BR_DEFAULT_HP;
                     p.damageTaken = 0;
-                    p.invulnUntil = Date.now() + 3000;
+                    p.invulnUntil = Date.now() + 5000;
                 });
                 const spectatorLabel = document.getElementById('br-ui-spectator');
                 if (spectatorLabel) spectatorLabel.style.display = 'none';
@@ -1535,9 +1709,9 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         b.y = sp.y;
                         b.tx = sp.x;
                         b.ty = sp.y;
-                        b.hp = b.maxHp || (BR_DEFAULT_HP / 2);
+                        b.hp = b.maxHp || 100;
                         b.alive = true;
-                        b.invulnUntil = Date.now() + 3000;
+                        b.invulnUntil = Date.now() + 5000;
                         b.respawning = false;
                     });
                     if (lobbyId) {
@@ -1824,6 +1998,25 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
                 const now = Date.now();
 
+                // Disconnect monitoring and status handling
+                const disconnected = checkMatchDisconnect();
+                const wasPausedByDisconnect = br.matchPausedByDisconnect;
+                if (disconnected) {
+                    if (!wasPausedByDisconnect) {
+                        br.matchPausedByDisconnect = true;
+                        if (typeof syncPresence === 'function') syncPresence();
+                        const banner = document.getElementById('br-reconnect-banner');
+                        if (banner) banner.style.display = 'block';
+                    }
+                } else {
+                    if (wasPausedByDisconnect) {
+                        br.matchPausedByDisconnect = false;
+                        if (typeof syncPresence === 'function') syncPresence();
+                        const banner = document.getElementById('br-reconnect-banner');
+                        if (banner) banner.style.display = 'none';
+                    }
+                }
+
                 // FPS Tracker for low performance mode
                 if (!br._fpsLastUpdate) {
                     br._fpsLastUpdate = now;
@@ -1838,145 +2031,176 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     br._fpsLastUpdate = now;
                 }
 
-                updateBrLocalPlayer(now);
-                updateBrRemotePlayerViews();
-                updateBrBotViews();
-                if (isHost || !lobbyId) updateBrBots(now);
-                updateBrBullets(now);
-                if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
-                renderBR(now);
+                if (!br.matchPausedByDisconnect) {
+                    br.matchAccumulatedTime += (now - br.matchLastActiveTime);
 
-                // Frame-by-frame tracker to play death sounds
-                if (br.aliveTracker) {
-                    // Track local player
-                    if (br.myP) {
-                        const wasAlive = br.aliveTracker[myId] !== false;
-                        const isAlive = br.myP.hp > 0 && br.myP.alive && !br.isSpectator;
-                        br.aliveTracker[myId] = isAlive;
-                        if (wasAlive && !isAlive) {
-                            playBrSound('death');
+                    updateBrLocalPlayer(now);
+                    updateBrRemotePlayerViews();
+                    updateBrBotViews();
+                    if (isHost || !lobbyId) updateBrBots(now);
+                    updateBrBullets(now);
+                    if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
+
+                    // Frame-by-frame tracker to play death sounds
+                    if (br.aliveTracker) {
+                        // Track local player
+                        if (br.myP) {
+                            const wasAlive = br.aliveTracker[myId] !== false;
+                            const isAlive = br.myP.hp > 0 && br.myP.alive && !br.isSpectator;
+                            br.aliveTracker[myId] = isAlive;
+                            if (wasAlive && !isAlive) {
+                                playBrSound('death');
+                            }
                         }
+
+                        // Track remote players
+                        Object.values(br.remotePlayers).forEach(p => {
+                            const wasAlive = br.aliveTracker[p.id] !== false;
+                            const isAlive = p.hp > 0 && p.alive;
+                            br.aliveTracker[p.id] = isAlive;
+                            if (wasAlive && !isAlive) {
+                                playBrSound('death');
+                            }
+                        });
+
+                        // Track bots
+                        br.bots.forEach(b => {
+                            const wasAlive = br.aliveTracker[b.id] !== false;
+                            const isAlive = b.hp > 0 && b.alive;
+                            br.aliveTracker[b.id] = isAlive;
+                            if (wasAlive && !isAlive) {
+                                playBrSound('death');
+                            }
+                        });
                     }
 
-                    // Track remote players
-                    Object.values(br.remotePlayers).forEach(p => {
-                        const wasAlive = br.aliveTracker[p.id] !== false;
-                        const isAlive = p.hp > 0 && p.alive;
-                        br.aliveTracker[p.id] = isAlive;
-                        if (wasAlive && !isAlive) {
-                            playBrSound('death');
-                        }
-                    });
-
-                    // Track bots
-                    br.bots.forEach(b => {
-                        const wasAlive = br.aliveTracker[b.id] !== false;
-                        const isAlive = b.hp > 0 && b.alive;
-                        br.aliveTracker[b.id] = isAlive;
-                        if (wasAlive && !isAlive) {
-                            playBrSound('death');
-                        }
-                    });
+                    checkBrEnd();
                 }
+                br.matchLastActiveTime = now;
 
-                checkBrEnd();
+                renderBR(now);
 
                 if (br.active) br.loop = requestAnimationFrame(brLoop);
-            }
+            };
 
             function updateBrLocalPlayer(now) {
-                 if (!br.myP) return;
-                 if (br.isSpectator || br.myP.hp <= 0) {
-                     if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5' && br.myP && br.myP.hp <= 0) {
-                         if (!br.myP.respawning) {
-                             br.myP.respawning = true;
-                             br.myP.respawnTime = now + 1500;
-                         } else if (now >= br.myP.respawnTime) {
-                             br.myP.respawning = false;
-                             const spawn = brSpawnForId(myId, br.myP.team);
-                             br.myP.x = spawn.x;
-                             br.myP.y = spawn.y;
-                             br.myP.hp = br.myP.maxHp || BR_DEFAULT_HP;
-                             br.myP.alive = true;
-                             br.myP.invulnUntil = Date.now() + 3000;
-                             br.damageTaken = 0;
-                             if (lobbyId) {
-                                 db.ref(`lobbies/${lobbyId}/br/damage/${myId}`).set(0).catch(() => {});
-                             }
-                             syncBrPlayerState(true);
-                         }
-                     }
-                     return;
-                 }
-                 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                 
-                 if (br.joystickTargetAngle !== null && br.joystickTargetAngle !== undefined) {
-                     let sens = window.gameSensitivity !== undefined ? window.gameSensitivity : 5;
-                     let step = 0.03 * sens;
-                     let diff = br.joystickTargetAngle - br.myP.a;
-                     diff = Math.atan2(Math.sin(diff), Math.cos(diff));
-                     if (Math.abs(diff) < step) {
-                         br.myP.a = br.joystickTargetAngle;
-                     } else {
-                         br.myP.a += Math.sign(diff) * step;
-                     }
-                 }
+                  if (!br.myP) return;
+                  if (br.isSpectator || br.myP.hp <= 0) {
+                      if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5' && br.myP && br.myP.hp <= 0) {
+                          const overlay = document.getElementById('br-respawn-overlay');
+                          const countdown = document.getElementById('br-respawn-countdown');
+                          if (!br.myP.respawning) {
+                              br.myP.respawning = true;
+                              br.myP.respawnTime = now + 1500;
+                              if (overlay) overlay.classList.remove('hidden');
+                          } else {
+                              if (overlay) overlay.classList.remove('hidden');
+                              const remainingSec = Math.max(0, (br.myP.respawnTime - now) / 1000);
+                              if (countdown) countdown.innerText = remainingSec.toFixed(1);
 
-                 let inCountdown = br.roundStartCountdownUntil && now < br.roundStartCountdownUntil;
-                 let speed = inCountdown ? 0 : 6 * brSpeedMultiplier(br.myP.speed);
-                 const oldX = br.myP.x;
-                 const oldY = br.myP.y;
-                 let moveX = 0;
-                 let moveY = 0;
+                              if (now >= br.myP.respawnTime) {
+                                  br.myP.respawning = false;
+                                  if (overlay) overlay.classList.add('hidden');
+                                  const spawn = brSpawnForId(myId, br.myP.team);
+                                  br.myP.x = spawn.x;
+                                  br.myP.y = spawn.y;
+                                  br.myP.hp = br.myP.maxHp || BR_DEFAULT_HP;
+                                  br.myP.alive = true;
+                                  br.myP.invulnUntil = Date.now() + 5000;
+                                  br.myP.invuln = Date.now() + 5000;
+                                  br.damageTaken = 0;
+                                  if (lobbyId) {
+                                      db.ref(`lobbies/${lobbyId}/br/damage/${myId}`).set(0).catch(() => {});
+                                  }
+                                  syncBrPlayerState(true);
+                              }
+                          }
+                      } else {
+                          const overlay = document.getElementById('br-respawn-overlay');
+                          if (overlay) overlay.classList.add('hidden');
+                      }
+                      return;
+                  } else {
+                      const overlay = document.getElementById('br-respawn-overlay');
+                      if (overlay) overlay.classList.add('hidden');
+                  }
+                  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                  
+                  if (br.joystickTargetAngle !== null && br.joystickTargetAngle !== undefined) {
+                      let sens = window.gameSensitivity !== undefined ? window.gameSensitivity : 5;
+                      let step = 0.03 * sens;
+                      let diff = br.joystickTargetAngle - br.myP.a;
+                      diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                      if (Math.abs(diff) < step) {
+                          br.myP.a = br.joystickTargetAngle;
+                      } else {
+                          br.myP.a += Math.sign(diff) * step;
+                      }
+                  }
 
-                 const maxMapSize = (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) ? 1200 : BR_SIZE;
-                 const minX = (BR_SIZE - maxMapSize) / 2;
-                 const maxX = minX + maxMapSize;
-                 const minY = (BR_SIZE - maxMapSize) / 2;
-                 const maxY = minY + maxMapSize;
+                  let inCountdown = br.roundStartCountdownUntil && now < br.roundStartCountdownUntil;
+                  let speed = inCountdown ? 0 : 6 * brSpeedMultiplier(br.myP.speed);
+                  const oldX = br.myP.x;
+                  const oldY = br.myP.y;
+                  let moveX = 0;
+                  let moveY = 0;
 
-                 if (isMobile) {
-                     if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
-                         moveX = Math.cos(br.myP.a) * speed;
-                         moveY = Math.sin(br.myP.a) * speed;
-                     }
-                 } else {
-                     let dx = 0, dy = 0;
-                     if (brKeys['KeyW'] || brKeys['ArrowUp']) dy = -1;
-                     if (brKeys['KeyS'] || brKeys['ArrowDown']) dy = 1;
-                     if (brKeys['KeyA'] || brKeys['ArrowLeft']) dx = -1;
-                     if (brKeys['KeyD'] || brKeys['ArrowRight']) dx = 1;
-                     if (dx !== 0 || dy !== 0) {
-                         let len = Math.hypot(dx, dy);
-                         moveX = (dx / len) * speed;
-                         moveY = (dy / len) * speed;
-                     }
-                 }
+                  const maxMapSize = (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) ? 1200 : BR_SIZE;
+                  const minX = (BR_SIZE - maxMapSize) / 2;
+                  const maxX = minX + maxMapSize;
+                  const minY = (BR_SIZE - maxMapSize) / 2;
+                  const maxY = minY + maxMapSize;
 
-                 if (moveX !== 0) {
-                     br.myP.x += moveX;
-                     br.myP.x = Math.max(minX + BR_PLAYER_R, Math.min(maxX - BR_PLAYER_R, br.myP.x));
-                     if (checkPlayerCollisionWithWalls(br.myP.x, br.myP.y, BR_PLAYER_R)) {
-                         br.myP.x = oldX;
-                     }
-                 }
-                 if (moveY !== 0) {
-                     br.myP.y += moveY;
-                     br.myP.y = Math.max(minY + BR_PLAYER_R, Math.min(maxY - BR_PLAYER_R, br.myP.y));
-                     if (checkPlayerCollisionWithWalls(br.myP.x, br.myP.y, BR_PLAYER_R)) {
-                         br.myP.y = oldY;
-                     }
-                 }
+                  if (isMobile) {
+                      if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
+                          moveX = Math.cos(br.myP.a) * speed;
+                          moveY = Math.sin(br.myP.a) * speed;
+                      }
+                  } else {
+                      let dx = 0, dy = 0;
+                      if (brKeys['KeyW'] || brKeys['ArrowUp']) dy = -1;
+                      if (brKeys['KeyS'] || brKeys['ArrowDown']) dy = 1;
+                      if (brKeys['KeyA'] || brKeys['ArrowLeft']) dx = -1;
+                      if (brKeys['KeyD'] || brKeys['ArrowRight']) dx = 1;
+                      if (dx !== 0 || dy !== 0) {
+                          let len = Math.hypot(dx, dy);
+                          moveX = (dx / len) * speed;
+                          moveY = (dy / len) * speed;
+                      }
+                  }
 
-                 br.myP.vx = br.myP.x - oldX;
-                 br.myP.vy = br.myP.y - oldY;
+                  if (moveX !== 0 || moveY !== 0) {
+                      if (brIsInvulnerable(br.myP, now)) {
+                          br.myP.invulnUntil = 0;
+                          br.myP.invuln = 0;
+                          syncBrPlayerState(true);
+                      }
+                  }
 
-                 if (!brIsInvulnerable(br.myP, now) && Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) {
-                     br.myP.hp -= 0.5;
-                     br.serverHp = Math.min(br.serverHp, br.myP.hp);
-                     syncBrPlayerState(true);
-                 }
-                 if (isShooting) fireBrShot(now);
+                  if (moveX !== 0) {
+                      br.myP.x += moveX;
+                      br.myP.x = Math.max(minX + BR_PLAYER_R, Math.min(maxX - BR_PLAYER_R, br.myP.x));
+                      if (checkPlayerCollisionWithWalls(br.myP.x, br.myP.y, BR_PLAYER_R)) {
+                          br.myP.x = oldX;
+                      }
+                  }
+                  if (moveY !== 0) {
+                      br.myP.y += moveY;
+                      br.myP.y = Math.max(minY + BR_PLAYER_R, Math.min(maxY - BR_PLAYER_R, br.myP.y));
+                      if (checkPlayerCollisionWithWalls(br.myP.x, br.myP.y, BR_PLAYER_R)) {
+                          br.myP.y = oldY;
+                      }
+                  }
+
+                  br.myP.vx = br.myP.x - oldX;
+                  br.myP.vy = br.myP.y - oldY;
+
+                  if (!brIsInvulnerable(br.myP, now) && Math.hypot(br.myP.x - br.zone.x, br.myP.y - br.zone.y) > br.zone.r) {
+                      br.myP.hp -= 0.5;
+                      br.serverHp = Math.min(br.serverHp, br.myP.hp);
+                      syncBrPlayerState(true);
+                  }
+                  if (isShooting) fireBrShot(now);
             }
 
             function fireBrShot(now) {
@@ -2037,7 +2261,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                 b.ty = spawn.y;
                                 b.hp = b.maxHp || 100;
                                 b.alive = true;
-                                b.invulnUntil = now + 3000;
+                                b.invulnUntil = now + 5000;
                                 b.vx = 0;
                                 b.vy = 0;
                                 changed = true;
@@ -2311,7 +2535,32 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 ctx.clearRect(0, 0, c.width, c.height);
                 ctx.save();
 
+                let zoomToWholeMap = false;
                 if (br.isSpectator || br.myP.hp <= 0) {
+                    let hasAliveTeammates = false;
+                    const myTeam = brNormalizeTeam(br.myP.team);
+                    if (myTeam) {
+                        for (let p of Object.values(br.remotePlayers)) {
+                            if (p.id !== myId && p.alive && (p.hp || 0) > 0 && brNormalizeTeam(p.team) === myTeam) {
+                                hasAliveTeammates = true;
+                                break;
+                            }
+                        }
+                        if (!hasAliveTeammates) {
+                            for (let b of br.bots) {
+                                if (b.alive && (b.hp || 0) > 0 && brNormalizeTeam(b.team) === myTeam) {
+                                    hasAliveTeammates = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (hasAliveTeammates) {
+                        zoomToWholeMap = true;
+                    }
+                }
+
+                if (zoomToWholeMap) {
                     const scale = Math.min(c.width / BR_SIZE, c.height / BR_SIZE);
                     const offsetX = (c.width - BR_SIZE * scale) / 2;
                     const offsetY = (c.height - BR_SIZE * scale) / 2;
@@ -2665,14 +2914,14 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
                 let timeStr = '';
                 if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
-                    const elapsedMs = Date.now() - br.matchStartTime;
+                    const elapsedMs = br.matchAccumulatedTime;
                     const remainingMs = Math.max(0, 180000 - elapsedMs);
                     const totalSec = Math.floor(remainingMs / 1000);
                     const minutes = Math.floor(totalSec / 60);
                     const seconds = totalSec % 60;
                     timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
                 } else {
-                    const elapsedMs = Date.now() - br.matchStartTime;
+                    const elapsedMs = br.matchAccumulatedTime;
                     const totalSec = Math.floor(elapsedMs / 1000);
                     const minutes = Math.floor(totalSec / 60);
                     const seconds = totalSec % 60;
@@ -2740,11 +2989,11 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
             function checkBrEnd() {
                 if (br.roundStartCountdownUntil && Date.now() < br.roundStartCountdownUntil) return;
-                if (Date.now() - br.matchStartTime < 4000) return;
+                if (br.matchAccumulatedTime < 4000) return;
                 if (br.placeShown) return;
                 // TDM 5v5 Mode Time Limit
                 if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
-                    const elapsed = Date.now() - br.matchStartTime;
+                    const elapsed = br.matchAccumulatedTime;
                     if (elapsed >= 180000) { // 3 minutes
                         let ctKills = 0;
                         let tKills = 0;
@@ -2945,9 +3194,28 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                  br.active = false;
                  cancelAnimationFrame(br.loop);
                  if (br.syncTimer) clearInterval(br.syncTimer);
+                 
+                 // UI Overlay & Banner Cleanup
+                 const so2Lobby = document.getElementById('so2-lobby-overlay');
+                 if (so2Lobby) so2Lobby.style.display = 'none';
+                 const reconnectBanner = document.getElementById('br-reconnect-banner');
+                 if (reconnectBanner) reconnectBanner.style.display = 'none';
+                 const respawnOverlay = document.getElementById('br-respawn-overlay');
+                 if (respawnOverlay) respawnOverlay.classList.add('hidden');
+                 
+                 br.matchPausedByDisconnect = false;
+
                  const scoreboard = document.getElementById('br-scoreboard');
                  if (scoreboard) scoreboard.style.display = 'none';
                  if (lobbyId) {
+                     if (br.teamSelectListener) {
+                         db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.teamSelectListener);
+                         br.teamSelectListener = null;
+                     }
+                     if (br.matchGameplayStartedListener) {
+                         db.ref(`lobbies/${lobbyId}/br/matchGameplayStarted`).off('value', br.matchGameplayStartedListener);
+                         br.matchGameplayStartedListener = null;
+                     }
                      if (br.matchActiveListener) {
                          db.ref(`lobbies/${lobbyId}/br/matchActive`).off('value', br.matchActiveListener);
                          br.matchActiveListener = null;
