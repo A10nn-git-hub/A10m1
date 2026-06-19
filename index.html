@@ -48,9 +48,9 @@
             <h1 class="splash-title">2D SHOOTER</h1>
             <div class="splash-loader-container">
                 <div class="splash-status" id="splash-status-text">Checking for data update</div>
-                <div class="splash-percentage" id="splash-percentage-text">10.0%</div>
+                <div class="splash-percentage" id="splash-percentage-text">0.0%</div>
                 <div class="splash-progress-track">
-                    <div class="splash-progress-bar" id="splash-progress-bar" style="width: 10%;"></div>
+                    <div class="splash-progress-bar" id="splash-progress-bar" style="width: 0%;"></div>
                 </div>
             </div>
         </div>
@@ -610,7 +610,7 @@
                         <button class="btn btn-dark" style="font-size:24px; padding:15px 40px; border:2px solid white;" onclick="exitToLobby()">В ЛОББИ</button>
                     </div>
 
-                    <div id="br-controls" style="position:absolute; bottom:30px; width:100%; display:flex; justify-content:space-between; padding:0 30px; box-sizing:border-box; pointer-events:none;">
+                    <div id="br-controls" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:1010;">
                         <div id="br-joystick" style="width:130px; height:130px; background:rgba(0,0,0,0.4); border-radius:50%; position:relative; pointer-events:auto;">
                             <div id="br-stick" style="width:50px; height:50px; background:rgba(255,255,255,0.7); border-radius:50%; position:absolute; top:40px; left:40px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"></div>
                         </div>
@@ -753,13 +753,17 @@
                 <div class="pause-tab-content active" id="pause-tab-teams">
                     <div class="pause-teams-columns">
                         <div class="pause-team-col ct-col">
-                            <h3>Counter-Terrorists</h3>
-                            <div class="pause-team-list" id="pause-ct-list"></div>
+                            <div class="pause-team-border-wrapper">
+                                <h3>Counter-Terrorists</h3>
+                                <div class="pause-team-list" id="pause-ct-list"></div>
+                            </div>
                             <button id="pause-cancel-btn" class="btn btn-green pause-action-btn" onclick="togglePause(false)">ОТМЕНА</button>
                         </div>
                         <div class="pause-team-col t-col">
-                            <h3>Terrorists</h3>
-                            <div class="pause-team-list" id="pause-t-list"></div>
+                            <div class="pause-team-border-wrapper">
+                                <h3>Terrorists</h3>
+                                <div class="pause-team-list" id="pause-t-list"></div>
+                            </div>
                             <button id="pause-exit-btn" class="btn btn-red pause-action-btn" onclick="exitToLobby()">ВЫЙТИ</button>
                         </div>
                     </div>

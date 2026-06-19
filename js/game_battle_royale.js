@@ -725,40 +725,17 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function playFactionWinSound(winnerTeam) {
-                try {
-                    if (!brAudioCtx) {
-                        brAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    }
-                    if (brAudioCtx.state === 'suspended') {
-                        brAudioCtx.resume();
-                    }
-                    const now = brAudioCtx.currentTime;
+                const audioPath = winnerTeam === 'Counter-Terrorists' ? './assets/audio/ct_win.mp3' : './assets/audio/t_win.mp3';
+                const audio = new Audio(audioPath);
+                audio.volume = 0.5;
 
-                    // 1. Static noise burst (radio turn on beep)
-                    const bufferSize = brAudioCtx.sampleRate * 0.15;
-                    const buffer = brAudioCtx.createBuffer(1, bufferSize, brAudioCtx.sampleRate);
-                    const data = buffer.getChannelData(0);
-                    for (let i = 0; i < bufferSize; i++) {
-                        data[i] = Math.random() * 2 - 1;
-                    }
-                    const noise = brAudioCtx.createBufferSource();
-                    noise.buffer = buffer;
-
-                    const filter = brAudioCtx.createBiquadFilter();
-                    filter.type = 'bandpass';
-                    filter.frequency.setValueAtTime(1000, now);
-
-                    const gain = brAudioCtx.createGain();
-                    gain.gain.setValueAtTime(0.08, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-
-                    noise.connect(filter);
-                    filter.connect(gain);
-                    gain.connect(brAudioCtx.destination);
-                    noise.start(now);
-                    noise.stop(now + 0.15);
-
-                    // 2. Play speech synthesis after a short delay
+                let fallbackTriggered = false;
+                function runFallback() {
+                    if (fallbackTriggered) return;
+                    fallbackTriggered = true;
+                    // Play clean beep
+                    playCleanBeep();
+                    // Play speech synthesis after a short delay
                     setTimeout(() => {
                         if ('speechSynthesis' in window) {
                             const text = winnerTeam === 'Counter-Terrorists' ? 'Counter-Terrorists win' : (winnerTeam === 'Terrorists' ? 'Terrorists win' : 'Round draw');
@@ -791,9 +768,41 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             window.speechSynthesis.speak(utterance);
                         }
                     }, 150);
-                } catch (err) {
-                    console.warn("Win sound playback failed", err);
                 }
+
+                function playCleanBeep() {
+                    try {
+                        if (!brAudioCtx) {
+                            brAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        }
+                        if (brAudioCtx.state === 'suspended') {
+                            brAudioCtx.resume();
+                        }
+                        const now = brAudioCtx.currentTime;
+                        const osc = brAudioCtx.createOscillator();
+                        const gainNode = brAudioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(660, now);
+                        gainNode.gain.setValueAtTime(0.1, now);
+                        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                        osc.connect(gainNode);
+                        gainNode.connect(brAudioCtx.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.3);
+                    } catch (e) {
+                        console.warn("Clean beep failed", e);
+                    }
+                }
+
+                // If loading or playing fails, run the fallback
+                audio.addEventListener('error', () => {
+                    runFallback();
+                });
+
+                audio.play().catch(err => {
+                    console.warn("Audio file win playback failed, playing fallback", err);
+                    runFallback();
+                });
             }
 
             function brNormalizeTeam(value) {
@@ -1468,10 +1477,6 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                     br.roundEndTransitionUntil = data.roundEnding.until;
                                     
                                     playFactionWinSound(br.roundWinner);
-                                    
-                                    const myTeam = brNormalizeTeam(br.myP.team);
-                                    const isWin = (myTeam === br.roundWinner);
-                                    setIsland(isWin ? "ПОБЕДА" : "ПОРАЖЕНИЕ", isWin ? "#34c759" : "#ff453a", 3000);
                                 }
                             } else {
                                 if (br.roundEnding) {
@@ -1495,6 +1500,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.remoteBullets = {};
                 br.bloodStains = [];
                 br.bloodParticles = [];
+                br.damageByPlayer = {};
+                br.damageTaken = 0;
                 initBrBackgroundCanvas();
                 
                 const submode = typeof currentMode !== 'undefined' ? currentMode : 'tdm_5v5';
@@ -1511,6 +1518,13 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     br.damageTaken = 0;
                     br.isSpectator = false;
                 }
+
+                Object.values(br.remotePlayers).forEach(p => {
+                    p.alive = true;
+                    p.hp = p.maxHp || BR_DEFAULT_HP;
+                    p.damageTaken = 0;
+                    p.invulnUntil = Date.now() + 3000;
+                });
                 const spectatorLabel = document.getElementById('br-ui-spectator');
                 if (spectatorLabel) spectatorLabel.style.display = 'none';
                 
@@ -2530,18 +2544,17 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 // Render fullscreen map overlay
                 renderFullscreenMap();
 
+                ctx.restore();
+
                 // Draw Center Screen Animated Round Ending Banner
                 if (br.roundEnding && br.roundWinner) {
                     const totalDur = 3000;
                     const remaining = Math.max(0, br.roundEndTransitionUntil - Date.now());
                     const elapsed = totalDur - remaining;
+                    const progress = Math.min(1.0, elapsed / totalDur);
                     
-                    let scale = 1.5;
-                    if (elapsed < 500) {
-                        scale = 0.2 + (1.3 * (elapsed / 500));
-                    }
-                    
-                    const opacity = Math.max(0, 1 - (elapsed / totalDur));
+                    const scale = 2.2 - (1.2 * progress);
+                    const opacity = 1.0 - progress;
                     
                     ctx.save();
                     ctx.translate(c.width / 2, c.height / 2);
@@ -2560,20 +2573,18 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     let text = '';
                     if (winTeam === 'Counter-Terrorists') {
                         ctx.fillStyle = `rgba(50, 173, 230, ${opacity})`;
-                        text = 'Counter-Terrorists win';
+                        text = 'COUNTER-TERRORISTS WIN';
                     } else if (winTeam === 'Terrorists') {
                         ctx.fillStyle = `rgba(255, 159, 10, ${opacity})`;
-                        text = 'Terrorists win';
+                        text = 'TERRORISTS WIN';
                     } else {
                         ctx.fillStyle = `rgba(255, 255, 255, ${opacity})`;
-                        text = 'Round Draw';
+                        text = 'ROUND DRAW';
                     }
                     
                     ctx.fillText(text, 0, 0);
                     ctx.restore();
                 }
-
-                ctx.restore();
 
                 // Draw countdown if active
                 if (br.roundStartCountdownUntil && now < br.roundStartCountdownUntil) {
@@ -2728,6 +2739,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function checkBrEnd() {
+                if (br.roundStartCountdownUntil && Date.now() < br.roundStartCountdownUntil) return;
                 if (Date.now() - br.matchStartTime < 4000) return;
                 if (br.placeShown) return;
                 // TDM 5v5 Mode Time Limit
@@ -2818,11 +2830,6 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
                                 // Play win sound locally for host
                                 playFactionWinSound(winnerTeam);
-
-                                // Show Top Island notification locally for host
-                                const myTeam = brNormalizeTeam(br.myP.team);
-                                const isWin = (myTeam === winnerTeam);
-                                setIsland(isWin ? "ПОБЕДА" : "ПОРАЖЕНИЕ", isWin ? "#34c759" : "#ff453a", 3000);
 
                                 if (lobbyId) {
                                     const base = `lobbies/${lobbyId}/br`;
@@ -3437,11 +3444,28 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   const canvas = document.getElementById('br-fullscreen-map-canvas');
                   if (!overlay || overlay.classList.contains('hidden') || !canvas) return;
                   
-                  const ctx = canvas.getContext('2d');
-                  const d = Math.min(overlay.offsetWidth * 0.9, overlay.offsetHeight * 0.7);
-                  canvas.width = d;
-                  canvas.height = d;
+                  const windowEl = canvas.parentElement; // .fullscreen-map-window
+                  if (!windowEl) return;
                   
+                  const header = windowEl.querySelector('.fullscreen-map-header');
+                  const footer = windowEl.querySelector('.fullscreen-map-footer');
+                  
+                  const headerHeight = header ? header.offsetHeight : 50;
+                  const footerHeight = footer ? footer.offsetHeight : 35;
+                  
+                  const availableWidth = windowEl.clientWidth;
+                  const availableHeight = windowEl.clientHeight - headerHeight - footerHeight;
+                  
+                  const size = Math.min(availableWidth, availableHeight) - 10;
+                  
+                  canvas.width = size;
+                  canvas.height = size;
+                  canvas.style.width = size + 'px';
+                  canvas.style.height = size + 'px';
+                  canvas.style.display = 'block';
+                  canvas.style.margin = 'auto';
+                  
+                  const ctx = canvas.getContext('2d');
                   ctx.clearRect(0, 0, canvas.width, canvas.height);
                   
                   ctx.save();

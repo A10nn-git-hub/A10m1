@@ -352,9 +352,19 @@
                 lobbyPlayers.forEach((p, i) => {
                     const agent = document.createElement('div');
                     agent.className = `lobby-agent lobby-agent-slot-${getLobbyAgentSlot(p.id)}`;
+                    if (p.isPending) {
+                        agent.style.opacity = '0.33';
+                    }
                     if (isHost && p.id !== myId) {
-                        agent.title = 'Кикнуть из лобби';
-                        agent.onclick = () => kickPlayer(p.id);
+                        agent.title = p.isPending ? 'Отменить приглашение' : 'Кикнуть из лобби';
+                        agent.onclick = () => {
+                            if (p.isPending) {
+                                db.ref(`lobbies/${lobbyId}/invites/${p.id}`).remove();
+                                db.ref(`users/${p.id}/invite`).remove().catch(() => {});
+                            } else {
+                                kickPlayer(p.id);
+                            }
+                        };
                     }
                     agent.innerHTML = `
                         <div class="agent-head">${getAvatarHTML(p.avatar)}</div>
@@ -616,48 +626,59 @@
             function inviteRealFriend(id) { 
                 const maxPlayers = getMaxPlayersForMode(typeof currentMode !== 'undefined' ? currentMode : 'tdm_5v5');
                 if (lobbyPlayers.length >= maxPlayers) return; 
-                let rawName = myEqName ? SHOP_ITEMS.find(i => i.id === myEqName)?.name || myName : myName;
-                const inviteRef = db.ref(`users/${id}/lobby_invites`).push();
-                const chatId = getDmChatId(myId, id);
-                const createdAt = firebase.database.ServerValue.TIMESTAMP;
-                const invite = {
-                    lId: lobbyId,
-                    host: rawName,
-                    hostId: myId,
-                    createdAt
-                };
-                const inviteMsg = {
-                    from: myId,
-                    to: id,
-                    text: `${rawName} зовет в лобби`,
-                    type: 'lobby_invite',
-                    inviteKey: inviteRef.key,
-                    invite,
-                    createdAt
-                };
-                const preview = { chatId, lastText: 'Приглашение в лобби', lastFrom: myId, updatedAt: createdAt };
-                updateDbPaths({
-                    [`users/${id}/invite`]: { ...invite, inviteKey: inviteRef.key },
-                    [`users/${id}/lobby_invites/${inviteRef.key}`]: invite,
-                    [`lobbies/${lobbyId}/invites/${id}`]: { from: myId, createdAt },
-                    [`dm_threads/${chatId}/members/${myId}`]: true,
-                    [`dm_threads/${chatId}/members/${id}`]: true,
-                    [`dm_threads/${chatId}/updatedAt`]: createdAt,
-                    [`dm_threads/${chatId}/lastMessage`]: { id: inviteRef.key, from: myId, text: 'Приглашение в лобби', createdAt },
-                    [`dm_messages/${chatId}/${inviteRef.key}`]: inviteMsg,
-                    [`users/${myId}/message_threads/${id}`]: { ...preview, friendId: id, unread: 0 },
-                    [`users/${id}/message_threads/${myId}/chatId`]: chatId,
-                    [`users/${id}/message_threads/${myId}/lastText`]: 'Приглашение в лобби',
-                    [`users/${id}/message_threads/${myId}/lastFrom`]: myId,
-                    [`users/${id}/message_threads/${myId}/updatedAt`]: createdAt,
-                    [`users/${id}/message_threads/${myId}/friendId`]: myId
-                }, 'send lobby invite').then(() => {
-                    db.ref(`users/${id}/message_threads/${myId}/unread`).transaction(v => (parseInt(v) || 0) + 1);
-                    setIsland("Приглашение отправлено", "#34c759");
-                }).catch(() => {
-                    showNegativeAlert(getFirebaseFriendlyMessage("Не удалось отправить приглашение."));
-                }); 
-                closeFriendModal(); 
+                
+                db.ref('users/' + id).once('value').then(s => {
+                    if (!s.exists()) return;
+                    const p = s.val() || {};
+                    let rawName = myEqName ? SHOP_ITEMS.find(i => i.id === myEqName)?.name || myName : myName;
+                    const inviteRef = db.ref(`users/${id}/lobby_invites`).push();
+                    const chatId = getDmChatId(myId, id);
+                    const createdAt = firebase.database.ServerValue.TIMESTAMP;
+                    const invite = {
+                        lId: lobbyId,
+                        host: rawName,
+                        hostId: myId,
+                        createdAt
+                    };
+                    const inviteMsg = {
+                        from: myId,
+                        to: id,
+                        text: `${rawName} зовет в лобби`,
+                        type: 'lobby_invite',
+                        inviteKey: inviteRef.key,
+                        invite,
+                        createdAt
+                    };
+                    const preview = { chatId, lastText: 'Приглашение в лобби', lastFrom: myId, updatedAt: createdAt };
+                    updateDbPaths({
+                        [`users/${id}/invite`]: { ...invite, inviteKey: inviteRef.key },
+                        [`users/${id}/lobby_invites/${inviteRef.key}`]: invite,
+                        [`lobbies/${lobbyId}/invites/${id}`]: { 
+                            from: myId, 
+                            createdAt,
+                            name: p.name || 'Игрок',
+                            avatar: p.avatar || '👤',
+                            eqName: p.eqName || ''
+                        },
+                        [`dm_threads/${chatId}/members/${myId}`]: true,
+                        [`dm_threads/${chatId}/members/${id}`]: true,
+                        [`dm_threads/${chatId}/updatedAt`]: createdAt,
+                        [`dm_threads/${chatId}/lastMessage`]: { id: inviteRef.key, from: myId, text: 'Приглашение в лобби', createdAt },
+                        [`dm_messages/${chatId}/${inviteRef.key}`]: inviteMsg,
+                        [`users/${myId}/message_threads/${id}`]: { ...preview, friendId: id, unread: 0 },
+                        [`users/${id}/message_threads/${myId}/chatId`]: chatId,
+                        [`users/${id}/message_threads/${myId}/lastText`]: 'Приглашение в лобби',
+                        [`users/${id}/message_threads/${myId}/lastFrom`]: myId,
+                        [`users/${id}/message_threads/${myId}/updatedAt`]: createdAt,
+                        [`users/${id}/message_threads/${myId}/friendId`]: myId
+                    }, 'send lobby invite').then(() => {
+                        db.ref(`users/${id}/message_threads/${myId}/unread`).transaction(v => (parseInt(v) || 0) + 1);
+                        setIsland("Приглашение отправлено", "#34c759");
+                    }).catch(() => {
+                        showNegativeAlert(getFirebaseFriendlyMessage("Не удалось отправить приглашение."));
+                    }); 
+                    closeFriendModal(); 
+                });
             }
 
             function joinFriendLobby() { 
@@ -811,6 +832,19 @@
                             if (k !== d.host) lobbyPlayers.push({id: k, ...d.players[k]});
                         }); 
                     } 
+                    if (d.invites) {
+                        Object.keys(d.invites).forEach(invitedId => {
+                            if (d.players && d.players[invitedId]) return;
+                            const inv = d.invites[invitedId];
+                            lobbyPlayers.push({
+                                id: invitedId,
+                                name: inv.name || 'Игрок',
+                                avatar: inv.avatar || '👤',
+                                eqName: inv.eqName || '',
+                                isPending: true
+                            });
+                        });
+                    }
                     renderLobbySlots(); 
                     updateLobbyChrome(d);
                     
