@@ -1089,11 +1089,11 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
                 br.settings = mergedSettingsForGame('br_2d');
                 
-                // Show controls if mobile
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                // Show controls if mobile/touch
+                const isMobileOrTouch = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 const controls = document.getElementById('br-controls');
                 if (controls) {
-                    controls.style.display = isMobile ? 'flex' : 'none';
+                    controls.style.display = isMobileOrTouch ? 'flex' : 'none';
                 }
 
                 br.bloodStains = [];
@@ -1272,8 +1272,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function bindBrControls() {
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                if (!isMobile) {
+                const isMobileOrTouch = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                if (!isMobileOrTouch) {
                     document.getElementById('br-controls').style.display = 'none';
                     return;
                 }
@@ -1953,6 +1953,9 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update(brPublicPlayerState(includeHealth)).catch(() => {});
             }
 
+            let lastWidth = 0;
+            let lastHeight = 0;
+
             function resizeBrCanvas() {
                 const c = document.getElementById('br-canvas');
                 if (!c) return null;
@@ -1960,6 +1963,13 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 const h = Math.max(1, Math.floor(window.innerHeight || c.clientHeight || 1));
                 if (c.width !== w) c.width = w;
                 if (c.height !== h) c.height = h;
+                
+                if (w !== lastWidth || h !== lastHeight) {
+                    lastWidth = w;
+                    lastHeight = h;
+                    applyHUDLayout();
+                }
+                
                 return c;
             }
 
@@ -2124,8 +2134,6 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                       const overlay = document.getElementById('br-respawn-overlay');
                       if (overlay) overlay.classList.add('hidden');
                   }
-                  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                  
                   if (br.joystickTargetAngle !== null && br.joystickTargetAngle !== undefined) {
                       let sens = window.gameSensitivity !== undefined ? window.gameSensitivity : 5;
                       let step = 0.03 * sens;
@@ -2151,22 +2159,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   const minY = (BR_SIZE - maxMapSize) / 2;
                   const maxY = minY + maxMapSize;
 
-                  if (isMobile) {
-                      if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
-                          moveX = Math.cos(br.myP.a) * speed;
-                          moveY = Math.sin(br.myP.a) * speed;
-                      }
-                  } else {
-                      let dx = 0, dy = 0;
-                      if (brKeys['KeyW'] || brKeys['ArrowUp']) dy = -1;
-                      if (brKeys['KeyS'] || brKeys['ArrowDown']) dy = 1;
-                      if (brKeys['KeyA'] || brKeys['ArrowLeft']) dx = -1;
-                      if (brKeys['KeyD'] || brKeys['ArrowRight']) dx = 1;
-                      if (dx !== 0 || dy !== 0) {
-                          let len = Math.hypot(dx, dy);
-                          moveX = (dx / len) * speed;
-                          moveY = (dy / len) * speed;
-                      }
+                  let dx = 0, dy = 0;
+                  if (brKeys['KeyW'] || brKeys['ArrowUp']) dy = -1;
+                  if (brKeys['KeyS'] || brKeys['ArrowDown']) dy = 1;
+                  if (brKeys['KeyA'] || brKeys['ArrowLeft']) dx = -1;
+                  if (brKeys['KeyD'] || brKeys['ArrowRight']) dx = 1;
+
+                  if (dx !== 0 || dy !== 0) {
+                      let len = Math.hypot(dx, dy);
+                      moveX = (dx / len) * speed;
+                      moveY = (dy / len) * speed;
+                  } else if (Math.abs(jx) > 5 || Math.abs(jy) > 5) {
+                      moveX = Math.cos(br.myP.a) * speed;
+                      moveY = Math.sin(br.myP.a) * speed;
                   }
 
                   if (moveX !== 0 || moveY !== 0) {
@@ -3715,14 +3720,11 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   const windowEl = canvas.parentElement; // .fullscreen-map-window
                   if (!windowEl) return;
                   
-                  const header = windowEl.querySelector('.fullscreen-map-header');
                   const footer = windowEl.querySelector('.fullscreen-map-footer');
-                  
-                  const headerHeight = header ? header.offsetHeight : 50;
                   const footerHeight = footer ? footer.offsetHeight : 35;
                   
                   const availableWidth = windowEl.clientWidth;
-                  const availableHeight = windowEl.clientHeight - headerHeight - footerHeight;
+                  const availableHeight = windowEl.clientHeight - footerHeight;
                   
                   const size = Math.min(availableWidth, availableHeight) - 10;
                   
@@ -3737,8 +3739,11 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   ctx.clearRect(0, 0, canvas.width, canvas.height);
                   
                   ctx.save();
-                  const mapScale = canvas.width / BR_SIZE;
+                  const maxMapSize = (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) ? 1200 : BR_SIZE;
+                  const minCoord = (BR_SIZE - maxMapSize) / 2;
+                  const mapScale = canvas.width / maxMapSize;
                   ctx.scale(mapScale, mapScale);
+                  ctx.translate(-minCoord, -minCoord);
                   
                   if (!br.bgCanvas) {
                       initBrBackgroundCanvas();
@@ -3760,16 +3765,14 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   }
                   
                   if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
-                      const maxMapSize = 1200;
-                      const minCoord = (BR_SIZE - maxMapSize) / 2;
                       ctx.strokeStyle = '#ff3b30';
-                      ctx.lineWidth = 15;
+                      ctx.lineWidth = 3 / mapScale;
                       ctx.strokeRect(minCoord, minCoord, maxMapSize, maxMapSize);
                   }
                   
                   if (br.zone) {
                       ctx.strokeStyle = '#ff3b30';
-                      ctx.lineWidth = 15;
+                      ctx.lineWidth = 3 / mapScale;
                       ctx.beginPath();
                       ctx.arc(br.zone.x, br.zone.y, br.zone.r, 0, Math.PI * 2);
                       ctx.stroke();
@@ -3785,7 +3788,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                               const opacity = 1 - (age / 5000);
                               ctx.save();
                               ctx.strokeStyle = `rgba(0, 122, 255, ${opacity})`;
-                              ctx.lineWidth = 10;
+                              ctx.lineWidth = 2 / mapScale;
                               ctx.beginPath();
                               ctx.arc(ping.x, ping.y, radius, 0, Math.PI * 2);
                               ctx.stroke();
@@ -3819,7 +3822,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                           ctx.save();
                           ctx.strokeStyle = '#ff453a';
                           ctx.fillStyle = '#ff453a';
-                          ctx.lineWidth = 10;
+                          ctx.lineWidth = 2 / mapScale;
                           ctx.beginPath();
                           ctx.arc(pt.x, pt.y, 45, 0, Math.PI * 2);
                           if (pt.visible) {
@@ -3837,7 +3840,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   ctx.fill();
                   
                   ctx.strokeStyle = '#fff';
-                  ctx.lineWidth = 12;
+                  ctx.lineWidth = 2.5 / mapScale;
                   ctx.beginPath();
                   ctx.moveTo(br.myP.x, br.myP.y);
                   ctx.lineTo(br.myP.x + Math.cos(br.myP.a || 0) * 110, br.myP.y + Math.sin(br.myP.a || 0) * 110);
@@ -3883,9 +3886,11 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   const clickX = clientX - rect.left;
                   const clickY = clientY - rect.top;
                   
-                  const mapScale = canvas.width / BR_SIZE;
-                  const pingX = Math.round(clickX / mapScale);
-                  const pingY = Math.round(clickY / mapScale);
+                  const maxMapSize = (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) ? 1200 : BR_SIZE;
+                  const minCoord = (BR_SIZE - maxMapSize) / 2;
+                  const mapScale = canvas.width / maxMapSize;
+                  const pingX = Math.round(clickX / mapScale + minCoord);
+                  const pingY = Math.round(clickY / mapScale + minCoord);
                   
                   if (lobbyId) {
                       const base = `lobbies/${lobbyId}/br`;

@@ -573,10 +573,7 @@
                     <canvas id="br-minimap-canvas" style="display: none;"></canvas>
                     <div id="br-fullscreen-map-overlay" class="overlay hidden" onclick="closeFullscreenMap()">
                         <div class="fullscreen-map-window" onclick="event.stopPropagation()">
-                            <div class="fullscreen-map-header">
-                                <h3>ТАКТИЧЕСКАЯ КАРТА</h3>
-                                <button class="btn btn-red" onclick="closeFullscreenMap()">✖</button>
-                            </div>
+                            <button class="fullscreen-map-close-btn" onclick="closeFullscreenMap()">✖</button>
                             <canvas id="br-fullscreen-map-canvas"></canvas>
                             <div class="fullscreen-map-footer">Зажми и нажми на карту, чтобы поставить метку</div>
                         </div>

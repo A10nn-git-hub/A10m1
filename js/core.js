@@ -1403,6 +1403,7 @@ function closeGameSettingsModal(event) {
 }
 
 function isEditingGameSettingsModal() {
+    if (!isHost) return false;
     const modal = document.getElementById('game-settings-modal');
     const active = document.activeElement;
     if (!modal || modal.classList.contains('hidden') || !active || !modal.contains(active)) return false;
@@ -1936,17 +1937,17 @@ function initApp() {
         }
 
         document.addEventListener('keydown', (e) => {
-            if (appState.game === 'br_2d' && !isMobile) brKeys[e.code] = true;
+            if (appState.game === 'br_2d') brKeys[e.code] = true;
             if (appState.game !== 'let5') return;
             if (/^[А-Яа-яЁё]$/.test(e.key)) { wPress(e.key.toUpperCase()); }
             if (e.key === 'Backspace') { wBack(); }
             if (e.key === 'Enter') { wEnter(); }
         });
         document.addEventListener('keyup', (e) => {
-            if (appState.game === 'br_2d' && !isMobile) brKeys[e.code] = false;
+            if (appState.game === 'br_2d') brKeys[e.code] = false;
         });
         document.addEventListener('mousemove', (e) => {
-            if (appState.game === 'br_2d' && !isMobile) {
+            if (appState.game === 'br_2d') {
                 let c = document.getElementById('br-canvas');
                 let rect = c.getBoundingClientRect();
                 let mx = e.clientX - rect.left;
@@ -1960,13 +1961,13 @@ function initApp() {
         const brCanvas = document.getElementById('br-canvas');
         if (brCanvas) {
             brCanvas.addEventListener('mousedown', (e) => {
-                if (appState.game === 'br_2d' && !isMobile) {
+                if (appState.game === 'br_2d') {
                     isShooting = true;
                     if (br.myP) br.myP.hasFiredThisPress = false;
                 }
             });
             brCanvas.addEventListener('mouseup', (e) => {
-                if (appState.game === 'br_2d' && !isMobile) { isShooting = false; }
+                if (appState.game === 'br_2d') { isShooting = false; }
             });
         }
     }
