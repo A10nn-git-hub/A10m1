@@ -1328,7 +1328,7 @@ function defaultSettingsForGame(gameId, players = lobbySettingsPlayers()) {
                 aiLevel: isAiFriendId(p.id) ? 2 : null
             };
         });
-        return { players: perPlayer, shrinkZone: true };
+        return { players: perPlayer, shrinkZone: true, fillWithBots: true };
     }
     if (gameId === 'tictactoe') {
         const playerCount = Math.max(2, players.filter(p => p && p.id).length);
@@ -1352,6 +1352,8 @@ function mergedSettingsForGame(gameId) {
     const defaults = defaultSettingsForGame(effectiveId, players);
     const saved = (currentLobbySettings && currentLobbySettings[effectiveId]) || {};
     const merged = Object.assign({}, defaults, saved, { players: Object.assign({}, defaults.players, saved.players || {}) });
+    merged.shrinkZone = merged.shrinkZone !== false;
+    merged.fillWithBots = merged.fillWithBots !== false;
     players.forEach((p, i) => {
         if (!merged.players[p.id]) merged.players[p.id] = defaults.players[p.id] || {};
         if (effectiveId === 'tictactoe') {
@@ -1420,6 +1422,20 @@ function renderGameSettingsModal(gameId = appState.selectedGameId || pendingMode
     title.innerText = gameId && GAME_NAMES[gameId] ? `Настройки: ${GAME_NAMES[gameId]}` : 'Настройки игры';
     role.innerText = isHost ? 'Хост может менять' : 'Только просмотр';
     save.style.display = isHost ? 'inline-flex' : 'none';
+
+    if (!body.dataset.listenerBound) {
+        body.dataset.listenerBound = 'true';
+        body.addEventListener('input', (e) => {
+            if (isHost && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
+                silentSaveGameSettings();
+            }
+        });
+        body.addEventListener('change', (e) => {
+            if (isHost && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) {
+                silentSaveGameSettings();
+            }
+        });
+    }
 
     if (!gameId) {
         body.innerHTML = '<div class="game-settings-empty">Сначала выберите режим игры.</div>';
@@ -1507,7 +1523,6 @@ function renderBrSettingsTable(settings) {
                         <td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td>
                         <td><input class="game-settings-input" type="number" min="1" max="10" value="${parseInt(ps.ammoPerSec) || 1}" data-setting-player="${p.id}" data-setting-field="ammoPerSec" ${readonly}></td>
                         <td><input class="game-settings-input" type="number" min="1" max="9999" value="${parseInt(ps.lives) || 200}" data-setting-player="${p.id}" data-setting-field="lives" ${readonly}></td>
-                        <td><input class="game-settings-input" type="number" min="1" max="5" value="${ps.team || ''}" placeholder="-" data-setting-player="${p.id}" data-setting-field="team" ${readonly}></td>
                         <td><input class="game-settings-input" type="number" min="1" max="15" value="${parseInt(ps.speed) || 3}" data-setting-player="${p.id}" data-setting-field="speed" ${readonly}></td>
                         <td>${aiCell}</td>
                     </tr>`;
@@ -1520,10 +1535,13 @@ function renderBrSettingsTable(settings) {
                 </div>
                 <div id="custom-settings-table-container" style="display:none; width:100%;">
                     <div class="game-settings-table-wrap"><table class="game-settings-table">
-                        <thead><tr><th title="Игрок">👤</th><th title="Патронов в секунду">🔫</th><th title="Кол-во ХП">❤️</th><th title="Команда">🤝</th><th title="Скорость">🏃</th><th title="Уровень ИИ">🤖</th></tr></thead>
+                        <thead><tr><th title="Игрок">👤</th><th title="Патронов в секунду">🔫</th><th title="Кол-во ХП">❤️</th><th title="Скорость">🏃</th><th title="Уровень ИИ">🤖</th></tr></thead>
                         <tbody>${rows}</tbody>
                     </table></div>
-                    <label class="game-settings-extra"><input id="setting-br-shrink" type="checkbox" ${settings.shrinkZone !== false ? 'checked' : ''} ${readonly}>уменьшение поля</label>
+                    <div style="display:flex; justify-content:center; gap:20px; margin-top:10px;">
+                        <label class="game-settings-extra"><input id="setting-br-shrink" type="checkbox" ${settings.shrinkZone !== false ? 'checked' : ''} ${readonly}>уменьшение поля</label>
+                        <label class="game-settings-extra"><input id="setting-br-fill-bots" type="checkbox" ${settings.fillWithBots !== false ? 'checked' : ''} ${readonly}>автозаполнение ботами</label>
+                    </div>
                 </div>
                 <div id="settings-error" class="settings-error"></div>`;
 }
@@ -1563,6 +1581,7 @@ function cycleTttSettingsSymbol(btn) {
     btn.dataset.symbol = next;
     btn.innerText = `${TTT_SETTING_SYMBOL_CHARS[next]} ${TTT_SETTING_SYMBOL_LABELS[next]}`;
     updateTttColorPreview(btn.dataset.settingPlayer);
+    silentSaveGameSettings();
 }
 
 function updateTttColorPreview(playerId) {
@@ -1612,24 +1631,22 @@ async function silentSaveGameSettings() {
         console.warn("Silent save failed:", err);
     }
 }
-
 function collectGameSettings(gameId) {
     let effectiveId = gameId;
     if (gameId && gameId.startsWith('br_')) effectiveId = 'br_2d';
     const error = document.getElementById('settings-error');
     if (error) error.innerText = '';
     if (effectiveId === 'br_2d') {
-        const settings = { players: {}, shrinkZone: document.getElementById('setting-br-shrink')?.checked !== false };
+        const settings = {
+            players: {},
+            shrinkZone: document.getElementById('setting-br-shrink')?.checked !== false,
+            fillWithBots: document.getElementById('setting-br-fill-bots')?.checked !== false
+        };
         lobbySettingsPlayers().forEach(p => {
             const lives = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="lives"]`)?.value || 200);
             const ammo = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="ammoPerSec"]`)?.value || 1);
-            const teamRaw = String(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="team"]`)?.value || '').trim();
             const speed = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="speed"]`)?.value || 3);
             const aiLevel = Number(document.querySelector(`[data-setting-player="${p.id}"][data-setting-field="aiLevel"]`)?.value || 2);
-            if (teamRaw && !['1', '2', '3', '4', '5'].includes(teamRaw)) {
-                if (error) error.innerText = 'Команда должна быть пустой или цифрой от 1 до 5.';
-                return;
-            }
             if (!Number.isFinite(speed) || speed < 1 || speed > 15) {
                 if (error) error.innerText = 'Скорость должна быть от 1 до 15.';
                 return;
@@ -1637,7 +1654,7 @@ function collectGameSettings(gameId) {
             settings.players[p.id] = {
                 lives: Math.max(1, Math.min(9999, Math.round(lives || 1))),
                 ammoPerSec: Math.max(1, Math.min(10, Math.round(ammo || 1))),
-                team: teamRaw,
+                team: '',
                 speed: Math.round(speed),
                 aiLevel: isAiFriendId(p.id) ? Math.max(1, Math.min(3, Math.round(aiLevel || 1))) : null
             };
@@ -1665,7 +1682,7 @@ function collectGameSettings(gameId) {
         }
         return settings;
     }
-    return defaultSettingsForGame(gameId);
+    return { players: {} };
 }
 
 function applyCustomItems(customItems) {

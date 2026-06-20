@@ -1316,13 +1316,21 @@
             max-height: 100%;
         }
         .fullscreen-map-footer {
-            padding: 8px;
-            text-align: center;
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.65);
+            color: #fff;
+            padding: 6px 16px;
+            border-radius: 20px;
             font-size: 12px;
-            color: #8e8e93;
-            background: rgba(0, 0, 0, 0.4);
-            border-top: 1px solid #333;
+            font-weight: bold;
+            pointer-events: none;
             z-index: 10;
+            white-space: nowrap;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(5px);
         }
 
         /* Standoff 2 Team Select Screen & Utilities */
@@ -1418,6 +1426,10 @@
             letter-spacing: 2px;
             margin-bottom: 20px;
             text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .so2-short-name {
+            display: none;
         }
 
         .so2-ct-team .so2-team-name {
@@ -1536,4 +1548,67 @@
             to { opacity: 1; }
         }
 
+        /* Mobile adaptation for team select screen */
+        @media (max-width: 768px) {
+            .so2-team-select-container {
+                width: 100vw;
+                height: 100vh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+            }
+            .so2-team-header {
+                height: 40px;
+            }
+            .so2-team-header h2 {
+                font-size: 16px;
+                letter-spacing: 1px;
+            }
+            .so2-team-column {
+                padding: 10px 6px;
+                justify-content: flex-start;
+                gap: 6px;
+            }
+            .so2-team-icon {
+                display: none !important;
+            }
+            .so2-team-name {
+                font-size: 16px;
+                letter-spacing: 1px;
+                margin-bottom: 6px;
+                margin-top: 4px;
+            }
+            .so2-full-name {
+                display: none !important;
+            }
+            .so2-short-name {
+                display: inline-block !important;
+            }
+            .so2-team-players {
+                flex: 1;
+                max-height: 55vh;
+                gap: 4px;
+                padding: 4px;
+                margin-bottom: 6px;
+                width: 95%;
+            }
+            .so2-team-player-row {
+                font-size: 12px;
+                padding: 4px 6px;
+                gap: 6px;
+            }
+            .so2-team-count {
+                display: none !important;
+            }
+            .so2-select-btn {
+                width: 120px;
+                height: 36px;
+                font-size: 13px;
+                margin-top: auto;
+            }
+            .so2-team-footer {
+                height: 36px;
+                font-size: 10px;
+            }
+        }
 

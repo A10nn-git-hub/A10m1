@@ -50,45 +50,48 @@
                 }
             }
 
-            function getFriendGroup(id, profile = {}) {
-                if (id === SYSTEM_BOT.id) return 1;
-                
-                const presence = profile.presence || {};
-                const currentLobby = profile.currentLobby || {};
-                const lastSeenAt = Number(presence.lastSeenAt || profile.lastSeenAt || 0);
-                const awayExpired = presence.state === 'away' && lastSeenAt && Date.now() - lastSeenAt >= 60000;
-                const isOffline = presence.state === 'offline' || awayExpired;
-                const days = lastSeenAt ? Math.floor((Date.now() - lastSeenAt) / 86400000) : 0;
-                
-                if (!isOffline) {
-                    if (presence.state === 'away') return 3; // AFK
-                    return 2; // Online / Playing / In Lobby
-                }
-                
-                if (days < 1) return 4; // Offline < 1 day
-                return 5; // Offline >= 1 day
-            }
+             function getFriendGroup(id, profile = {}) {
+                 if (isAiFriendId(id) || id === SYSTEM_BOT.id) return 1;
+                 
+                 const presence = profile.presence || {};
+                 const currentLobby = profile.currentLobby || {};
+                 const lastSeenAt = Number(presence.lastSeenAt || profile.lastSeenAt || 0);
+                 const awayExpired = presence.state === 'away' && lastSeenAt && Date.now() - lastSeenAt >= 60000;
+                 const isOffline = presence.state === 'offline' || awayExpired || !presence.state;
+                 const days = lastSeenAt ? Math.floor((Date.now() - lastSeenAt) / 86400000) : 0;
+                 
+                 if (!isOffline) {
+                     if (currentLobby.status !== 'playing' && currentLobby.isRealLobby) return 2; // In Lobby
+                     if (presence.state === 'online') return 3; // Online
+                     if (presence.state === 'away') return 4; // Away
+                     return 3; // fallback online
+                 }
+                 
+                 if (!lastSeenAt) return 6;
+                 if (days < 1) return 5; // Offline today
+                 return 6; // Offline >= 1 day (Was online X days ago)
+             }
 
-            function compareFriends(aId, bId) {
-                const aProfile = friendsCache[aId] || {};
-                const bProfile = friendsCache[bId] || {};
-                const aGroup = getFriendGroup(aId, aProfile);
-                const bGroup = getFriendGroup(bId, bProfile);
-                
-                if (aGroup !== bGroup) return aGroup - bGroup;
-                
-                if (aGroup === 4 || aGroup === 5) {
-                    const aPresence = aProfile.presence || {};
-                    const bPresence = bProfile.presence || {};
-                    const aTime = Number(aPresence.lastSeenAt || aProfile.lastSeenAt || 0);
-                    const bTime = Number(bPresence.lastSeenAt || bProfile.lastSeenAt || 0);
-                    return bTime - aTime;
-                }
-                
-                const aName = String(aProfile.name || 'Игрок').toLowerCase();
-                const bName = String(bProfile.name || 'Игрок').toLowerCase();
-                return aName.localeCompare(bName);
-            }
+             function compareFriends(aId, bId) {
+                 const aProfile = friendsCache[aId] || {};
+                 const bProfile = friendsCache[bId] || {};
+                 const aGroup = getFriendGroup(aId, aProfile);
+                 const bGroup = getFriendGroup(bId, bProfile);
+                 
+                 if (aGroup !== bGroup) return aGroup - bGroup;
+                 
+                 if (aGroup === 5 || aGroup === 6) {
+                     const aPresence = aProfile.presence || {};
+                     const bPresence = bProfile.presence || {};
+                     const aTime = Number(aPresence.lastSeenAt || aProfile.lastSeenAt || 0);
+                     const bTime = Number(bPresence.lastSeenAt || bProfile.lastSeenAt || 0);
+                     return bTime - aTime;
+                 }
+                 
+                 const aName = String(aProfile.name || 'Игрок').toLowerCase();
+                 const bName = String(bProfile.name || 'Игрок').toLowerCase();
+                 return aName.localeCompare(bName);
+             }
 
             function renderSortedFriends() {
                 const list = document.getElementById('fr-list');

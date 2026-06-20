@@ -230,6 +230,10 @@
                 }
                 if (br.smokeZones) {
                     for (let smoke of br.smokeZones) {
+                        const distFromP = Math.hypot(fromP.x - smoke.x, fromP.y - smoke.y);
+                        if (distFromP < smoke.r) return false;
+                        const distToP = Math.hypot(toP.x - smoke.x, toP.y - smoke.y);
+                        if (distToP < smoke.r) return false;
                         if (lineIntersectsCircle(fromP.x, fromP.y, toP.x, toP.y, smoke.x, smoke.y, smoke.r)) return false;
                     }
                 }
@@ -845,8 +849,9 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 initLobby(mode);
                 if (lobbyId && isHost) {
                     const base = `lobbies/${lobbyId}/br`;
-                    db.ref(`${base}/currentMode`).set(mode).then(() => {
-                        db.ref(`${base}/matchActive`).set(true);
+                    db.ref(base).set({
+                        currentMode: mode,
+                        matchActive: true
                     }).catch(() => {});
                 } else {
                     startBrMatchLocal(mode);
@@ -870,10 +875,27 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         else if (t === 'Terrorists') tCount++;
                     });
                     
+                    let maxTeamSize = 5;
+                    if (typeof currentMode !== 'undefined') {
+                        if (currentMode === 'duel_1v1') maxTeamSize = 1;
+                        else if (currentMode === 'duel_2v2') maxTeamSize = 2;
+                    }
+                    
+                    if (teamName === 'Counter-Terrorists' && ctCount >= maxTeamSize) {
+                        showNegativeAlert("Команда CT заполнена!");
+                        return;
+                    }
+                    if (teamName === 'Terrorists' && tCount >= maxTeamSize) {
+                        showNegativeAlert("Команда T заполнена!");
+                        return;
+                    }
+                    
                     const newCtCount = ctCount + (teamName === 'Counter-Terrorists' ? 1 : 0);
                     const newTCount = tCount + (teamName === 'Terrorists' ? 1 : 0);
                     
-                    if (Math.abs(newCtCount - newTCount) > 1) {
+                    // Skip balance check if fillWithBots is enabled (bots will fill the gaps)
+                    const fillBots = (currentLobbySettings?.br_2d?.fillWithBots !== false);
+                    if (!fillBots && Math.abs(newCtCount - newTCount) > 1) {
                         showNegativeAlert("Команды несбалансированы! Разница должна быть не более 1 игрока.");
                         return;
                     }
@@ -915,24 +937,44 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     bots.push({ id: botId, label: 'Бот T-' + (i + 1), x: sp.x, y: sp.y, hp: botHp, maxHp: botHp, team: 'Terrorists', speed: 3, aiLevel: 2, ammoPerSec: 2, a: 0, tx: BR_SIZE / 2, ty: BR_SIZE / 2, alive: true, nextThink: 0, nextShot: 0, kills: 0 });
                 }
                 
-                db.ref(`lobbies/${lobbyId}/br/bots`).set(bots);
-                db.ref(`lobbies/${lobbyId}/br/roundStartCountdownUntil`).set(Date.now() + 3000);
-                db.ref(`lobbies/${lobbyId}/br/matchStartTime`).set(Date.now());
+                generateMap();
+                generateSmokeZones(currentMode);
+                br.zone = { x: BR_SIZE / 2, y: BR_SIZE / 2, r: (currentMode === 'duel_1v1' || currentMode === 'duel_2v2') ? 600 : BR_SIZE };
                 
+                const base = `lobbies/${lobbyId}/br`;
                 const updates = {};
+                
+                updates[`${base}/zone`] = br.zone;
+                updates[`${base}/bots`] = bots;
+                updates[`${base}/walls`] = mapWalls;
+                updates[`${base}/smokes`] = br.smokeZones;
+                updates[`${base}/bullets`] = null;
+                updates[`${base}/damage`] = {};
+                updates[`${base}/ctRounds`] = 0;
+                updates[`${base}/tRounds`] = 0;
+                updates[`${base}/currentRound`] = 1;
+                updates[`${base}/roundStartCountdownUntil`] = Date.now() + 3000;
+                updates[`${base}/matchStartTime`] = Date.now();
+                
                 Object.keys(players).forEach(id => {
                     const p = players[id];
                     const team = brNormalizeTeam(p.team);
                     const sp = brSpawnForId(id, team);
-                    updates[`lobbies/${lobbyId}/br/players/${id}/x`] = Math.round(sp.x);
-                    updates[`lobbies/${lobbyId}/br/players/${id}/y`] = Math.round(sp.y);
-                    updates[`lobbies/${lobbyId}/br/players/${id}/hp`] = p.maxHp || 100;
-                    updates[`lobbies/${lobbyId}/br/players/${id}/maxHp`] = p.maxHp || 100;
-                    updates[`lobbies/${lobbyId}/br/players/${id}/alive`] = true;
+                    updates[`${base}/players/${id}/x`] = Math.round(sp.x);
+                    updates[`${base}/players/${id}/y`] = Math.round(sp.y);
+                    updates[`${base}/players/${id}/hp`] = p.maxHp || 100;
+                    updates[`${base}/players/${id}/maxHp`] = p.maxHp || 100;
+                    updates[`${base}/players/${id}/alive`] = true;
+                    updates[`${base}/damage/${id}`] = 0;
                 });
-                db.ref().update(updates);
                 
-                db.ref(`lobbies/${lobbyId}/br/matchGameplayStarted`).set(true);
+                updates[`${base}/matchGameplayStarted`] = true;
+                
+                br.bots = bots;
+                br.teamInitialized = true;
+                br.freeRoam = false;
+                
+                db.ref().update(updates).catch(() => {});
             }
 
             function checkMatchDisconnect() {
@@ -996,8 +1038,53 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     } else {
                         if (footerText) footerText.innerText = 'Ожидание выбора команд игроками...';
                     }
+                    
+                    // Warmup phase: if my team is chosen, initialize local player so they can explore the map
+                    const myPlayerData = players[myId];
+                    const myWarmupTeam = myPlayerData ? brNormalizeTeam(myPlayerData.team) : '';
+                    if (myWarmupTeam) {
+                        const overlay = document.getElementById('so2-lobby-overlay');
+                        if (overlay) overlay.style.display = 'none';
+                    }
+                    if (myWarmupTeam && !br.warmupActive && !br.myP) {
+                        br.warmupActive = true;
+                        const mySettings = br.settings?.players?.[myId] || {};
+                        const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                        const mySpeed = brNormalizeSpeed(mySettings.speed);
+                        const spawn = brSpawnForId(myId, myWarmupTeam);
+                        br.myP = {
+                            id: myId,
+                            name: myName,
+                            avatar: myAvatar,
+                            eqName: myEqName,
+                            x: spawn.x,
+                            y: spawn.y,
+                            vx: 0,
+                            vy: 0,
+                            hp: myMaxHp,
+                            maxHp: myMaxHp,
+                            team: myWarmupTeam,
+                            speed: mySpeed,
+                            a: 0,
+                            kills: 0,
+                            shotSeq: 0,
+                            alive: true,
+                            invuln: Date.now() + 3000,
+                            invulnUntil: Date.now() + 3000
+                        };
+                        br.serverHp = myMaxHp;
+                        br.damageTaken = 0;
+                        br.lastSyncX = spawn.x;
+                        br.lastSyncY = spawn.y;
+                        br.lastSyncAt = Date.now();
+                        // Start render loop so player sees the map (but shooting/damage are disabled in warmup)
+                        if (!br.loop) {
+                            br.loop = requestAnimationFrame(brLoop);
+                        }
+                    }
                 }
             };
+
 
             br.matchGameplayStartedListener = snap => {
                 if (snap.exists() && snap.val() === true) {
@@ -1033,8 +1120,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             kills: 0,
                             shotSeq: 0,
                             alive: true,
-                            invuln: Date.now() + 5000,
-                            invulnUntil: Date.now() + 5000
+                            invuln: Date.now() + 3000,
+                            invulnUntil: Date.now() + 3000
                         };
                         
                         br.serverHp = myMaxHp;
@@ -1046,9 +1133,142 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         isShooting = false;
                         lastShot = 0;
                         
-                        initBrFirebaseState(currentMode);
+                        // Cancel warmup loop and reset flag for official match
+                        if (br.warmupActive) {
+                            br.warmupActive = false;
+                            if (br.loop) {
+                                cancelAnimationFrame(br.loop);
+                                br.loop = null;
+                            }
+                        }
+                        
+                        if (!lobbyId) {
+                            initBrFirebaseState(currentMode);
+                        } else {
+                            const base = `lobbies/${lobbyId}/br`;
+                            br.teamInitialized = true;
+                            br.freeRoam = false;
+                            
+                            if (!isHost) {
+                                br.smokesListener = smokesSnap => {
+                                    if (smokesSnap.exists()) {
+                                        const val = smokesSnap.val();
+                                        br.smokeZones = Array.isArray(val) ? val : Object.values(val);
+                                    } else {
+                                        br.smokeZones = [];
+                                    }
+                                };
+                                db.ref(`${base}/smokes`).on('value', br.smokesListener);
+                                
+                                br.wallsListener = wallsSnap => {
+                                    if (wallsSnap.exists()) {
+                                        const val = wallsSnap.val();
+                                        mapWalls = Array.isArray(val) ? val : Object.values(val);
+                                    }
+                                };
+                                db.ref(`${base}/walls`).on('value', br.wallsListener);
+                                
+                                br.botsListener = botsSnap => {
+                                    applyBrBotViews(botsSnap.exists() ? Object.values(botsSnap.val()) : []);
+                                };
+                                db.ref(`${base}/bots`).on('value', br.botsListener);
+                            }
+                            
+                            db.ref(`${base}/players/${myId}`).onDisconnect().update({alive: false, hp: 0});
+                            
+                            br.playersListener = playersSnap => {
+                                applyBrRemotePlayers(playersSnap.exists() ? playersSnap.val() : {});
+                                const remoteMe = br.remotePlayers[myId];
+                                if (remoteMe && br.myP) {
+                                    br.kills = Math.max(br.kills, parseInt(remoteMe.kills) || 0);
+                                    document.getElementById('br-ui-kills').innerText = `Киллы: ${br.kills}`;
+                                    if (remoteMe.team) br.myP.team = remoteMe.team;
+                                }
+                            };
+                            db.ref(`${base}/players`).on('value', br.playersListener);
+                            
+                            br.damageListener = damageSnap => {
+                                br.damageByPlayer = damageSnap.exists() ? damageSnap.val() : {};
+                                const myDamage = Math.max(0, parseInt(br.damageByPlayer[myId]) || 0);
+                                if (br.myP && myDamage > br.damageTaken && !brIsInvulnerable(br.myP)) {
+                                    br.damageTaken = myDamage;
+                                    br.myP.hp = Math.min(br.myP.hp, Math.max(0, (br.myP.maxHp || BR_DEFAULT_HP) - myDamage));
+                                    br.serverHp = br.myP.hp;
+                                    br.myP.alive = br.myP.hp > 0;
+                                }
+                            };
+                            db.ref(`${base}/damage`).on('value', br.damageListener);
+                            
+                            br.shotsListener = shotsSnap => {
+                                const p = shotsSnap.exists() ? Object.assign({ id: shotsSnap.key }, shotsSnap.val()) : null;
+                                if (!p || p.id === myId) return;
+                                normalizeBrPlayerHealth(p);
+                                br.remotePlayers[p.id] = p;
+                                applyBrRemoteShot(p);
+                            };
+                            db.ref(`${base}/players`).on('child_changed', br.shotsListener);
+                            
+                            br.pingsListener = pingsSnap => {
+                                const val = pingsSnap.exists() ? pingsSnap.val() : {};
+                                let newPingFound = false;
+                                const oldPings = br.pings || {};
+                                Object.keys(val).forEach(playerId => {
+                                    const newPing = val[playerId];
+                                    const oldPing = oldPings[playerId];
+                                    if (newPing && (!oldPing || oldPing.time !== newPing.time)) {
+                                        if (Date.now() - newPing.time < 3000) {
+                                            newPingFound = true;
+                                        }
+                                    }
+                                });
+                                br.pings = val;
+                                if (newPingFound) {
+                                    playBrSound('ping');
+                                }
+                            };
+                            db.ref(`${base}/pings`).on('value', br.pingsListener);
+                            
+                            br.roundsListener = roundsSnap => {
+                                if (roundsSnap.exists()) {
+                                    const data = roundsSnap.val();
+                                    const oldRound = br.currentRound || 1;
+                                    
+                                    br.ctRounds = data.ctRounds || 0;
+                                    br.tRounds = data.tRounds || 0;
+                                    br.currentRound = data.currentRound || 1;
+                                    
+                                    if (data.roundEnding && data.roundEnding.until) {
+                                        if (!br.roundEnding && data.matchGameplayStarted === true && data.currentRound === br.currentRound) {
+                                            br.roundEnding = true;
+                                            br.roundWinner = data.roundEnding.winner;
+                                            br.roundEndTransitionUntil = data.roundEnding.until;
+                                            
+                                            if (!isHost || !lobbyId) {
+                                                playFactionWinSound(br.roundWinner);
+                                            }
+                                        }
+                                    } else {
+                                        if (br.roundEnding) {
+                                            br.roundEnding = false;
+                                        }
+                                    }
+                                    
+                                    if (br.currentRound > oldRound) {
+                                        resetBrRoundClient();
+                                    }
+                                }
+                            };
+                            db.ref(`${base}`).on('value', br.roundsListener);
+                            
+                            br.syncTimer = setInterval(syncBrPlayerState, 80);
+                        }
+                        
                         br.roundStartCountdownUntil = Date.now() + 3000;
                         syncBrPlayerState(true);
+                        
+                        if (!br.loop) {
+                            br.loop = requestAnimationFrame(brLoop);
+                        }
                     });
                 }
             };
@@ -1120,7 +1340,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     const myTeam = brNormalizeTeam(dbMe.team) || 'Counter-Terrorists';
                     const spawn = brSpawnForId(myId, myTeam);
                     
-                    br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 5000, invulnUntil: Date.now() + 5000 };
+                    br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000, invulnUntil: Date.now() + 3000 };
                     
                     br.serverHp = myMaxHp;
                     br.damageTaken = 0;
@@ -1142,7 +1362,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     const myTeam = 'Counter-Terrorists';
                     const spawn = brSpawnForId(myId, myTeam);
                     
-                    br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 5000, invulnUntil: Date.now() + 5000 };
+                    br.myP = { id: myId, name: myName, avatar: myAvatar, eqName: myEqName, x: spawn.x, y: spawn.y, vx: 0, vy: 0, hp: myMaxHp, maxHp: myMaxHp, team: myTeam, speed: mySpeed, a: 0, kills: 0, shotSeq: 0, alive: true, invuln: Date.now() + 3000, invulnUntil: Date.now() + 3000 };
                     
                     br.serverHp = myMaxHp;
                     br.damageTaken = 0;
@@ -1505,7 +1725,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             maxHp: Math.max(1, parseInt(br.settings.players?.[p.id]?.lives) || BR_DEFAULT_HP),
                             team: assignedTeam,
                             speed: brNormalizeSpeed(br.settings.players?.[p.id]?.speed),
-                            invulnUntil: Date.now() + 5000,
+                            invulnUntil: Date.now() + 3000,
                             damageTaken: 0,
                             a: 0,
                             kills: 0,
@@ -1645,12 +1865,15 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             br.currentRound = data.currentRound || 1;
                             
                             if (data.roundEnding && data.roundEnding.until) {
-                                if (!br.roundEnding) {
+                                if (!br.roundEnding && data.matchGameplayStarted === true && data.currentRound === br.currentRound) {
                                     br.roundEnding = true;
                                     br.roundWinner = data.roundEnding.winner;
                                     br.roundEndTransitionUntil = data.roundEnding.until;
                                     
-                                    playFactionWinSound(br.roundWinner);
+                                    // Host already plays sound locally in checkBrEnd(); only guests play here
+                                    if (!isHost || !lobbyId) {
+                                        playFactionWinSound(br.roundWinner);
+                                    }
                                 }
                             } else {
                                 if (br.roundEnding) {
@@ -1688,7 +1911,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     br.myP.y = spawn.y;
                     br.myP.hp = br.myP.maxHp || BR_DEFAULT_HP;
                     br.myP.alive = true;
-                    br.myP.invulnUntil = Date.now() + 5000;
+                    br.myP.invulnUntil = Date.now() + 3000;
                     br.damageTaken = 0;
                     br.isSpectator = false;
                 }
@@ -1697,33 +1920,72 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     p.alive = true;
                     p.hp = p.maxHp || BR_DEFAULT_HP;
                     p.damageTaken = 0;
-                    p.invulnUntil = Date.now() + 5000;
+                    p.invulnUntil = Date.now() + 3000;
                 });
                 const spectatorLabel = document.getElementById('br-ui-spectator');
                 if (spectatorLabel) spectatorLabel.style.display = 'none';
                 
-                if (isHost || !lobbyId) {
-                    br.bots.forEach(b => {
-                        const sp = brSpawnForId(b.id, b.team);
-                        b.x = sp.x;
-                        b.y = sp.y;
-                        b.tx = sp.x;
-                        b.ty = sp.y;
-                        b.hp = b.maxHp || 100;
-                        b.alive = true;
-                        b.invulnUntil = Date.now() + 5000;
-                        b.respawning = false;
-                    });
-                    if (lobbyId) {
-                        db.ref(`lobbies/${lobbyId}/br/bots`).set(br.bots).catch(() => {});
-                        const updates = {};
-                        Object.keys(br.remotePlayers).forEach(pid => {
-                            updates[`lobbies/${lobbyId}/br/damage/${pid}`] = 0;
-                        });
-                        updates[`lobbies/${lobbyId}/br/damage/${myId}`] = 0;
-                        updateDbPaths(updates, 'reset round damage').catch(() => {});
-                    }
-                }
+                 if (isHost || !lobbyId) {
+                     br.bots.forEach(b => {
+                         const sp = brSpawnForId(b.id, b.team);
+                         b.x = sp.x;
+                         b.y = sp.y;
+                         b.tx = sp.x;
+                         b.ty = sp.y;
+                         b.hp = b.maxHp || 100;
+                         b.alive = true;
+                         b.invulnUntil = Date.now() + 3000;
+                         b.respawning = false;
+                     });
+                     if (lobbyId) {
+                         const base = `lobbies/${lobbyId}/br`;
+                         const updates = {};
+                         updates[`bots`] = br.bots;
+                         
+                         Object.keys(br.remotePlayers || {}).forEach(pid => {
+                             const p = br.remotePlayers[pid];
+                             if (p && pid !== myId) {
+                                 const pSettings = br.settings?.players?.[pid] || {};
+                                 const pMaxHp = Math.max(1, parseInt(pSettings.lives) || BR_DEFAULT_HP);
+                                 const sp = brSpawnForId(pid, p.team);
+                                 updates[`players/${pid}/hp`] = pMaxHp;
+                                 updates[`players/${pid}/maxHp`] = pMaxHp;
+                                 updates[`players/${pid}/alive`] = true;
+                                 updates[`players/${pid}/invulnUntil`] = Date.now() + 3000;
+                                 updates[`players/${pid}/damageTaken`] = 0;
+                                 updates[`players/${pid}/x`] = Math.round(sp.x);
+                                 updates[`players/${pid}/y`] = Math.round(sp.y);
+                                 
+                                 p.hp = pMaxHp;
+                                 p.alive = true;
+                                 p.invulnUntil = Date.now() + 3000;
+                                 p.damageTaken = 0;
+                                 p.x = sp.x;
+                                 p.y = sp.y;
+                             }
+                         });
+                         
+                         if (br.myP) {
+                             const mySettings = br.settings?.players?.[myId] || {};
+                             const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                             const mySp = brSpawnForId(myId, br.myP.team);
+                             updates[`players/${myId}/hp`] = myMaxHp;
+                             updates[`players/${myId}/maxHp`] = myMaxHp;
+                             updates[`players/${myId}/alive`] = true;
+                             updates[`players/${myId}/invulnUntil`] = Date.now() + 3000;
+                             updates[`players/${myId}/damageTaken`] = 0;
+                             updates[`players/${myId}/x`] = Math.round(mySp.x);
+                             updates[`players/${myId}/y`] = Math.round(mySp.y);
+                         }
+
+                         Object.keys(br.remotePlayers || {}).forEach(pid => {
+                             updates[`damage/${pid}`] = 0;
+                         });
+                         updates[`damage/${myId}`] = 0;
+
+                         db.ref(base).update(updates).catch(() => {});
+                     }
+                 }
                 
                 syncBrPlayerState(true);
             }
@@ -2049,7 +2311,11 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     updateBrBotViews();
                     if (isHost || !lobbyId) updateBrBots(now);
                     updateBrBullets(now);
-                    if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
+                    const inCountdown = br.roundStartCountdownUntil && now < br.roundStartCountdownUntil;
+                    const inWarmup = br.warmupActive;
+                    if (!inCountdown && !inWarmup) {
+                        if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
+                    }
 
                     // Frame-by-frame tracker to play death sounds
                     if (br.aliveTracker) {
@@ -2116,8 +2382,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                   br.myP.y = spawn.y;
                                   br.myP.hp = br.myP.maxHp || BR_DEFAULT_HP;
                                   br.myP.alive = true;
-                                  br.myP.invulnUntil = Date.now() + 5000;
-                                  br.myP.invuln = Date.now() + 5000;
+                                  br.myP.invulnUntil = Date.now() + 3000;
+                                  br.myP.invuln = Date.now() + 3000;
                                   br.damageTaken = 0;
                                   if (lobbyId) {
                                       db.ref(`lobbies/${lobbyId}/br/damage/${myId}`).set(0).catch(() => {});
@@ -2266,7 +2532,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                 b.ty = spawn.y;
                                 b.hp = b.maxHp || 100;
                                 b.alive = true;
-                                b.invulnUntil = now + 5000;
+                                b.invulnUntil = now + 3000;
                                 b.vx = 0;
                                 b.vy = 0;
                                 changed = true;
@@ -2280,7 +2546,12 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         playerTargets.push(br.myP);
                     }
                     const botTargets = br.bots.filter(other => other.id !== b.id && other.alive && other.hp > 0 && brIsEnemyTarget(b.id, other));
-                    const targets = playerTargets.concat(botTargets);
+                    
+                    // Apply LOS (line-of-sight) check: bots can only target visible enemies (not hidden by walls or smoke)
+                    const allCandidates = playerTargets.concat(botTargets);
+                    const visibleTargets = allCandidates.filter(t => brCheckVisibility(b, t));
+                    const targets = visibleTargets.length > 0 ? visibleTargets : [];
+                    
                     const target = targets[Math.floor(Math.random() * targets.length)];
 
                     if (now > (b.nextThink || 0)) {
@@ -2918,7 +3189,12 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 if (tEl) tEl.innerText = showT;
 
                 let timeStr = '';
-                if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
+                const now = Date.now();
+                if (br.roundStartCountdownUntil && now < br.roundStartCountdownUntil) {
+                    const timeLeft = br.roundStartCountdownUntil - now;
+                    const secondsLeft = Math.max(1, Math.ceil(timeLeft / 1000));
+                    timeStr = '00:' + String(secondsLeft).padStart(2, '0');
+                } else if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
                     const elapsedMs = br.matchAccumulatedTime;
                     const remainingMs = Math.max(0, 180000 - elapsedMs);
                     const totalSec = Math.floor(remainingMs / 1000);
@@ -3103,18 +3379,22 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             if (br.ctRounds >= 8 || br.tRounds >= 8) {
                                 if (lobbyId) {
                                     const base = `lobbies/${lobbyId}/br`;
-                                    db.ref(`${base}/ctRounds`).set(br.ctRounds);
-                                    db.ref(`${base}/tRounds`).set(br.tRounds);
-                                    db.ref(`${base}/roundEnding`).remove().catch(() => {});
+                                    const updates = {};
+                                    updates['ctRounds'] = br.ctRounds;
+                                    updates['tRounds'] = br.tRounds;
+                                    updates['roundEnding'] = null;
+                                    db.ref(base).update(updates).catch(() => {});
                                 }
                             } else {
                                 const nextRound = (br.currentRound || 1) + 1;
                                 if (lobbyId) {
                                     const base = `lobbies/${lobbyId}/br`;
-                                    db.ref(`${base}/ctRounds`).set(br.ctRounds);
-                                    db.ref(`${base}/tRounds`).set(br.tRounds);
-                                    db.ref(`${base}/currentRound`).set(nextRound);
-                                    db.ref(`${base}/roundEnding`).remove().catch(() => {});
+                                    const updates = {};
+                                    updates['ctRounds'] = br.ctRounds;
+                                    updates['tRounds'] = br.tRounds;
+                                    updates['currentRound'] = nextRound;
+                                    updates['roundEnding'] = null;
+                                    db.ref(base).update(updates).catch(() => {});
                                 } else {
                                     br.currentRound = nextRound;
                                     resetBrRoundClient();
@@ -3235,26 +3515,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                          db.ref(`lobbies/${lobbyId}/br`).off('value', br.roundsListener);
                          br.roundsListener = null;
                      }
+                     if (isHost) {
+                         db.ref(`lobbies/${lobbyId}/br`).remove().catch(() => {});
+                     } else {
+                         db.ref(`lobbies/${lobbyId}/br/players/${myId}`).remove().catch(() => {});
+                     }
                      if (br.pingsListener) {
                          db.ref(`lobbies/${lobbyId}/br/pings`).off('value', br.pingsListener);
                          br.pingsListener = null;
-                     }
-                     if (isHost) {
-                         db.ref(`lobbies/${lobbyId}/br/matchActive`).remove().catch(() => {});
-                         db.ref(`lobbies/${lobbyId}/br/walls`).remove().catch(() => {});
-                         db.ref(`lobbies/${lobbyId}/br/smokes`).remove().catch(() => {});
-                         db.ref(`lobbies/${lobbyId}/br/ctRounds`).remove().catch(() => {});
-                         db.ref(`lobbies/${lobbyId}/br/tRounds`).remove().catch(() => {});
-                         db.ref(`lobbies/${lobbyId}/br/currentRound`).remove().catch(() => {});
-                         db.ref(`lobbies/${lobbyId}/br/pings`).remove().catch(() => {});
                      }
                      if (br.playersListener) db.ref(`lobbies/${lobbyId}/br/players`).off('value', br.playersListener);
                      if (br.shotsListener) db.ref(`lobbies/${lobbyId}/br/players`).off('child_changed', br.shotsListener);
                      if (br.damageListener) db.ref(`lobbies/${lobbyId}/br/damage`).off('value', br.damageListener);
                      if (br.botsListener) db.ref(`lobbies/${lobbyId}/br/bots`).off('value', br.botsListener);
-                     if (!br.placeShown && br.matchActive === true) {
-                         db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({alive: false, hp: 0}).catch(() => {});
-                     }
                  }
                  br.matchActive = false;
                  br.syncTimer = null;
@@ -3275,6 +3548,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                  br.bgCtx = null;
                  br.botViews = {};
                  br.lastBotSyncAt = null;
+                 br.warmupActive = false;
              }
 
               // ================== HUD Layout Customizer & Floating Minimap ==================
@@ -3632,6 +3906,43 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                       ctx.strokeRect(minCoord, minCoord, maxMapSize, maxMapSize);
                   }
                   
+                  // Draw tactical grid for TDM 5v5
+                  if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
+                      const gridCols = 5;
+                      const gridRows = 5;
+                      const cellW = BR_SIZE / gridCols;
+                      const cellH = BR_SIZE / gridRows;
+                      ctx.save();
+                      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                      ctx.lineWidth = 8;
+                      for (let c = 1; c < gridCols; c++) {
+                          ctx.beginPath();
+                          ctx.moveTo(c * cellW, 0);
+                          ctx.lineTo(c * cellW, BR_SIZE);
+                          ctx.stroke();
+                      }
+                      for (let r = 1; r < gridRows; r++) {
+                          ctx.beginPath();
+                          ctx.moveTo(0, r * cellH);
+                          ctx.lineTo(BR_SIZE, r * cellH);
+                          ctx.stroke();
+                      }
+                      
+                      // Draw coordinates text (A1-E5)
+                      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                      ctx.font = 'bold 36px "Segoe UI", sans-serif';
+                      ctx.textAlign = 'center';
+                      ctx.textBaseline = 'middle';
+                      const colLabels = ['A', 'B', 'C', 'D', 'E'];
+                      for (let r = 0; r < gridRows; r++) {
+                          for (let c = 0; c < gridCols; c++) {
+                              const label = colLabels[c] + (r + 1);
+                              ctx.fillText(label, c * cellW + cellW / 2, r * cellH + cellH / 2);
+                          }
+                      }
+                      ctx.restore();
+                  }
+                  
                   if (br.zone) {
                       ctx.strokeStyle = '#ff3b30';
                       ctx.lineWidth = 15;
@@ -3720,13 +4031,10 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   const windowEl = canvas.parentElement; // .fullscreen-map-window
                   if (!windowEl) return;
                   
-                  const footer = windowEl.querySelector('.fullscreen-map-footer');
-                  const footerHeight = footer ? footer.offsetHeight : 35;
-                  
                   const availableWidth = windowEl.clientWidth;
-                  const availableHeight = windowEl.clientHeight - footerHeight;
+                  const availableHeight = windowEl.clientHeight;
                   
-                  const size = Math.min(availableWidth, availableHeight) - 10;
+                  const size = Math.min(availableWidth, availableHeight);
                   
                   canvas.width = size;
                   canvas.height = size;
@@ -3753,6 +4061,43 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   } else {
                       ctx.fillStyle = '#0d0d12';
                       ctx.fillRect(0, 0, BR_SIZE, BR_SIZE);
+                  }
+                  
+                  // Draw tactical grid for TDM 5v5
+                  if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
+                      const gridCols = 5;
+                      const gridRows = 5;
+                      const cellW = BR_SIZE / gridCols;
+                      const cellH = BR_SIZE / gridRows;
+                      ctx.save();
+                      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                      ctx.lineWidth = 4 / mapScale;
+                      for (let c = 1; c < gridCols; c++) {
+                          ctx.beginPath();
+                          ctx.moveTo(c * cellW, 0);
+                          ctx.lineTo(c * cellW, BR_SIZE);
+                          ctx.stroke();
+                      }
+                      for (let r = 1; r < gridRows; r++) {
+                          ctx.beginPath();
+                          ctx.moveTo(0, r * cellH);
+                          ctx.lineTo(BR_SIZE, r * cellH);
+                          ctx.stroke();
+                      }
+                      
+                      // Draw coordinates text (A1-E5)
+                      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                      ctx.font = 'bold 36px "Segoe UI", sans-serif';
+                      ctx.textAlign = 'center';
+                      ctx.textBaseline = 'middle';
+                      const colLabels = ['A', 'B', 'C', 'D', 'E'];
+                      for (let r = 0; r < gridRows; r++) {
+                          for (let c = 0; c < gridCols; c++) {
+                              const label = colLabels[c] + (r + 1);
+                              ctx.fillText(label, c * cellW + cellW / 2, r * cellH + cellH / 2);
+                          }
+                      }
+                      ctx.restore();
                   }
                   
                   if (br.smokeZones) {
