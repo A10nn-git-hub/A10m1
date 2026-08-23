@@ -51,63 +51,77 @@ class MobileTouchController {
     init() {
         if (!this.isMobile) {
             document.body.classList.add('pc-mode');
-            this.setupDesktopHudToggle();
-            return;
+        } else {
+            document.body.classList.add('mobile-mode');
+            this.createTouchUI();
+            this.bindTouchEvents();
         }
 
-        document.body.classList.add('mobile-mode');
-        this.createTouchUI();
-        this.bindTouchEvents();
-        this.setupMobileHudToggle();
+        this.setupHudTapInteractions();
     }
 
-    setupDesktopHudToggle() {
-        const debugPanel = document.querySelector('.debug-panel');
-        if (debugPanel) {
-            debugPanel.style.cursor = 'pointer';
-            debugPanel.title = 'Нажмите, чтобы скрыть HUD (или Tab)';
-            debugPanel.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (this.input && this.input.onToggleHud) {
-                    this.input.onToggleHud();
+    setupHudTapInteractions() {
+        // 1. При нажатии на любой блок интерфейса (Инфо-панель, Статусы персонажа, Деньги) — скрываем HUD
+        const hudElements = [
+            document.querySelector('.debug-panel'),
+            document.querySelector('.status-bars-container'),
+            document.querySelector('.money-hud'),
+            document.querySelector('.minimap-radar-wrapper')
+        ].filter(Boolean);
+
+        hudElements.forEach((el) => {
+            el.style.cursor = 'pointer';
+            el.title = 'Нажмите, чтобы скрыть интерфейс';
+
+            const onHudTap = (e) => {
+                // Если кликнули по радар-кнопке для открытия карты — пропускаем, пусть откроется карта
+                if (el.classList.contains('minimap-radar-wrapper') && !this.isMobile) {
+                    // на ПК радар открывает карту
+                    return;
                 }
-            });
-        }
-    }
-
-    setupMobileHudToggle() {
-        const debugPanel = document.querySelector('.debug-panel');
-        if (debugPanel) {
-            debugPanel.style.cursor = 'pointer';
-            debugPanel.title = 'Тапните, чтобы скрыть';
-            
-            // Добавляем бейдж подсказки в заголовок панели
-            const title = debugPanel.querySelector('.title');
-            if (title) {
-                const hintSpan = document.createElement('span');
-                hintSpan.className = 'debug-hud-tap-hint';
-                hintSpan.innerText = ' [ТАП: СКРЫТЬ]';
-                hintSpan.style.color = '#ff9e00';
-                hintSpan.style.fontSize = '9px';
-                hintSpan.style.marginLeft = '4px';
-                title.appendChild(hintSpan);
-            }
-
-            debugPanel.addEventListener('touchstart', (e) => {
-                e.stopPropagation();
                 e.preventDefault();
-                if (this.input && this.input.onToggleHud) {
-                    this.input.onToggleHud();
-                }
-            }, { passive: false });
-
-            debugPanel.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (this.input && this.input.onToggleHud) {
+                if (this.input && this.input.onToggleHud && this.engine && this.engine.isHudVisible) {
                     this.input.onToggleHud();
                 }
-            });
-        }
+            };
+
+            el.addEventListener('click', onHudTap);
+            el.addEventListener('touchend', onHudTap);
+        });
+
+        // 2. Когда HUD скрыт — нажатие в любое свободное место экрана (не на джойстик/кнопки) восстанавливает HUD
+        let touchStartInfo = null;
+
+        window.addEventListener('pointerdown', (e) => {
+            touchStartInfo = {
+                x: e.clientX,
+                y: e.clientY,
+                time: Date.now(),
+                target: e.target
+            };
+        }, { passive: true });
+
+        window.addEventListener('pointerup', (e) => {
+            if (!touchStartInfo) return;
+            const dt = Date.now() - touchStartInfo.time;
+            const dist = Math.hypot(e.clientX - touchStartInfo.x, e.clientY - touchStartInfo.y);
+
+            // Если это был короткий тап/клик (<300 мс, смещение < 15px)
+            if (dt < 300 && dist < 15) {
+                if (this.engine && !this.engine.isHudVisible) {
+                    // Проверяем, что нажали не на интерактивные контроллеры (джойстик, педали, верхние кнопки)
+                    const isInsideControls = e.target.closest('#touch-joystick-zone, #mobile-foot-buttons, #mobile-car-buttons, .mobile-top-bar, #mobile-elevator-panel, #main-menu-overlay, .game-modal');
+                    if (!isInsideControls) {
+                        e.preventDefault();
+                        if (this.input && this.input.onToggleHud) {
+                            this.input.onToggleHud();
+                        }
+                    }
+                }
+            }
+            touchStartInfo = null;
+        }, { passive: false });
     }
 
     createTouchUI() {
@@ -119,7 +133,7 @@ class MobileTouchController {
         layer.className = 'mobile-controls-layer';
 
         layer.innerHTML = `
-            <!-- Левая зона: Виртуальный джойстик -->
+            <!-- Левая зона: Виртуальный джойстик (в свободном нижнем левом углу) -->
             <div id="touch-joystick-zone" class="touch-joystick-zone">
                 <div id="touch-joystick-base" class="touch-joystick-base">
                     <div id="touch-joystick-stick" class="touch-joystick-stick"></div>
@@ -133,7 +147,6 @@ class MobileTouchController {
             <div class="mobile-top-bar">
                 <button id="btn-touch-pause" class="mobile-icon-btn" title="Меню / Пауза">⏸</button>
                 <button id="btn-touch-map" class="mobile-icon-btn" title="Карта">🗺️</button>
-                <button id="btn-touch-hud" class="mobile-icon-btn" title="Показать/Скрыть HUD">👁️</button>
                 <button id="btn-touch-weather" class="mobile-icon-btn" title="Погода">🌤️</button>
                 <button id="btn-touch-time" class="mobile-icon-btn" title="Время (+2ч)">⏰</button>
             </div>
@@ -198,11 +211,6 @@ class MobileTouchController {
                     <button class="floor-btn heli-floor-btn" data-floor="10">10 🚁</button>
                 </div>
             </div>
-
-            <!-- Плавающая кнопка возврата HUD при его скрытии -->
-            <button id="mobile-hud-restore-btn" class="mobile-hud-restore-btn" style="display:none;" title="Показать интерфейс">
-                <span>👁️ HUD</span>
-            </button>
         `;
 
         document.body.appendChild(layer);
@@ -364,14 +372,6 @@ class MobileTouchController {
             if (this.input && this.input.onToggleMenu) this.input.onToggleMenu();
         });
 
-        bindTrigger('btn-touch-hud', () => {
-            if (this.input && this.input.onToggleHud) this.input.onToggleHud();
-        });
-
-        bindTrigger('mobile-hud-restore-btn', () => {
-            if (this.input && this.input.onToggleHud) this.input.onToggleHud();
-        });
-
         // Кнопки этажей лифта
         const floorBtns = document.querySelectorAll('.floor-btn');
         floorBtns.forEach(btn => {
@@ -479,7 +479,6 @@ class MobileTouchController {
         const footButtons = document.getElementById('mobile-foot-buttons');
         const carButtons = document.getElementById('mobile-car-buttons');
         const elevatorPanel = document.getElementById('mobile-elevator-panel');
-        const restoreHudBtn = document.getElementById('mobile-hud-restore-btn');
 
         // Переключение наборов кнопок (Пешком vs В машине)
         if (isDriving) {
@@ -503,12 +502,6 @@ class MobileTouchController {
         if (elevatorPanel) {
             const isNearElevator = elevatorPrompt && elevatorPrompt.style.display === 'block';
             elevatorPanel.style.display = isNearElevator ? 'flex' : 'none';
-        }
-
-        // Показ кнопки восстановления HUD, если HUD скрыт
-        if (restoreHudBtn) {
-            const isHudHidden = this.engine && !this.engine.isHudVisible;
-            restoreHudBtn.style.display = isHudHidden ? 'flex' : 'none';
         }
     }
 }
