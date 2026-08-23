@@ -1,13 +1,12 @@
 class PedestrianNPCManager {
-            constructor(scene, world, physicsMaterials, camera, isMobile = false) {
+            constructor(scene, world, physicsMaterials, camera) {
                 this.scene = scene;
                 this.world = world;
                 this.physicsMaterials = physicsMaterials;
                 this.camera = camera;
-                this.isMobile = isMobile;
                 this.pedestrians = [];
                 this.soccerBalls = [];
-                this.maxPedestrians = this.isMobile ? 12 : 24;
+                this.maxPedestrians = 24;
 
                 this.sidewalkRoutes = [
                     [

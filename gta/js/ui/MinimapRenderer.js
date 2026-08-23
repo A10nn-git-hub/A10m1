@@ -10,11 +10,9 @@
          * - Бесшовное вращение карты в реальном времени вслед за камерой игрока (Camera Yaw).
          */
         class MinimapRenderer {
-            constructor(isMobile = false) {
+            constructor() {
                 this.canvas = document.getElementById('minimap-canvas');
                 this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
-                this.isMobile = isMobile;
-                this.frameSkip = 0;
                 this.width = 176;
                 this.height = 176;
                 this.centerX = 88;
@@ -183,12 +181,6 @@
 
             render(playerPos, cameraYaw, allCars, allNPCs, soccerBalls) {
                 if (!this.ctx || !playerPos) return;
-
-                if (this.isMobile) {
-                    this.frameSkip++;
-                    if (this.frameSkip % 2 !== 0) return;
-                }
-
                 const ctx = this.ctx;
 
                 ctx.clearRect(0, 0, this.width, this.height);

@@ -4,25 +4,11 @@
  * педали газа/тормоза для авто, кнопки прыжка, спринта, лифта и переключения HUD по тапу.
  */
 class MobileTouchController {
-    static detectMobileMode() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const modeParam = urlParams.get('mode');
-        if (modeParam === 'mobile') return true;
-        if (modeParam === 'pc') return false;
-
-        const stored = localStorage.getItem('gamehub_device_mode');
-        if (stored === 'mobile') return true;
-        if (stored === 'pc') return false;
-
-        return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 820);
-    }
-
     constructor(engine) {
         this.engine = engine;
         this.input = engine.inputController;
         this.cameraController = engine.thirdPersonCamera;
-        this.isMobile = MobileTouchController.detectMobileMode();
-        this.wakeLock = null;
+        this.isMobile = this.detectMobileMode();
 
         this.joystick = {
             active: false,
@@ -50,7 +36,16 @@ class MobileTouchController {
     }
 
     detectMobileMode() {
-        return MobileTouchController.detectMobileMode();
+        const urlParams = new URLSearchParams(window.location.search);
+        const modeParam = urlParams.get('mode');
+        if (modeParam === 'mobile') return true;
+        if (modeParam === 'pc') return false;
+
+        const stored = localStorage.getItem('gamehub_device_mode');
+        if (stored === 'mobile') return true;
+        if (stored === 'pc') return false;
+
+        return ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 820);
     }
 
     init() {
@@ -331,23 +326,19 @@ class MobileTouchController {
             btnSprint.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.requestWakeLock();
-                this.vibrate(15);
                 this.sprintLocked = !this.sprintLocked;
                 if (this.input) this.input.keys.sprint = this.sprintLocked;
                 btnSprint.classList.toggle('active', this.sprintLocked);
             }, { passive: false });
         }
 
-        // Кнопка посадки/высадки из авто и прочих триггеров
-        const bindTrigger = (id, callback, vibTime = 18) => {
+        // Кнопка посадки/высадки из авто
+        const bindTrigger = (id, callback) => {
             const btn = document.getElementById(id);
             if (btn) {
                 btn.addEventListener('touchstart', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    this.requestWakeLock();
-                    this.vibrate(vibTime);
                     callback();
                 }, { passive: false });
             }
@@ -355,31 +346,31 @@ class MobileTouchController {
 
         bindTrigger('btn-touch-vehicle', () => {
             if (this.input && this.input.onToggleVehicle) this.input.onToggleVehicle();
-        }, 22);
+        });
 
         bindTrigger('btn-touch-car-exit', () => {
             if (this.input && this.input.onToggleVehicle) this.input.onToggleVehicle();
-        }, 22);
+        });
 
         bindTrigger('btn-touch-lights', () => {
             if (this.input && this.input.onToggleHeadlights) this.input.onToggleHeadlights();
-        }, 12);
+        });
 
         bindTrigger('btn-touch-weather', () => {
             if (this.input && this.input.onToggleWeather) this.input.onToggleWeather();
-        }, 15);
+        });
 
         bindTrigger('btn-touch-time', () => {
             if (this.input && this.input.onTimeAdvance) this.input.onTimeAdvance(2.0);
-        }, 15);
+        });
 
         bindTrigger('btn-touch-map', () => {
             if (this.input && this.input.onToggleMap) this.input.onToggleMap();
-        }, 18);
+        });
 
         bindTrigger('btn-touch-pause', () => {
             if (this.input && this.input.onToggleMenu) this.input.onToggleMenu();
-        }, 20);
+        });
 
         // Кнопки этажей лифта
         const floorBtns = document.querySelectorAll('.floor-btn');
@@ -387,34 +378,12 @@ class MobileTouchController {
             btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                this.requestWakeLock();
-                this.vibrate(15);
                 const floor = parseInt(btn.getAttribute('data-floor'), 10);
                 if (this.input && this.input.onSelectFloor && !isNaN(floor)) {
                     this.input.onSelectFloor(floor);
                 }
             }, { passive: false });
         });
-    }
-
-    vibrate(ms = 15) {
-        try {
-            if (navigator.vibrate) {
-                navigator.vibrate(ms);
-            }
-        } catch (e) {}
-    }
-
-    async requestWakeLock() {
-        if (this.wakeLock !== null) return;
-        try {
-            if ('wakeLock' in navigator) {
-                this.wakeLock = await navigator.wakeLock.request('screen');
-                this.wakeLock.addEventListener('release', () => {
-                    this.wakeLock = null;
-                });
-            }
-        } catch (e) {}
     }
 
     bindButton(elementId, keyName, isToggle = false) {
@@ -424,8 +393,6 @@ class MobileTouchController {
         btn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.requestWakeLock();
-            this.vibrate(12);
             if (this.input) this.input.keys[keyName] = true;
             btn.classList.add('pressed');
         }, { passive: false });

@@ -3,11 +3,10 @@
          * (Фонари, гидранты с водяными гейзерами, деревянные заборы, урны, скамейки)
          */
         class StreetLampManager {
-            constructor(scene, world, physicsMaterials, isMobile = false) {
+            constructor(scene, world, physicsMaterials) {
                 this.scene = scene;
                 this.world = world;
                 this.physicsMaterials = physicsMaterials;
-                this.isMobile = isMobile;
 
                 this.props = [];
                 this.brokenProps = [];
@@ -18,10 +17,9 @@
 
                 this.geyserSystem = new HydrantWaterGeyserSystem(this.scene);
 
-                // Оптимизированный пул динамических источников света (2 на мобильных / 4 на ПК)
+                // Оптимизированный пул 4 динамических источников света для 60 FPS
                 this.activeDynamicLights = [];
-                const lightCount = this.isMobile ? 2 : 4;
-                for (let i = 0; i < lightCount; i++) {
+                for (let i = 0; i < 4; i++) {
                     const pl = new THREE.PointLight(0xffe8a3, 0.0, 32, 2.0);
                     this.scene.add(pl);
                     this.activeDynamicLights.push(pl);

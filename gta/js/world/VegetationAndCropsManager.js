@@ -9,12 +9,11 @@
          * - Кастомный GPU-шейдер ветра (onBeforeCompile) для покачивания травы, урожая и листвы.
          */
         class VegetationAndCropsManager {
-            constructor(scene, world, terrainManager, physicsMaterials, isMobile = false) {
+            constructor(scene, world, terrainManager, physicsMaterials) {
                 this.scene = scene;
                 this.world = world;
                 this.terrainManager = terrainManager;
                 this.physicsMaterials = physicsMaterials || { wall: new CANNON.Material('wall') };
-                this.isMobile = isMobile;
 
                 this.treePositions = [];
                 this.rockPositions = [];
@@ -95,12 +94,12 @@
             }
 
             buildBushesAndShrubs() {
-                const count = this.isMobile ? 55 : 120;
+                const count = 120;
                 const bushGeo = new THREE.DodecahedronGeometry(1.2, 1);
                 bushGeo.translate(0, 0.8, 0);
                 const instMesh = new THREE.InstancedMesh(bushGeo, this.matBush, count);
-                instMesh.receiveShadow = !this.isMobile;
-                instMesh.castShadow = !this.isMobile;
+                instMesh.receiveShadow = true;
+                instMesh.castShadow = true;
 
                 const dummy = new THREE.Object3D();
                 let idx = 0;
@@ -144,10 +143,10 @@
 
             buildScatteredRocks() {
                 const rockGeo = new THREE.DodecahedronGeometry(1.5, 0);
-                const count = this.isMobile ? 65 : 140;
+                const count = 140;
                 const instMesh = new THREE.InstancedMesh(rockGeo, this.matRock, count);
-                instMesh.receiveShadow = !this.isMobile;
-                instMesh.castShadow = !this.isMobile;
+                instMesh.receiveShadow = true;
+                instMesh.castShadow = true;
 
                 const dummy = new THREE.Object3D();
                 let idx = 0;

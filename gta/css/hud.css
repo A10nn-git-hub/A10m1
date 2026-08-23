@@ -767,14 +767,10 @@
            АДАПТАЦИЯ ПОД МОБИЛЬНЫЕ УСТРОЙСТВА (ДАННЫЕ ПЕРСОНАЖА ВВЕРХУ, ДЖОЙСТИК СНИЗУ)
            ========================================================================== */
         @media (max-width: 768px), (pointer: coarse) {
-            * {
-                -webkit-tap-highlight-color: transparent;
-            }
-
             /* 1. Перенос миникарты и данных персонажа наверх (НЕ под джойстиком) */
             .minimap-container {
-                top: calc(50px + env(safe-area-inset-top, 0px));
-                left: calc(12px + env(safe-area-inset-left, 0px));
+                top: 55px;
+                left: 12px;
                 bottom: auto;
                 align-items: flex-start;
                 gap: 4px;
@@ -807,8 +803,8 @@
 
             /* 2. Отладочная панель справа от миникарты */
             .debug-panel {
-                top: calc(50px + env(safe-area-inset-top, 0px));
-                left: calc(130px + env(safe-area-inset-left, 0px));
+                top: 55px;
+                left: 130px;
                 font-size: 8.5px;
                 line-height: 1.35;
                 padding: 4px 8px;
@@ -820,23 +816,17 @@
                 font-size: 8px;
             }
 
-            /* 3. Верхняя мобильная панель кнопок */
-            .mobile-top-bar {
-                top: calc(12px + env(safe-area-inset-top, 0px));
-                right: calc(12px + env(safe-area-inset-right, 0px));
-            }
-
-            /* 4. Деньги в правом верхнем углу */
+            /* 3. Деньги в правом верхнем углу */
             .money-hud {
-                top: calc(58px + env(safe-area-inset-top, 0px));
-                right: calc(15px + env(safe-area-inset-right, 0px));
+                top: 60px;
+                right: 15px;
                 font-size: 20px;
             }
 
-            /* 5. Полностью свободная левая нижняя зона под сенсорный джойстик */
+            /* 4. Полностью свободная левая нижняя зона под сенсорный джойстик */
             .touch-joystick-zone {
-                bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-                left: calc(18px + env(safe-area-inset-left, 0px));
+                bottom: 25px;
+                left: 20px;
                 width: 140px;
                 height: 140px;
                 z-index: 80;
@@ -853,8 +843,8 @@
             }
 
             .mobile-action-group {
-                bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-                right: calc(15px + env(safe-area-inset-right, 0px));
+                bottom: 20px;
+                right: 15px;
                 gap: 10px;
             }
 

@@ -2,17 +2,16 @@
          * STEP 35: Главный менеджер автономного ambient-трафика
          */
         class AmbientTrafficManager {
-            constructor(scene, world, physicsMaterials, terrainManager, roadNetwork, isMobile = false) {
+            constructor(scene, world, physicsMaterials, terrainManager, roadNetwork) {
                 this.scene = scene;
                 this.world = world;
                 this.physicsMaterials = physicsMaterials;
                 this.terrainManager = terrainManager;
                 this.roadNetwork = roadNetwork;
-                this.isMobile = isMobile;
 
                 this.waypointNetwork = new TrafficWaypointNetwork();
                 this.vehicles = [];
-                this.MAX_AI_CARS = this.isMobile ? 10 : 24;
+                this.MAX_AI_CARS = 24;
 
                 this.spawnInitialTraffic();
             }
