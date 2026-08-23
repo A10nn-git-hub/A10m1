@@ -279,6 +279,25 @@
 
                 this.vehicle.setBrake(50, 2);
                 this.vehicle.setBrake(50, 3);
+
+                // STEP 37: Звук удара и столкновения автомобиля с препятствиями (Car Crash Sound)
+                let lastCrashTime = 0;
+                this.chassisBody.addEventListener('collide', (e) => {
+                    const now = performance.now();
+                    if (now - lastCrashTime < 280) return;
+                    const contact = e.contact;
+                    let impactVelocity = 0;
+                    if (contact && typeof contact.getImpactVelocityAlongNormal === 'function') {
+                        impactVelocity = Math.abs(contact.getImpactVelocityAlongNormal());
+                    } else {
+                        impactVelocity = Math.hypot(this.chassisBody.velocity.x, this.chassisBody.velocity.z);
+                    }
+                    if (impactVelocity > 2.5 && window.soundEngine) {
+                        lastCrashTime = now;
+                        const pos = this.chassisBody.position;
+                        window.soundEngine.playCarCrash(pos.x, pos.y, pos.z, impactVelocity);
+                    }
+                });
             }
 
             setDriverDoorAngle(angleRad) {

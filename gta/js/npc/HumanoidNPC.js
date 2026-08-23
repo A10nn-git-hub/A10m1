@@ -773,7 +773,11 @@
                         if (phase !== this.lastStepPhase) {
                             this.lastStepPhase = phase;
                             const isIndoor = (this.interiorState === 'NAVIGATING_INSIDE' || this.interiorState === 'PERFORMING_ACTION');
-                            window.soundEngine.playFootstep(this.body.position.x, this.body.position.y, this.body.position.z, isIndoor, isRunning ? 0.75 : 0.5);
+                            const isOnDirt = (window.gameEngine && window.gameEngine.roadNetwork)
+                                ? window.gameEngine.roadNetwork.isPositionOnDirt(this.body.position.x, this.body.position.z)
+                                : (Math.hypot(this.body.position.x, this.body.position.z) > 150.0);
+                            const surfaceType = isIndoor ? 'indoor' : (isOnDirt ? 'grass' : 'default');
+                            window.soundEngine.playFootstep(this.body.position.x, this.body.position.y, this.body.position.z, isIndoor, isRunning ? 0.75 : 0.5, surfaceType);
                         }
                     }
 

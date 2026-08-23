@@ -146,15 +146,19 @@
 
                 this.animSystem.update(deltaTime, horizontalSpeed);
 
-                // STEP 29: Воспроизведение звука шагов протагониста (синхронизировано с walkCycle)
+                // STEP 29: Воспроизведение звука шагов протагониста (синхронизировано с walkCycle и поверхностью)
                 if (window.soundEngine && horizontalSpeed > 0.35 && this.isGrounded) {
                     const phase = Math.sin(this.animSystem.walkCycle) > 0;
                     if (this.lastStepPhase === undefined) this.lastStepPhase = phase;
                     if (phase !== this.lastStepPhase) {
                         this.lastStepPhase = phase;
                         const isIndoor = this.checkIfIndoor(body.position.x, body.position.y, body.position.z);
-                        const vol = isSprinting ? 1.25 : 0.85;
-                        window.soundEngine.playFootstep(body.position.x, body.position.y, body.position.z, isIndoor, vol);
+                        const isOnDirt = (window.gameEngine && window.gameEngine.roadNetwork)
+                            ? window.gameEngine.roadNetwork.isPositionOnDirt(body.position.x, body.position.z)
+                            : (Math.hypot(body.position.x, body.position.z) > 150.0);
+                        const surfaceType = isIndoor ? 'indoor' : (isOnDirt ? 'grass' : 'default');
+                        const vol = isSprinting ? 1.20 : 0.85;
+                        window.soundEngine.playFootstep(body.position.x, body.position.y, body.position.z, isIndoor, vol, surfaceType);
                     }
                 }
 

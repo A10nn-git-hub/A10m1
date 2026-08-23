@@ -195,6 +195,11 @@
                         this.activeDrivenCar.vehicle.setBrake(0, 2);
                         this.activeDrivenCar.vehicle.setBrake(0, 3);
 
+                        // Звук закрытия двери авто
+                        if (window.soundEngine) {
+                            window.soundEngine.playDoorClose(carPos.x, carPos.y, carPos.z);
+                        }
+
                         // Запуск звука двигателя
                         if (this.activeDrivenCar.soundController) {
                             this.activeDrivenCar.soundController.startEngine();
@@ -254,6 +259,11 @@
                         this.transitionCar.setDriverDoorAngle(0.0);
                         player.body.position.set(targetPos.x, targetPos.y + 0.815, targetPos.z);
                         player.body.velocity.set(0, 0, 0);
+
+                        // Звук закрытия двери авто
+                        if (window.soundEngine) {
+                            window.soundEngine.playDoorClose(carPos.x, carPos.y, carPos.z);
+                        }
 
                         this.activeDrivenCar = null;
                         this.transitionState = 'ON_FOOT';

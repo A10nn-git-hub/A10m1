@@ -20,6 +20,12 @@
                 this.noiseBuffer = null;
                 this.isInitialized = false;
 
+                // Загруженные и нарезанные сэмплы
+                this.samples = {};
+                this.isSamplesLoaded = false;
+                this.footstepGrassIdx = 0;
+                this.footstepDefaultIdx = 0;
+
                 this.rainSourceNode = null;
                 this.cricketsOscs = [];
                 this.targetRainVolume = 0.0;
@@ -81,6 +87,9 @@
                     // Генерация буфера розового шума
                     this.createPinkNoiseBuffer();
 
+                    // Загрузка внешних 5 аудиофайлов MP3
+                    this.loadAudioSamples();
+
                     // Запуск постоянных эмбиент-генераторов
                     this.startRainSynthLoop();
                     this.startNightCricketsSynth();
@@ -89,6 +98,104 @@
                 } catch (e) {
                     console.warn('SpatialSoundEngine init error', e);
                 }
+            }
+
+            /**
+             * Вспомогательный метод для создания подбуфера (среза) из AudioBuffer
+             */
+            createSubBuffer(srcBuffer, startSec, endSec) {
+                if (!this.audioCtx || !srcBuffer) return null;
+                const sampleRate = srcBuffer.sampleRate;
+                const totalDuration = srcBuffer.duration;
+                const startClamped = Math.max(0, Math.min(startSec, totalDuration));
+                const endClamped = Math.max(startClamped + 0.05, Math.min(endSec || totalDuration, totalDuration));
+                const length = Math.floor((endClamped - startClamped) * sampleRate);
+                if (length <= 0) return null;
+
+                const subBuffer = this.audioCtx.createBuffer(srcBuffer.numberOfChannels, length, sampleRate);
+                const startOffset = Math.floor(startClamped * sampleRate);
+
+                for (let ch = 0; ch < srcBuffer.numberOfChannels; ch++) {
+                    const srcData = srcBuffer.getChannelData(ch);
+                    const subData = subBuffer.getChannelData(ch);
+                    for (let i = 0; i < length; i++) {
+                        subData[i] = srcData[startOffset + i] || 0;
+                    }
+                }
+                return subBuffer;
+            }
+
+            /**
+             * Асинхронная загрузка и распаковка 5 MP3 файлов
+             */
+            async loadAudioSamples() {
+                if (!this.audioCtx) return;
+                const audioFiles = [
+                    {
+                        key: 'engine_start_drive',
+                        paths: ['audio/car_engine_start_drive.mp3', 'Завод машины + звук машины во время поездки.mp3']
+                    },
+                    {
+                        key: 'door_close',
+                        paths: ['audio/car_door_close.mp3', 'Звук закрытия дверей.mp3']
+                    },
+                    {
+                        key: 'brake_crash',
+                        paths: ['audio/car_brake_crash.mp3', 'Звук тормозов у машины + врезание в предмет.mp3']
+                    },
+                    {
+                        key: 'footstep_default',
+                        paths: ['audio/footstep_default.mp3', 'Звук ходьбы по умолчанию.mp3']
+                    },
+                    {
+                        key: 'footstep_grass',
+                        paths: ['audio/footstep_grass.mp3', 'Звук хождения по траве.mp3']
+                    }
+                ];
+
+                for (const item of audioFiles) {
+                    try {
+                        let arrayBuffer = null;
+                        for (const p of item.paths) {
+                            try {
+                                const res = await fetch(encodeURI(p));
+                                if (res.ok) {
+                                    arrayBuffer = await res.arrayBuffer();
+                                    break;
+                                }
+                            } catch (err) {}
+                        }
+
+                        if (!arrayBuffer) continue;
+                        const decodedBuffer = await this.audioCtx.decodeAudioData(arrayBuffer);
+                        const dur = decodedBuffer.duration;
+
+                        if (item.key === 'engine_start_drive') {
+                            // Файл 1: 10.58 сек -> содержит 2 звука:
+                            // Звук 1. Завод двигателя (стартер, раскрутка ~0-3.3 сек)
+                            // Звук 2. Звук машины во время поездки (бесшовный луп ~3.3-10.58 сек)
+                            const splitPoint = Math.min(3.3, dur * 0.35);
+                            this.samples.car_start = this.createSubBuffer(decodedBuffer, 0, splitPoint);
+                            this.samples.car_drive_loop = this.createSubBuffer(decodedBuffer, splitPoint, dur);
+                        } else if (item.key === 'brake_crash') {
+                            // Файл 2: 9.09 сек -> содержит 2 звука:
+                            // Звук 1. Торможение / визг шин (~0-4.4 сек)
+                            // Звук 2. Врезание / сокрушительный удар в препятствие (~4.4-9.09 сек)
+                            const splitPoint = Math.min(4.4, dur * 0.48);
+                            this.samples.car_skid_brake = this.createSubBuffer(decodedBuffer, 0, splitPoint);
+                            this.samples.car_crash = this.createSubBuffer(decodedBuffer, splitPoint, dur);
+                        } else if (item.key === 'door_close') {
+                            this.samples.car_door_close = decodedBuffer;
+                        } else if (item.key === 'footstep_default') {
+                            this.samples.footstep_default = decodedBuffer;
+                        } else if (item.key === 'footstep_grass') {
+                            this.samples.footstep_grass = decodedBuffer;
+                        }
+                    } catch (e) {
+                        console.warn(`Ошибка загрузки аудиосэмпла [${item.key}]:`, e);
+                    }
+                }
+                this.isSamplesLoaded = true;
             }
 
             createPinkNoiseBuffer() {
@@ -131,10 +238,156 @@
             }
 
             /**
-             * Звук шагов (синхронизирован с фазой анимации и типом покрытия)
+             * Воспроизведение произвольного AudioBuffer с пространственным 3D-позиционированием
              */
-            playFootstep(posX, posY, posZ, isIndoor = false, volumeScale = 1.0) {
+            playSample(buffer, posX, posY, posZ, options = {}) {
+                if (!this.audioCtx || !this.isInitialized || !buffer) return null;
+                const maxDist = options.maxDistance || 35.0;
+                const { volume, pan } = this.getSpatialVolumeAndPan(posX, posY, posZ, maxDist);
+                if (volume <= 0.005) return null;
+
+                try {
+                    const now = this.audioCtx.currentTime;
+                    const source = this.audioCtx.createBufferSource();
+                    source.buffer = buffer;
+
+                    const pitchVariation = options.pitchVariation || 0.0;
+                    const playbackRate = (options.playbackRate || 1.0) + (Math.random() * 2 - 1) * pitchVariation;
+                    source.playbackRate.setValueAtTime(Math.max(0.4, Math.min(2.5, playbackRate)), now);
+
+                    const gainNode = this.audioCtx.createGain();
+                    const baseVol = (options.volumeScale !== undefined ? options.volumeScale : 1.0);
+                    gainNode.gain.setValueAtTime(volume * baseVol, now);
+
+                    const targetBus = (options.bus === 'vehicle') ? this.vehicleGain : this.foleyGain;
+                    const pannerNode = this.audioCtx.createStereoPanner ? this.audioCtx.createStereoPanner() : null;
+
+                    if (pannerNode) {
+                        pannerNode.pan.setValueAtTime(pan, now);
+                        source.connect(gainNode);
+                        gainNode.connect(pannerNode);
+                        pannerNode.connect(targetBus);
+                    } else {
+                        source.connect(gainNode);
+                        gainNode.connect(targetBus);
+                    }
+
+                    const offset = options.offset || 0;
+                    const duration = options.duration;
+                    if (duration) {
+                        source.start(now, offset, duration);
+                    } else {
+                        source.start(now, offset);
+                    }
+                    return source;
+                } catch (e) {
+                    return null;
+                }
+            }
+
+            /**
+             * Звук закрытия дверей авто (Door Close / Slam)
+             */
+            playDoorClose(posX, posY, posZ, volumeScale = 1.0) {
                 if (!this.audioCtx || !this.isInitialized) return;
+                if (this.samples.car_door_close) {
+                    this.playSample(this.samples.car_door_close, posX, posY, posZ, {
+                        volumeScale: volumeScale * 0.95,
+                        pitchVariation: 0.05,
+                        maxDistance: 45.0,
+                        bus: 'vehicle'
+                    });
+                    return;
+                }
+
+                // Синтетический фолбэк для закрытия двери
+                const { volume, pan } = this.getSpatialVolumeAndPan(posX, posY, posZ, 35.0);
+                if (volume <= 0.005) return;
+                try {
+                    const now = this.audioCtx.currentTime;
+                    const osc = this.audioCtx.createOscillator();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(140, now);
+                    osc.frequency.exponentialRampToValueAtTime(35, now + 0.12);
+
+                    const gain = this.audioCtx.createGain();
+                    gain.gain.setValueAtTime(volume * volumeScale * 0.8, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+
+                    osc.connect(gain);
+                    gain.connect(this.vehicleGain);
+                    osc.start(now);
+                    osc.stop(now + 0.18);
+                } catch (e) {}
+            }
+
+            /**
+             * Звук аварии / удара в препятствие (Car Crash)
+             */
+            playCarCrash(posX, posY, posZ, impactVelocity = 10.0) {
+                if (!this.audioCtx || !this.isInitialized) return;
+                const volScale = Math.min(1.0, Math.max(0.35, impactVelocity / 18.0));
+
+                if (this.samples.car_crash) {
+                    this.playSample(this.samples.car_crash, posX, posY, posZ, {
+                        volumeScale: volScale * 1.1,
+                        pitchVariation: 0.08,
+                        maxDistance: 70.0,
+                        bus: 'vehicle'
+                    });
+                    return;
+                }
+
+                // Синтетический фолбэк для аварии
+                this.playPropCrash('metal', posX, posY, posZ);
+            }
+
+            /**
+             * Звук шагов (синхронизирован с фазой анимации и типом покрытия: асфальт / трава / интерьер)
+             */
+            playFootstep(posX, posY, posZ, isIndoor = false, volumeScale = 1.0, surfaceType = 'default') {
+                if (!this.audioCtx || !this.isInitialized) return;
+
+                // 1. Шаги по траве и грунту
+                if (surfaceType === 'grass' && this.samples.footstep_grass) {
+                    const dur = this.samples.footstep_grass.duration;
+                    const stepDuration = 0.38;
+                    const numSteps = Math.floor(dur / stepDuration) || 1;
+                    const offset = (this.footstepGrassIdx % numSteps) * stepDuration;
+                    this.footstepGrassIdx++;
+
+                    this.playSample(this.samples.footstep_grass, posX, posY, posZ, {
+                        offset: offset,
+                        duration: stepDuration,
+                        volumeScale: volumeScale * 0.88,
+                        pitchVariation: 0.08,
+                        maxDistance: 28.0,
+                        bus: 'foley'
+                    });
+                    return;
+                }
+
+                // 2. Шаги по асфальту/плитке по умолчанию
+                if (surfaceType !== 'grass' && this.samples.footstep_default) {
+                    const dur = this.samples.footstep_default.duration;
+                    const stepDuration = isIndoor ? 0.30 : 0.36;
+                    const numSteps = Math.floor(dur / stepDuration) || 1;
+                    const offset = (this.footstepDefaultIdx % numSteps) * stepDuration;
+                    this.footstepDefaultIdx++;
+
+                    this.playSample(this.samples.footstep_default, posX, posY, posZ, {
+                        offset: offset,
+                        duration: stepDuration,
+                        volumeScale: volumeScale * (isIndoor ? 0.75 : 0.90),
+                        pitchVariation: 0.06,
+                        playbackRate: isIndoor ? 1.12 : 1.0,
+                        maxDistance: 28.0,
+                        bus: 'foley'
+                    });
+                    return;
+                }
+
+                // 3. Синтетический фолбэк
                 const { volume, pan } = this.getSpatialVolumeAndPan(posX, posY, posZ, 28.0);
                 if (volume <= 0.005) return;
 
@@ -146,7 +399,6 @@
                     gainNode.gain.setValueAtTime(volume * volumeScale * (isIndoor ? 0.36 : 0.46), now);
 
                     if (isIndoor) {
-                        // Звук шага по плитке/мрамору интерьера (четкий звонкий щелчок)
                         const osc = this.audioCtx.createOscillator();
                         osc.type = 'triangle';
                         const baseFreq = 480 + Math.random() * 90;
@@ -165,7 +417,6 @@
                         osc.start(now);
                         osc.stop(now + 0.085);
                     } else {
-                        // Звук шага по асфальту (глухой низкий удар подошвы)
                         const osc = this.audioCtx.createOscillator();
                         osc.type = 'sine';
                         osc.frequency.setValueAtTime(160 + Math.random() * 40, now);
@@ -177,7 +428,6 @@
                         osc.start(now);
                         osc.stop(now + 0.1);
 
-                        // Высокочастотный шелест трения об асфальт
                         if (this.noiseBuffer) {
                             const noiseSource = this.audioCtx.createBufferSource();
                             noiseSource.buffer = this.noiseBuffer;
