@@ -546,3 +546,53 @@
         .car-icon { color: #06b6d4; }
         .tree-icon { color: #22c55e; }
         .rock-icon { color: #94a3b8; }
+
+        /* Мобильная адаптация главного меню и окон */
+        @media (max-width: 768px) {
+            .menu-container {
+                padding: 28px 20px;
+                border-radius: 20px;
+            }
+
+            .menu-logo-title {
+                font-size: 38px;
+                letter-spacing: 3px;
+            }
+
+            .menu-logo-sub {
+                font-size: 10px;
+                letter-spacing: 2px;
+                margin-bottom: 24px;
+            }
+
+            .menu-btn {
+                padding: 14px 18px;
+                font-size: 14px;
+            }
+
+            .modal-window {
+                width: 95%;
+                max-height: 90vh;
+                border-radius: 18px;
+            }
+
+            .modal-header {
+                padding: 16px 20px;
+            }
+
+            .modal-title {
+                font-size: 16px;
+            }
+
+            .modal-body {
+                padding: 16px 18px;
+            }
+
+            .keybinds-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .about-cards-grid {
+                grid-template-columns: 1fr;
+            }
+        }

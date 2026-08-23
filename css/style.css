@@ -360,6 +360,30 @@ body {
     align-items: center;
     justify-content: center;
     gap: 16px;
+    flex-wrap: wrap;
+}
+
+.device-toggle-btn {
+    background: rgba(0, 240, 255, 0.1);
+    border: 1px solid rgba(0, 240, 255, 0.35);
+    color: #00f0ff;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.15);
+}
+
+.device-toggle-btn:hover {
+    background: rgba(0, 240, 255, 0.25);
+    border-color: #00f0ff;
+    box-shadow: 0 0 16px rgba(0, 240, 255, 0.4);
+    transform: translateY(-1px);
 }
 
 .sound-toggle-btn {
@@ -381,19 +405,227 @@ body {
     color: #ffffff;
 }
 
+/* =========================================================================
+   Device Selection Modal Overlay
+   ========================================================================= */
+.device-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(5, 8, 16, 0.88);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.device-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.device-modal-window {
+    background: rgba(15, 21, 35, 0.95);
+    border: 1px solid rgba(0, 240, 255, 0.25);
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.15);
+    border-radius: 28px;
+    padding: 36px 32px;
+    max-width: 780px;
+    width: 100%;
+    text-align: center;
+    transform: scale(0.92) translateY(15px);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.device-modal-overlay.active .device-modal-window {
+    transform: scale(1) translateY(0);
+}
+
+.device-modal-badge {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent-cyan);
+    background: rgba(0, 240, 255, 0.12);
+    border: 1px solid rgba(0, 240, 255, 0.3);
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+}
+
+.device-modal-title {
+    font-size: 1.85rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin-bottom: 10px;
+}
+
+.device-modal-desc {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 28px;
+    max-width: 540px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.device-options-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.device-card-btn {
+    background: rgba(22, 30, 48, 0.85);
+    border: 1.5px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 26px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    color: inherit;
+    font-family: inherit;
+    position: relative;
+    overflow: hidden;
+}
+
+.device-card-btn:hover {
+    transform: translateY(-6px) scale(1.02);
+}
+
+.device-card-btn.pc-btn:hover {
+    border-color: rgba(0, 240, 255, 0.6);
+    box-shadow: 0 15px 35px rgba(0, 240, 255, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.1);
+}
+
+.device-card-btn.mobile-btn:hover {
+    border-color: rgba(255, 0, 85, 0.6);
+    box-shadow: 0 15px 35px rgba(255, 0, 85, 0.25), inset 0 0 20px rgba(255, 0, 85, 0.1);
+}
+
+.device-card-icon {
+    font-size: 3.2rem;
+    margin-bottom: 14px;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+}
+
+.device-card-name {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #ffffff;
+    margin-bottom: 4px;
+}
+
+.device-card-sub {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-cyan);
+    margin-bottom: 16px;
+}
+
+.mobile-btn .device-card-sub {
+    color: var(--accent-orange);
+}
+
+.device-card-features {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: #94a3b8;
+    margin-bottom: 22px;
+    text-align: left;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.device-card-action {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.pc-btn .device-card-action {
+    background: var(--btn-gradient-1);
+    box-shadow: 0 4px 15px rgba(0, 114, 255, 0.35);
+}
+
+.mobile-btn .device-card-action {
+    background: var(--btn-gradient-2);
+    box-shadow: 0 4px 15px rgba(255, 0, 85, 0.35);
+}
+
+/* =========================================================================
+   Mobile Optimized Mode Styles (.mode-mobile)
+   ========================================================================= */
+body.mode-mobile .header {
+    padding: 24px 15px 10px;
+}
+
+body.mode-mobile .main-title {
+    font-size: 2.2rem;
+}
+
+body.mode-mobile .game-card {
+    padding: 24px 20px;
+}
+
+body.mode-mobile .launch-button {
+    padding: 16px 20px;
+    font-size: 1.1rem;
+}
+
 /* Responsive */
 @media (max-width: 800px) {
     .games-grid {
         grid-template-columns: 1fr;
         max-width: 440px;
-        gap: 24px;
+        gap: 20px;
     }
 
     .main-title {
-        font-size: 2.2rem;
+        font-size: 2.1rem;
     }
 
     .header {
-        padding: 30px 15px 15px;
+        padding: 24px 15px 12px;
+    }
+
+    .device-options-grid {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+
+    .device-modal-window {
+        padding: 26px 20px;
+    }
+
+    .device-modal-title {
+        font-size: 1.45rem;
     }
 }
+

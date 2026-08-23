@@ -429,3 +429,438 @@
         .minimap-radar-wrapper:hover::after {
             opacity: 1;
         }
+
+        /* ==========================================================================
+           СЕНСОРНЫЕ ЭЛЕМЕНТЫ УПРАВЛЕНИЯ ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (MOBILE TOUCH HUD)
+           ========================================================================== */
+        .mobile-controls-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 50;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+
+        /* 1. Левая зона джойстика */
+        .touch-joystick-zone {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            width: 150px;
+            height: 150px;
+            pointer-events: auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            touch-action: none;
+        }
+
+        .touch-joystick-base {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(15, 23, 42, 0.65) 0%, rgba(10, 14, 23, 0.85) 100%);
+            border: 2px solid rgba(0, 240, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 240, 255, 0.2) inset;
+            backdrop-filter: blur(8px);
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .touch-joystick-stick {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #00f0ff 0%, #0072ff 100%);
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.8);
+            position: absolute;
+            transition: transform 0.04s ease-out;
+            pointer-events: none;
+        }
+
+        /* 2. Правая зона камеры (свайпы) */
+        .touch-camera-zone {
+            position: absolute;
+            top: 60px;
+            right: 0;
+            bottom: 160px;
+            left: 45vw;
+            pointer-events: auto;
+            touch-action: none;
+            z-index: 10;
+        }
+
+        /* 3. Верхняя панель быстрых кнопок */
+        .mobile-top-bar {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            pointer-events: auto;
+            z-index: 100;
+        }
+
+        .mobile-icon-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            backdrop-filter: blur(10px);
+            color: #ffffff;
+            font-size: 17px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+            transition: transform 0.15s ease, background 0.15s ease;
+            touch-action: manipulation;
+        }
+
+        .mobile-icon-btn:active {
+            transform: scale(0.92);
+            background: rgba(0, 240, 255, 0.25);
+        }
+
+        /* 4. Кнопки действий (Пешком и Авто) */
+        .mobile-action-group {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 14px;
+            pointer-events: auto;
+            z-index: 60;
+        }
+
+        .mobile-btn-cluster {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .mobile-action-btn {
+            width: 62px;
+            height: 62px;
+            border-radius: 50%;
+            background: rgba(15, 23, 42, 0.85);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            color: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            font-family: inherit;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+        }
+
+        .mobile-action-btn .btn-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .mobile-action-btn .btn-label {
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        .mobile-action-btn:active, .mobile-action-btn.pressed {
+            transform: scale(0.92);
+            border-color: #00f0ff;
+            box-shadow: 0 0 18px rgba(0, 240, 255, 0.6);
+        }
+
+        /* Кнопка посадки в авто */
+        .vehicle-enter-btn {
+            background: linear-gradient(135deg, rgba(0, 240, 255, 0.3) 0%, rgba(0, 114, 255, 0.4) 100%);
+            border-color: #00f0ff;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+            animation: pulseTouchBtn 1.2s infinite alternate;
+        }
+
+        @keyframes pulseTouchBtn {
+            0% { transform: scale(1.0); }
+            100% { transform: scale(1.08); }
+        }
+
+        .sprint-btn.active {
+            background: linear-gradient(135deg, #ff9e00 0%, #ff5500 100%);
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 158, 0, 0.7);
+        }
+
+        .jump-btn {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.25) 0%, rgba(39, 174, 96, 0.45) 100%);
+            border-color: #2ecc71;
+        }
+
+        /* 5. Педали газа и тормоза для авто */
+        .mobile-pedals-cluster {
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+        }
+
+        .mobile-pedal-btn {
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.6);
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            backdrop-filter: blur(10px);
+            touch-action: manipulation;
+        }
+
+        .mobile-pedal-btn .btn-icon {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        .mobile-pedal-btn .btn-label {
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .gas-pedal {
+            width: 72px;
+            height: 96px;
+            background: linear-gradient(180deg, rgba(46, 204, 113, 0.4) 0%, rgba(39, 174, 96, 0.8) 100%);
+            border: 2.5px solid #2ecc71;
+            box-shadow: 0 0 22px rgba(46, 204, 113, 0.45);
+        }
+
+        .gas-pedal:active, .gas-pedal.pressed {
+            transform: scale(0.94) translateY(4px);
+            box-shadow: 0 0 30px rgba(46, 204, 113, 0.8);
+            background: #2ecc71;
+        }
+
+        .brake-pedal {
+            width: 66px;
+            height: 82px;
+            background: linear-gradient(180deg, rgba(231, 76, 60, 0.4) 0%, rgba(192, 57, 43, 0.8) 100%);
+            border: 2.5px solid #e74c3c;
+            box-shadow: 0 0 22px rgba(231, 76, 60, 0.45);
+        }
+
+        .brake-pedal:active, .brake-pedal.pressed {
+            transform: scale(0.94) translateY(4px);
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.8);
+            background: #e74c3c;
+        }
+
+        .handbrake-btn {
+            width: 54px;
+            height: 54px;
+            background: rgba(243, 156, 18, 0.3);
+            border-color: #f39c12;
+        }
+
+        .vehicle-exit-btn {
+            background: rgba(231, 76, 60, 0.3);
+            border-color: #e74c3c;
+        }
+
+        /* 6. Мобильная панель этажей лифта */
+        .mobile-elevator-panel {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 16, 28, 0.95);
+            border: 2px solid #00e5ff;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 25px rgba(0, 229, 255, 0.4);
+            backdrop-filter: blur(14px);
+            padding: 16px 20px;
+            border-radius: 18px;
+            text-align: center;
+            z-index: 200;
+            pointer-events: auto;
+            max-width: 90vw;
+        }
+
+        .elevator-mobile-title {
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: #00e5ff;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .elevator-floors-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+
+        .floor-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1.5px solid rgba(0, 240, 255, 0.4);
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            touch-action: manipulation;
+        }
+
+        .floor-btn:active {
+            transform: scale(0.9);
+            background: #00e5ff;
+            color: #000000;
+        }
+
+        .heli-floor-btn {
+            background: rgba(255, 215, 0, 0.2);
+            border-color: #ffd700;
+            color: #ffd700;
+            font-size: 13px;
+        }
+
+        /* 7. Кнопка возврата HUD */
+        .mobile-hud-restore-btn {
+            position: fixed;
+            top: 15px;
+            left: 110px;
+            z-index: 1000;
+            background: rgba(15, 23, 42, 0.85);
+            border: 1.5px solid #00f0ff;
+            color: #00f0ff;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            pointer-events: auto;
+            touch-action: manipulation;
+        }
+
+        /* Адаптация под мобильные устройства и экраны узкой ширины */
+        @media (max-width: 768px) {
+            .debug-panel {
+                top: 60px;
+                left: 15px;
+                font-size: 10px;
+                padding: 6px 10px;
+                min-width: 190px;
+                max-width: 210px;
+            }
+
+            .debug-panel .title {
+                font-size: 9px;
+            }
+
+            .money-hud {
+                top: 60px;
+                right: 15px;
+                font-size: 22px;
+            }
+
+            .minimap-container {
+                bottom: 15px;
+                left: 15px;
+                gap: 4px;
+            }
+
+            .minimap-radar-wrapper {
+                width: 110px;
+                height: 110px;
+            }
+
+            .status-bars-container {
+                width: 110px;
+                padding: 5px 8px;
+                gap: 3px;
+            }
+
+            .status-bar-title {
+                font-size: 9px;
+            }
+
+            .status-bar-label {
+                font-size: 8px;
+                width: 18px;
+            }
+
+            .status-bar-track {
+                height: 5px;
+            }
+
+            .touch-joystick-zone {
+                bottom: 120px;
+                left: 15px;
+                width: 120px;
+                height: 120px;
+            }
+
+            .touch-joystick-base {
+                width: 100px;
+                height: 100px;
+            }
+
+            .touch-joystick-stick {
+                width: 40px;
+                height: 40px;
+            }
+
+            .mobile-action-group {
+                bottom: 20px;
+                right: 15px;
+                gap: 10px;
+            }
+
+            .mobile-action-btn {
+                width: 52px;
+                height: 52px;
+            }
+
+            .mobile-action-btn .btn-icon {
+                font-size: 17px;
+            }
+
+            .gas-pedal {
+                width: 58px;
+                height: 80px;
+            }
+
+            .brake-pedal {
+                width: 54px;
+                height: 70px;
+            }
+        }

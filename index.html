@@ -20,7 +20,7 @@
         <div class="title-container">
             <div class="subtitle">GAME HUB</div>
             <h1 class="main-title">ВЫБЕРИТЕ ИГРУ</h1>
-            <p class="hint-text">Нажмите на карточку или используйте клавиши [1] и [2]</p>
+            <p class="hint-text" id="platform-hint-text">Нажмите на карточку или используйте клавиши [1] и [2]</p>
         </div>
     </header>
 
@@ -94,9 +94,51 @@
 
     <!-- Подвал страницы -->
     <footer class="footer">
+        <button id="device-toggle" class="device-toggle-btn" title="Сменить режим управления">
+            <span id="device-toggle-icon">📱</span>
+            <span id="device-toggle-text">Режим: Телефон</span>
+        </button>
         <span>A10m1 Game Hub • 2026</span>
         <button id="sound-toggle" class="sound-toggle-btn">🔊 Звук: Вкл</button>
     </footer>
+
+    <!-- Модальное окно выбора платформы при запуске -->
+    <div id="device-modal" class="device-modal-overlay">
+        <div class="device-modal-window">
+            <div class="device-modal-header">
+                <div class="device-modal-badge">ВЫБОР ПЛАТФОРМЫ</div>
+                <h2 class="device-modal-title">С КАКОГО УСТРОЙСТВА ВЫ ИГРАЕТЕ?</h2>
+                <p class="device-modal-desc">Выберите удобный тип управления. Вы всегда сможете изменить выбор в меню.</p>
+            </div>
+            <div class="device-options-grid">
+                <!-- Опция 1: Компьютер / ПК -->
+                <button class="device-card-btn pc-btn" id="btn-select-pc">
+                    <div class="device-card-icon">🖥️</div>
+                    <div class="device-card-name">Компьютер / ПК</div>
+                    <div class="device-card-sub">Клавиатура + Мышь</div>
+                    <div class="device-card-features">
+                        <span>• Классический интерфейс</span>
+                        <span>• Клавиши WASD / Space / Tab / M</span>
+                        <span>• Полный обзор мышью</span>
+                    </div>
+                    <div class="device-card-action">Выбрать ПК ▶</div>
+                </button>
+
+                <!-- Опция 2: Телефон / Планшет -->
+                <button class="device-card-btn mobile-btn" id="btn-select-mobile">
+                    <div class="device-card-icon">📱</div>
+                    <div class="device-card-name">Телефон / Планшет</div>
+                    <div class="device-card-sub">Сенсорное управление (Touch)</div>
+                    <div class="device-card-features">
+                        <span>• Сенсорный джойстик и кнопки</span>
+                        <span>• Тап по инфо-панели вместо TAB</span>
+                        <span>• Адаптивный мобильный HUD</span>
+                    </div>
+                    <div class="device-card-action">Выбрать Телефон ▶</div>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script src="js/main.js"></script>
 </body>

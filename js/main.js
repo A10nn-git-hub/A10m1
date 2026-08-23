@@ -179,9 +179,107 @@ class ParticleCanvas {
     }
 }
 
+// Device Mode Manager
+class DeviceModeManager {
+    constructor() {
+        this.STORAGE_KEY = 'gamehub_device_mode';
+        this.modal = document.getElementById('device-modal');
+        this.btnPc = document.getElementById('btn-select-pc');
+        this.btnMobile = document.getElementById('btn-select-mobile');
+        this.btnToggle = document.getElementById('device-toggle');
+        this.toggleIcon = document.getElementById('device-toggle-icon');
+        this.toggleText = document.getElementById('device-toggle-text');
+        this.hintText = document.getElementById('platform-hint-text');
+
+        this.init();
+    }
+
+    init() {
+        const savedMode = localStorage.getItem(this.STORAGE_KEY);
+
+        if (!savedMode) {
+            // Auto detect preliminary, but show modal to let user confirm
+            this.showModal();
+        } else {
+            this.applyMode(savedMode, false);
+        }
+
+        if (this.btnPc) {
+            this.btnPc.addEventListener('click', () => {
+                sfx.click();
+                this.setMode('pc');
+                this.hideModal();
+            });
+        }
+
+        if (this.btnMobile) {
+            this.btnMobile.addEventListener('click', () => {
+                sfx.click();
+                this.setMode('mobile');
+                this.hideModal();
+            });
+        }
+
+        if (this.btnToggle) {
+            this.btnToggle.addEventListener('click', () => {
+                sfx.click();
+                const current = this.getMode();
+                const nextMode = current === 'mobile' ? 'pc' : 'mobile';
+                this.setMode(nextMode);
+            });
+        }
+    }
+
+    getMode() {
+        return localStorage.getItem(this.STORAGE_KEY) || 'pc';
+    }
+
+    setMode(mode) {
+        localStorage.setItem(this.STORAGE_KEY, mode);
+        this.applyMode(mode, true);
+    }
+
+    showModal() {
+        if (this.modal) {
+            this.modal.classList.add('active');
+        }
+    }
+
+    hideModal() {
+        if (this.modal) {
+            this.modal.classList.remove('active');
+        }
+    }
+
+    applyMode(mode, userAction = false) {
+        if (mode === 'mobile') {
+            document.body.classList.add('mode-mobile');
+            if (this.toggleIcon) this.toggleIcon.textContent = '📱';
+            if (this.toggleText) this.toggleText.textContent = 'Режим: Телефон';
+            if (this.hintText) this.hintText.textContent = 'Нажмите на игру для запуска';
+        } else {
+            document.body.classList.remove('mode-mobile');
+            if (this.toggleIcon) this.toggleIcon.textContent = '🖥️';
+            if (this.toggleText) this.toggleText.textContent = 'Режим: ПК';
+            if (this.hintText) this.hintText.textContent = 'Нажмите на карточку или используйте клавиши [1] и [2]';
+        }
+
+        // Update links to propagate device mode
+        const gtaLink = document.getElementById('btn-gta');
+        if (gtaLink) {
+            gtaLink.href = `gta/index.html?mode=${mode}`;
+        }
+        const shooterLink = document.getElementById('btn-shooter');
+        if (shooterLink) {
+            shooterLink.href = `shooter/index.html?mode=${mode}`;
+        }
+    }
+}
+
 // Card spotlight & interaction setup
 document.addEventListener('DOMContentLoaded', () => {
     new ParticleCanvas('bg-canvas');
+    const deviceManager = new DeviceModeManager();
 
     const cards = document.querySelectorAll('.game-card');
 
@@ -229,8 +327,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Keyboard navigation (1: GTA, 2: Shooter)
+    // Keyboard navigation (1: GTA, 2: Shooter) - only active in PC mode
     window.addEventListener('keydown', (e) => {
+        if (deviceManager.getMode() === 'mobile') return;
+
         if (e.key === '1') {
             const gtaBtn = document.getElementById('btn-gta');
             if (gtaBtn) gtaBtn.click();
@@ -240,3 +340,4 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
+

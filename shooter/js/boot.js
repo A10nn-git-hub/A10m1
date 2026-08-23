@@ -1,4 +1,13 @@
-const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+const urlParams = new URLSearchParams(window.location.search);
+const modeParam = urlParams.get('mode');
+const storedMode = localStorage.getItem('gamehub_device_mode');
+let isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+if (modeParam === 'mobile' || storedMode === 'mobile') isMobile = true;
+if (modeParam === 'pc' || storedMode === 'pc') {
+    if (!/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+        isMobile = false;
+    }
+}
 if (isMobile) {
     document.body.classList.add('is-mobile');
 }

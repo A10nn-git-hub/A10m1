@@ -1368,7 +1368,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.settings = mergedSettingsForGame('br_2d');
                 
                 // Show controls if mobile/touch
-                const isMobileOrTouch = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                const isMobileOrTouch = (localStorage.getItem('gamehub_device_mode') === 'mobile') || (new URLSearchParams(window.location.search).get('mode') === 'mobile') || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 const controls = document.getElementById('br-controls');
                 if (controls) {
                     controls.style.display = isMobileOrTouch ? 'flex' : 'none';
@@ -1579,7 +1579,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function bindBrControls() {
-                const isMobileOrTouch = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+                const isMobileOrTouch = (localStorage.getItem('gamehub_device_mode') === 'mobile') || (new URLSearchParams(window.location.search).get('mode') === 'mobile') || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
                 if (!isMobileOrTouch) {
                     document.getElementById('br-controls').style.display = 'none';
                     return;

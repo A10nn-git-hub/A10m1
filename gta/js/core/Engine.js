@@ -450,6 +450,7 @@
                 this.mainMenuManager = new MainMenuManager(this.inputController);
                 this.thirdPersonCamera = new ThirdPersonCameraController(this.camera, this.player.mesh, this.container);
                 this.playerController = new PlayerController(this.player, this.thirdPersonCamera, this.inputController, this.world);
+                this.mobileTouchController = new MobileTouchController(this);
 
                 this.inputController.onTimeAdvance = (hrs) => { if (this.dayNightCycle) this.dayNightCycle.advanceTime(hrs); };
                 this.inputController.onSeasonChange = () => { if (this.dayNightCycle) this.dayNightCycle.changeSeason(); };
@@ -612,6 +613,10 @@
 
                 if (this.vehicleManager) {
                     this.vehicleManager.update(delta, this.player, this.inputController ? this.inputController.keys : {});
+                }
+
+                if (this.mobileTouchController) {
+                    this.mobileTouchController.update(delta);
                 }
 
                 // STEP 35: Обновление AI-автомобилей автономного ambient-трафика (маршруты, дистанция, торможение, объезд пешеходов)
