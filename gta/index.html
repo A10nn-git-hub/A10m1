@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>3D Open World - GTA Web Engine</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Стили приложения -->
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/hud.css">
+    <link rel="stylesheet" href="css/menu.css">
+
+    <!-- Подключение Three.js, Cannon.js и Sky.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Sky.js"></script>
+
+    <!-- Post-Processing Shaders & Passes (FXAA, SSAO, UnrealBloom) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/FXAAShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/math/SimplexNoise.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/SSAOShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/SSAOPass.js"></script>
+</head>
+<body>
+    <div id="loader">
+        <div class="loader-content" id="loader-normal-content">
+            <div class="loader-logo">LOS SANTOS <span>3D</span></div>
+            <div class="spinner"></div>
+            
+            <div class="progress-wrapper">
+                <div class="progress-header">
+                    <span class="progress-status" id="loader-status-text">Инициализация движка...</span>
+                    <span class="progress-percentage" id="loader-percent-text">0%</span>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="loader-bar-fill"></div>
+                </div>
+            </div>
+
+            <div class="loader-tip">Совет: Клавиша TAB скрывает / показывает весь интерфейс HUD и панели!</div>
+        </div>
+
+        <div class="chrome-error-dialog" id="loader-error-box">
+            <div class="chrome-error-icon">:(</div>
+            <div class="chrome-error-title">ПРОИЗОШЛА ОШИБКА</div>
+            <div class="chrome-error-desc" id="loader-error-message">Произошла ошибка при сборке 3D-мира Лос-Сантоса или превышено время ожидания загрузки ресурсов (60 сек).</div>
+            <div class="chrome-error-code">Код ошибки: <span id="loader-error-code">ERR_TIMED_OUT</span></div>
+            <div class="chrome-btn-row">
+                <button class="chrome-btn secondary" id="btn-force-start">Игнорировать и войти</button>
+                <button class="chrome-btn primary" onclick="location.reload()">Перезагрузить страницу</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="webgl-canvas"></canvas>
+    </div>
+
+    <div id="ui-layer">
+        <!-- Back to Main Hub Button -->
+        <a href="../index.html" class="hub-back-btn" title="Вернуться в Главное Меню" style="position: fixed; top: 15px; left: 15px; z-index: 1000; display: flex; align-items: center; gap: 8px; background: rgba(15, 23, 42, 0.85); color: #fff; border: 1px solid rgba(0, 240, 255, 0.4); padding: 8px 14px; border-radius: 8px; font-family: 'Segoe UI', sans-serif; font-size: 13px; font-weight: 600; text-decoration: none; backdrop-filter: blur(8px); box-shadow: 0 4px 15px rgba(0, 240, 255, 0.15); transition: all 0.2s;">
+            <span>🏠</span>
+            <span>В меню</span>
+        </a>
+
+        <div id="crosshair"></div>
+        <div class="vehicle-prompt" id="vehicle-prompt"><kbd>F</kbd> <span id="prompt-action-text">Сесть за руль</span> (<span id="prompt-car-name">Comet S2</span>)</div>
+
+        <!-- STEP 28: Interactive Elevator Prompt UI -->
+        <div class="elevator-hud-prompt" id="elevator-hud-prompt">
+            <div class="elevator-title">ЛИФТ MAZE BANK TOWER</div>
+            <div class="elevator-sub">Нажмите <kbd>1</kbd>–<kbd>9</kbd> или <kbd>0</kbd> (10 этаж: Вертолетная площадка)</div>
+            <div class="elevator-status" id="elevator-status-text">Текущий: 1 этаж — Вестибюль</div>
+        </div>
+
+        <!-- Money Display in top right corner -->
+        <div class="money-hud" id="money-hud">
+            <span class="money-currency">$</span><span class="money-amount" id="hud-money-val">250,000</span>
+        </div>
+
+        <!-- Динамическая панель статуса (Только полезные данные реального времени) -->
+        <div class="debug-panel">
+            <div class="title">СИСТЕМА ЛОС-САНТОС 3D</div>
+            <div class="item"><span>FPS:</span> <span class="val" id="stat-fps">60</span></div>
+            <div class="item"><span>СЕКТОР:</span> <span class="val" id="stat-chunk-lod" style="color:#00e5ff;">СЕКТОР 08</span></div>
+            <div class="item"><span>ПОГОДА:</span> <span class="val" id="stat-weather" style="color:#ffd700;">Ясно [U]</span></div>
+            <div class="item"><span>РЕЖИМ:</span> <span class="val" id="stat-player-mode" style="color:#2ecc71;">Пешком</span></div>
+            <div class="item"><span>ФАРЫ (L):</span> <span class="val" id="stat-car-lights" style="color:#8fa3b7;">ВЫКЛ [L]</span></div>
+            <div class="item"><span>ВРЕМЯ:</span> <span class="val" id="stat-time-of-day" style="color:#ffd700;">14:00</span></div>
+        </div>
+
+        <!-- Circular Minimap and Health, Armor, Stamina Status Bars in bottom left corner -->
+        <div class="minimap-container">
+            <div class="minimap-radar-wrapper" id="minimap-radar-btn" title="Нажмите, чтобы открыть карту города (M)">
+                <canvas id="minimap-canvas" width="176" height="176"></canvas>
+            </div>
+
+            <div class="status-bars-container">
+                <div class="status-bar-header">
+                    <span class="status-bar-title" id="hud-mode-title">ПРОТАГОНИСТ</span>
+                    <span class="status-speed-gauge"><span id="hud-speed">0.0</span> <small>KM/H</small></span>
+                </div>
+                <div class="status-bar-row">
+                    <span class="status-bar-label" style="color:#2ecc71;">HP</span>
+                    <div class="status-bar-track"><div class="bar-fill-health" id="bar-fill-health"></div></div>
+                </div>
+                <div class="status-bar-row">
+                    <span class="status-bar-label" style="color:#00bcd4;">ARM</span>
+                    <div class="status-bar-track"><div class="bar-fill-armor" id="bar-fill-armor"></div></div>
+                </div>
+                <div class="status-bar-row">
+                    <span class="status-bar-label" style="color:#ffd700;">STM</span>
+                    <div class="status-bar-track"><div class="bar-fill-stamina" id="bar-fill-stamina"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 38: GTA-Style Neighborhood District HUD Notification -->
+        <div class="district-hud-banner" id="district-hud-banner">
+            <div class="district-hud-sub" id="district-hud-sub">ОКРУГ ЛОС-САНТОС</div>
+            <div class="district-hud-name" id="district-hud-name">ДЕЛОВОЙ СИТИ</div>
+            <div class="district-hud-line"></div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         ГЛАВНЫЙ ЭКРАН / МЕНЮ ПАУЗЫ (С анимированными переливами Aurora)
+         ========================================================================= -->
+    <div id="main-menu-overlay">
+        <canvas id="menu-aurora-canvas"></canvas>
+        <div class="menu-overlay-vignette"></div>
+
+        <div class="menu-container">
+            <div class="menu-badge-live" id="menu-badge"><span class="badge-dot"></span> OPEN WORLD SIMULATION</div>
+            <div class="menu-logo-title" id="menu-title">LOS SANTOS <span>3D</span></div>
+            <div class="menu-logo-sub" id="menu-sub">HTML5 NEXT-GEN WEBGL ENGINE</div>
+
+            <div class="menu-buttons-list">
+                <button class="menu-btn primary" id="btn-menu-play">
+                    <span class="btn-icon">▶</span>
+                    <span class="btn-text" id="btn-play-text">НАЧАТЬ ИГРУ</span>
+                </button>
+                <button class="menu-btn" id="btn-menu-settings">
+                    <span class="btn-icon">⚙</span>
+                    <span class="btn-text">НАСТРОЙКИ</span>
+                </button>
+                <button class="menu-btn" id="btn-menu-about">
+                    <span class="btn-icon">ℹ</span>
+                    <span class="btn-text">ОБ ИГРЕ</span>
+                </button>
+                <button class="menu-btn danger" id="btn-menu-exit" style="display:none;">
+                    <span class="btn-icon">🚪</span>
+                    <span class="btn-text">ВЫХОД В ГЛАВНОЕ МЕНЮ</span>
+                </button>
+            </div>
+
+            <div class="menu-footer-hint" id="menu-footer-hint">
+                В ИГРЕ НАЖМИТЕ <kbd>ESC</kbd> ДЛЯ ПАУЗЫ | <kbd>M</kbd> — КАРТА ГОРОДА
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ УПРАВЛЕНИЯ С РАЗДЕЛЕНИЕМ ПО КАТЕГОРИЯМ
+         ========================================================================= -->
+    <div id="settings-modal" class="game-modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-title">НАСТРОЙКИ УПРАВЛЕНИЯ</div>
+                    <div class="modal-subtitle">КЛИКНИТЕ ПО КНОПКЕ ДЛЯ ПЕРЕНАЗНАЧЕНИЯ (КЛАВИШИ МОГУТ СОВПАДАТЬ МЕЖДУ РАЗДЕЛАМИ, НО НЕ ВНУТРИ ОДНОГО)</div>
+                </div>
+                <button class="modal-close-btn" id="btn-close-settings">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Категория 1: Пешком -->
+                <div class="keybind-category-title">🏃 Управление персонажем (Пешком)</div>
+                <div class="keybinds-grid">
+                    <div class="keybind-row"><span class="keybind-label">Вперед:</span><button class="keybind-btn" data-action="foot_forward" data-category="foot">W</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Назад:</span><button class="keybind-btn" data-action="foot_backward" data-category="foot">S</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Влево:</span><button class="keybind-btn" data-action="foot_left" data-category="foot">A</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Вправо:</span><button class="keybind-btn" data-action="foot_right" data-category="foot">D</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Спринт / Бег:</span><button class="keybind-btn" data-action="foot_sprint" data-category="foot">Shift</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Прыжок:</span><button class="keybind-btn" data-action="foot_jump" data-category="foot">Space</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Сесть в транспорт:</span><button class="keybind-btn" data-action="foot_vehicle" data-category="foot">F</button></div>
+                </div>
+
+                <!-- Категория 2: В авто -->
+                <div class="keybind-category-title">🚗 Управление транспортом (В автомобиле)</div>
+                <div class="keybinds-grid">
+                    <div class="keybind-row"><span class="keybind-label">Газ (Вперед):</span><button class="keybind-btn" data-action="car_forward" data-category="car">W</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Тормоз / Реверс:</span><button class="keybind-btn" data-action="car_backward" data-category="car">S</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Поворот влево:</span><button class="keybind-btn" data-action="car_left" data-category="car">A</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Поворот вправо:</span><button class="keybind-btn" data-action="car_right" data-category="car">D</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Ручной тормоз:</span><button class="keybind-btn" data-action="car_handbrake" data-category="car">Space</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Выйти из авто:</span><button class="keybind-btn" data-action="car_vehicle" data-category="car">F</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Фары авто:</span><button class="keybind-btn" data-action="car_lights" data-category="car">L</button></div>
+                </div>
+
+                <!-- Категория 3: Системные -->
+                <div class="keybind-category-title">⚙ Системные клавиши</div>
+                <div class="keybinds-grid">
+                    <div class="keybind-row"><span class="keybind-label">Карта города:</span><button class="keybind-btn" data-action="sys_map" data-category="sys">M</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Смена погоды:</span><button class="keybind-btn" data-action="sys_weather" data-category="sys">U</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Прокрутка времени (+2ч):</span><button class="keybind-btn" data-action="sys_time" data-category="sys">T</button></div>
+                    <div class="keybind-row"><span class="keybind-label">Скрыть / Показать HUD:</span><button class="keybind-btn" data-action="sys_hud" data-category="sys">Tab</button></div>
+                </div>
+
+                <!-- Предупреждение о конфликте клавиш в одном разделе -->
+                <div class="keybind-error-banner" id="keybind-error-banner">
+                    ⚠️ Ошибка: В одном разделе нельзя назначить одну и ту же клавишу на разные действия!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="menu-btn" style="padding:10px 18px; font-size:13px;" id="btn-reset-keybinds">СБРОСИТЬ ПО УМОЛЧАНИЮ</button>
+                <button class="menu-btn primary" style="padding:10px 22px; font-size:13px;" id="btn-save-settings">ГОТОВО</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         МОДАЛЬНОЕ ОКНО: ОБ ИГРЕ (ВОЗМОЖНОСТИ И ГЕЙМПЛЕЙ)
+         ========================================================================= -->
+    <div id="about-modal" class="game-modal">
+        <div class="modal-window">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-title">ОБ ИГРЕ ЛОС-САНТОС 3D</div>
+                    <div class="modal-subtitle">ОТКРЫТЫЙ МИР, СВОБОДА ДЕЙСТВИЙ И ВОЗМОЖНОСТИ</div>
+                </div>
+                <button class="modal-close-btn" id="btn-close-about">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="about-cards-grid">
+                    <div class="about-card">
+                        <div class="about-card-title">🏙 ОГРОМНЫЙ МЕГАПОЛИС</div>
+                        <div class="about-card-desc">Исследуйте 20 разнообразных районов города: от сияющих небоскребов делового сити и уютных пригородов до морского порта и зеленых холмов.</div>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-title">🚗 АВТОПАРК И ГОНКИ</div>
+                        <div class="about-card-desc">Садитесь за руль быстрых спорткаров, разгоняйтесь на широких шоссе, лавируйте в оживленном городском потоке или наслаждайтесь круизом по улицам.</div>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-title">🚶 ЖИВОЙ ГОРОД И ЖИТЕЛИ</div>
+                        <div class="about-card-desc">Улицы наполнены пешеходами: они прогуливаются по тротуарам, переходят дороги, реагируют на ваши действия и уступают путь мчащимся машинам.</div>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-title">🏢 БАШНЯ MAZE BANK</div>
+                        <div class="about-card-desc">Поднимитесь на скоростном лифте на крышу знаменитого небоскреба, чтобы увидеть захватывающий панорамный вид на весь Лос-Сантос с высоты птичьего полета.</div>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-title">⚽ ИНТЕРАКТИВНОСТЬ И ФУТБОЛ</div>
+                        <div class="about-card-desc">Полная свобода взаимодействия: чеканьте и пинайте футбольный мяч, сбивайте пожарные гидранты с фонтанами воды, сносите заборы и фонари.</div>
+                    </div>
+                    <div class="about-card">
+                        <div class="about-card-title">🌤 СМЕНА ВРЕМЕНИ И ПОГОДЫ</div>
+                        <div class="about-card-desc">Наблюдайте за движением солнца и луны, любуйтесь ночными неоновыми огнями или ощутите атмосферу внезапного дождя с мокрыми дорогами и туманом.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="menu-btn primary" style="padding:10px 22px; font-size:13px;" id="btn-close-about-footer">ЗАКРЫТЬ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         МОДАЛЬНОЕ ОКНО: ПОЛНАЯ ИНТЕРАКТИВНАЯ КАРТА ГОРОДА
+         ========================================================================= -->
+    <div id="full-map-modal" class="game-modal">
+        <div class="modal-window map-window">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-title">КАРТА ГОРОДА ЛОС-САНТОС</div>
+                    <div class="modal-subtitle">СХЕМА РАЙОНОВ, ЗДАНИЙ, ДЕРЕВЬЕВ И ТРАНСПОРТА (НАЖМИТЕ M ИЛИ ESC)</div>
+                </div>
+                <button class="modal-close-btn" id="btn-close-map">✕</button>
+            </div>
+            <div class="map-body">
+                <canvas id="full-map-canvas" width="800" height="520"></canvas>
+                <div class="map-legend">
+                    <div class="legend-item"><span class="legend-icon player-icon">▲</span> ВЫ ЗДЕСЬ</div>
+                    <div class="legend-item"><span class="legend-icon bank-icon">$</span> МЕЙЗ-БАНК</div>
+                    <div class="legend-item"><span class="legend-icon hosp-icon">✚</span> ГОСПИТАЛЬ</div>
+                    <div class="legend-item"><span class="legend-icon police-icon">★</span> ПОЛИЦИЯ LSPD</div>
+                    <div class="legend-item"><span class="legend-icon car-icon">■</span> МАШИНЫ</div>
+                    <div class="legend-item"><span class="legend-icon tree-icon">●</span> ДЕРЕВЬЯ</div>
+                    <div class="legend-item"><span class="legend-icon rock-icon">◆</span> ВАЛУНЫ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модули движка и игры -->
+    <!-- Шейдеры и процедурные текстуры -->
+    <script src="js/environment/SkyShader.js"></script>
+    <script src="js/textures/ProceduralTextureFactory.js"></script>
+
+    <!-- Мир и процедурный ландшафт -->
+    <script src="js/world/ProceduralNoiseGenerator.js"></script>
+    <script src="js/world/ProceduralTerrainManager.js"></script>
+    <script src="js/world/InfiniteOceanManager.js"></script>
+    <script src="js/world/DistantMountainManager.js"></script>
+    <script src="js/world/VegetationAndCropsManager.js"></script>
+    <script src="js/world/DistrictGenerator.js"></script>
+    <script src="js/world/NeighborhoodDistrictManager.js"></script>
+    <script src="js/world/WorldChunkManager.js"></script>
+
+    <!-- Окружение и погода -->
+    <script src="js/environment/CalendarAndSeasonSystem.js"></script>
+    <script src="js/environment/DynamicCloudSystem.js"></script>
+    <script src="js/environment/DayNightCycleManager.js"></script>
+    <script src="js/environment/DynamicWeatherManager.js"></script>
+
+    <!-- Город и интерактивные строения -->
+    <script src="js/city/CityRoadNetwork.js"></script>
+    <script src="js/city/OrganizationBuildingBuilder.js"></script>
+    <script src="js/city/SuburbanHouseBuilder.js"></script>
+    <script src="js/city/HydrantWaterGeyserSystem.js"></script>
+    <script src="js/city/StreetLampManager.js"></script>
+    <script src="js/city/SkyscraperElevatorSystem.js"></script>
+
+    <!-- Звуковой движок -->
+    <script src="js/audio/ElevatorAudioSynth.js"></script>
+    <script src="js/audio/VehicleSoundController.js"></script>
+    <script src="js/audio/SpatialSoundEngine.js"></script>
+
+    <!-- Транспорт, трафик и физические объекты -->
+    <script src="js/vehicles/PhysicalSoccerBall.js"></script>
+    <script src="js/vehicles/CarExhaustSmokeSystem.js"></script>
+    <script src="js/vehicles/DetailedCarModel.js"></script>
+    <script src="js/vehicles/TrafficWaypointNetwork.js"></script>
+    <script src="js/vehicles/AITrafficVehicle.js"></script>
+    <script src="js/vehicles/AmbientTrafficManager.js"></script>
+    <script src="js/vehicles/VehicleManager.js"></script>
+
+    <!-- NPC и пешеходы -->
+    <script src="js/npc/HumanoidNPC.js"></script>
+    <script src="js/npc/PedestrianNPCManager.js"></script>
+
+    <!-- Персонаж и камера -->
+    <script src="js/player/PlayerAnimationSystem.js"></script>
+    <script src="js/player/PlayerController.js"></script>
+    <script src="js/player/ThirdPersonCameraController.js"></script>
+
+    <!-- Управление, интерфейс и меню -->
+    <script src="js/core/InputController.js"></script>
+    <script src="js/ui/MinimapRenderer.js"></script>
+    <script src="js/ui/FullMapRenderer.js"></script>
+    <script src="js/ui/MenuAuroraRenderer.js"></script>
+    <script src="js/ui/MainMenuManager.js"></script>
+    <script src="js/core/LoadingProgressTracker.js"></script>
+
+    <!-- Главный движок и запуск -->
+    <script src="js/core/Engine.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

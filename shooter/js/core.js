@@ -1,4 +1,15 @@
-const tg = window.Telegram.WebApp; try { tg.expand(); if (tg.requestFullscreen) tg.requestFullscreen(); } catch (e) { } tg.ready();
+const tg = window.Telegram.WebApp; 
+try { 
+    tg.expand(); 
+    if (tg.requestFullscreen) tg.requestFullscreen(); 
+    if (tg.BackButton) {
+        tg.BackButton.show();
+        tg.BackButton.onClick(() => {
+            window.location.href = '../index.html';
+        });
+    }
+} catch (e) { } 
+tg.ready();
 var currentMode = 'tdm_5v5';
 const APP_VERSION_INFO = {
     label: 'Блок 2: Процедурная генерация стен, коллизии и выбор режимов Выживания',
@@ -1941,8 +1952,10 @@ function initApp() {
                 db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c > 0 ? 'inline-block' : 'none'; b.innerText = c; renderFrReqs(s.val()); });
                 db.ref(`users/${myId}/invite`).on('value', s => { if (s.exists()) { pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(() => { n.style.top = '-100px'; }, 3000); renderMessagesTab(); } });
                 ensureHomeLobby();
+                if (typeof hideSplashScreen === 'function') hideSplashScreen();
             }).catch(() => {
                 showNegativeAlert(getFirebaseFriendlyMessage("Не удалось загрузить профиль из Firebase."));
+                if (typeof hideSplashScreen === 'function') hideSplashScreen();
             });
         });
 

@@ -1,0 +1,548 @@
+/* ==========================================================================
+           ГЛАВНЫЙ ЭКРАН И МЕНЮ (Красивый экран с анимированными переливами Aurora)
+           ========================================================================== */
+        #main-menu-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 200;
+            background: #030712;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.45s;
+            pointer-events: auto;
+            overflow: hidden;
+        }
+
+        #main-menu-overlay.menu-hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none !important;
+            display: none !important;
+        }
+
+        #menu-aurora-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .menu-overlay-vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 2;
+            pointer-events: none;
+            background: radial-gradient(circle at center, rgba(3, 7, 18, 0.1) 0%, rgba(3, 7, 18, 0.7) 75%, rgba(3, 7, 18, 0.95) 100%);
+        }
+
+        .menu-container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 520px;
+            width: 90%;
+            text-align: center;
+            padding: 42px 38px;
+            background: rgba(10, 18, 36, 0.72);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1.5px solid rgba(0, 229, 255, 0.3);
+            border-radius: 26px;
+            box-shadow: 0 30px 70px rgba(0, 0, 0, 0.85), 0 0 60px rgba(0, 229, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+            animation: containerAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes containerAppear {
+            0% { transform: translateY(30px) scale(0.95); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .menu-badge-live {
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 5px 16px;
+            background: rgba(0, 229, 255, 0.14);
+            border: 1px solid rgba(0, 229, 255, 0.45);
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 2.5px;
+            color: #00e5ff;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+        }
+
+        .badge-dot {
+            width: 8px;
+            height: 8px;
+            background: #00e5ff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #00e5ff;
+            animation: dotPulse 1.5s infinite alternate;
+        }
+
+        @keyframes dotPulse {
+            0% { transform: scale(0.8); opacity: 0.6; }
+            100% { transform: scale(1.4); opacity: 1; }
+        }
+
+        .menu-logo-title {
+            font-family: 'Impact', 'Arial Black', sans-serif;
+            font-size: 64px;
+            font-weight: 900;
+            letter-spacing: 6px;
+            color: #ffffff;
+            text-transform: uppercase;
+            text-shadow: 0 0 35px rgba(0, 229, 255, 0.6), 0 0 15px rgba(0, 229, 255, 0.9), 3px 3px 0px #000;
+            margin-bottom: 2px;
+            line-height: 1.1;
+        }
+
+        .menu-logo-title span {
+            background: linear-gradient(135deg, #00e5ff 0%, #38bdf8 40%, #c084fc 80%, #f43f5e 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: logoGradient 6s linear infinite;
+            filter: drop-shadow(0 0 25px rgba(0, 229, 255, 0.7));
+        }
+
+        @keyframes logoGradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .menu-logo-sub {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 5px;
+            color: #94a3b8;
+            text-transform: uppercase;
+            margin-bottom: 34px;
+        }
+
+        .menu-buttons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+        }
+
+        .menu-btn {
+            position: relative;
+            background: rgba(20, 30, 50, 0.75);
+            border: 1.5px solid rgba(255, 255, 255, 0.16);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 16px 26px;
+            border-radius: 14px;
+            cursor: pointer;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            overflow: hidden;
+        }
+
+        .menu-btn .btn-icon {
+            font-size: 16px;
+            color: #00e5ff;
+            transition: transform 0.25s;
+        }
+
+        .menu-btn:hover {
+            background: rgba(14, 165, 233, 0.25);
+            border-color: #00e5ff;
+            color: #ffffff;
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 16px 40px rgba(0, 229, 255, 0.4), inset 0 0 18px rgba(0, 229, 255, 0.2);
+        }
+
+        .menu-btn:hover .btn-icon {
+            transform: scale(1.25);
+        }
+
+        .menu-btn:active {
+            transform: translateY(1px) scale(0.99);
+        }
+
+        .menu-btn.primary {
+            background: linear-gradient(135deg, #0284c7 0%, #0369a1 40%, #0d9488 100%);
+            border-color: #38bdf8;
+            color: #ffffff;
+            box-shadow: 0 12px 35px rgba(2, 132, 199, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
+
+        .menu-btn.primary .btn-icon {
+            color: #ffffff;
+        }
+
+        .menu-btn.primary:hover {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 40%, #14b8a6 100%);
+            border-color: #7dd3fc;
+            box-shadow: 0 16px 50px rgba(14, 165, 233, 0.8), 0 0 30px rgba(0, 229, 255, 0.6);
+            color: #ffffff;
+        }
+
+        .menu-btn.danger {
+            background: linear-gradient(135deg, rgba(185, 28, 28, 0.75) 0%, rgba(153, 27, 27, 0.85) 100%);
+            border-color: rgba(248, 113, 113, 0.5);
+            color: #ffffff;
+        }
+
+        .menu-btn.danger:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            border-color: #f87171;
+            box-shadow: 0 16px 45px rgba(220, 38, 38, 0.6), 0 0 25px rgba(248, 113, 113, 0.4);
+        }
+
+        .menu-footer-hint {
+            margin-top: 28px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .menu-footer-hint kbd {
+            background: rgba(255, 255, 255, 0.12);
+            padding: 2px 7px;
+            border-radius: 4px;
+            color: #00e5ff;
+            border: 1px solid rgba(0, 229, 255, 0.25);
+        }
+
+        /* Общие стили модальных окон с Aurora Backdrop */
+        .game-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 210;
+            background: rgba(3, 7, 18, 0.40);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .game-modal.active {
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+        }
+
+        .modal-window {
+            background: rgba(10, 18, 36, 0.72);
+            border: 1.5px solid rgba(0, 229, 255, 0.35);
+            border-radius: 22px;
+            width: 90%;
+            max-width: 780px;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9), 0 0 60px rgba(0, 229, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+            transform: scale(0.96) translateY(20px);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .game-modal.active .modal-window {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 22px 28px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 25, 48, 0.6);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+
+        .modal-subtitle {
+            font-size: 11px;
+            color: #94a3b8;
+            letter-spacing: 1px;
+            margin-top: 3px;
+        }
+
+        .modal-close-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: #ffffff;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(239, 68, 68, 0.35);
+            border-color: #ef4444;
+            color: #ffffff;
+            transform: rotate(90deg) scale(1.1);
+        }
+
+        .modal-body {
+            padding: 24px 28px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 14px;
+            padding: 18px 28px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            background: rgba(15, 25, 48, 0.6);
+        }
+
+        /* Секции категорий горячих клавиш */
+        .keybind-category-title {
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #00e5ff;
+            text-transform: uppercase;
+            margin: 18px 0 10px 0;
+            padding-bottom: 6px;
+            border-bottom: 1px solid rgba(0, 229, 255, 0.25);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .keybind-category-title:first-child {
+            margin-top: 0;
+        }
+
+        .keybinds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 10px 18px;
+            margin-bottom: 12px;
+        }
+
+        .keybind-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 25, 45, 0.65);
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1.5px solid rgba(255, 255, 255, 0.10);
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s, border-color 0.28s, background 0.28s;
+            cursor: default;
+        }
+
+        .keybind-row:hover {
+            background: rgba(20, 35, 65, 0.88);
+            border-color: #00e5ff;
+            transform: translateY(-3px) scale(1.018);
+            box-shadow: 0 10px 26px rgba(0, 229, 255, 0.28), inset 0 0 14px rgba(0, 229, 255, 0.12);
+        }
+
+        .keybind-label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #cbd5e1;
+        }
+
+        .keybind-btn {
+            background: #0284c7;
+            color: #ffffff;
+            border: 1px solid #38bdf8;
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 800;
+            padding: 6px 14px;
+            min-width: 68px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(2, 132, 199, 0.4);
+            transition: all 0.2s;
+            text-align: center;
+        }
+
+        .keybind-btn:hover {
+            background: #0ea5e9;
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(14, 165, 233, 0.6);
+        }
+
+        .keybind-btn.waiting {
+            background: #f59e0b !important;
+            border-color: #fbbf24 !important;
+            color: #000000 !important;
+            animation: pulseWaiting 0.8s infinite alternate;
+        }
+
+        .keybind-btn.keybind-conflict {
+            background: #dc2626 !important;
+            border-color: #f87171 !important;
+            color: #ffffff !important;
+            box-shadow: 0 0 18px rgba(220, 38, 38, 0.8) !important;
+            animation: shakeConflict 0.4s ease-in-out;
+        }
+
+        @keyframes shakeConflict {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        @keyframes pulseWaiting {
+            0% { transform: scale(1); box-shadow: 0 0 8px #f59e0b; }
+            100% { transform: scale(1.08); box-shadow: 0 0 20px #fbbf24; }
+        }
+
+        .keybind-error-banner {
+            display: none;
+            background: rgba(220, 38, 38, 0.2);
+            border: 1px solid #ef4444;
+            color: #fca5a5;
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 700;
+            margin-top: 14px;
+            text-align: center;
+            animation: shakeConflict 0.4s ease-in-out;
+        }
+
+        .keybind-error-banner.visible {
+            display: block;
+        }
+
+        /* Стильные интерактивные карточки "Об игре" с красивым зумом */
+        .about-cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        .about-card {
+            background: rgba(15, 25, 45, 0.75);
+            border: 1.5px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 22px;
+            text-align: left;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s, border-color 0.35s, background 0.35s;
+            cursor: default;
+        }
+
+        .about-card:hover {
+            transform: translateY(-8px) scale(1.045);
+            border-color: #00e5ff;
+            background: rgba(20, 35, 65, 0.88);
+            box-shadow: 0 20px 45px rgba(0, 229, 255, 0.35), inset 0 0 20px rgba(0, 229, 255, 0.12);
+        }
+
+        .about-card-title {
+            font-size: 15px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: #00e5ff;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .about-card-desc {
+            font-size: 12px;
+            line-height: 1.6;
+            color: #94a3b8;
+        }
+
+        /* Стили модального окна интерактивной карты */
+        .map-window {
+            max-width: 860px;
+        }
+
+        #full-map-canvas {
+            width: 100%;
+            height: auto;
+            max-height: 520px;
+            background: #081326;
+            border-radius: 12px;
+            border: 1.5px solid #1e3a5f;
+            display: block;
+        }
+
+        .map-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px 22px;
+            margin-top: 14px;
+            justify-content: center;
+            background: rgba(15, 25, 45, 0.6);
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #cbd5e1;
+        }
+
+        .legend-icon {
+            font-size: 12px;
+        }
+
+        .player-icon { color: #ffd700; }
+        .bank-icon { color: #0284c7; }
+        .hosp-icon { color: #dc2626; }
+        .police-icon { color: #1e40af; }
+        .car-icon { color: #06b6d4; }
+        .tree-icon { color: #22c55e; }
+        .rock-icon { color: #94a3b8; }

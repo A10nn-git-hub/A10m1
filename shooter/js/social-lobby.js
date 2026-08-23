@@ -462,46 +462,74 @@
                 const stage = document.getElementById('lobby-agents-stage');
                 if (!stage) return;
                 stage.innerHTML = '';
-                lobbyPlayers.forEach((p, i) => {
-                    const agent = document.createElement('div');
-                    agent.className = `lobby-agent lobby-agent-slot-${getLobbyAgentSlot(p.id)}`;
+
+                const container = document.createElement('div');
+                container.className = 'so2-lobby-cards-container';
+
+                const maxPlayers = getMaxPlayersForMode(typeof currentMode !== 'undefined' ? currentMode : 'tdm_5v5');
+
+                const playersList = Array.isArray(lobbyPlayers) && lobbyPlayers.length > 0
+                    ? lobbyPlayers 
+                    : [{ id: myId, name: myName, avatar: myAvatar, eqName: myEqName }];
+
+                playersList.forEach((p, i) => {
+                    const card = document.createElement('div');
+                    const isPlayerHost = (i === 0);
+                    const isMe = (p.id === myId);
+                    card.className = `so2-lobby-card ${isPlayerHost ? 'is-host' : ''} ${isMe ? 'is-me' : ''}`;
                     if (p.isPending) {
-                        agent.style.opacity = '0.33';
+                        card.classList.add('is-pending');
                     }
-                    if (isHost && p.id !== myId) {
-                        agent.title = p.isPending ? 'Отменить приглашение' : 'Кикнуть из лобби';
-                        agent.onclick = () => {
-                            if (p.isPending) {
-                                db.ref(`lobbies/${lobbyId}/invites/${p.id}`).remove();
-                                db.ref(`users/${p.id}/invite`).remove().catch(() => {});
-                            } else {
-                                kickPlayer(p.id);
-                            }
-                        };
+
+                    let kickBtnHTML = '';
+                    if (isHost && !isMe) {
+                        kickBtnHTML = `<button class="so2-card-kick-btn" title="${p.isPending ? 'Отменить приглашение' : 'Кикнуть'}" onclick="event.stopPropagation(); ${p.isPending ? `db.ref('lobbies/${lobbyId}/invites/${p.id}').remove(); db.ref('users/${p.id}/invite').remove().catch(()=>{});` : `kickPlayer('${p.id}')`}">✕</button>`;
                     }
-                    agent.innerHTML = `
-                        <div class="agent-head">${getAvatarHTML(p.avatar)}</div>
-                        <div class="agent-body"><div class="agent-arm left"></div><div class="agent-chest"></div><div class="agent-arm right"></div></div>
-                        <div class="agent-legs"><div></div><div></div></div>
-                        <div class="agent-label">${getNameHTML(p.name, p.eqName)}</div>`;
-                    stage.appendChild(agent);
+
+                    let crownHTML = isPlayerHost ? `<div class="so2-card-crown" title="Лидер лобби">👑</div>` : '';
+                    const statusClass = isPlayerHost ? 'host-status' : (isMe ? 'me-status' : '');
+                    const statusText = p.isPending ? 'ОЖИДАНИЕ...' : (isPlayerHost ? 'ЛИДЕР' : 'В ЛОББИ');
+
+                    card.innerHTML = `
+                        ${kickBtnHTML}
+                        <div class="so2-card-avatar-box">
+                            ${crownHTML}
+                            <div class="so2-card-avatar-inner">${getAvatarHTML(p.avatar)}</div>
+                        </div>
+                        <div class="so2-card-info">
+                            <div class="so2-card-name" title="${escapeHTML(p.name || '')}">${getNameHTML(p.name, p.eqName)}</div>
+                            <div class="so2-card-status ${statusClass}">${statusText}</div>
+                        </div>
+                    `;
+                    container.appendChild(card);
                 });
+
+                // Render empty / invite slots up to maxPlayers
+                const emptySlotsCount = Math.max(0, maxPlayers - playersList.length);
+                for (let j = 0; j < emptySlotsCount; j++) {
+                    const emptyCard = document.createElement('div');
+                    emptyCard.className = 'so2-lobby-card so2-lobby-empty-slot';
+                    if (isHost) {
+                        emptyCard.onclick = () => openInviteModal();
+                        emptyCard.title = 'Пригласить игрока';
+                    }
+                    emptyCard.innerHTML = `
+                        <div class="so2-card-avatar-box empty-avatar-box">
+                            <div class="so2-empty-plus">+</div>
+                        </div>
+                        <div class="so2-card-info">
+                            <div class="so2-card-name empty-name">СВОБОДНО</div>
+                            <div class="so2-card-status empty-status">${isHost ? 'ПРИГЛАСИТЬ' : 'ОЖИДАНИЕ'}</div>
+                        </div>
+                    `;
+                    container.appendChild(emptyCard);
+                }
+
+                stage.appendChild(container);
             }
 
             function getLobbyAgentSlot(playerId) {
-                const activeIds = new Set(lobbyPlayers.map(p => p.id));
-                Object.keys(lobbyAgentSlots).forEach(id => {
-                    if (!activeIds.has(id)) delete lobbyAgentSlots[id];
-                });
-                if (lobbyAgentSlots[playerId]) return lobbyAgentSlots[playerId];
-                const used = new Set(Object.values(lobbyAgentSlots));
-                for (let i = 1; i <= 5; i++) {
-                    if (!used.has(i)) {
-                        lobbyAgentSlots[playerId] = i;
-                        return i;
-                    }
-                }
-                return 5;
+                return 1;
             }
 
             function openInviteModal() { 

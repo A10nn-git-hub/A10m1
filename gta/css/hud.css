@@ -1,0 +1,431 @@
+/* ==========================================================================
+           2. UI и HUD Стили (Step 24: Weather, Minimap, Health, Armor, Stamina, Money)
+           ========================================================================== */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+            transition: opacity 0.35s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.35s;
+        }
+
+        #ui-layer.hud-hidden {
+            opacity: 0 !important;
+            visibility: hidden !important;
+        }
+
+        #ui-layer.hud-hidden .debug-panel {
+            transform: translateY(-25px) scale(0.96);
+        }
+        #ui-layer.hud-hidden .minimap-container {
+            transform: translateY(25px) scale(0.96);
+        }
+        #ui-layer.hud-hidden .money-hud {
+            transform: translateY(-25px) scale(0.96);
+        }
+        #ui-layer.hud-hidden .controls-hint {
+            transform: translateY(25px) scale(0.96);
+        }
+        #ui-layer.hud-hidden .version-tag {
+            transform: translateY(-20px);
+        }
+
+        .debug-panel, .minimap-container, .money-hud, .controls-hint, .version-tag {
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+        }
+
+        /* Отладочная панель */
+        /* Компактная динамическая панель статуса */
+        .debug-panel {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(10, 14, 23, 0.88);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #4cd964;
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.6);
+            min-width: 260px;
+        }
+
+        .debug-panel .title {
+            font-weight: bold;
+            color: #00bcd4;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-size: 11px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 4px;
+        }
+
+        .debug-panel .item {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .debug-panel .val {
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        /* Круглая миникарта (Радар) и полоски здоровья, брони, выносливости */
+        .minimap-container {
+            position: absolute;
+            bottom: 25px;
+            left: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .minimap-radar-wrapper {
+            position: relative;
+            width: 176px;
+            height: 176px;
+            border-radius: 50%;
+            background: rgba(10, 14, 23, 0.92);
+            backdrop-filter: blur(12px);
+            border: 3px solid rgba(255, 255, 255, 0.22);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.8), inset 0 0 18px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+        }
+
+        #minimap-canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+        }
+
+        /* Контейнер полос статуса (Health, Armor, Stamina) */
+        .status-bars-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 176px;
+            background: rgba(10, 14, 23, 0.88);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 8px 12px;
+            border-radius: 8px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .status-bar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 2px;
+        }
+
+        .status-bar-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #00bcd4;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 105px;
+        }
+
+        .status-speed-badge {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 11px;
+            font-weight: 800;
+            color: #ffffff;
+        }
+
+        .status-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+        }
+
+        .status-bar-label {
+            width: 22px;
+            text-align: right;
+            font-size: 9px;
+        }
+
+        .status-bar-track {
+            flex-grow: 1;
+            height: 7px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .bar-fill-health {
+            width: 100%;
+            height: 100%;
+            background: #2ecc71;
+            box-shadow: 0 0 8px #2ecc71;
+            transition: width 0.15s ease-out;
+        }
+
+        .bar-fill-armor {
+            width: 100%;
+            height: 100%;
+            background: #00bcd4;
+            box-shadow: 0 0 8px #00bcd4;
+            transition: width 0.15s ease-out;
+        }
+
+        .bar-fill-stamina {
+            width: 100%;
+            height: 100%;
+            background: #ffd700;
+            box-shadow: 0 0 8px #ffd700;
+            transition: width 0.08s linear;
+        }
+
+        .bar-fill-stamina.exhausted {
+            background: #e67e22;
+            box-shadow: 0 0 8px #e67e22;
+            animation: staminaBlink 0.35s infinite alternate;
+        }
+
+        @keyframes staminaBlink {
+            0% { opacity: 0.45; }
+            100% { opacity: 1.0; }
+        }
+
+        /* Отображение денег в правом верхнем углу (GTA V Style) */
+        .money-hud {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            display: flex;
+            align-items: baseline;
+            gap: 2px;
+            font-family: 'Impact', 'Arial Black', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 34px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #ffffff;
+            text-shadow: 2px 2px 0px #000000, 0 0 18px rgba(0, 0, 0, 0.95);
+        }
+
+        .money-hud .money-currency {
+            color: #85bb65;
+            text-shadow: 2px 2px 0px #000000, 0 0 14px rgba(133, 187, 101, 0.7);
+            margin-right: 2px;
+        }
+
+        .vehicle-prompt {
+            position: absolute;
+            top: 65%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 14, 23, 0.94);
+            border: 1px solid #00bcd4;
+            padding: 10px 22px;
+            border-radius: 24px;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);
+            display: none;
+            text-transform: uppercase;
+            animation: pulsePrompt 1.2s infinite alternate;
+        }
+
+        @keyframes pulsePrompt {
+            0% { transform: translate(-50%, -50%) scale(1.0); }
+            100% { transform: translate(-50%, -50%) scale(1.05); }
+        }
+
+        .vehicle-prompt kbd {
+            background: #00bcd4;
+            color: #050508;
+            padding: 2px 8px;
+            border-radius: 4px;
+            margin-right: 6px;
+        }
+
+        /* STEP 28: Интерактивный HUD лифта небоскреба Maze Bank */
+        .elevator-hud-prompt {
+            position: absolute;
+            top: 22%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(10, 16, 28, 0.92);
+            border: 1.5px solid #00e5ff;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 229, 255, 0.35);
+            backdrop-filter: blur(12px);
+            padding: 14px 28px;
+            border-radius: 12px;
+            text-align: center;
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: none;
+            z-index: 100;
+            pointer-events: none;
+            animation: pulseElevatorPrompt 1.8s infinite alternate ease-in-out;
+        }
+
+        @keyframes pulseElevatorPrompt {
+            0% { transform: translateX(-50%) scale(1.0); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 15px rgba(0, 229, 255, 0.25); }
+            100% { transform: translateX(-50%) scale(1.02); box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 28px rgba(0, 229, 255, 0.55); }
+        }
+
+        .elevator-title {
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: #00e5ff;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .elevator-sub {
+            font-size: 13px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 6px;
+        }
+
+        .elevator-sub kbd {
+            background: #ffd700;
+            color: #050508;
+            font-weight: 900;
+            padding: 2px 7px;
+            border-radius: 4px;
+            margin: 0 2px;
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+        }
+
+        .elevator-status {
+            font-size: 12px;
+            font-weight: 700;
+            color: #2ecc71;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* STEP 38: GTA-Style Neighborhood District HUD Notification (По центру экрана) */
+        .district-hud-banner {
+            position: absolute;
+            top: 36%;
+            left: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            pointer-events: none;
+            z-index: 120;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.90);
+            transition: opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1), transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .district-hud-banner.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.0);
+        }
+
+        .district-hud-sub {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 5px;
+            color: #38bdf8;
+            text-transform: uppercase;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
+            margin-bottom: 4px;
+        }
+
+        .district-hud-name {
+            font-family: 'Impact', 'Arial Black', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 4px;
+            color: #ffffff;
+            text-transform: uppercase;
+            text-shadow: 3px 3px 0px #000000, 0 0 24px rgba(0, 0, 0, 0.95);
+            background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 60%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(3px 3px 6px rgba(0, 0, 0, 0.95));
+        }
+
+        .district-hud-line {
+            width: 260px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, #00e5ff 50%, transparent 100%);
+            margin-top: 6px;
+            box-shadow: 0 0 16px rgba(0, 229, 255, 0.9);
+        }
+
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 6px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #crosshair.visible {
+            opacity: 1;
+        }
+
+        /* Кликабельный радар миникарты */
+        .minimap-radar-wrapper {
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.2s;
+        }
+
+        .minimap-radar-wrapper:hover {
+            transform: scale(1.04);
+            border-color: #00e5ff;
+            box-shadow: 0 10px 40px rgba(0, 229, 255, 0.4), inset 0 0 18px rgba(0, 0, 0, 0.7);
+        }
+
+        .minimap-radar-wrapper::after {
+            content: "КАРТА [M]";
+            position: absolute;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.75);
+            padding: 1px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(0, 229, 255, 0.4);
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        .minimap-radar-wrapper:hover::after {
+            opacity: 1;
+        }

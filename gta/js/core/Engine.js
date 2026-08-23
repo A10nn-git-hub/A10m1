@@ -1,0 +1,722 @@
+/**
+         * Главный игровой движок (GTAEngine)
+         */
+        class GTAEngine {
+            constructor() {
+                this.canvas = document.getElementById('webgl-canvas');
+                this.container = document.getElementById('game-container');
+                this.uiLayer = document.getElementById('ui-layer');
+                this.isHudVisible = true;
+                window.gameEngine = this;
+
+                this.progressTracker = new LoadingProgressTracker();
+                this.fpsElement = document.getElementById('stat-fps');
+                this.statChunkElement = document.getElementById('stat-chunk-lod');
+                this.currentSectorId = null;
+
+                this.scene = null;
+                this.camera = null;
+                this.renderer = null;
+
+                this.sky = null;
+                this.sunLight = null;
+                this.hemiLight = null;
+                this.ambientLight = null;
+                this.cloudSystem = null;
+                this.streetLampManager = null;
+                this.dayNightCycle = null;
+                this.pedestrianManager = null;
+                this.vehicleManager = null;
+                this.minimapRenderer = null;
+                this.weatherManager = null;
+                this.chunkManager = new WorldChunkManager(this.scene, this.world, this.physicsMaterials);
+                this.terrainManager = null;
+                this.districtGenerator = null;
+                this.composer = null;
+                this.fxaaPass = null;
+                this.ssaoPass = null;
+                this.bloomPass = null;
+
+                this.world = null;
+                this.physicsMaterials = {};
+                this.player = { mesh: null, body: null, limbs: {} };
+                this.clock = new THREE.Clock();
+                this.frameCount = 0;
+                this.lastFpsUpdate = 0;
+                this._allCarsCache = [];
+
+                this.initAsync();
+            }
+
+            async initAsync() {
+                const timeoutWatchdog = setTimeout(() => {
+                    this.progressTracker.showError('Превышено время ожидания сборки игрового мира (60 сек).', 'ERR_TIMEOUT_EXCEEDED');
+                }, 60000);
+
+                try {
+                    await this.progressTracker.setProgress(10, 'Инициализация WebGL 2.0 рендера и сцены...');
+                    this.initScene();
+                    this.initCamera();
+                    this.initRenderer();
+
+                    await this.progressTracker.setProgress(20, 'Генерация атмосферного неба Sky Shader и динамического Солнца...');
+                    this.initDynamicSkyAndSun();
+
+                    await this.progressTracker.setProgress(30, 'Создание процедурного 3D-ландшафта и Heightfield-физики Cannon.js...');
+                    this.initPhysicsWorld();
+                    this.initGround();
+
+                    await this.progressTracker.setProgress(35, 'Создание бескрайнего океана и атмосферы...');
+                    this.oceanManager = new InfiniteOceanManager(this.scene);
+                    this.mountainManager = null;
+
+                    // Классический режим: все объекты добавляются напрямую в сцену в 100% High-LOD
+                    this.chunkManager = null;
+
+                    await this.progressTracker.setProgress(42, 'Генерация городской дорожной сети и перекрестков...');
+                    this.roadNetwork = new CityRoadNetwork(this.scene, this.world, this.physicsMaterials, null);
+
+                    await this.progressTracker.setProgress(54, 'Строительство жилого сектора, коммерческих и индустриальных районов...');
+                    this.initResidentialHouses();
+                    this.orgBuildingBuilder = new OrganizationBuildingBuilder(this.scene, this.world, this.physicsMaterials);
+                    this.districtGenerator = new DistrictGenerator(this.scene, this.world, this.physicsMaterials, null);
+
+                    await this.progressTracker.setProgress(58, 'Посадка сельхозполей, кустарников и деревьев (InstancedMesh + Wind Shader)...');
+                    this.vegetationManager = new VegetationAndCropsManager(this.scene, this.world, this.terrainManager, this.physicsMaterials);
+
+                    await this.progressTracker.setProgress(60, 'Монтаж лифтовой системы небоскреба Maze Bank (10 этажей)...');
+                    this.elevatorSystem = new SkyscraperElevatorSystem(this.scene, this.world, this.physicsMaterials);
+
+                    await this.progressTracker.setProgress(66, 'Монтаж уличных фонарей со сплошными коллайдерами...');
+                    this.streetLampManager = new StreetLampManager(this.scene, this.world, this.physicsMaterials);
+
+                    await this.progressTracker.setProgress(76, 'Инициализация автомобильного освещения (Spot Shadows, стоп-сигналы)...');
+                    this.vehicleManager = new VehicleManager(this.scene, this.world, this.physicsMaterials);
+
+                    await this.progressTracker.setProgress(80, 'Инициализация AI-системы автономного ambient-трафика (24 авто)...');
+                    this.ambientTrafficManager = new AmbientTrafficManager(
+                        this.scene, this.world, this.physicsMaterials, this.terrainManager, this.roadNetwork
+                    );
+
+                    await this.progressTracker.setProgress(84, 'Инициализация интерактивных футболистов, обхода авто и нокдауна...');
+                    this.pedestrianManager = new PedestrianNPCManager(this.scene, this.world, this.physicsMaterials, this.camera);
+                    this.dayNightCycle = new DayNightCycleManager(
+                        this.scene, this.sky, this.sunLight, this.hemiLight, this.ambientLight,
+                        this.streetLampManager, this.houseBuilder, this.orgBuildingBuilder
+                    );
+                    this.cloudSystem = new DynamicCloudSystem(this.scene);
+
+                    await this.progressTracker.setProgress(90, 'Создание динамической погоды (частицы дождя, туман, мокрый асфальт)...');
+                    this.weatherManager = new DynamicWeatherManager(this.scene, this.roadNetwork, this.dayNightCycle);
+                    this.minimapRenderer = new MinimapRenderer();
+
+                    await this.progressTracker.setProgress(92, 'Настройка триггерных зон районов карты (12 районов, GTA-HUD)...');
+                    this.districtManager = new NeighborhoodDistrictManager();
+
+                    await this.progressTracker.setProgress(94, 'Настройка пост-процессинга AAA-уровня (FXAA, SSAO, Bloom)...');
+                    this.initPostProcessing();
+
+                    await this.progressTracker.setProgress(96, 'Инициализация 3D Spatial Audio Engine (Web Audio API, Foley, Ambience)...');
+                    window.soundEngine = new SpatialSoundEngine();
+                    this.soundEngine = window.soundEngine;
+
+                    await this.progressTracker.setProgress(98, 'Сборка высокодетализированной модели протагониста и горячих клавиш...');
+                    this.initPlayer();
+                    this.initControllers();
+                    this.initEvents();
+
+                    clearTimeout(timeoutWatchdog);
+                    await this.progressTracker.complete();
+
+                    this.animate = this.animate.bind(this);
+                    requestAnimationFrame(this.animate);
+                } catch (err) {
+                    clearTimeout(timeoutWatchdog);
+                    console.error('Критическая ошибка сборки движка:', err);
+                    this.progressTracker.showError(`Произошла ошибка: ${err.message || err}`, 'ERR_INIT_CRASH');
+                }
+            }
+
+            initScene() {
+                this.scene = new THREE.Scene();
+                this.scene.background = new THREE.Color(0x5c9ce6);
+                this.scene.fog = new THREE.Fog(0x5c9ce6, 280, 850);
+            }
+
+            initCamera() {
+                const aspect = window.innerWidth / window.innerHeight;
+                this.camera = new THREE.PerspectiveCamera(65, aspect, 0.2, 1400);
+                this.camera.position.set(0, 3.2, 19.5);
+                this.camera.lookAt(0, 1.5, 15.0);
+            }
+
+            initRenderer() {
+                this.renderer = new THREE.WebGLRenderer({
+                    canvas: this.canvas, antialias: true, powerPreference: "high-performance", precision: "highp"
+                });
+                this.renderer.setSize(window.innerWidth, window.innerHeight);
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+                this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                this.renderer.toneMappingExposure = 1.05;
+                this.renderer.outputEncoding = THREE.sRGBEncoding;
+                this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.type = THREE.PCFShadowMap;
+            }
+
+            initPostProcessing() {
+                // Прямой высокопроизводительный WebGL2 рендеринг без затемняющего SSAO
+                // гарантирует стабильные 60 FPS и сочную оригинальную цветовую гамму
+            }
+
+            initDynamicSkyAndSun() {
+                this.sky = null;
+
+                this.sunLight = new THREE.DirectionalLight(0xfffaea, 2.0);
+                this.sunLight.castShadow = true;
+                this.sunLight.shadow.mapSize.width = 1024;
+                this.sunLight.shadow.mapSize.height = 1024;
+                this.sunLight.shadow.camera.near = 10;
+                this.sunLight.shadow.camera.far = 200;
+                const shadowExtent = 42;
+                this.sunLight.shadow.camera.left = -shadowExtent;
+                this.sunLight.shadow.camera.right = shadowExtent;
+                this.sunLight.shadow.camera.top = shadowExtent;
+                this.sunLight.shadow.camera.bottom = -shadowExtent;
+                this.sunLight.shadow.bias = -0.0001;
+                this.sunLight.shadow.normalBias = 0.02;
+
+                this.scene.add(this.sunLight);
+                this.scene.add(this.sunLight.target);
+
+                this.hemiLight = new THREE.HemisphereLight(0xdfeeff, 0x42382e, 0.65);
+                this.hemiLight.position.set(0, 200, 0);
+                this.scene.add(this.hemiLight);
+
+                this.ambientLight = new THREE.AmbientLight(0xfffaed, 0.45);
+                this.scene.add(this.ambientLight);
+            }
+
+            initPhysicsWorld() {
+                this.world = new CANNON.World();
+                this.world.gravity.set(0, -9.82, 0);
+                this.world.broadphase = new CANNON.SAPBroadphase(this.world);
+                this.world.solver.iterations = 7;
+
+                this.physicsMaterials.ground = new CANNON.Material('ground');
+                this.physicsMaterials.wall = new CANNON.Material('wall');
+                this.physicsMaterials.player = new CANNON.Material('player');
+                this.physicsMaterials.ball = new CANNON.Material('ball');
+
+                // Невидимые физические границы по краю мира (предотвращают падение за карту)
+                const boundH = 60.0; const boundThick = 2.0; const boundSize = 580.0; const boundDist = 285.0;
+                const bounds = [
+                    { x: 0, y: boundH / 2, z: -boundDist, w: boundSize, h: boundH, d: boundThick },
+                    { x: 0, y: boundH / 2, z: boundDist, w: boundSize, h: boundH, d: boundThick },
+                    { x: boundDist, y: boundH / 2, z: 0, w: boundThick, h: boundH, d: boundSize },
+                    { x: -boundDist, y: boundH / 2, z: 0, w: boundThick, h: boundH, d: boundSize }
+                ];
+                for (const b of bounds) {
+                    const bBody = new CANNON.Body({ mass: 0, material: this.physicsMaterials.wall, position: new CANNON.Vec3(b.x, b.y, b.z) });
+                    bBody.addShape(new CANNON.Box(new CANNON.Vec3(b.w / 2, b.h / 2, b.d / 2)));
+                    this.world.addBody(bBody);
+                }
+
+                this.world.addContactMaterial(new CANNON.ContactMaterial(
+                    this.physicsMaterials.ground, this.physicsMaterials.player, { friction: 0.05, restitution: 0.0 }
+                ));
+                this.world.addContactMaterial(new CANNON.ContactMaterial(
+                    this.physicsMaterials.wall, this.physicsMaterials.player, { friction: 0.0, restitution: 0.0 }
+                ));
+                this.world.addContactMaterial(new CANNON.ContactMaterial(
+                    this.physicsMaterials.ground, this.physicsMaterials.ball, { friction: 0.35, restitution: 0.78 }
+                ));
+                this.world.addContactMaterial(new CANNON.ContactMaterial(
+                    this.physicsMaterials.wall, this.physicsMaterials.ball, { friction: 0.3, restitution: 0.82 }
+                ));
+
+                // Базовая нерушимая физическая плоскость на уровне Y = 0 (гарантия защиты от падения сквозь пол)
+                const groundBody = new CANNON.Body({ mass: 0, material: this.physicsMaterials.ground });
+                groundBody.allowSleep = true;
+                groundBody.sleep();
+                groundBody.addShape(new CANNON.Plane());
+                groundBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
+                this.world.addBody(groundBody);
+            }
+
+            initGround() {
+                // STEP 31: Создание процедурного 3D-ландшафта с биомами (Город, Холмы, Сельские равнины) и физикой Heightfield
+                this.terrainManager = new ProceduralTerrainManager(this.scene, this.world, this.physicsMaterials);
+            }
+
+            initResidentialHouses() {
+                this.houseBuilder = new SuburbanHouseBuilder(this.scene, this.world, this.physicsMaterials, this.chunkManager);
+                // Полноценные жилые дома с открывающимися дверьми, мебелью и интерьером
+                const housePlacements = [
+                    // Квадрант NW
+                    { x: -90, z: -90, rot: 0, s: 0 },
+                    { x: -90, z: -150, rot: 0, s: 1 },
+                    { x: -150, z: -90, rot: Math.PI / 2, s: 2 },
+                    
+                    // Квадрант NE
+                    { x: 90, z: -90, rot: 0, s: 1 },
+                    { x: 90, z: -150, rot: 0, s: 2 },
+                    { x: 150, z: -90, rot: -Math.PI / 2, s: 0 },
+
+                    // Квадрант SW
+                    { x: -90, z: 90, rot: Math.PI, s: 2 },
+                    { x: -90, z: 150, rot: Math.PI, s: 0 },
+                    { x: -150, z: 90, rot: Math.PI / 2, s: 1 },
+
+                    // Квадрант SE
+                    { x: 90, z: 90, rot: Math.PI, s: 3 },
+                    { x: 90, z: 150, rot: Math.PI, s: 1 },
+                    { x: 150, z: 90, rot: -Math.PI / 2, s: 0 }
+                ];
+                for (let i = 0; i < housePlacements.length; i++) {
+                    const hp = housePlacements[i];
+                    this.houseBuilder.createHouse(hp.x, hp.z, hp.rot, hp.s);
+                }
+            }
+
+            initPlayer() {
+                const playerGroup = new THREE.Group();
+                const limbs = {};
+
+                const matSkin = new THREE.MeshLambertMaterial({ color: 0xdca17a });
+                const matJacket = new THREE.MeshLambertMaterial({ color: 0x1f2a38 });
+                const matShirt = new THREE.MeshLambertMaterial({ color: 0xeaeaea });
+                const matPants = new THREE.MeshLambertMaterial({ color: 0x2b333e });
+                const matShoes = new THREE.MeshLambertMaterial({ color: 0x111111 });
+                const matSole = new THREE.MeshLambertMaterial({ color: 0xdddddd });
+                const matGlasses = new THREE.MeshBasicMaterial({ color: 0x0a0a0a });
+                const matGlassesFrame = new THREE.MeshBasicMaterial({ color: 0xd4af37 });
+                const matBelt = new THREE.MeshLambertMaterial({ color: 0x151515 });
+                const matBuckle = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+
+                const torsoGroup = new THREE.Group();
+                torsoGroup.position.set(0, 1.15, 0);
+
+                const chestMesh = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.45, 0.28), matJacket);
+                chestMesh.position.set(0, 0.1, 0);
+                chestMesh.castShadow = true; chestMesh.receiveShadow = true;
+                torsoGroup.add(chestMesh);
+
+                const innerShirtMesh = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.35, 0.05), matShirt);
+                innerShirtMesh.position.set(0, 0.12, 0.12);
+                torsoGroup.add(innerShirtMesh);
+
+                const bellyMesh = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.22, 0.25), matJacket);
+                bellyMesh.position.set(0, -0.18, 0); bellyMesh.castShadow = true;
+                torsoGroup.add(bellyMesh);
+
+                const beltMesh = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.08, 0.27), matBelt);
+                beltMesh.position.set(0, -0.28, 0);
+                torsoGroup.add(beltMesh);
+
+                const buckleMesh = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, 0.04), matBuckle);
+                buckleMesh.position.set(0, -0.28, 0.14);
+                torsoGroup.add(buckleMesh);
+
+                const holsterMesh = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.12), matBelt);
+                holsterMesh.position.set(0.26, -0.28, 0);
+                torsoGroup.add(holsterMesh);
+
+                playerGroup.add(torsoGroup);
+                limbs.torso = torsoGroup;
+
+                const headGroup = new THREE.Group();
+                headGroup.position.set(0, 0.38, 0);
+
+                const neckMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 0.12, 12), matSkin);
+                neckMesh.position.set(0, -0.02, 0); neckMesh.castShadow = true;
+                headGroup.add(neckMesh);
+
+                const headMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.28, 0.26), matSkin);
+                headMesh.position.set(0, 0.16, 0); headMesh.castShadow = true;
+                headGroup.add(headMesh);
+
+                const hairMesh = new THREE.Mesh(new THREE.BoxGeometry(0.27, 0.1, 0.28), new THREE.MeshStandardMaterial({ color: 0x221811, roughness: 0.9 }));
+                hairMesh.position.set(0, 0.27, -0.01);
+                headGroup.add(hairMesh);
+
+                const glassesMesh = new THREE.Mesh(new THREE.BoxGeometry(0.23, 0.07, 0.04), matGlasses);
+                glassesMesh.position.set(0, 0.17, 0.14);
+                headGroup.add(glassesMesh);
+
+                const frameMesh = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.02, 0.05), matGlassesFrame);
+                frameMesh.position.set(0, 0.2, 0.14);
+                headGroup.add(frameMesh);
+
+                torsoGroup.add(headGroup);
+                limbs.head = headGroup;
+
+                const createArm = (isLeft) => {
+                    const side = isLeft ? 1 : -1;
+                    const armPivot = new THREE.Group();
+                    armPivot.position.set(side * 0.32, 0.26, 0);
+
+                    const shoulderMesh = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.28, 0.16), matJacket);
+                    shoulderMesh.position.set(0, -0.12, 0); shoulderMesh.castShadow = true;
+                    armPivot.add(shoulderMesh);
+
+                    const forearmPivot = new THREE.Group();
+                    forearmPivot.position.set(0, -0.26, 0);
+
+                    const forearmMesh = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.26, 0.13), matSkin);
+                    forearmMesh.position.set(0, -0.11, 0); forearmMesh.castShadow = true;
+                    forearmPivot.add(forearmMesh);
+
+                    const handMesh = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.11, 0.08), matSkin);
+                    handMesh.position.set(0, -0.26, 0); handMesh.castShadow = true;
+                    forearmPivot.add(handMesh);
+
+                    if (isLeft) {
+                        const watchMesh = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.04, 0.14), matGlassesFrame);
+                        watchMesh.position.set(0, -0.21, 0);
+                        forearmPivot.add(watchMesh);
+                    }
+
+                    armPivot.add(forearmPivot);
+                    torsoGroup.add(armPivot);
+                    return { pivot: armPivot, forearm: forearmPivot };
+                };
+
+                limbs.leftArm = createArm(true);
+                limbs.rightArm = createArm(false);
+
+                const createLeg = (isLeft) => {
+                    const side = isLeft ? 1 : -1;
+                    const hipPivot = new THREE.Group();
+                    hipPivot.position.set(side * 0.14, 0.88, 0);
+
+                    const thighMesh = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.42, 0.2), matPants);
+                    thighMesh.position.set(0, -0.2, 0); thighMesh.castShadow = true;
+                    hipPivot.add(thighMesh);
+
+                    const kneePivot = new THREE.Group();
+                    kneePivot.position.set(0, -0.42, 0);
+
+                    const calfMesh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.4, 0.18), matPants);
+                    calfMesh.position.set(0, -0.18, 0); calfMesh.castShadow = true;
+                    kneePivot.add(calfMesh);
+
+                    const shoePivot = new THREE.Group();
+                    shoePivot.position.set(0, -0.38, 0);
+
+                    const shoeMesh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.12, 0.28), matShoes);
+                    shoeMesh.position.set(0, 0.04, 0.04); shoeMesh.castShadow = true;
+                    shoePivot.add(shoeMesh);
+
+                    const soleMesh = new THREE.Mesh(new THREE.BoxGeometry(0.17, 0.04, 0.29), matSole);
+                    soleMesh.position.set(0, -0.01, 0.04);
+                    shoePivot.add(soleMesh);
+
+                    kneePivot.add(shoePivot);
+                    hipPivot.add(kneePivot);
+                    playerGroup.add(hipPivot);
+                    return { pivot: hipPivot, knee: kneePivot };
+                };
+
+                limbs.leftLeg = createLeg(true);
+                limbs.rightLeg = createLeg(false);
+
+                this.scene.add(playerGroup);
+                this.player.mesh = playerGroup;
+                this.player.limbs = limbs;
+
+                const capsuleRadius = 0.36;
+                const capsuleHeight = 0.96;
+                const playerBody = new CANNON.Body({
+                    mass: 75,
+                    material: this.physicsMaterials.player,
+                    position: new CANNON.Vec3(0, 1.5, 15.0),
+                    linearDamping: 0.05,
+                    fixedRotation: true
+                });
+
+                const cylinderShape = new CANNON.Cylinder(capsuleRadius, capsuleRadius, capsuleHeight, 16);
+                const qCyl = new CANNON.Quaternion();
+                qCyl.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+                playerBody.addShape(cylinderShape, new CANNON.Vec3(0, 0, 0), qCyl);
+                playerBody.addShape(new CANNON.Sphere(capsuleRadius), new CANNON.Vec3(0, capsuleHeight / 2, 0));
+                playerBody.addShape(new CANNON.Sphere(capsuleRadius), new CANNON.Vec3(0, -capsuleHeight / 2, 0));
+
+                this.world.addBody(playerBody);
+                this.player.body = playerBody;
+            }
+
+            initControllers() {
+                this.inputController = new InputController();
+                this.mainMenuManager = new MainMenuManager(this.inputController);
+                this.thirdPersonCamera = new ThirdPersonCameraController(this.camera, this.player.mesh, this.container);
+                this.playerController = new PlayerController(this.player, this.thirdPersonCamera, this.inputController, this.world);
+
+                this.inputController.onTimeAdvance = (hrs) => { if (this.dayNightCycle) this.dayNightCycle.advanceTime(hrs); };
+                this.inputController.onSeasonChange = () => { if (this.dayNightCycle) this.dayNightCycle.changeSeason(); };
+
+                this.inputController.onToggleVehicle = () => {
+                    if (this.vehicleManager) {
+                        this.vehicleManager.toggleEnterExitVehicle(this.player);
+                    }
+                };
+
+                this.inputController.onToggleHeadlights = () => {
+                    if (this.vehicleManager && this.vehicleManager.activeDrivenCar) {
+                        const state = this.vehicleManager.toggleActiveCarHeadlights();
+                        const el = document.getElementById('stat-car-lights');
+                        if (el) {
+                            el.innerText = state ? 'ВКЛ [L]' : 'ВЫКЛ [L]';
+                            el.style.color = state ? '#00e5ff' : '#8fa3b7';
+                        }
+                    }
+                };
+
+                // STEP 24: Переключение погоды (Ясно / Морось / Дождь / Ливень) клавишей U
+                this.inputController.onToggleWeather = () => {
+                    if (this.weatherManager) {
+                        this.weatherManager.cycleWeather();
+                    }
+                };
+
+                // STEP 28: Обработка клавиш 1-9 и 0 для перемещения лифта Maze Bank
+                this.inputController.onSelectFloor = (floorNum) => {
+                    if (this.elevatorSystem) {
+                        this.elevatorSystem.selectFloor(floorNum);
+                    }
+                };
+
+                this.inputController.onToggleHud = () => {
+                    this.isHudVisible = !this.isHudVisible;
+                    if (this.uiLayer) {
+                        if (this.isHudVisible) {
+                            this.uiLayer.classList.remove('hud-hidden');
+                        } else {
+                            this.uiLayer.classList.add('hud-hidden');
+                        }
+                    }
+                };
+            }
+
+            initEvents() {
+                window.addEventListener('resize', () => {
+                    const width = window.innerWidth;
+                    const height = window.innerHeight;
+                    this.camera.aspect = width / height;
+                    this.camera.updateProjectionMatrix();
+                    this.renderer.setSize(width, height);
+
+                    if (this.composer) {
+                        this.composer.setSize(width, height);
+                        const pixelRatio = this.renderer.getPixelRatio();
+                        if (this.fxaaPass) {
+                            this.fxaaPass.material.uniforms['resolution'].value.x = 1 / (width * pixelRatio);
+                            this.fxaaPass.material.uniforms['resolution'].value.y = 1 / (height * pixelRatio);
+                        }
+                        if (this.ssaoPass) {
+                            this.ssaoPass.setSize(width, height);
+                        }
+                    }
+                });
+            }
+
+            updatePhysics(deltaTime) {
+                this.world.step(1 / 60, Math.min(deltaTime, 0.1), 3);
+
+                const isDriving = this.vehicleManager && this.vehicleManager.activeDrivenCar !== null;
+                const isTransitioning = this.vehicleManager && (this.vehicleManager.transitionState === 'ENTERING_VEHICLE' || this.vehicleManager.transitionState === 'EXITING_VEHICLE');
+
+                if (!isDriving && !isTransitioning && this.player.mesh && this.player.body) {
+                    if (this.playerController && this.playerController.isGrounded) {
+                        const groundY = (this.terrainManager) ? this.terrainManager.getTerrainHeight(this.player.body.position.x, this.player.body.position.z) : 0.0;
+                        this.player.body.position.y = groundY + 0.815;
+                        this.player.body.velocity.y = 0;
+                    }
+                    this.player.mesh.position.set(
+                        this.player.body.position.x,
+                        this.player.body.position.y - 0.815,
+                        this.player.body.position.z
+                    );
+                }
+
+                if (this.sunLight && this.dayNightCycle && this.player.mesh) {
+                    const focusPos = isDriving
+                        ? this.vehicleManager.activeDrivenCar.chassisBody.position
+                        : this.player.mesh.position;
+
+                    const sPos = this.dayNightCycle.sunPosition;
+                    const normH = Math.hypot(sPos.x, sPos.z) || 1;
+                    const normX = sPos.x / normH;
+                    const normZ = sPos.z / normH;
+
+                    // Крутой зенитный угол освещения для коротких, компактных теней прямо под ногами и колесами
+                    this.sunLight.position.set(focusPos.x, focusPos.y + 140.0, focusPos.z);
+                    this.sunLight.target.position.copy(focusPos);
+                    this.sunLight.target.updateMatrixWorld();
+                }
+            }
+
+            updateSectorHUD(focusPos) {
+                if (!focusPos || !this.statChunkElement) return;
+                const pCol = Math.max(0, Math.min(4, Math.floor((focusPos.x + 150) / 60.0)));
+                const pRow = Math.max(0, Math.min(3, Math.floor((focusPos.z + 120) / 60.0)));
+                const sId = pRow * 5 + pCol + 1;
+                if (this.currentSectorId !== sId) {
+                    this.currentSectorId = sId;
+                    const sStr = String(sId).padStart(2, '0');
+                    this.statChunkElement.innerText = `СЕКТОР ${sStr}`;
+                }
+            }
+
+            animate() {
+                requestAnimationFrame(this.animate);
+
+                // Если открыто главное меню — игра полностью на паузе, фоновая симуляция заморожена
+                if (this.mainMenuManager && this.mainMenuManager.isMenuOpen) {
+                    return;
+                }
+
+                const delta = this.clock.getDelta();
+                const elapsedTime = this.clock.getElapsedTime();
+
+                const isDriving = this.vehicleManager && this.vehicleManager.activeDrivenCar !== null;
+                const isTransitioning = this.vehicleManager && (this.vehicleManager.transitionState === 'ENTERING_VEHICLE' || this.vehicleManager.transitionState === 'EXITING_VEHICLE');
+
+                const balls = this.pedestrianManager ? this.pedestrianManager.soccerBalls : [];
+                const activeCar = (this.vehicleManager && this.vehicleManager.activeDrivenCar)
+                    ? this.vehicleManager.activeDrivenCar
+                    : null;
+                const showcaseCars = (this.vehicleManager && this.vehicleManager.cars) ? this.vehicleManager.cars : [];
+                const ambientCars = (this.ambientTrafficManager && this.ambientTrafficManager.vehicles) ? this.ambientTrafficManager.vehicles : [];
+                this._allCarsCache.length = 0;
+                for (let i = 0; i < showcaseCars.length; i++) this._allCarsCache.push(showcaseCars[i]);
+                for (let i = 0; i < ambientCars.length; i++) this._allCarsCache.push(ambientCars[i]);
+                const allCars = this._allCarsCache;
+
+                const focusPos = isDriving
+                    ? this.vehicleManager.activeDrivenCar.chassisBody.position
+                    : (this.player.mesh ? this.player.mesh.position : (this.player.body ? this.player.body.position : null));
+
+                this.updateSectorHUD(focusPos);
+
+                if (this.sky && this.camera) {
+                    this.sky.position.copy(this.camera.position);
+                }
+
+                if (this.dayNightCycle) {
+                    this.dayNightCycle.update(delta, focusPos);
+                }
+
+                if (this.playerController) {
+                    this.playerController.update(delta, isDriving || isTransitioning, balls);
+                }
+
+                if (this.vehicleManager) {
+                    this.vehicleManager.update(delta, this.player, this.inputController ? this.inputController.keys : {});
+                }
+
+                // STEP 35: Обновление AI-автомобилей автономного ambient-трафика (маршруты, дистанция, торможение, объезд пешеходов)
+                if (this.ambientTrafficManager) {
+                    const pedestriansList = (this.pedestrianManager && this.pedestrianManager.pedestrians) ? this.pedestrianManager.pedestrians : [];
+                    this.ambientTrafficManager.update(delta, focusPos, activeCar, this.dayNightCycle, pedestriansList);
+                }
+
+                this.updatePhysics(delta);
+
+                if (this.thirdPersonCamera) {
+                    const camTargetCar = activeCar || ((this.vehicleManager && this.vehicleManager.transitionCar) ? this.vehicleManager.transitionCar : null);
+                    this.thirdPersonCamera.update(delta, isDriving ? camTargetCar : null);
+                }
+
+                if (this.pedestrianManager) {
+                    this.pedestrianManager.update(delta, focusPos, activeCar, allCars);
+                }
+
+                if (this.cloudSystem) this.cloudSystem.update(delta);
+
+                // STEP 24: Обновление динамической погоды (дождь, туман, мокрый зеркальный асфальт)
+                if (this.weatherManager) {
+                    this.weatherManager.update(delta, focusPos);
+                }
+
+                // STEP 30: Обновление пространственной сетки чанков и LOD (динамическое управление геометрией и физикой)
+                if (this.chunkManager) {
+                    this.chunkManager.update(focusPos);
+                }
+
+                // STEP 34: Обновление покачивания растительности и крон деревьев на ветру (GPU Wind Shader)
+                if (this.vegetationManager) {
+                    this.vegetationManager.update(delta);
+                }
+
+                // STEP 36: Обновление процедурного океана (волны, блики солнца, отражения)
+                if (this.oceanManager) {
+                    const sunPos = this.dayNightCycle ? this.dayNightCycle.sunPosition : new THREE.Vector3(0, 1, 0);
+                    const sunCol = (this.dayNightCycle && this.dayNightCycle.sunLight) ? this.dayNightCycle.sunLight.color : new THREE.Color(0xfffaea);
+                    const fogCol = (this.scene && this.scene.fog) ? this.scene.fog.color : new THREE.Color(0xa6cbe8);
+                    const nightF = this.dayNightCycle ? this.dayNightCycle.nightFactor : 0.0;
+                    this.oceanManager.update(delta, sunPos, sunCol, fogCol, nightF);
+                }
+
+                // STEP 37: Обновление интерактивных разрушаемых пропсов (столкновения, динамические тела, водяные гейзеры)
+                if (this.streetLampManager) {
+                    this.streetLampManager.update(delta, focusPos, activeCar, allCars);
+                }
+
+                // STEP 38: Обновление триггерных зон районов (GTA-Style Neighborhood HUD Banner)
+                if (this.districtManager) {
+                    this.districtManager.update(delta, focusPos);
+                }
+
+                // STEP 26: Обновление интерактивных дверей зданий и жилых домов при приближении игрока
+                const pPos = (this.player && this.player.body) ? this.player.body.position : null;
+                if (this.orgBuildingBuilder) {
+                    this.orgBuildingBuilder.update(delta, pPos);
+                }
+                if (this.houseBuilder) {
+                    this.houseBuilder.update(delta, pPos);
+                }
+
+                // STEP 28: Обновление интерактивного лифта небоскреба Maze Bank (10 этажей)
+                if (this.elevatorSystem) {
+                    this.elevatorSystem.update(delta, this.player);
+                }
+
+                // STEP 29 & STEP 39: Обновление пространственного звука, дождя, ночных цикад и районного эмбиента
+                if (this.soundEngine) {
+                    this.soundEngine.updateListener(this.camera.position);
+                    const wType = this.weatherManager ? this.weatherManager.currentWeather : 'CLEAR';
+                    const nFactor = this.dayNightCycle ? this.dayNightCycle.nightFactor : 0.0;
+                    const isIndoor = this.playerController ? this.playerController.checkIfIndoor(this.camera.position.x, this.camera.position.y, this.camera.position.z) : false;
+                    this.soundEngine.updateWeatherAndAmbience(delta, wType, nFactor, isIndoor);
+
+                    const curDistId = (this.districtManager && this.districtManager.currentDistrictId) ? this.districtManager.currentDistrictId : 'downtown';
+                    this.soundEngine.updateDistrictAmbience(delta, curDistId, isIndoor);
+                }
+
+                // Отрисовка круглой миникарты в реальном времени (60 FPS)
+                if (this.minimapRenderer) {
+                    const focusPosMini = isDriving
+                        ? this.vehicleManager.activeDrivenCar.chassisBody.position
+                        : (this.player.body ? this.player.body.position : null);
+                    const cameraYaw = this.thirdPersonCamera ? this.thirdPersonCamera.yaw : 0;
+                    const npcs = this.pedestrianManager ? this.pedestrianManager.pedestrians : [];
+
+                    this.minimapRenderer.render(focusPosMini, cameraYaw, allCars, npcs, balls);
+                }
+
+                // Отрисовка интерактивной полноэкранной карты, если она открыта
+                if (this.mainMenuManager && this.mainMenuManager.fullMapRenderer && this.mainMenuManager.fullMapRenderer.isOpen) {
+                    this.mainMenuManager.fullMapRenderer.render();
+                }
+
+                this.frameCount++;
+                if (elapsedTime - this.lastFpsUpdate >= 0.5) {
+                    if (this.fpsElement) this.fpsElement.innerText = Math.round(this.frameCount / (elapsedTime - this.lastFpsUpdate));
+                    this.frameCount = 0;
+                    this.lastFpsUpdate = elapsedTime;
+                }
+
+                // Высокопроизводительный прямой рендеринг с оригинальной контрастностью (60 FPS)
+                this.renderer.render(this.scene, this.camera);
+            }
+        }

@@ -144,47 +144,202 @@
         .slot-name { font-weight: bold; font-size: 1.8vh; text-align: center; width: 90%; overflow: hidden; white-space: nowrap; } 
         .slot-status { font-size: 1.2vh; color: #34c759; position: absolute; bottom: -20px; font-weight: bold; }
         
-        .lobby-agents-stage { container-type: inline-size; --agent-fit: clamp(.32, min(calc(100svh / 1040), calc((100vw - var(--nav-w) - 360px) / 980)), .64); position: relative; width: 100%; height: clamp(260px, 60svh, 580px); flex: 1 1 auto; pointer-events: auto; z-index: 3; }
-        .lobby-agents-stage::before { content: ''; position: absolute; left: 8%; right: 8%; bottom: 8px; height: 26%; background: radial-gradient(ellipse at center, rgba(51,144,236,0.2), rgba(0,0,0,0) 68%); pointer-events: none; }
-        .lobby-agent { --x: 50%; --y: 0px; --s: 1; position: absolute; left: var(--x); bottom: var(--y); width: 116px; height: 245px; transform: translateX(-50%) scale(calc(var(--s) * var(--agent-fit))); transform-origin: bottom center; display: flex; flex-direction: column; align-items: center; z-index: var(--z, 1); pointer-events: auto; transition: opacity 0.3s ease; }
-        .lobby-agent::after { content: ''; position: absolute; bottom: 4px; width: 90px; height: 18px; border-radius: 50%; background: rgba(0,0,0,0.55); filter: blur(2px); z-index: -1; }
-        .agent-head { width: 58px; height: 58px; border-radius: 18px 18px 22px 22px; background: linear-gradient(145deg, #3b454f, #171b20); border: 2px solid #65717c; display: flex; align-items: center; justify-content: center; font-size: 30px; box-shadow: 0 8px 18px rgba(0,0,0,0.45); overflow: hidden; }
-        .agent-body { position: relative; width: 86px; height: 90px; margin-top: -2px; display: flex; justify-content: center; }
-        .agent-chest { width: 58px; height: 86px; border-radius: 14px 14px 10px 10px; background: linear-gradient(160deg, #2f3942, #11161b); border: 2px solid #4d5963; box-shadow: inset 0 12px 0 rgba(255,255,255,0.04); }
-        .agent-arm { position: absolute; top: 10px; width: 18px; height: 82px; border-radius: 12px; background: linear-gradient(#323b43, #13171b); border: 2px solid #454f58; }
-        .agent-arm.left { left: 0; transform: rotate(9deg); }
-        .agent-arm.right { right: 0; transform: rotate(-9deg); }
-        .agent-legs { display: flex; gap: 10px; margin-top: -2px; transition: opacity 0.35s ease; }
-        .agent-legs div { width: 22px; height: 76px; border-radius: 9px 9px 6px 6px; background: linear-gradient(#252c33, #0f1114); border: 2px solid #3a4249; }
-        .agent-label { max-width: 124px; margin-top: 7px; padding: 4px 8px; border-radius: 7px; background: transparent; color: white; font-size: 12px; font-weight: 800; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-shadow: 0 2px 5px #000, 0 0 8px #000; }
-        .home-solo-stage { --agent-fit: clamp(.32, min(calc(100svh / 1040), calc((100vw - var(--nav-w) - 360px) / 980)), .64); height: clamp(260px, 60svh, 580px); }
-        .home-solo-stage .lobby-agent-slot-1 { --x: 50%; --y: 0px; --s: 1.1; --z: 5; }
-        .home-solo-stage .lobby-agent::after { opacity: 0; }
-        @supports (width: 1cqw) {
-            .lobby-agents-stage { --agent-fit: clamp(.32, min(calc(100svh / 1040), calc(100cqw * .00098)), .64); }
-            .home-solo-stage { --agent-fit: clamp(.32, min(calc(100svh / 1040), calc(100cqw * .00098)), .64); }
-            .home-solo-stage .lobby-agent-slot-1 { --s: 1.1; }
+        /* Standoff 2 Classic Square Lobby Avatar Cards */
+        .lobby-agents-stage { 
+            position: relative; 
+            width: 100%; 
+            height: auto; 
+            min-height: 200px; 
+            flex: 1 1 auto; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            pointer-events: auto; 
+            z-index: 3; 
+            padding: 20px 0 10px 0;
+            box-sizing: border-box;
         }
-        .lobby-agent-slot-1 { --x: 50%; --y: 0px; --s: 1.1; --z: 5; }
-        .lobby-agent-slot-2 { --x: 38%; --y: 26px; --s: .93; --z: 4; }
-        .lobby-agent-slot-3 { --x: 62%; --y: 26px; --s: .93; --z: 4; }
-        .lobby-agent-slot-4 { --x: 27%; --y: 70px; --s: .76; --z: 3; }
-        .lobby-agent-slot-5 { --x: 73%; --y: 70px; --s: .76; --z: 3; }
-        .lobby-agent-1-1 { --x: 50%; --y: 0px; --s: 1.12; --z: 5; }
-        .lobby-agent-2-1 { --x: 43%; --y: 0px; --s: 1.04; --z: 4; }
-        .lobby-agent-2-2 { --x: 57%; --y: 0px; --s: 1.04; --z: 4; }
-        .lobby-agent-3-1 { --x: 50%; --y: 0px; --s: 1.12; --z: 5; }
-        .lobby-agent-3-2 { --x: 34%; --y: 42px; --s: .88; --z: 3; }
-        .lobby-agent-3-3 { --x: 66%; --y: 42px; --s: .88; --z: 3; }
-        .lobby-agent-4-1 { --x: 39%; --y: 0px; --s: 1.01; --z: 5; }
-        .lobby-agent-4-2 { --x: 61%; --y: 0px; --s: 1.01; --z: 5; }
-        .lobby-agent-4-3 { --x: 27%; --y: 62px; --s: .78; --z: 3; }
-        .lobby-agent-4-4 { --x: 73%; --y: 62px; --s: .78; --z: 3; }
-        .lobby-agent-5-1 { --x: 50%; --y: 0px; --s: 1.1; --z: 5; }
-        .lobby-agent-5-2 { --x: 38%; --y: 26px; --s: .93; --z: 4; }
-        .lobby-agent-5-3 { --x: 62%; --y: 26px; --s: .93; --z: 4; }
-        .lobby-agent-5-4 { --x: 27%; --y: 70px; --s: .76; --z: 3; }
-        .lobby-agent-5-5 { --x: 73%; --y: 70px; --s: .76; --z: 3; }
+        .lobby-agents-stage::before { 
+            content: ''; 
+            position: absolute; 
+            left: 5%; 
+            right: 5%; 
+            bottom: 0px; 
+            height: 35%; 
+            background: radial-gradient(ellipse at center, rgba(51,144,236,0.15), rgba(0,0,0,0) 70%); 
+            pointer-events: none; 
+        }
+        .so2-lobby-cards-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(10px, 2.2vw, 20px);
+            flex-wrap: wrap;
+            max-width: 100%;
+            margin: auto;
+            z-index: 4;
+        }
+        .so2-lobby-card {
+            width: clamp(100px, 14vw, 130px);
+            min-height: clamp(135px, 18vh, 165px);
+            background: linear-gradient(180deg, rgba(32, 37, 44, 0.95) 0%, rgba(16, 19, 23, 0.98) 100%);
+            border: 2px solid #3d4652;
+            border-radius: 10px;
+            padding: 14px 8px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            position: relative;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+            box-sizing: border-box;
+        }
+        .so2-lobby-card:hover {
+            transform: translateY(-3px);
+            border-color: #586575;
+            box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65), 0 0 12px rgba(88, 101, 117, 0.3);
+        }
+        .so2-lobby-card.is-me {
+            border-color: #34c759;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 10px rgba(52, 199, 89, 0.25);
+        }
+        .so2-lobby-card.is-host {
+            border-color: #ffd60a;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6), 0 0 12px rgba(255, 214, 10, 0.25);
+        }
+        .so2-lobby-card.is-pending {
+            opacity: 0.45;
+        }
+        .so2-card-crown {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 14px;
+            line-height: 1;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+            z-index: 4;
+            pointer-events: none;
+        }
+        .so2-card-kick-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: rgba(255, 69, 58, 0.85);
+            color: #fff;
+            border: 1px solid #ff3b30;
+            font-size: 11px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 5;
+            transition: transform 0.15s ease, background 0.15s ease;
+            line-height: 1;
+            padding: 0;
+        }
+        .so2-card-kick-btn:hover {
+            background: #ff3b30;
+            transform: scale(1.15);
+        }
+        .so2-card-avatar-box {
+            width: clamp(62px, 8.5vw, 76px);
+            height: clamp(62px, 8.5vw, 76px);
+            aspect-ratio: 1 / 1;
+            border-radius: 8px;
+            background: linear-gradient(145deg, #1b2026, #0c0f12);
+            border: 2px solid #485360;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(32px, 4.5vw, 42px);
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.6), 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .so2-card-avatar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+        .so2-card-info {
+            width: 100%;
+            margin-top: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 2px;
+            min-width: 0;
+        }
+        .so2-card-name {
+            font-size: clamp(11px, 1.6vw, 13px);
+            font-weight: 800;
+            color: #fff;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        .so2-card-status {
+            font-size: clamp(9px, 1.2vw, 10px);
+            font-weight: 700;
+            color: #8c97a5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .so2-card-status.host-status {
+            color: #ffd60a;
+            font-weight: 800;
+            text-shadow: 0 0 8px rgba(255, 214, 10, 0.4);
+        }
+        .so2-card-status.me-status {
+            color: #34c759;
+            font-weight: 800;
+        }
+        /* Empty Slot */
+        .so2-lobby-empty-slot {
+            border: 2px dashed rgba(255, 255, 255, 0.18);
+            background: rgba(18, 22, 26, 0.4);
+            cursor: pointer;
+            box-shadow: none;
+        }
+        .so2-lobby-empty-slot:hover {
+            border-color: rgba(255, 255, 255, 0.4);
+            background: rgba(28, 34, 40, 0.6);
+            transform: translateY(-2px);
+        }
+        .so2-lobby-empty-slot .empty-avatar-box {
+            border: 2px dashed rgba(255, 255, 255, 0.16);
+            background: transparent;
+            box-shadow: none;
+        }
+        .so2-empty-plus {
+            font-size: 32px;
+            font-weight: 300;
+            color: rgba(255, 255, 255, 0.35);
+            line-height: 1;
+            transition: color 0.18s, transform 0.18s;
+        }
+        .so2-lobby-empty-slot:hover .so2-empty-plus {
+            color: #34c759;
+            transform: scale(1.2);
+        }
+        .empty-name {
+            color: rgba(255, 255, 255, 0.35);
+        }
+        .empty-status {
+            color: #34c759;
+            font-weight: 800;
+        }
         .lobby-controls-bottom-right { position: absolute; bottom: 0; right: 0; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; z-index: 5; }
         .lobby-start-row { display: flex; align-items: stretch; gap: 10px; }
         .lobby-settings-btn { width: 61px; height: 61px; flex: 0 0 61px; border: none; border-radius: 12px; background: #2c2c2e; color: #fff; font-size: 30px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 0 #151517; display: inline-flex; align-items: center; justify-content: center; }
@@ -466,9 +621,6 @@
             .home-profile-avatar { width: 44px; height: 44px; font-size: 28px; }
             .home-profile-name { font-size: 15px; }
             #view-lobby { padding-bottom: clamp(84px, 19svh, 108px); }
-            .lobby-agents-stage { --agent-fit: clamp(.3, min(calc(100svh / 960), calc(100cqw * .00118)), .54); height: clamp(220px, 58svh, 420px); }
-            .home-solo-stage { --agent-fit: clamp(.3, min(calc(100svh / 960), calc(100cqw * .00118)), .54); height: clamp(220px, 58svh, 420px); }
-            .home-solo-stage .lobby-agent-slot-1 { --y: 0px; --s: 1.1; }
             .lobby-controls-bottom-right { right: 8px; bottom: 6px; gap: 7px; }
             .mode-text { max-width: min(340px, 52vw); text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
             .lobby-settings-btn { width: 50px; height: 50px; flex-basis: 50px; font-size: 24px; }
@@ -522,10 +674,8 @@
             .friends-list-panel .btn { padding: 5px 8px !important; font-size: 11px !important; }
             .mini-tab-btn { padding: 7px 9px; font-size: 11px; }
             #view-lobby { padding-bottom: 82px; }
-            .lobby-agents-stage { --agent-fit: clamp(.28, min(calc(100svh / 900), calc(100cqw * .00128)), .48); height: clamp(190px, 56svh, 350px); }
-            .home-solo-stage { --agent-fit: clamp(.28, min(calc(100svh / 900), calc(100cqw * .00128)), .48); height: clamp(190px, 56svh, 350px); }
-            .home-solo-stage .lobby-agent-slot-1 { --y: 0px; --s: 1.1; }
-            .agent-label { max-width: 96px; font-size: 11px; }
+            .so2-lobby-card { width: clamp(82px, 20vw, 105px); min-height: 120px; padding: 10px 6px 8px; }
+            .so2-card-avatar-box { width: 50px; height: 50px; font-size: 26px; }
             .mode-text { max-width: 46vw; font-size: 14px !important; }
             .lobby-start-row { gap: 7px; }
             .lobby-settings-btn { width: 44px; height: 44px; flex-basis: 44px; border-radius: 9px; }

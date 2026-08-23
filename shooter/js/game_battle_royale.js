@@ -215,6 +215,13 @@
 
             function lineIntersectsWall(x1, y1, x2, y2, wall) {
                 const rx = wall.x, ry = wall.y, rw = wall.w, rh = wall.h;
+                // Fast AABB bounding box reject
+                const minX = x1 < x2 ? x1 : x2;
+                const maxX = x1 > x2 ? x1 : x2;
+                const minY = y1 < y2 ? y1 : y2;
+                const maxY = y1 > y2 ? y1 : y2;
+                if (maxX < rx || minX > rx + rw || maxY < ry || minY > ry + rh) return false;
+
                 if (x1 >= rx && x1 <= rx + rw && y1 >= ry && y1 <= ry + rh) return true;
                 if (x2 >= rx && x2 <= rx + rw && y2 >= ry && y2 <= ry + rh) return true;
                 if (lineIntersectsLine(x1, y1, x2, y2, rx, ry, rx + rw, ry)) return true;
@@ -224,16 +231,55 @@
                 return false;
             }
 
+            let _smokeSpriteCanvas = null;
+            function getCachedSmokeSprite() {
+                if (!_smokeSpriteCanvas) {
+                    const size = 360;
+                    const r = size / 2;
+                    _smokeSpriteCanvas = document.createElement('canvas');
+                    _smokeSpriteCanvas.width = size;
+                    _smokeSpriteCanvas.height = size;
+                    const sctx = _smokeSpriteCanvas.getContext('2d');
+
+                    const grad = sctx.createRadialGradient(r, r, r * 0.15, r, r, r);
+                    grad.addColorStop(0, 'rgba(210, 215, 223, 0.7)');
+                    grad.addColorStop(0.5, 'rgba(180, 185, 195, 0.5)');
+                    grad.addColorStop(0.8, 'rgba(160, 165, 175, 0.25)');
+                    grad.addColorStop(1, 'rgba(160, 165, 175, 0)');
+
+                    sctx.fillStyle = grad;
+                    sctx.beginPath();
+                    sctx.arc(r, r, r, 0, Math.PI * 2);
+                    sctx.fill();
+
+                    sctx.strokeStyle = 'rgba(220, 225, 235, 0.05)';
+                    sctx.lineWidth = 4;
+                    sctx.beginPath();
+                    sctx.arc(r, r, r * 0.4, 0, Math.PI * 2);
+                    sctx.stroke();
+                }
+                return _smokeSpriteCanvas;
+            }
+
+            function drawSmokeZones(ctx) {
+                if (!br.smokeZones || br.smokeZones.length === 0) return;
+                const sprite = getCachedSmokeSprite();
+                for (let i = 0; i < br.smokeZones.length; i++) {
+                    const smoke = br.smokeZones[i];
+                    ctx.drawImage(sprite, smoke.x - smoke.r, smoke.y - smoke.r, smoke.r * 2, smoke.r * 2);
+                }
+            }
+
             function brCheckVisibility(fromP, toP) {
                 for (let wall of mapWalls) {
                     if (lineIntersectsWall(fromP.x, fromP.y, toP.x, toP.y, wall)) return false;
                 }
                 if (br.smokeZones) {
                     for (let smoke of br.smokeZones) {
-                        const distFromP = Math.hypot(fromP.x - smoke.x, fromP.y - smoke.y);
-                        if (distFromP < smoke.r) return false;
-                        const distToP = Math.hypot(toP.x - smoke.x, toP.y - smoke.y);
-                        if (distToP < smoke.r) return false;
+                        const distFromPSq = (fromP.x - smoke.x) * (fromP.x - smoke.x) + (fromP.y - smoke.y) * (fromP.y - smoke.y);
+                        if (distFromPSq < smoke.r * smoke.r) return false;
+                        const distToPSq = (toP.x - smoke.x) * (toP.x - smoke.x) + (toP.y - smoke.y) * (toP.y - smoke.y);
+                        if (distToPSq < smoke.r * smoke.r) return false;
                         if (lineIntersectsCircle(fromP.x, fromP.y, toP.x, toP.y, smoke.x, smoke.y, smoke.r)) return false;
                     }
                 }
@@ -244,7 +290,7 @@
                 if (br.myP && br.myP.hp > 0 && !br.isSpectator) {
                     if (brCheckVisibility(br.myP, enemy)) return true;
                 }
-                const myTeam = brNormalizeTeam(br.myP.team);
+                const myTeam = brNormalizeTeam(br.myP?.team);
                 for (let p of Object.values(br.remotePlayers)) {
                     if (p.id !== myId && p.alive && (p.hp || 0) > 0) {
                         if (brNormalizeTeam(p.team) === myTeam) {
@@ -265,17 +311,17 @@
             function getBrPlayerSmokeAlpha(px, py) {
                 let minAlpha = 1.0;
                 if (br.smokeZones) {
-                    br.smokeZones.forEach(smoke => {
+                    for (let smoke of br.smokeZones) {
                         const dx = px - smoke.x;
                         const dy = py - smoke.y;
-                        const dist = Math.hypot(dx, dy);
-                        if (dist < smoke.r) {
-                            const ratio = dist / smoke.r;
+                        const distSq = dx * dx + dy * dy;
+                        if (distSq < smoke.r * smoke.r) {
+                            const ratio = Math.sqrt(distSq) / smoke.r;
                             if (ratio < minAlpha) {
                                 minAlpha = ratio;
                             }
                         }
-                    });
+                    }
                 }
                 return minAlpha;
             }
@@ -292,31 +338,6 @@
                     const r = 120 + Math.random() * 60; // radius 120-180px
                     br.smokeZones.push({ x, y, r });
                 }
-            }
-
-            function drawSmokeZones(ctx) {
-                if (!br.smokeZones) return;
-                ctx.save();
-                br.smokeZones.forEach(smoke => {
-                    const grad = ctx.createRadialGradient(smoke.x, smoke.y, smoke.r * 0.15, smoke.x, smoke.y, smoke.r);
-                    grad.addColorStop(0, 'rgba(210, 215, 223, 0.7)');
-                    grad.addColorStop(0.5, 'rgba(180, 185, 195, 0.5)');
-                    grad.addColorStop(0.8, 'rgba(160, 165, 175, 0.25)');
-                    grad.addColorStop(1, 'rgba(160, 165, 175, 0)');
-
-                    ctx.fillStyle = grad;
-                    ctx.beginPath();
-                    ctx.arc(smoke.x, smoke.y, smoke.r, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Draw soft inner core ring
-                    ctx.strokeStyle = 'rgba(220, 225, 235, 0.05)';
-                    ctx.lineWidth = 4;
-                    ctx.beginPath();
-                    ctx.arc(smoke.x, smoke.y, smoke.r * 0.4, 0, Math.PI * 2);
-                    ctx.stroke();
-                });
-                ctx.restore();
             }
 
             function initBrBackgroundCanvas() {
@@ -367,6 +388,43 @@
                 bgCtx.fillText('БАЗА CT', bases.ct.textX, bases.ct.textY);
                 bgCtx.fillStyle = 'rgba(255, 159, 10, 0.4)';
                 bgCtx.fillText('БАЗА T', bases.t.textX, bases.t.textY);
+
+                // Draw tactical grid for TDM 5v5
+                if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
+                    const gridCols = 5;
+                    const gridRows = 5;
+                    const cellW = BR_SIZE / gridCols;
+                    const cellH = BR_SIZE / gridRows;
+                    bgCtx.save();
+                    bgCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+                    bgCtx.lineWidth = 4;
+                    for (let c = 1; c < gridCols; c++) {
+                        bgCtx.beginPath();
+                        bgCtx.moveTo(c * cellW, 0);
+                        bgCtx.lineTo(c * cellW, BR_SIZE);
+                        bgCtx.stroke();
+                    }
+                    for (let r = 1; r < gridRows; r++) {
+                        bgCtx.beginPath();
+                        bgCtx.moveTo(0, r * cellH);
+                        bgCtx.lineTo(BR_SIZE, r * cellH);
+                        bgCtx.stroke();
+                    }
+                    
+                    // Draw coordinates text (A1-E5)
+                    bgCtx.fillStyle = 'rgba(255, 255, 255, 0.18)';
+                    bgCtx.font = 'bold 36px "Segoe UI", sans-serif';
+                    bgCtx.textAlign = 'center';
+                    bgCtx.textBaseline = 'middle';
+                    const colLabels = ['A', 'B', 'C', 'D', 'E'];
+                    for (let r = 0; r < gridRows; r++) {
+                        for (let c = 0; c < gridCols; c++) {
+                            const label = colLabels[c] + (r + 1);
+                            bgCtx.fillText(label, c * cellW + cellW / 2, r * cellH + cellH / 2);
+                        }
+                    }
+                    bgCtx.restore();
+                }
 
                 // Draw walls
                 mapWalls.forEach(wall => {
@@ -475,7 +533,10 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function updateAndDrawBloodParticles(ctx) {
-                if (!br.bloodParticles) return;
+                if (!br.bloodParticles || br.bloodParticles.length === 0) return;
+                if (br.bloodParticles.length > 50) {
+                    br.bloodParticles.splice(0, br.bloodParticles.length - 50);
+                }
                 ctx.save();
                 for (let i = br.bloodParticles.length - 1; i >= 0; i--) {
                     const p = br.bloodParticles[i];
@@ -502,19 +563,12 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
             function drawBulletWithTracer(ctx, bx, by, bvx, bvy) {
                 if (!br.lowPerformanceMode) {
-                    ctx.save();
-                    const grad = ctx.createLinearGradient(bx, by, bx - bvx * 2.5, by - bvy * 2.5);
-                    grad.addColorStop(0, 'rgba(255, 214, 10, 0.85)');
-                    grad.addColorStop(0.2, 'rgba(220, 220, 220, 0.55)');
-                    grad.addColorStop(1, 'rgba(180, 180, 180, 0)');
-
-                    ctx.strokeStyle = grad;
-                    ctx.lineWidth = 3.5;
+                    ctx.strokeStyle = 'rgba(255, 214, 10, 0.65)';
+                    ctx.lineWidth = 3;
                     ctx.beginPath();
                     ctx.moveTo(bx, by);
-                    ctx.lineTo(bx - bvx * 2.5, by - bvy * 2.5);
+                    ctx.lineTo(bx - bvx * 2.2, by - bvy * 2.2);
                     ctx.stroke();
-                    ctx.restore();
                 }
 
                 ctx.fillStyle = '#ffd60a';
@@ -563,7 +617,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 currentRound: 1,
                 roundEnding: false,
                 roundEndTransitionUntil: 0,
-                roundWinner: ''
+                roundWinner: '',
+                roundAccumulatedTime: 0
             };
             let BR_SIZE = 2000;
             const BR_PLAYER_R = 20;
@@ -1022,9 +1077,12 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     if (ctCountEl) ctCountEl.innerText = ctCount;
                     if (tCountEl) tCountEl.innerText = tCount;
                     
-                    const allRealLobbyPlayerIds = (Array.isArray(lobbyPlayers) ? lobbyPlayers : []).map(p => p.id).filter(id => !isAiFriendId(id));
-                    const allRealChosen = allRealLobbyPlayerIds.every(id => players[id] && brNormalizeTeam(players[id].team) !== '');
-                    const isBalanced = Math.abs(ctCount - tCount) <= 1;
+                    const allRealLobbyPlayerIds = (Array.isArray(lobbyPlayers) && lobbyPlayers.length > 0)
+                        ? lobbyPlayers.map(p => p.id).filter(id => !isAiFriendId(id))
+                        : [myId];
+                    const activeRealIds = allRealLobbyPlayerIds.length > 0 ? allRealLobbyPlayerIds : [myId];
+                    const allRealChosen = activeRealIds.every(id => players[id] && brNormalizeTeam(players[id].team) !== '');
+                    const isBalanced = (activeRealIds.length <= 1) || (Math.abs(ctCount - tCount) <= 1);
                     
                     const footerText = document.getElementById('so2-team-select-footer-text');
                     if (allRealChosen && isBalanced) {
@@ -1033,7 +1091,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                             br.spawningBotsStarted = true;
                             setTimeout(() => {
                                 finalizeMatchStart(players);
-                            }, 1500);
+                            }, 1000);
                         }
                     } else {
                         if (footerText) footerText.innerText = 'Ожидание выбора команд игроками...';
@@ -1322,6 +1380,17 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.teamInitialized = true;
                 
                 // Reset/clear temporary states
+                br.spawningBotsStarted = false;
+                br.warmupActive = false;
+                br.myP = null;
+                br.teamInitialized = false;
+                br.roundEnding = false;
+                br.roundWinner = null;
+                br.roundStartCountdownUntil = 0;
+                br.currentRound = 1;
+                br.ctRounds = 0;
+                br.tRounds = 0;
+                br.roundAccumulatedTime = 0;
                 br.bots = [];
                 br.remotePlayers = {};
                 br.bullets = [];
@@ -1387,27 +1456,40 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
 
                 db.ref(`lobbies/${lobbyId}/br/matchGameplayStarted`).off();
                 db.ref(`lobbies/${lobbyId}/br/matchGameplayStarted`).on('value', br.matchGameplayStartedListener);
+                db.ref(`lobbies/${lobbyId}/br/players`).off();
                 db.ref(`lobbies/${lobbyId}/br/players`).on('value', br.teamSelectListener);
 
-                db.ref(`lobbies/${lobbyId}/br/players/${myId}`).once('value').then(s => {
-                    if (!s.exists()) {
-                        const mySettings = br.settings.players?.[myId] || {};
-                        const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
-                        db.ref(`lobbies/${lobbyId}/br/players/${myId}`).set({
-                            id: myId,
-                            name: myName,
-                            avatar: myAvatar,
-                            eqName: myEqName,
-                            team: '',
-                            hp: myMaxHp,
-                            maxHp: myMaxHp,
-                            alive: true,
-                            kills: 0,
-                            damageTaken: 0,
-                            updatedAt: firebase.database.ServerValue.TIMESTAMP
-                        });
-                    }
-                });
+                const mySettings = br.settings?.players?.[myId] || {};
+                const myMaxHp = Math.max(1, parseInt(mySettings.lives) || BR_DEFAULT_HP);
+                const freshPlayerObj = {
+                    id: myId,
+                    name: myName,
+                    avatar: myAvatar,
+                    eqName: myEqName,
+                    team: '',
+                    hp: myMaxHp,
+                    maxHp: myMaxHp,
+                    alive: true,
+                    kills: 0,
+                    damageTaken: 0,
+                    shotSeq: 0,
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                };
+
+                if (isHost) {
+                    db.ref(`lobbies/${lobbyId}/br`).update({
+                        matchActive: true,
+                        matchGameplayStarted: false,
+                        roundEnding: null,
+                        currentRound: 1,
+                        ctRounds: 0,
+                        tRounds: 0,
+                        damage: null,
+                        bots: null,
+                        bullets: null
+                    }).catch(() => {});
+                }
+                db.ref(`lobbies/${lobbyId}/br/players/${myId}`).set(freshPlayerObj).catch(() => {});
             }
 
             function initBR() {
@@ -1415,6 +1497,10 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.kills = 0;
                 br.placeShown = false;
                 br.isSpectator = false;
+                br.spawningBotsStarted = false;
+                br.warmupActive = false;
+                br.myP = null;
+                br.teamInitialized = false;
                 br.aliveTracker = {};
                 br.bloodStains = [];
                 br.bloodParticles = [];
@@ -1426,6 +1512,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 br.currentRound = 1;
                 br.roundEnding = false;
                 br.roundWinner = '';
+                br.roundAccumulatedTime = 0;
                 const submode = (appState.selectedGameId || '').startsWith('br_') ? appState.selectedGameId.replace('br_', '') : 'tdm_5v5';
                 currentMode = submode;
                 BR_SIZE = (submode === 'tdm_5v5') ? 3500 : 2000;
@@ -1893,6 +1980,9 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             }
 
             function resetBrRoundClient() {
+                br.roundEnding = false;
+                br.roundWinner = null;
+                br.roundAccumulatedTime = 0;
                 br.bullets = [];
                 br.remoteBullets = {};
                 br.bloodStains = [];
@@ -2304,15 +2394,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 }
 
                 if (!br.matchPausedByDisconnect) {
-                    br.matchAccumulatedTime += (now - br.matchLastActiveTime);
+                    const delta = (now - br.matchLastActiveTime);
+                    br.matchAccumulatedTime += delta;
+                    const inCountdown = br.roundStartCountdownUntil && now < br.roundStartCountdownUntil;
+                    const inWarmup = br.warmupActive;
+                    if (!inCountdown && !inWarmup && !br.roundEnding) {
+                        br.roundAccumulatedTime = (br.roundAccumulatedTime || 0) + delta;
+                    }
 
                     updateBrLocalPlayer(now);
                     updateBrRemotePlayerViews();
                     updateBrBotViews();
                     if (isHost || !lobbyId) updateBrBots(now);
                     updateBrBullets(now);
-                    const inCountdown = br.roundStartCountdownUntil && now < br.roundStartCountdownUntil;
-                    const inWarmup = br.warmupActive;
                     if (!inCountdown && !inWarmup) {
                         if (!br.settings || br.settings.shrinkZone !== false) br.zone.r = Math.max(50, br.zone.r - 0.2);
                     }
@@ -2550,14 +2644,23 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     // Apply LOS (line-of-sight) check: bots can only target visible enemies (not hidden by walls or smoke)
                     const allCandidates = playerTargets.concat(botTargets);
                     const visibleTargets = allCandidates.filter(t => brCheckVisibility(b, t));
-                    const targets = visibleTargets.length > 0 ? visibleTargets : [];
                     
-                    const target = targets[Math.floor(Math.random() * targets.length)];
+                    // Always choose the CLOSEST visible enemy to prevent spinning between multiple targets
+                    let closestTarget = null;
+                    let minTargetDistSq = Infinity;
+                    for (let i = 0; i < visibleTargets.length; i++) {
+                        const t = visibleTargets[i];
+                        const dSq = (t.x - b.x) * (t.x - b.x) + (t.y - b.y) * (t.y - b.y);
+                        if (dSq < minTargetDistSq) {
+                            minTargetDistSq = dSq;
+                            closestTarget = t;
+                        }
+                    }
 
                     if (now > (b.nextThink || 0)) {
-                        if (target && level === 3) {
-                            b.tx = target.x;
-                            b.ty = target.y;
+                        if (closestTarget && level >= 2) {
+                            b.tx = closestTarget.x;
+                            b.ty = closestTarget.y;
                         } else {
                             const zoneMinX = Math.max(minX, br.zone.x - br.zone.r);
                             const zoneMaxX = Math.min(maxX, br.zone.x + br.zone.r);
@@ -2607,12 +2710,9 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         if (b.hp <= 0) b.alive = false;
                         changed = true;
                     }
-                    if (target && level >= 2) {
-                        const aim = level === 3 ? target : targets[Math.floor(Math.random() * targets.length)];
-                        if (aim) {
-                            b.a = Math.atan2((aim.y || b.y) - b.y, (aim.x || b.x) - b.x);
-                            brBotTryShoot(b, now);
-                        }
+                    if (closestTarget && level >= 2) {
+                        b.a = Math.atan2((closestTarget.y || b.y) - b.y, (closestTarget.x || b.x) - b.x);
+                        brBotTryShoot(b, now);
                     }
                     b.updatedAt = now;
                 });
@@ -2680,19 +2780,21 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     }
 
                     let hit = false;
-                    if (!lobbyId) {
-                        if (br.myP && br.myP.hp > 0 && br.myP.alive && brIsEnemyTarget(bul.owner, br.myP) && !brIsInvulnerable(br.myP, now)) {
-                            if (Math.hypot(bul.x - br.myP.x, bul.y - br.myP.y) < BR_PLAYER_R) {
-                                hit = true;
-                                spawnBloodSplatter(bul.x, bul.y);
-                                checkAndAddBloodDecal(br.myP, bul.x, bul.y);
-                                playBrSound('hit');
-                                br.myP.hp -= 25;
-                                if (br.myP.hp <= 0) {
-                                    br.myP.hp = 0;
-                                    br.myP.alive = false;
-                                }
-                                br.serverHp = Math.min(br.serverHp, br.myP.hp);
+                    if (br.myP && br.myP.hp > 0 && br.myP.alive && brIsEnemyTarget(bul.owner, br.myP) && !brIsInvulnerable(br.myP, now)) {
+                        const bdx = bul.x - br.myP.x;
+                        const bdy = bul.y - br.myP.y;
+                        if (bdx * bdx + bdy * bdy < BR_PLAYER_R * BR_PLAYER_R) {
+                            hit = true;
+                            spawnBloodSplatter(bul.x, bul.y);
+                            checkAndAddBloodDecal(br.myP, bul.x, bul.y);
+                            playBrSound('hit');
+                            br.myP.hp = Math.max(0, br.myP.hp - 25);
+                            if (br.myP.hp <= 0) {
+                                br.myP.alive = false;
+                            }
+                            br.serverHp = br.myP.hp;
+                            if (lobbyId) {
+                                db.ref(`lobbies/${lobbyId}/br/players/${myId}`).update({ hp: br.myP.hp, alive: br.myP.alive }).catch(() => {});
                             }
                         }
                     }
@@ -3144,9 +3246,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                 }
 
                 const aliveCount = getBrAliveRows().length;
-                document.getElementById('br-ui-alive').innerText = `Живых: ${aliveCount}`;
+                if (aliveCount !== _cachedAliveVal) {
+                    const aliveEl = document.getElementById('br-ui-alive');
+                    if (aliveEl) aliveEl.innerText = `Живых: ${aliveCount}`;
+                    _cachedAliveVal = aliveCount;
+                }
                 updateBrScoreboard();
             }
+
+            let _cachedCtVal = -1;
+            let _cachedTVal = -1;
+            let _cachedTimeStr = '';
+            let _cachedTimerLabel = '';
+            let _cachedAliveVal = -1;
 
             function updateBrScoreboard() {
                 if (!br.active || !br.matchActive) return;
@@ -3183,10 +3295,16 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     showT = tKills;
                 }
 
-                const ctEl = document.getElementById('br-ct-score-val');
-                const tEl = document.getElementById('br-t-score-val');
-                if (ctEl) ctEl.innerText = showCt;
-                if (tEl) tEl.innerText = showT;
+                if (showCt !== _cachedCtVal) {
+                    const ctEl = document.getElementById('br-ct-score-val');
+                    if (ctEl) ctEl.innerText = showCt;
+                    _cachedCtVal = showCt;
+                }
+                if (showT !== _cachedTVal) {
+                    const tEl = document.getElementById('br-t-score-val');
+                    if (tEl) tEl.innerText = showT;
+                    _cachedTVal = showT;
+                }
 
                 let timeStr = '';
                 const now = Date.now();
@@ -3201,6 +3319,12 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     const minutes = Math.floor(totalSec / 60);
                     const seconds = totalSec % 60;
                     timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+                } else if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
+                    const elapsedMs = br.roundAccumulatedTime || 0;
+                    const totalSec = Math.floor(elapsedMs / 1000);
+                    const minutes = Math.floor(totalSec / 60);
+                    const seconds = totalSec % 60;
+                    timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
                 } else {
                     const elapsedMs = br.matchAccumulatedTime;
                     const totalSec = Math.floor(elapsedMs / 1000);
@@ -3209,18 +3333,22 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                     timeStr = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
                 }
 
-                const timerValEl = document.getElementById('br-match-timer-val');
-                if (timerValEl) timerValEl.innerText = timeStr;
+                if (timeStr !== _cachedTimeStr) {
+                    const timerValEl = document.getElementById('br-match-timer-val');
+                    if (timerValEl) timerValEl.innerText = timeStr;
+                    _cachedTimeStr = timeStr;
+                }
 
-                const timerLabelEl = document.getElementById('br-match-timer-label');
-                if (timerLabelEl) {
-                    let label = 'MATCH';
-                    if (typeof currentMode !== 'undefined') {
-                        if (currentMode === 'tdm_5v5') label = 'TDM 5V5';
-                        else if (currentMode === 'duel_1v1') label = 'DUEL 1V1';
-                        else if (currentMode === 'duel_2v2') label = 'DUEL 2V2';
-                    }
-                    timerLabelEl.innerText = label;
+                let label = 'MATCH';
+                if (typeof currentMode !== 'undefined') {
+                    if (currentMode === 'tdm_5v5') label = 'TDM 5V5';
+                    else if (currentMode === 'duel_1v1') label = 'DUEL 1V1';
+                    else if (currentMode === 'duel_2v2') label = 'DUEL 2V2';
+                }
+                if (label !== _cachedTimerLabel) {
+                    const timerLabelEl = document.getElementById('br-match-timer-label');
+                    if (timerLabelEl) timerLabelEl.innerText = label;
+                    _cachedTimerLabel = label;
                 }
             }
 
@@ -3372,11 +3500,15 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                         } else if (Date.now() >= br.roundEndTransitionUntil) {
                             br.roundEnding = false;
                             const winnerTeam = br.roundWinner;
+                            br.roundWinner = null;
 
                             if (winnerTeam === 'Counter-Terrorists') br.ctRounds = (br.ctRounds || 0) + 1;
                             else if (winnerTeam === 'Terrorists') br.tRounds = (br.tRounds || 0) + 1;
 
                             if (br.ctRounds >= 8 || br.tRounds >= 8) {
+                                const finalWinner = br.ctRounds >= 8 ? 'Counter-Terrorists' : 'Terrorists';
+                                const myTeam = brNormalizeTeam(br.myP?.team);
+                                showBrFinal(myTeam === finalWinner, finalWinner);
                                 if (lobbyId) {
                                     const base = `lobbies/${lobbyId}/br`;
                                     const updates = {};
@@ -3387,6 +3519,8 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                 }
                             } else {
                                 const nextRound = (br.currentRound || 1) + 1;
+                                br.currentRound = nextRound;
+                                resetBrRoundClient();
                                 if (lobbyId) {
                                     const base = `lobbies/${lobbyId}/br`;
                                     const updates = {};
@@ -3395,9 +3529,6 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                                     updates['currentRound'] = nextRound;
                                     updates['roundEnding'] = null;
                                     db.ref(base).update(updates).catch(() => {});
-                                } else {
-                                    br.currentRound = nextRound;
-                                    resetBrRoundClient();
                                 }
                             }
                         }
@@ -3478,6 +3609,7 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
             function stopBR() {
                  br.active = false;
                  cancelAnimationFrame(br.loop);
+                 br.loop = null;
                  if (br.syncTimer) clearInterval(br.syncTimer);
                  
                  // UI Overlay & Banner Cleanup
@@ -3487,8 +3619,22 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                  if (reconnectBanner) reconnectBanner.style.display = 'none';
                  const respawnOverlay = document.getElementById('br-respawn-overlay');
                  if (respawnOverlay) respawnOverlay.classList.add('hidden');
+                 const deathScreen = document.getElementById('br-death-screen');
+                 if (deathScreen) deathScreen.style.display = 'none';
                  
                  br.matchPausedByDisconnect = false;
+                 br.spawningBotsStarted = false;
+                 br.warmupActive = false;
+                 br.myP = null;
+                 br.teamInitialized = false;
+                 br.roundEnding = false;
+                 br.roundWinner = null;
+                 br.roundStartCountdownUntil = 0;
+                 br.currentRound = 1;
+                 br.ctRounds = 0;
+                 br.tRounds = 0;
+                 br.matchAccumulatedTime = 0;
+                 br.matchStartTime = 0;
 
                  const scoreboard = document.getElementById('br-scoreboard');
                  if (scoreboard) scoreboard.style.display = 'none';
@@ -3893,54 +4039,19 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   ctx.scale(minimapScale, minimapScale);
                   ctx.translate(-br.myP.x, -br.myP.y);
                   
-                  mapWalls.forEach(wall => {
-                      ctx.fillStyle = '#3a3a45';
-                      ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
-                  });
-                  
+                  if (!br.bgCanvas) {
+                      initBrBackgroundCanvas();
+                  }
+                  if (br.bgCanvas) {
+                      ctx.drawImage(br.bgCanvas, 0, 0);
+                  }
+
                   if (typeof currentMode !== 'undefined' && (currentMode === 'duel_1v1' || currentMode === 'duel_2v2')) {
                       const maxMapSize = 1200;
                       const minCoord = (BR_SIZE - maxMapSize) / 2;
                       ctx.strokeStyle = '#ff3b30';
                       ctx.lineWidth = 15;
                       ctx.strokeRect(minCoord, minCoord, maxMapSize, maxMapSize);
-                  }
-                  
-                  // Draw tactical grid for TDM 5v5
-                  if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
-                      const gridCols = 5;
-                      const gridRows = 5;
-                      const cellW = BR_SIZE / gridCols;
-                      const cellH = BR_SIZE / gridRows;
-                      ctx.save();
-                      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-                      ctx.lineWidth = 8;
-                      for (let c = 1; c < gridCols; c++) {
-                          ctx.beginPath();
-                          ctx.moveTo(c * cellW, 0);
-                          ctx.lineTo(c * cellW, BR_SIZE);
-                          ctx.stroke();
-                      }
-                      for (let r = 1; r < gridRows; r++) {
-                          ctx.beginPath();
-                          ctx.moveTo(0, r * cellH);
-                          ctx.lineTo(BR_SIZE, r * cellH);
-                          ctx.stroke();
-                      }
-                      
-                      // Draw coordinates text (A1-E5)
-                      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-                      ctx.font = 'bold 36px "Segoe UI", sans-serif';
-                      ctx.textAlign = 'center';
-                      ctx.textBaseline = 'middle';
-                      const colLabels = ['A', 'B', 'C', 'D', 'E'];
-                      for (let r = 0; r < gridRows; r++) {
-                          for (let c = 0; c < gridCols; c++) {
-                              const label = colLabels[c] + (r + 1);
-                              ctx.fillText(label, c * cellW + cellW / 2, r * cellH + cellH / 2);
-                          }
-                      }
-                      ctx.restore();
                   }
                   
                   if (br.zone) {
@@ -4033,15 +4144,16 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   
                   const availableWidth = windowEl.clientWidth;
                   const availableHeight = windowEl.clientHeight;
-                  
                   const size = Math.min(availableWidth, availableHeight);
                   
-                  canvas.width = size;
-                  canvas.height = size;
-                  canvas.style.width = size + 'px';
-                  canvas.style.height = size + 'px';
-                  canvas.style.display = 'block';
-                  canvas.style.margin = 'auto';
+                  if (canvas.width !== size || canvas.height !== size) {
+                      canvas.width = size;
+                      canvas.height = size;
+                      canvas.style.width = size + 'px';
+                      canvas.style.height = size + 'px';
+                      canvas.style.display = 'block';
+                      canvas.style.margin = 'auto';
+                  }
                   
                   const ctx = canvas.getContext('2d');
                   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -4061,43 +4173,6 @@ br.bgCtx.arc(sx, sy, sr, 0, Math.PI * 2);
                   } else {
                       ctx.fillStyle = '#0d0d12';
                       ctx.fillRect(0, 0, BR_SIZE, BR_SIZE);
-                  }
-                  
-                  // Draw tactical grid for TDM 5v5
-                  if (typeof currentMode !== 'undefined' && currentMode === 'tdm_5v5') {
-                      const gridCols = 5;
-                      const gridRows = 5;
-                      const cellW = BR_SIZE / gridCols;
-                      const cellH = BR_SIZE / gridRows;
-                      ctx.save();
-                      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-                      ctx.lineWidth = 4 / mapScale;
-                      for (let c = 1; c < gridCols; c++) {
-                          ctx.beginPath();
-                          ctx.moveTo(c * cellW, 0);
-                          ctx.lineTo(c * cellW, BR_SIZE);
-                          ctx.stroke();
-                      }
-                      for (let r = 1; r < gridRows; r++) {
-                          ctx.beginPath();
-                          ctx.moveTo(0, r * cellH);
-                          ctx.lineTo(BR_SIZE, r * cellH);
-                          ctx.stroke();
-                      }
-                      
-                      // Draw coordinates text (A1-E5)
-                      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-                      ctx.font = 'bold 36px "Segoe UI", sans-serif';
-                      ctx.textAlign = 'center';
-                      ctx.textBaseline = 'middle';
-                      const colLabels = ['A', 'B', 'C', 'D', 'E'];
-                      for (let r = 0; r < gridRows; r++) {
-                          for (let c = 0; c < gridCols; c++) {
-                              const label = colLabels[c] + (r + 1);
-                              ctx.fillText(label, c * cellW + cellW / 2, r * cellH + cellH / 2);
-                          }
-                      }
-                      ctx.restore();
                   }
                   
                   if (br.smokeZones) {
