@@ -9,6 +9,10 @@
                 this.isHudVisible = true;
                 window.gameEngine = this;
 
+                this.isMobile = (typeof MobileTouchController !== 'undefined' && MobileTouchController.detectMobileMode) 
+                    ? MobileTouchController.detectMobileMode() 
+                    : false;
+
                 this.progressTracker = new LoadingProgressTracker();
                 this.fpsElement = document.getElementById('stat-fps');
                 this.statChunkElement = document.getElementById('stat-chunk-lod');
@@ -82,24 +86,24 @@
                     this.districtGenerator = new DistrictGenerator(this.scene, this.world, this.physicsMaterials, null);
 
                     await this.progressTracker.setProgress(58, 'Посадка сельхозполей, кустарников и деревьев (InstancedMesh + Wind Shader)...');
-                    this.vegetationManager = new VegetationAndCropsManager(this.scene, this.world, this.terrainManager, this.physicsMaterials);
+                    this.vegetationManager = new VegetationAndCropsManager(this.scene, this.world, this.terrainManager, this.physicsMaterials, this.isMobile);
 
                     await this.progressTracker.setProgress(60, 'Монтаж лифтовой системы небоскреба Maze Bank (10 этажей)...');
                     this.elevatorSystem = new SkyscraperElevatorSystem(this.scene, this.world, this.physicsMaterials);
 
                     await this.progressTracker.setProgress(66, 'Монтаж уличных фонарей со сплошными коллайдерами...');
-                    this.streetLampManager = new StreetLampManager(this.scene, this.world, this.physicsMaterials);
+                    this.streetLampManager = new StreetLampManager(this.scene, this.world, this.physicsMaterials, this.isMobile);
 
                     await this.progressTracker.setProgress(76, 'Инициализация автомобильного освещения (Spot Shadows, стоп-сигналы)...');
                     this.vehicleManager = new VehicleManager(this.scene, this.world, this.physicsMaterials);
 
-                    await this.progressTracker.setProgress(80, 'Инициализация AI-системы автономного ambient-трафика (24 авто)...');
+                    await this.progressTracker.setProgress(80, 'Инициализация AI-системы автономного ambient-трафика...');
                     this.ambientTrafficManager = new AmbientTrafficManager(
-                        this.scene, this.world, this.physicsMaterials, this.terrainManager, this.roadNetwork
+                        this.scene, this.world, this.physicsMaterials, this.terrainManager, this.roadNetwork, this.isMobile
                     );
 
                     await this.progressTracker.setProgress(84, 'Инициализация интерактивных футболистов, обхода авто и нокдауна...');
-                    this.pedestrianManager = new PedestrianNPCManager(this.scene, this.world, this.physicsMaterials, this.camera);
+                    this.pedestrianManager = new PedestrianNPCManager(this.scene, this.world, this.physicsMaterials, this.camera, this.isMobile);
                     this.dayNightCycle = new DayNightCycleManager(
                         this.scene, this.sky, this.sunLight, this.hemiLight, this.ambientLight,
                         this.streetLampManager, this.houseBuilder, this.orgBuildingBuilder
@@ -107,8 +111,8 @@
                     this.cloudSystem = new DynamicCloudSystem(this.scene);
 
                     await this.progressTracker.setProgress(90, 'Создание динамической погоды (частицы дождя, туман, мокрый асфальт)...');
-                    this.weatherManager = new DynamicWeatherManager(this.scene, this.roadNetwork, this.dayNightCycle);
-                    this.minimapRenderer = new MinimapRenderer();
+                    this.weatherManager = new DynamicWeatherManager(this.scene, this.roadNetwork, this.dayNightCycle, this.isMobile);
+                    this.minimapRenderer = new MinimapRenderer(this.isMobile);
 
                     await this.progressTracker.setProgress(92, 'Настройка триггерных зон районов карты (12 районов, GTA-HUD)...');
                     this.districtManager = new NeighborhoodDistrictManager();
@@ -152,10 +156,14 @@
 
             initRenderer() {
                 this.renderer = new THREE.WebGLRenderer({
-                    canvas: this.canvas, antialias: true, powerPreference: "high-performance", precision: "highp"
+                    canvas: this.canvas,
+                    antialias: !this.isMobile,
+                    powerPreference: "high-performance",
+                    precision: this.isMobile ? "mediump" : "highp"
                 });
                 this.renderer.setSize(window.innerWidth, window.innerHeight);
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
+                const maxRatio = this.isMobile ? Math.min(window.devicePixelRatio || 1, 1.0) : Math.min(window.devicePixelRatio || 1, 1.0);
+                this.renderer.setPixelRatio(maxRatio);
                 this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
                 this.renderer.toneMappingExposure = 1.05;
                 this.renderer.outputEncoding = THREE.sRGBEncoding;
@@ -173,11 +181,12 @@
 
                 this.sunLight = new THREE.DirectionalLight(0xfffaea, 2.0);
                 this.sunLight.castShadow = true;
-                this.sunLight.shadow.mapSize.width = 1024;
-                this.sunLight.shadow.mapSize.height = 1024;
+                const shadowRes = this.isMobile ? 512 : 1024;
+                this.sunLight.shadow.mapSize.width = shadowRes;
+                this.sunLight.shadow.mapSize.height = shadowRes;
                 this.sunLight.shadow.camera.near = 10;
                 this.sunLight.shadow.camera.far = 200;
-                const shadowExtent = 42;
+                const shadowExtent = this.isMobile ? 32 : 42;
                 this.sunLight.shadow.camera.left = -shadowExtent;
                 this.sunLight.shadow.camera.right = shadowExtent;
                 this.sunLight.shadow.camera.top = shadowExtent;
@@ -200,7 +209,7 @@
                 this.world = new CANNON.World();
                 this.world.gravity.set(0, -9.82, 0);
                 this.world.broadphase = new CANNON.SAPBroadphase(this.world);
-                this.world.solver.iterations = 7;
+                this.world.solver.iterations = this.isMobile ? 4 : 7;
 
                 this.physicsMaterials.ground = new CANNON.Material('ground');
                 this.physicsMaterials.wall = new CANNON.Material('wall');
@@ -521,7 +530,7 @@
             }
 
             updatePhysics(deltaTime) {
-                this.world.step(1 / 60, Math.min(deltaTime, 0.1), 3);
+                this.world.step(1 / 60, Math.min(deltaTime, 0.05), this.isMobile ? 2 : 3);
 
                 const isDriving = this.vehicleManager && this.vehicleManager.activeDrivenCar !== null;
                 const isTransitioning = this.vehicleManager && (this.vehicleManager.transitionState === 'ENTERING_VEHICLE' || this.vehicleManager.transitionState === 'EXITING_VEHICLE');
@@ -698,8 +707,8 @@
                     this.soundEngine.updateDistrictAmbience(delta, curDistId, isIndoor);
                 }
 
-                // Отрисовка круглой миникарты в реальном времени (60 FPS)
-                if (this.minimapRenderer) {
+                // Отрисовка круглой миникарты (только если HUD видим)
+                if (this.minimapRenderer && this.isHudVisible) {
                     const focusPosMini = isDriving
                         ? this.vehicleManager.activeDrivenCar.chassisBody.position
                         : (this.player.body ? this.player.body.position : null);

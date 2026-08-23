@@ -2,10 +2,11 @@
          * STEP 24 & 29: Менеджер динамической погоды и реалистичной системы капель дождя
          */
         class DynamicWeatherManager {
-            constructor(scene, roadNetwork, dayNightCycle) {
+            constructor(scene, roadNetwork, dayNightCycle, isMobile = false) {
                 this.scene = scene;
                 this.roadNetwork = roadNetwork;
                 this.dayNightCycle = dayNightCycle;
+                this.isMobile = isMobile;
 
                 // 4 типа погоды с разной интенсивностью
                 this.weatherTypes = ['CLEAR', 'DRIZZLE', 'RAIN', 'SHOWER'];
@@ -36,8 +37,8 @@
             }
 
             initRainParticleSystem() {
-                // Высокопроизводительный плотный 3D дождь (850 струй вокруг фокуса = 1700 вершин)
-                const streakCount = 850;
+                // Высокопроизводительный 3D дождь (350 струй на мобильных / 850 на ПК)
+                const streakCount = this.isMobile ? 350 : 850;
                 const geometry = new THREE.BufferGeometry();
                 const positions = new Float32Array(streakCount * 6);
                 const dropData = [];
