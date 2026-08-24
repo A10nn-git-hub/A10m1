@@ -148,6 +148,10 @@ class MobileTouchController {
 
             <!-- Кнопки управления пешком (справа внизу) -->
             <div id="mobile-foot-buttons" class="mobile-action-group foot-group">
+                <button id="btn-touch-tree" class="mobile-action-btn tree-btn" style="display:none;">
+                    <span class="btn-icon">🌳</span>
+                    <span class="btn-label" id="btn-touch-tree-label">ПРЯТАТЬСЯ</span>
+                </button>
                 <button id="btn-touch-vehicle" class="mobile-action-btn vehicle-enter-btn">
                     <span class="btn-icon">🚗</span>
                     <span class="btn-label">СЕСТЬ</span>
@@ -364,6 +368,14 @@ class MobileTouchController {
             }
         };
 
+        bindTrigger('btn-touch-tree', () => {
+            if (this.engine && this.engine.playerController) {
+                this.engine.playerController.toggleClimbTree();
+            } else if (this.input && this.input.onInteract) {
+                this.input.onInteract();
+            }
+        });
+
         bindTrigger('btn-touch-vehicle', () => {
             if (this.input && this.input.onToggleVehicle) this.input.onToggleVehicle();
         });
@@ -530,6 +542,27 @@ class MobileTouchController {
         if (vehicleEnterBtn) {
             const canEnter = vehiclePrompt && vehiclePrompt.style.display === 'block';
             vehicleEnterBtn.style.display = canEnter ? 'flex' : 'none';
+        }
+
+        // Показ кнопки укрытия на дереве (Стелс)
+        const treeBtn = document.getElementById('btn-touch-tree');
+        const treeLabel = document.getElementById('btn-touch-tree-label');
+        if (treeBtn && this.engine && this.engine.playerController) {
+            const pc = this.engine.playerController;
+            if (pc.isClimbingTree) {
+                treeBtn.style.display = 'flex';
+                if (treeLabel) treeLabel.innerText = 'СЛЕЗТЬ';
+            } else if (!isDriving && !isFlyingHeli) {
+                const nearTree = pc.findNearestTree(3.8);
+                if (nearTree) {
+                    treeBtn.style.display = 'flex';
+                    if (treeLabel) treeLabel.innerText = 'ПРЯТАТЬСЯ';
+                } else {
+                    treeBtn.style.display = 'none';
+                }
+            } else {
+                treeBtn.style.display = 'none';
+            }
         }
 
         // Показ мобильной панели лифта

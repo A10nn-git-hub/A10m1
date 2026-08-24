@@ -762,6 +762,14 @@
             animation: pulseTouchBtn 1.2s infinite alternate;
         }
 
+        /* Кнопка укрытия на дереве */
+        .tree-btn {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.45) 0%, rgba(5, 150, 105, 0.85) 100%);
+            border-color: #10b981;
+            box-shadow: 0 0 22px rgba(16, 185, 129, 0.6);
+            animation: pulseTouchBtn 1.2s infinite alternate;
+        }
+
         @keyframes pulseTouchBtn {
             0% { transform: scale(1.0); }
             100% { transform: scale(1.08); }

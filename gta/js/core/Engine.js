@@ -485,6 +485,12 @@ class GTAEngine {
         this.inputController.onSeasonChange = () => { if (this.dayNightCycle) this.dayNightCycle.changeSeason(); };
 
         this.inputController.onToggleVehicle = () => {
+            // 0. Если персонаж сидит на дереве — слезть с дерева
+            if (this.playerController && this.playerController.isClimbingTree) {
+                this.playerController.toggleClimbTree();
+                return;
+            }
+
             const helis = this.helicopters || (this.helicopter ? [this.helicopter] : []);
             // 1. Высадка из текущего вертолета
             for (let i = 0; i < helis.length; i++) {
@@ -509,8 +515,17 @@ class GTAEngine {
                 }
             }
             // 3. Автомобили
-            if (this.vehicleManager) {
-                this.vehicleManager.toggleEnterExitVehicle(this.player);
+            if (this.vehicleManager && this.player && this.player.body) {
+                const nearestCar = this.vehicleManager.findNearestCar(this.player.body.position, 4.2);
+                if (nearestCar || this.vehicleManager.activeDrivenCar) {
+                    this.vehicleManager.toggleEnterExitVehicle(this.player);
+                    return;
+                }
+            }
+
+            // 4. Дерево (если рядом нет транспорта, но есть дерево)
+            if (this.playerController && this.playerController.findNearestTree(3.8)) {
+                this.playerController.toggleClimbTree();
             }
         };
 
