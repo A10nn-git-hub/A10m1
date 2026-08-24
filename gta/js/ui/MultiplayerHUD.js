@@ -65,11 +65,20 @@ class MultiplayerHUD {
             });
         }
 
-        // Кнопка подключения/отключения
+        // Кнопка подключения / смены комнаты
         const btnConnect = document.getElementById('btn-mp-connect');
         if (btnConnect) {
             btnConnect.addEventListener('click', () => {
                 this.handleConnectButton();
+            });
+        }
+
+        // Кнопка отключения от сети
+        const btnDisconnect = document.getElementById('btn-mp-disconnect');
+        if (btnDisconnect) {
+            btnDisconnect.addEventListener('click', () => {
+                this.mp.disconnect();
+                this.updateSettingsModalState();
             });
         }
 
@@ -189,7 +198,7 @@ class MultiplayerHUD {
         const isMe = msg.senderId === this.mp.localPlayerId;
         const senderColor = isMe ? '#00e5ff' : '#ffd700';
 
-        row.innerHTML = `<span class="mp-chat-sender" style="color:${senderColor}">${msg.senderName}:</span> <span class="mp-chat-text">${this.escapeHTML(msg.text)}</span>`;
+        row.innerHTML = `<span class="mp-chat-sender" style="color:${senderColor}">${this.escapeHTML(msg.senderName || 'Player')}:</span> <span class="mp-chat-text">${this.escapeHTML(msg.text)}</span>`;
         this.chatMessages.appendChild(row);
 
         // Автоматическая прокрутка вниз
@@ -250,6 +259,7 @@ class MultiplayerHUD {
 
     updateSettingsModalState() {
         const btnConnect = document.getElementById('btn-mp-connect');
+        const btnDisconnect = document.getElementById('btn-mp-disconnect');
         const statusText = document.getElementById('mp-modal-status-text');
 
         if (statusText) {
@@ -259,8 +269,8 @@ class MultiplayerHUD {
 
         if (btnConnect) {
             if (this.mp.status === 'CONNECTED') {
-                btnConnect.innerText = 'ОТКЛЮЧИТЬСЯ ОТ СЕТИ';
-                btnConnect.className = 'menu-btn danger';
+                btnConnect.innerText = 'ВОЙТИ / СМЕНИТЬ КОМНАТУ';
+                btnConnect.className = 'menu-btn primary';
             } else if (this.mp.status === 'CONNECTING') {
                 btnConnect.innerText = 'ПОДКЛЮЧЕНИЕ...';
                 btnConnect.className = 'menu-btn';
@@ -269,15 +279,13 @@ class MultiplayerHUD {
                 btnConnect.className = 'menu-btn primary';
             }
         }
+
+        if (btnDisconnect) {
+            btnDisconnect.style.display = (this.mp.status === 'CONNECTED') ? 'inline-block' : 'none';
+        }
     }
 
     handleConnectButton() {
-        if (this.mp.status === 'CONNECTED' || this.mp.status === 'CONNECTING') {
-            this.mp.disconnect();
-            this.updateSettingsModalState();
-            return;
-        }
-
         const inpNick = document.getElementById('mp-input-nickname');
         const inpRoom = document.getElementById('mp-input-room');
 
@@ -326,7 +334,7 @@ class MultiplayerHUD {
                 <td><span class="player-dot me"></span> <b>${this.escapeHTML(this.mp.nickname)} (ВЫ)</b></td>
                 <td><span class="badge-role">ХОСТ/ИГРОК</span></td>
                 <td><div class="hp-bar"><div class="hp-fill" style="width:100%"></div></div></td>
-                <td><span class="status-online">В СЕТИ</span></td>
+                <td><span class="status-online">В СЕТИ [${this.escapeHTML(this.mp.roomId)}]</span></td>
             </tr>
         `;
 
@@ -336,7 +344,7 @@ class MultiplayerHUD {
                 const modeText = p.isDriving ? '🚗 ЗА РУЛЕМ' : '🏃 ПЕШКОМ';
                 html += `
                     <tr>
-                        <td><span class="player-dot"></span> ${this.escapeHTML(p.nickname)}</td>
+                        <td><span class="player-dot"></span> ${this.escapeHTML(p.nickname || 'Player')}</td>
                         <td><span class="badge-remote">${modeText}</span></td>
                         <td><div class="hp-bar"><div class="hp-fill" style="width:${hp}%"></div></div></td>
                         <td><span class="status-online">В СЕТИ</span></td>

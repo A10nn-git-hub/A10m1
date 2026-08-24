@@ -204,7 +204,35 @@ class FullMapRenderer {
                     ctx.fillRect(cp.x - 2.5, cp.y - 2.5, 5, 5);
                 }
 
-                // 9. Метка игрока
+                // 9. Удаленные игроки мультиплеера
+                if (window.gameEngine && window.gameEngine.multiplayerManager) {
+                    const remotes = window.gameEngine.multiplayerManager.getRemotePlayersArray();
+                    for (let i = 0; i < remotes.length; i++) {
+                        const rp = remotes[i];
+                        const rPos = this.worldToMap(rp.x, rp.z);
+                        ctx.save();
+                        ctx.translate(rPos.x, rPos.y);
+
+                        ctx.fillStyle = '#00f0ff';
+                        ctx.strokeStyle = '#ffffff';
+                        ctx.lineWidth = 1.5;
+                        ctx.beginPath();
+                        ctx.moveTo(0, -6);
+                        ctx.lineTo(6, 0);
+                        ctx.lineTo(0, 6);
+                        ctx.lineTo(-6, 0);
+                        ctx.closePath();
+                        ctx.fill();
+                        ctx.stroke();
+
+                        ctx.fillStyle = '#00f0ff';
+                        ctx.font = 'bold 9px sans-serif';
+                        ctx.fillText(rp.nickname || 'Player', 8, 3);
+                        ctx.restore();
+                    }
+                }
+
+                // 10. Метка игрока
                 const pp = this.worldToMap(playerPos.x, playerPos.z);
                 const rotY = playerYawWorld;
 

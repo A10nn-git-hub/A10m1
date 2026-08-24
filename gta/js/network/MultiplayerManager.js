@@ -28,6 +28,7 @@ class MultiplayerManager {
         this.playersRef = null;
         this.localPlayerRef = null;
         this.chatRef = null;
+        this.elevatorRef = null;
         this.connectedRef = null;
 
         this.onStatusChange = null;
@@ -55,20 +56,21 @@ class MultiplayerManager {
     }
 
     /**
-     * Подключиться к сетевой сессии
+     * Подключиться к сетевой сессии (лобби)
      */
     connect(config = null, nickname = null, roomId = null) {
-        if (nickname) {
+        if (nickname && typeof nickname === 'string') {
             this.nickname = nickname.trim().substring(0, 18) || this.nickname;
             FirebaseConfig.saveNickname(this.nickname);
         }
-        if (roomId) {
+        if (roomId && typeof roomId === 'string') {
             this.roomId = FirebaseConfig.sanitizeRoomId(roomId);
             FirebaseConfig.saveRoomId(this.roomId);
         }
 
+        // Полное отключение от предыдущей комнаты
         this.disconnect();
-        this.updateStatus('CONNECTING', 'Подключение к комнате...');
+        this.updateStatus('CONNECTING', `Подключение к комнате [${this.roomId}]...`);
 
         try {
             // 1. Инициализация локального / кросс-вкладочного высокоскоростного канала
@@ -95,7 +97,7 @@ class MultiplayerManager {
                     this.updateStatus('CONNECTED', `В сети [Комната: ${this.roomId}]`);
                     this.sendLocalStateNow();
                 }
-            }, 1200);
+            }, 1000);
 
             return true;
         } catch (err) {
@@ -169,21 +171,26 @@ class MultiplayerManager {
             this.chatRef = this.database.ref(`${rootPath}/chat`);
             this.connectedRef = this.database.ref('.info/connected');
 
+            // Обработка статуса подключения
             this.connectedRef.on('value', (snap) => {
                 const isOnline = snap.val() === true;
                 if (isOnline) {
                     this.updateStatus('CONNECTED', `В сети [Комната: ${this.roomId}]`);
                     if (this.localPlayerRef) {
-                        this.localPlayerRef.onDisconnect().remove();
+                        try {
+                            this.localPlayerRef.onDisconnect().remove();
+                        } catch (e) {}
                     }
                     this.sendLocalStateNow();
                 }
             });
 
+            // Слушатель появления новых игроков в комнате
             this.playersRef.on('child_added', (snapshot) => {
                 const pid = snapshot.key;
-                if (pid === this.localPlayerId) return;
+                if (!pid || pid === this.localPlayerId) return;
                 const data = snapshot.val();
+                if (!data) return;
                 this.handlePlayerState(pid, data);
                 // Отправляем свое актуальное состояние новому игроку
                 this.sendLocalStateNow();
@@ -191,23 +198,27 @@ class MultiplayerManager {
                 console.error('[Multiplayer] Firebase playersRef child_added error:', err);
             });
 
+            // Слушатель обновления состояния существующих игроков
             this.playersRef.on('child_changed', (snapshot) => {
                 const pid = snapshot.key;
-                if (pid === this.localPlayerId) return;
+                if (!pid || pid === this.localPlayerId) return;
                 const data = snapshot.val();
+                if (!data) return;
                 this.handlePlayerState(pid, data);
             }, (err) => {
                 console.error('[Multiplayer] Firebase playersRef child_changed error:', err);
             });
 
+            // Слушатель выхода игроков из комнаты
             this.playersRef.on('child_removed', (snapshot) => {
                 const pid = snapshot.key;
-                if (pid === this.localPlayerId) return;
+                if (!pid || pid === this.localPlayerId) return;
                 this.removeRemotePlayer(pid);
             }, (err) => {
                 console.error('[Multiplayer] Firebase playersRef child_removed error:', err);
             });
 
+            // Синхронизация лифта небоскреба Maze Bank
             this.elevatorRef = this.database.ref(`${rootPath}/elevator`);
             this.elevatorRef.on('value', (snapshot) => {
                 const ev = snapshot.val();
@@ -216,6 +227,7 @@ class MultiplayerManager {
                 }
             });
 
+            // Синхронизация чата
             this.chatRef.limitToLast(25).on('child_added', (snapshot) => {
                 const msg = snapshot.val();
                 if (!msg || msg.senderId === this.localPlayerId) return;
@@ -306,20 +318,18 @@ class MultiplayerManager {
         try {
             const now = Date.now();
             let remote = this.remotePlayers.get(pid);
+
             if (!remote) {
-                // Игнорируем застарелые записи (старше 30 секунд)
-                if (data.lastSeen && (now - data.lastSeen > 30000)) {
-                    return;
-                }
                 remote = new RemotePlayer(this.scene, pid, data);
-                remote.lastSeen = data.lastSeen || now;
+                // Запоминаем локальное время получения пакета (исключает проблему рассинхронизации часов между устройствами)
+                remote.lastReceiveTime = now;
                 this.remotePlayers.set(pid, remote);
                 if (this.onPlayersUpdated) this.onPlayersUpdated(this.getRemotePlayersArray());
                 if (window.gameEngine && window.gameEngine.multiplayerHUD) {
                     window.gameEngine.multiplayerHUD.addSystemMessage(`👋 Игрок "${remote.nickname}" присоединился к сессии!`);
                 }
             } else {
-                remote.lastSeen = data.lastSeen || now;
+                remote.lastReceiveTime = now;
                 remote.applyNetworkState(data);
             }
         } catch (err) {
@@ -342,64 +352,97 @@ class MultiplayerManager {
         }
     }
 
-    sendLocalStateNow() {
-        if (this.status !== 'CONNECTED' && this.status !== 'CONNECTING') return;
+    /**
+     * Сборка безопасного сериализуемого пакета локального игрока (без undefined значений)
+     */
+    buildLocalPayload() {
         const player = window.gameEngine?.player;
         const playerController = window.gameEngine?.playerController;
         const vehicleManager = window.gameEngine?.vehicleManager;
+        const heli = window.gameEngine?.helicopter;
+        const weaponSystem = window.gameEngine?.weaponSystem;
 
-        if (!player || !player.mesh) return;
+        if (!player || !player.mesh) return null;
 
-        const isDriving = vehicleManager && vehicleManager.activeDrivenCar !== null;
+        const isDriving = !!(vehicleManager && vehicleManager.activeDrivenCar !== null);
         const activeCar = isDriving ? vehicleManager.activeDrivenCar : null;
 
-        const pos = isDriving && activeCar
-            ? (activeCar.chassisBody ? activeCar.chassisBody.position : (activeCar.carGroup ? activeCar.carGroup.position : player.mesh.position))
-            : (player.mesh ? player.mesh.position : (player.body ? new THREE.Vector3(player.body.position.x, player.body.position.y - 0.815, player.body.position.z) : new THREE.Vector3(0, 0, 0)));
+        let posX = 0, posY = 1.5, posZ = 15.0, rotY = 0;
 
-        const rotY = isDriving && activeCar
-            ? (activeCar.carGroup ? activeCar.carGroup.rotation.y : (activeCar.group ? activeCar.group.rotation.y : 0))
-            : (player.mesh ? player.mesh.rotation.y : 0);
+        if (isDriving && activeCar) {
+            const carPos = activeCar.chassisBody ? activeCar.chassisBody.position : (activeCar.carGroup ? activeCar.carGroup.position : player.mesh.position);
+            posX = carPos.x || 0;
+            posY = carPos.y || 0;
+            posZ = carPos.z || 0;
+            rotY = activeCar.carGroup ? activeCar.carGroup.rotation.y : (activeCar.group ? activeCar.group.rotation.y : 0);
+        } else if (player.mesh) {
+            posX = player.mesh.position.x || 0;
+            posY = player.mesh.position.y || 0;
+            posZ = player.mesh.position.z || 0;
+            rotY = player.mesh.rotation.y || 0;
+        } else if (player.body) {
+            posX = player.body.position.x || 0;
+            posY = (player.body.position.y || 0) - 0.815;
+            posZ = player.body.position.z || 0;
+            rotY = 0;
+        }
 
         const isPassenger = isDriving && vehicleManager ? !!vehicleManager.isPassenger : false;
-        const seatIndex = isDriving && vehicleManager ? vehicleManager.seatIndex : 0;
+        const seatIndex = isDriving && vehicleManager ? (vehicleManager.seatIndex || 0) : 0;
         const isDriver = isDriving && activeCar && !isPassenger && (seatIndex === 0);
 
-        const heli = window.gameEngine?.helicopter;
         const isFlyingHeli = !!(heli && (heli.isPiloted || heli.isPassenger));
-        const isHeliPilot = isFlyingHeli && heli && heli.isPiloted;
+        const isHeliPilot = isFlyingHeli && heli && !!heli.isPiloted;
         const heliSeat = isFlyingHeli && heli ? (heli.isPassenger ? 1 : 0) : 0;
 
-        const payload = {
-            nickname: this.nickname,
-            x: Math.round(pos.x * 100) / 100,
-            y: Math.round(pos.y * 100) / 100,
-            z: Math.round(pos.z * 100) / 100,
+        const speed = player.body
+            ? Math.hypot(player.body.velocity.x || 0, player.body.velocity.z || 0)
+            : 0;
+
+        const walkCycle = (playerController && playerController.animSystem)
+            ? (playerController.animSystem.walkCycle || 0)
+            : 0;
+
+        const isSprinting = playerController && playerController.input ? !!playerController.input.keys.sprint : false;
+        const health = playerController ? Math.round(playerController.health || 100) : 100;
+        const weaponIdx = weaponSystem ? (weaponSystem.currentWeaponIndex || 0) : 0;
+
+        return {
+            nickname: this.nickname || 'Player',
+            x: Math.round(posX * 100) / 100,
+            y: Math.round(posY * 100) / 100,
+            z: Math.round(posZ * 100) / 100,
             rotY: Math.round(rotY * 100) / 100,
-            speed: 0,
-            walkCycle: 0,
-            isSprinting: false,
+            speed: Math.round(speed * 10) / 10,
+            walkCycle: Math.round(walkCycle * 100) / 100,
+            isSprinting: isSprinting,
             isDriving: isDriving,
-            carIndex: isDriving && activeCar ? activeCar.carIndex : null,
+            carIndex: (isDriving && activeCar && activeCar.carIndex !== undefined) ? activeCar.carIndex : -1,
             seatIndex: seatIndex,
             isPassenger: isPassenger,
-            carX: isDriver ? Math.round(activeCar.carGroup.position.x * 100) / 100 : null,
-            carY: isDriver ? Math.round(activeCar.carGroup.position.y * 100) / 100 : null,
-            carZ: isDriver ? Math.round(activeCar.carGroup.position.z * 100) / 100 : null,
-            carRotY: isDriver ? Math.round(activeCar.carGroup.rotation.y * 100) / 100 : null,
-            vehicleId: isDriving && activeCar ? (activeCar.carName || 'car') : null,
+            carX: (isDriver && activeCar && activeCar.carGroup) ? Math.round(activeCar.carGroup.position.x * 100) / 100 : 0,
+            carY: (isDriver && activeCar && activeCar.carGroup) ? Math.round(activeCar.carGroup.position.y * 100) / 100 : 0,
+            carZ: (isDriver && activeCar && activeCar.carGroup) ? Math.round(activeCar.carGroup.position.z * 100) / 100 : 0,
+            carRotY: (isDriver && activeCar && activeCar.carGroup) ? Math.round(activeCar.carGroup.rotation.y * 100) / 100 : 0,
+            vehicleId: (isDriving && activeCar && activeCar.carName) ? activeCar.carName : '',
             isFlyingHeli: isFlyingHeli,
             heliSeat: heliSeat,
-            heliX: isHeliPilot && heli ? Math.round(heli.body.position.x * 100) / 100 : null,
-            heliY: isHeliPilot && heli ? Math.round(heli.body.position.y * 100) / 100 : null,
-            heliZ: isHeliPilot && heli ? Math.round(heli.body.position.z * 100) / 100 : null,
-            heliRotY: isHeliPilot && heli ? Math.round((heli.headingAngle || 0) * 100) / 100 : null,
-            heliPitch: isHeliPilot && heli ? Math.round((heli.pitchAngle || 0) * 100) / 100 : null,
-            heliRoll: isHeliPilot && heli ? Math.round((heli.rollAngle || 0) * 100) / 100 : null,
-            health: playerController ? Math.round(playerController.health) : 100,
-            weaponIndex: 0,
+            heliX: (isHeliPilot && heli && heli.body) ? Math.round(heli.body.position.x * 100) / 100 : 0,
+            heliY: (isHeliPilot && heli && heli.body) ? Math.round(heli.body.position.y * 100) / 100 : 0,
+            heliZ: (isHeliPilot && heli && heli.body) ? Math.round(heli.body.position.z * 100) / 100 : 0,
+            heliRotY: (isHeliPilot && heli) ? Math.round((heli.headingAngle || 0) * 100) / 100 : 0,
+            heliPitch: (isHeliPilot && heli) ? Math.round((heli.pitchAngle || 0) * 100) / 100 : 0,
+            heliRoll: (isHeliPilot && heli) ? Math.round((heli.rollAngle || 0) * 100) / 100 : 0,
+            health: health,
+            weaponIndex: weaponIdx,
             lastSeen: Date.now()
         };
+    }
+
+    sendLocalStateNow() {
+        if (this.status !== 'CONNECTED' && this.status !== 'CONNECTING') return;
+        const payload = this.buildLocalPayload();
+        if (!payload) return;
 
         this.broadcastPacket({
             type: 'STATE',
@@ -438,7 +481,10 @@ class MultiplayerManager {
         }
 
         if (this.localPlayerRef) {
-            try { this.localPlayerRef.remove(); } catch (e) {}
+            try {
+                this.localPlayerRef.onDisconnect().cancel();
+                this.localPlayerRef.remove();
+            } catch (e) {}
             this.localPlayerRef = null;
         }
         if (this.playersRef) {
@@ -448,6 +494,10 @@ class MultiplayerManager {
         if (this.chatRef) {
             try { this.chatRef.off(); } catch (e) {}
             this.chatRef = null;
+        }
+        if (this.elevatorRef) {
+            try { this.elevatorRef.off(); } catch (e) {}
+            this.elevatorRef = null;
         }
         if (this.connectedRef) {
             try { this.connectedRef.off(); } catch (e) {}
@@ -512,11 +562,11 @@ class MultiplayerManager {
     update(deltaTime, player, playerController, vehicleManager) {
         const now = Date.now();
 
-        // 1. Обновление всех удаленных игроков и проверка таймаута (20 сек отсутствия пакетов)
+        // 1. Обновление всех удаленных игроков и проверка таймаута (15 сек отсутствия локальных пакетов)
         const deadIds = [];
         this.remotePlayers.forEach((remote, pid) => {
             remote.update(deltaTime);
-            if (now - (remote.lastSeen || 0) > 20000) {
+            if (now - (remote.lastReceiveTime || 0) > 15000) {
                 deadIds.push(pid);
             }
         });
@@ -532,54 +582,8 @@ class MultiplayerManager {
 
         if (now - this.lastPushTime >= this.pushIntervalMs) {
             this.lastPushTime = now;
-
-            const isDriving = vehicleManager && vehicleManager.activeDrivenCar !== null;
-            const activeCar = isDriving ? vehicleManager.activeDrivenCar : null;
-
-            const pos = isDriving && activeCar
-                ? (activeCar.chassisBody ? activeCar.chassisBody.position : (activeCar.carGroup ? activeCar.carGroup.position : player.mesh.position))
-                : (player.mesh ? player.mesh.position : (player.body ? new THREE.Vector3(player.body.position.x, player.body.position.y - 0.815, player.body.position.z) : new THREE.Vector3(0, 0, 0)));
-
-            const rotY = isDriving && activeCar
-                ? (activeCar.carGroup ? activeCar.carGroup.rotation.y : (activeCar.group ? activeCar.group.rotation.y : 0))
-                : (player.mesh ? player.mesh.rotation.y : 0);
-
-            const speed = player.body
-                ? Math.hypot(player.body.velocity.x, player.body.velocity.z)
-                : 0;
-
-            const walkCycle = (playerController && playerController.animSystem)
-                ? playerController.animSystem.walkCycle
-                : 0;
-
-            const isSprinting = playerController ? !!playerController.input.keys.sprint : false;
-            const health = playerController ? Math.round(playerController.health) : 100;
-            const weaponIdx = (window.gameEngine && window.gameEngine.weaponSystem)
-                ? window.gameEngine.weaponSystem.currentWeaponIndex
-                : 0;
-
-            const payload = {
-                nickname: this.nickname,
-                x: Math.round(pos.x * 100) / 100,
-                y: Math.round(pos.y * 100) / 100,
-                z: Math.round(pos.z * 100) / 100,
-                rotY: Math.round(rotY * 100) / 100,
-                speed: Math.round(speed * 10) / 10,
-                walkCycle: Math.round(walkCycle * 100) / 100,
-                isSprinting: isSprinting,
-                isDriving: isDriving,
-                carIndex: isDriving && activeCar ? activeCar.carIndex : null,
-                seatIndex: isDriving && vehicleManager ? vehicleManager.seatIndex : 0,
-                isPassenger: isDriving && vehicleManager ? !!vehicleManager.isPassenger : false,
-                carX: isDriving && activeCar ? Math.round(activeCar.carGroup.position.x * 100) / 100 : null,
-                carY: isDriving && activeCar ? Math.round(activeCar.carGroup.position.y * 100) / 100 : null,
-                carZ: isDriving && activeCar ? Math.round(activeCar.carGroup.position.z * 100) / 100 : null,
-                carRotY: isDriving && activeCar ? Math.round(activeCar.carGroup.rotation.y * 100) / 100 : null,
-                vehicleId: isDriving && activeCar ? (activeCar.carName || 'car') : null,
-                health: health,
-                weaponIndex: weaponIdx,
-                lastSeen: now
-            };
+            const payload = this.buildLocalPayload();
+            if (!payload) return;
 
             this.broadcastPacket({
                 type: 'STATE',
@@ -613,4 +617,3 @@ class MultiplayerManager {
 }
 
 window.MultiplayerManager = MultiplayerManager;
-
