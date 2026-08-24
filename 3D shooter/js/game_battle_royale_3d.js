@@ -327,9 +327,15 @@ function init3DEngine() {
     scene.background = new THREE.Color(0x0e1118);
     scene.fog = new THREE.FogExp2(0x0e1118, 0.007);
     br3D.scene = scene;
+    br3D.playerMeshes = {};
+    br3D.botMeshes = {};
+    br3D.bulletMeshes = [];
+    br3D.particleSystems = [];
+    br3D.bloodDecals = [];
+    _muzzleFlashLight = null;
 
     const aspect = container.clientWidth / container.clientHeight;
-    const camera = new THREE.PerspectiveCamera(55, aspect, 0.2, 300);
+    const camera = new THREE.PerspectiveCamera(55, aspect, 0.1, 350);
     br3D.camera = camera;
     br3D.clock = new THREE.Clock();
 
@@ -768,6 +774,9 @@ function showSensitivityToast(sens) {
 // CONTROLS & CAMERA SYSTEM (PC KEYBOARD/MOUSE + MOBILE TOUCH VIRTUAL JOYSTICK)
 // -----------------------------------------------------------------------------
 function bind3DControls() {
+    if (br3D._controlsBound) return;
+    br3D._controlsBound = true;
+
     window.addEventListener('keydown', e => {
         if (e.code) br3D.keys[e.code] = true;
         if (e.key) br3D.keys[e.key.toLowerCase()] = true;
@@ -1497,7 +1506,7 @@ function tryFire3DWeapon() {
     const pitch = br3D.cameraCtrl.targetPitch;
     const dir = new THREE.Vector3(
         Math.sin(yaw) * Math.cos(pitch),
-        Math.sin(pitch),
+        -Math.sin(pitch),
         Math.cos(yaw) * Math.cos(pitch)
     ).normalize();
 
@@ -1595,13 +1604,14 @@ function update3DLocalPlayer(dt) {
 function update3DCamera(dt) {
     if (!br3D.camera) return;
 
-    // Smooth Lerp Camera Target
-    let targetPos = new THREE.Vector3(0, 0, 0);
+    let targetX = 0, targetY = 1.45, targetZ = 0;
     if (br3D.isSpectator && br3D.spectatorTargetId) {
         const rp = br3D.remotePlayers[br3D.spectatorTargetId];
-        if (rp) targetPos.set(rp.x, 1.35, rp.z);
+        if (rp) { targetX = rp.x; targetY = (rp.y || 0) + 1.45; targetZ = rp.z; }
     } else if (br3D.myP) {
-        targetPos.set(br3D.myP.x, (br3D.myP.y || 0) + (br3D.cameraCtrl.heightOffset || 1.45), br3D.myP.z);
+        targetX = br3D.myP.x;
+        targetY = (br3D.myP.y || 0) + (br3D.cameraCtrl.heightOffset || 1.45);
+        targetZ = br3D.myP.z;
     }
 
     // Smooth camera orbit angles
@@ -1610,22 +1620,23 @@ function update3DCamera(dt) {
     c.pitch += (c.targetPitch - c.pitch) * 0.35;
     c.distance += (c.targetDistance - c.distance) * 0.25;
 
-    // Tactical Right Shoulder Offset
-    const shoulderDist = c.shoulderOffset || 0.45;
+    // Tactical Right Shoulder Offset (shifted right relative to camera view angle)
+    const shoulderDist = c.shoulderOffset || 0.55;
     const rightX = Math.cos(c.yaw) * shoulderDist;
     const rightZ = -Math.sin(c.yaw) * shoulderDist;
 
     // Spherical orbit coordinates positioned behind player
-    const eyeX = targetPos.x + rightX - c.distance * Math.sin(c.yaw) * Math.cos(c.pitch);
-    const eyeY = targetPos.y - c.distance * Math.sin(c.pitch) * 0.4;
-    const eyeZ = targetPos.z + rightZ - c.distance * Math.cos(c.yaw) * Math.cos(c.pitch);
+    const horizDist = c.distance * Math.cos(c.pitch);
+    const eyeX = targetX + rightX - horizDist * Math.sin(c.yaw);
+    const eyeY = targetY + c.distance * Math.sin(c.pitch) + 0.35;
+    const eyeZ = targetZ + rightZ - horizDist * Math.cos(c.yaw);
 
-    br3D.camera.position.set(eyeX, Math.max(0.4, eyeY), eyeZ);
+    br3D.camera.position.set(eyeX, Math.max(0.3, eyeY), eyeZ);
 
     // Look ahead through the crosshair
-    const lookTargetX = targetPos.x + rightX + 40 * Math.sin(c.yaw) * Math.cos(c.pitch);
-    const lookTargetY = targetPos.y + 40 * Math.sin(c.pitch);
-    const lookTargetZ = targetPos.z + rightZ + 40 * Math.cos(c.yaw) * Math.cos(c.pitch);
+    const lookTargetX = targetX + rightX + 60 * Math.sin(c.yaw) * Math.cos(c.pitch);
+    const lookTargetY = targetY - 60 * Math.sin(c.pitch);
+    const lookTargetZ = targetZ + rightZ + 60 * Math.cos(c.yaw) * Math.cos(c.pitch);
 
     br3D.camera.lookAt(lookTargetX, lookTargetY, lookTargetZ);
 }
@@ -1638,14 +1649,16 @@ function sync3DCharacterMeshes(dt) {
 
     // 1. Local Player Mesh
     if (br3D.myP) {
-        let mesh = br3D.playerMeshes[myId];
+        let mesh = br3D.localPlayerMesh || br3D.playerMeshes['__local__'] || br3D.playerMeshes[myId];
         if (!mesh) {
             mesh = create3DCharacterModel(br3D.myP.team);
             br3D.scene.add(mesh);
+            br3D.localPlayerMesh = mesh;
+            br3D.playerMeshes['__local__'] = mesh;
             br3D.playerMeshes[myId] = mesh;
         }
 
-        mesh.visible = br3D.myP.alive;
+        mesh.visible = !!br3D.myP.alive;
         if (br3D.myP.alive) {
             mesh.position.set(br3D.myP.x, br3D.myP.y || 0, br3D.myP.z);
             mesh.rotation.y = br3D.myP.rotY;
@@ -1714,7 +1727,7 @@ function sync3DCharacterMeshes(dt) {
 
     // Cleanup meshes of removed players
     Object.keys(br3D.playerMeshes).forEach(id => {
-        if (id !== myId && !br3D.remotePlayers[id]) {
+        if (id !== '__local__' && id !== myId && !br3D.remotePlayers[id]) {
             br3D.scene.remove(br3D.playerMeshes[id]);
             delete br3D.playerMeshes[id];
         }
@@ -2367,9 +2380,7 @@ function selectTeam(teamName) {
     }
 
     // Ensure 3D Loop is running
-    if (!br3D.animFrameId) {
-        br3D.animFrameId = requestAnimationFrame(br3DLoop);
-    }
+    start3DLoop();
 
     // Lock Pointer on entering match
     request3DPointerLock();
@@ -2460,9 +2471,21 @@ function finalize3DMatchStart(players, mode) {
 // -----------------------------------------------------------------------------
 let _radarThrottleTimer = 0;
 
-function br3DLoop() {
+function start3DLoop() {
     if (!br3D.active) return;
-    const dt = Math.min(br3D.clock ? br3D.clock.getDelta() : 0.016, 0.1);
+    if (br3D.animFrameId) {
+        cancelAnimationFrame(br3D.animFrameId);
+        br3D.animFrameId = null;
+    }
+    br3D.animFrameId = requestAnimationFrame(br3DLoop);
+}
+
+function br3DLoop() {
+    if (!br3D.active) {
+        br3D.animFrameId = null;
+        return;
+    }
+    const dt = Math.min(br3D.clock ? br3D.clock.getDelta() : 0.016, 0.05);
 
     // Update Local Player
     update3DLocalPlayer(dt);
@@ -2496,7 +2519,11 @@ function br3DLoop() {
         br3D.renderer.render(br3D.scene, br3D.camera);
     }
 
-    br3D.animFrameId = requestAnimationFrame(br3DLoop);
+    if (br3D.active) {
+        br3D.animFrameId = requestAnimationFrame(br3DLoop);
+    } else {
+        br3D.animFrameId = null;
+    }
 }
 
 function start3DMatchClient(submode) {
@@ -2616,9 +2643,7 @@ function start3DMatchClient(submode) {
 
     syncBrPlayerState(true);
 
-    if (!br3D.animFrameId) {
-        br3D.animFrameId = requestAnimationFrame(br3DLoop);
-    }
+    start3DLoop();
 }
 
 function initBR() {

@@ -1780,30 +1780,21 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 1005;
-            width: 32px;
-            height: 32px;
+            width: 20px;
+            height: 20px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .hud-crosshair-dot {
-            width: 4px;
-            height: 4px;
+            width: 6px;
+            height: 6px;
             background: #00ffcc;
+            border: 1px solid rgba(0, 0, 0, 0.85);
             border-radius: 50%;
-            box-shadow: 0 0 8px #00ffcc;
+            box-shadow: 0 0 6px rgba(0, 255, 204, 0.95);
         }
-
-        .hud-crosshair-line {
-            position: absolute;
-            background: rgba(0, 255, 204, 0.75);
-            box-shadow: 0 0 4px #00ffcc;
-        }
-        .hud-crosshair-line.top { top: 0; left: 14px; width: 4px; height: 8px; }
-        .hud-crosshair-line.bottom { bottom: 0; left: 14px; width: 4px; height: 8px; }
-        .hud-crosshair-line.left { left: 0; top: 14px; width: 8px; height: 4px; }
-        .hud-crosshair-line.right { right: 0; top: 14px; width: 8px; height: 4px; }
 
         /* Floating Damage Text */
         .damage-number-float {
