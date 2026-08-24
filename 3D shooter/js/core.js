@@ -684,7 +684,8 @@ function startLocalGameUI() {
     }
     appState.gameStartedAt = Date.now();
     appState.contestResultSubmitted = false;
-    if (id !== 'br_2d' && (!id || !id.startsWith('br_'))) {
+    const is3DShooter = (id === 'br_2d' || (id && (id.startsWith('br_') || id.startsWith('br') || id === 'tdm_5v5' || id === 'duel_1v1' || id === 'duel_2v2' || id === 'battle_royale' || id === 'standoff')));
+    if (!is3DShooter && !id.startsWith('math') && !id.startsWith('let') && !id.startsWith('coord') && id !== 'hidden' && id !== 'tictactoe' && id !== 'clicker') {
         setIsland("Режим недоступен. Выбери выживание.", "#ff453a");
         exitToLobby();
         return;
@@ -701,7 +702,7 @@ function startLocalGameUI() {
     else if (id === 'hidden') { document.getElementById('screen-game-hidden').classList.add('active'); initHiddenGame(); }
     else if (id === 'tictactoe') { document.getElementById('screen-game-tictactoe').classList.add('active'); initTicTacToe(); }
     else if (id === 'clicker') { document.getElementById('screen-game-clicker').classList.add('active'); initClickerUI(); }
-    else if (id === 'br_2d' || (id && id.startsWith('br_'))) { document.getElementById('screen-game-br').classList.add('active'); initBR(); }
+    else if (is3DShooter) { document.getElementById('screen-game-br').classList.add('active'); initBR(); }
     else { setIsland("Режим недоступен. Выбери выживание.", "#ff453a"); exitToLobby(); return; }
 
     document.getElementById('pause-btn').style.display = 'flex';

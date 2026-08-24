@@ -2886,6 +2886,17 @@ function stopBR() {
         if (br3D.scene) br3D.scene.remove(br3D.botMeshes[id]);
     });
     br3D.botMeshes = {};
+    br3D.localPlayerMesh = null;
+    br3D.myP = null;
+    br3D.remotePlayers = {};
+    br3D.bots = [];
+
+    const overlay = document.getElementById('so2-lobby-overlay');
+    if (overlay) overlay.style.display = 'none';
+    const resultOverlay = document.getElementById('result-overlay');
+    if (resultOverlay) resultOverlay.classList.add('hidden');
+    const deathScreen = document.getElementById('br-death-screen');
+    if (deathScreen) deathScreen.style.display = 'none';
 }
 
 // Global exports
