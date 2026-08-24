@@ -149,6 +149,7 @@ class MobileTouchController {
                 <button id="btn-touch-map" class="mobile-icon-btn" title="Карта">🗺️</button>
                 <button id="btn-touch-weather" class="mobile-icon-btn" title="Погода">🌤️</button>
                 <button id="btn-touch-time" class="mobile-icon-btn" title="Время (+2ч)">⏰</button>
+                <button id="btn-touch-quality" class="mobile-icon-btn" title="Качество / 60 FPS">⚡</button>
             </div>
 
             <!-- Кнопки управления пешком (справа внизу) -->

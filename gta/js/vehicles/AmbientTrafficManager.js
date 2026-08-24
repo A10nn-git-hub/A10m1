@@ -11,7 +11,8 @@
 
                 this.waypointNetwork = new TrafficWaypointNetwork();
                 this.vehicles = [];
-                this.MAX_AI_CARS = 24;
+                const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 1024) || /Android|iPhone|iPad|Tablet/i.test(navigator.userAgent);
+                this.MAX_AI_CARS = isMobile ? 6 : 18;
 
                 this.spawnInitialTraffic();
             }

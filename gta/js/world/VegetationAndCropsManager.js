@@ -94,7 +94,8 @@
             }
 
             buildBushesAndShrubs() {
-                const count = 120;
+                const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 1024);
+                const count = isMobile ? 40 : 100;
                 const bushGeo = new THREE.DodecahedronGeometry(1.2, 1);
                 bushGeo.translate(0, 0.8, 0);
                 const instMesh = new THREE.InstancedMesh(bushGeo, this.matBush, count);

@@ -329,6 +329,26 @@
                 this.world.addBody(this.body);
             }
 
+            takeDamage(amount) {
+                this.hp = (this.hp !== undefined ? this.hp : 60) - amount;
+                this.state = 'KNOCKED_DOWN';
+                this.knockedDownTimer = 3.8;
+
+                if (this.hp <= 0) {
+                    if (window.gameEngine && window.gameEngine.wantedManager) {
+                        window.gameEngine.wantedManager.reportCrime('KILL_CIVILIAN');
+                    }
+                    if (window.gameEngine && window.gameEngine.playerController) {
+                        const loot = 200 + Math.floor(Math.random() * 350);
+                        window.gameEngine.playerController.addMoney(loot);
+                        if (window.soundEngine && typeof window.soundEngine.playCashPickup === 'function') {
+                            window.soundEngine.playCashPickup();
+                        }
+                    }
+                    this.hp = 60;
+                }
+            }
+
             hitByVehicle(car) {
                 this.state = 'KNOCKED_DOWN';
                 this.knockedDownTimer = 3.2; // 3.2 секунды на падение, лежание и подъем

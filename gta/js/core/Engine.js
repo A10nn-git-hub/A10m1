@@ -200,7 +200,7 @@
                 this.world = new CANNON.World();
                 this.world.gravity.set(0, -9.82, 0);
                 this.world.broadphase = new CANNON.SAPBroadphase(this.world);
-                this.world.solver.iterations = 7;
+                this.world.solver.iterations = this.isMobileDevice ? 3 : 6;
 
                 this.physicsMaterials.ground = new CANNON.Material('ground');
                 this.physicsMaterials.wall = new CANNON.Material('wall');
@@ -554,6 +554,55 @@
                     this.sunLight.target.position.copy(focusPos);
                     this.sunLight.target.updateMatrixWorld();
                 }
+            }
+
+            setQualityMode(mode = 'LOW', showToast = false) {
+                this.qualityMode = mode;
+                if (!this.renderer) return;
+
+                if (mode === 'LOW') {
+                    // Режим 60 FPS для планшетов и мобильных
+                    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio * 0.7, 0.85));
+                    this.renderer.shadowMap.enabled = false;
+                    if (this.sunLight) this.sunLight.castShadow = false;
+                    if (this.camera) this.camera.far = 450;
+                    if (this.scene && this.scene.fog) { this.scene.fog.near = 140; this.scene.fog.far = 420; }
+                    if (this.world) this.world.solver.iterations = 3;
+                } else if (mode === 'MEDIUM') {
+                    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio * 0.85, 1.0));
+                    this.renderer.shadowMap.enabled = true;
+                    if (this.sunLight) this.sunLight.castShadow = true;
+                    if (this.camera) this.camera.far = 700;
+                    if (this.scene && this.scene.fog) { this.scene.fog.near = 200; this.scene.fog.far = 650; }
+                    if (this.world) this.world.solver.iterations = 5;
+                } else {
+                    // HIGH (ПК)
+                    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25));
+                    this.renderer.shadowMap.enabled = true;
+                    if (this.sunLight) this.sunLight.castShadow = true;
+                    if (this.camera) this.camera.far = 1400;
+                    if (this.scene && this.scene.fog) { this.scene.fog.near = 280; this.scene.fog.far = 850; }
+                    if (this.world) this.world.solver.iterations = 7;
+                }
+
+                if (this.camera) this.camera.updateProjectionMatrix();
+
+                if (showToast) {
+                    this.showOptimizationToast();
+                }
+            }
+
+            showOptimizationToast() {
+                let toast = document.getElementById('opt-toast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'opt-toast';
+                    toast.className = 'opt-toast';
+                    toast.innerHTML = '⚡ <b>Оптимизация:</b> Включен режим 60 FPS для планшета';
+                    document.body.appendChild(toast);
+                }
+                toast.style.display = 'block';
+                setTimeout(() => { if (toast) toast.style.display = 'none'; }, 4000);
             }
 
             updateSectorHUD(focusPos) {

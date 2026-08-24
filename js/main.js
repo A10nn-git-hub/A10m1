@@ -269,6 +269,10 @@ class DeviceModeManager {
         if (gtaLink) {
             gtaLink.href = `gta/index.html?mode=${mode}`;
         }
+        const shooter3DLink = document.getElementById('btn-3d-shooter');
+        if (shooter3DLink) {
+            shooter3DLink.href = `3D shooter/index.html?mode=${mode}`;
+        }
         const shooterLink = document.getElementById('btn-shooter');
         if (shooterLink) {
             shooterLink.href = `shooter/index.html?mode=${mode}`;
@@ -327,7 +331,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Keyboard navigation (1: GTA, 2: Shooter) - only active in PC mode
+    // Keyboard navigation (1: GTA, 2: 3D Shooter, 3: 2D Shooter) - only active in PC mode
     window.addEventListener('keydown', (e) => {
         if (deviceManager.getMode() === 'mobile') return;
 
@@ -335,6 +339,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const gtaBtn = document.getElementById('btn-gta');
             if (gtaBtn) gtaBtn.click();
         } else if (e.key === '2') {
+            const shooter3DBtn = document.getElementById('btn-3d-shooter');
+            if (shooter3DBtn) shooter3DBtn.click();
+        } else if (e.key === '3') {
             const shooterBtn = document.getElementById('btn-shooter');
             if (shooterBtn) shooterBtn.click();
         }

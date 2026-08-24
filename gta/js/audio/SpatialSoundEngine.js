@@ -793,4 +793,257 @@
                     osc.stop(now + 0.18);
                 } catch (e) {}
             }
+
+            playGunshot(type = 'PISTOL') {
+                if (!this.audioCtx || !this.isInitialized) return;
+                try {
+                    const now = this.audioCtx.currentTime;
+                    if (type === 'FISTS') {
+                        this.playPunch();
+                        return;
+                    }
+                    if (this.noiseBuffer) {
+                        const noiseSrc = this.audioCtx.createBufferSource();
+                        noiseSrc.buffer = this.noiseBuffer;
+                        const filter = this.audioCtx.createBiquadFilter();
+                        const gain = this.audioCtx.createGain();
+
+                        if (type === 'PISTOL') {
+                            filter.type = 'bandpass';
+                            filter.frequency.setValueAtTime(1400, now);
+                            filter.Q.setValueAtTime(1.5, now);
+                            gain.gain.setValueAtTime(0.9, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                        } else if (type === 'SMG') {
+                            filter.type = 'highpass';
+                            filter.frequency.setValueAtTime(900, now);
+                            gain.gain.setValueAtTime(0.75, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                        } else if (type === 'SHOTGUN') {
+                            filter.type = 'lowpass';
+                            filter.frequency.setValueAtTime(2200, now);
+                            gain.gain.setValueAtTime(1.1, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                        } else if (type === 'RPG') {
+                            filter.type = 'lowpass';
+                            filter.frequency.setValueAtTime(800, now);
+                            gain.gain.setValueAtTime(1.2, now);
+                            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+                        }
+                        noiseSrc.connect(filter);
+                        filter.connect(gain);
+                        gain.connect(this.masterGain);
+                        noiseSrc.start(now);
+                        noiseSrc.stop(now + (type === 'RPG' ? 0.65 : 0.4));
+                    }
+
+                    const osc = this.audioCtx.createOscillator();
+                    const oscGain = this.audioCtx.createGain();
+                    const startFreq = type === 'SHOTGUN' ? 220 : (type === 'RPG' ? 120 : 380);
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(startFreq, now);
+                    osc.frequency.exponentialRampToValueAtTime(30, now + (type === 'RPG' ? 0.45 : 0.15));
+
+                    oscGain.gain.setValueAtTime(type === 'RPG' ? 0.9 : 0.6, now);
+                    oscGain.gain.exponentialRampToValueAtTime(0.001, now + (type === 'RPG' ? 0.45 : 0.16));
+
+                    osc.connect(oscGain);
+                    oscGain.connect(this.masterGain);
+                    osc.start(now);
+                    osc.stop(now + (type === 'RPG' ? 0.5 : 0.18));
+                } catch (e) {}
+            }
+
+            playPunch() {
+                if (!this.audioCtx || !this.isInitialized) return;
+                try {
+                    const now = this.audioCtx.currentTime;
+                    const osc = this.audioCtx.createOscillator();
+                    const g = this.audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(180, now);
+                    osc.frequency.exponentialRampToValueAtTime(45, now + 0.12);
+
+                    g.gain.setValueAtTime(0.8, now);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+                    osc.connect(g);
+                    g.connect(this.masterGain);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+                } catch (e) {}
+            }
+
+            playExplosion() {
+                if (!this.audioCtx || !this.isInitialized) return;
+                try {
+                    const now = this.audioCtx.currentTime;
+                    if (this.noiseBuffer) {
+                        const noise = this.audioCtx.createBufferSource();
+                        noise.buffer = this.noiseBuffer;
+                        const filter = this.audioCtx.createBiquadFilter();
+                        filter.type = 'lowpass';
+                        filter.frequency.setValueAtTime(600, now);
+                        filter.frequency.linearRampToValueAtTime(80, now + 1.4);
+
+                        const gain = this.audioCtx.createGain();
+                        gain.gain.setValueAtTime(1.2, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+
+                        noise.connect(filter);
+                        filter.connect(gain);
+                        gain.connect(this.masterGain);
+                        noise.start(now);
+                        noise.stop(now + 1.6);
+                    }
+
+                    const subOsc = this.audioCtx.createOscillator();
+                    const subGain = this.audioCtx.createGain();
+                    subOsc.type = 'sine';
+                    subOsc.frequency.setValueAtTime(120, now);
+                    subOsc.frequency.exponentialRampToValueAtTime(25, now + 1.1);
+
+                    subGain.gain.setValueAtTime(0.95, now);
+                    subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+                    subOsc.connect(subGain);
+                    subGain.connect(this.masterGain);
+                    subOsc.start(now);
+                    subOsc.stop(now + 1.25);
+                } catch (e) {}
+            }
+
+            playBulletImpact() {
+                if (!this.audioCtx || !this.isInitialized) return;
+                try {
+                    const now = this.audioCtx.currentTime;
+                    const osc = this.audioCtx.createOscillator();
+                    const g = this.audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(2400 + Math.random() * 800, now);
+                    osc.frequency.exponentialRampToValueAtTime(400, now + 0.05);
+
+                    g.gain.setValueAtTime(0.25, now);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+                    osc.connect(g);
+                    g.connect(this.masterGain);
+                    osc.start(now);
+                    osc.stop(now + 0.07);
+                } catch (e) {}
+            }
+
+            setPoliceSirenState(active) {
+                if (!this.audioCtx || !this.isInitialized) return;
+                try {
+                    if (active) {
+                        if (!this.sirenOsc) {
+                            const now = this.audioCtx.currentTime;
+                            this.sirenOsc = this.audioCtx.createOscillator();
+                            this.sirenLfo = this.audioCtx.createOscillator();
+                            this.sirenLfoGain = this.audioCtx.createGain();
+                            this.sirenGain = this.audioCtx.createGain();
+
+                            this.sirenOsc.type = 'sawtooth';
+                            this.sirenOsc.frequency.setValueAtTime(750, now);
+
+                            this.sirenLfo.type = 'triangle';
+                            this.sirenLfo.frequency.setValueAtTime(0.45, now);
+                            this.sirenLfoGain.gain.setValueAtTime(280, now);
+
+                            this.sirenLfo.connect(this.sirenOsc.frequency);
+
+                            const filter = this.audioCtx.createBiquadFilter();
+                            filter.type = 'lowpass';
+                            filter.frequency.setValueAtTime(1600, now);
+
+                            this.sirenGain.gain.setValueAtTime(0.001, now);
+                            this.sirenGain.gain.linearRampToValueAtTime(0.22, now + 0.5);
+
+                            this.sirenOsc.connect(filter);
+                            filter.connect(this.sirenGain);
+                            this.sirenGain.connect(this.masterGain);
+
+                            this.sirenOsc.start(now);
+                            this.sirenLfo.start(now);
+                        }
+                    } else {
+                        if (this.sirenOsc && this.sirenGain) {
+                            const now = this.audioCtx.currentTime;
+                            this.sirenGain.gain.linearRampToValueAtTime(0.0001, now + 0.6);
+                            setTimeout(() => {
+                                try {
+                                    if (this.sirenOsc) {
+                                        this.sirenOsc.stop();
+                                        this.sirenLfo.stop();
+                                        this.sirenOsc.disconnect();
+                                        this.sirenLfo.disconnect();
+                                        this.sirenOsc = null;
+                                        this.sirenLfo = null;
+                                        this.sirenGain = null;
+                                    }
+                                } catch (e) {}
+                            }, 700);
+                        }
+                    }
+                } catch (e) {}
+            }
+
+            playCashPickup() {
+                if (!this.audioCtx || !this.isInitialized) return;
+                try {
+                    const now = this.audioCtx.currentTime;
+                    const osc1 = this.audioCtx.createOscillator();
+                    const osc2 = this.audioCtx.createOscillator();
+                    const g = this.audioCtx.createGain();
+
+                    osc1.type = 'sine';
+                    osc1.frequency.setValueAtTime(987.77, now);
+                    osc1.frequency.setValueAtTime(1318.51, now + 0.09);
+
+                    osc2.type = 'triangle';
+                    osc2.frequency.setValueAtTime(1975.53, now);
+                    osc2.frequency.setValueAtTime(2637.02, now + 0.09);
+
+                    g.gain.setValueAtTime(0.35, now);
+                    g.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+
+                    osc1.connect(g);
+                    osc2.connect(g);
+                    g.connect(this.masterGain);
+
+                    osc1.start(now);
+                    osc2.start(now);
+                    osc1.stop(now + 0.45);
+                    osc2.stop(now + 0.45);
+                } catch (e) {}
+            }
+
+            playMissionJingle(passed = true) {
+                if (!this.audioCtx || !this.isInitialized) return;
+                try {
+                    const now = this.audioCtx.currentTime;
+                    const notes = passed 
+                        ? [523.25, 659.25, 783.99, 1046.50]
+                        : [392.00, 369.99, 349.23, 311.13];
+
+                    notes.forEach((freq, idx) => {
+                        const osc = this.audioCtx.createOscillator();
+                        const g = this.audioCtx.createGain();
+                        const startTime = now + idx * 0.12;
+
+                        osc.type = passed ? 'triangle' : 'sawtooth';
+                        osc.frequency.setValueAtTime(freq, startTime);
+
+                        g.gain.setValueAtTime(0.32, startTime);
+                        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
+
+                        osc.connect(g);
+                        g.connect(this.masterGain);
+
+                        osc.start(startTime);
+                        osc.stop(startTime + 0.5);
+                    });
+                } catch (e) {}
+            }
         }

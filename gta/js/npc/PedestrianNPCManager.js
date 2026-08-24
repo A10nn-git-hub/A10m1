@@ -6,7 +6,8 @@ class PedestrianNPCManager {
                 this.camera = camera;
                 this.pedestrians = [];
                 this.soccerBalls = [];
-                this.maxPedestrians = 24;
+                const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 1024) || /Android|iPhone|iPad|Tablet/i.test(navigator.userAgent);
+                this.maxPedestrians = isMobile ? 8 : 18;
 
                 this.sidewalkRoutes = [
                     [
