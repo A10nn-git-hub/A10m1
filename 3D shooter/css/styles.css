@@ -1771,6 +1771,7 @@
             height: 100% !important;
             display: block;
             outline: none;
+            cursor: crosshair;
         }
 
         .hud-crosshair-container {
@@ -1780,20 +1781,20 @@
             transform: translate(-50%, -50%);
             pointer-events: none;
             z-index: 1005;
-            width: 20px;
-            height: 20px;
+            width: 16px;
+            height: 16px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .hud-crosshair-dot {
-            width: 6px;
-            height: 6px;
+            width: 5px;
+            height: 5px;
             background: #00ffcc;
-            border: 1px solid rgba(0, 0, 0, 0.85);
+            border: 1px solid rgba(0, 0, 0, 0.9);
             border-radius: 50%;
-            box-shadow: 0 0 6px rgba(0, 255, 204, 0.95);
+            box-shadow: 0 0 5px #00ffcc;
         }
 
         /* Floating Damage Text */
