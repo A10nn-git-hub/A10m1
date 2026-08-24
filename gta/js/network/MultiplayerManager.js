@@ -177,8 +177,6 @@ class MultiplayerManager {
                         this.localPlayerRef.onDisconnect().remove();
                     }
                     this.sendLocalStateNow();
-                } else if (this.status !== 'OFFLINE') {
-                    this.updateStatus('CONNECTING', 'Связь с сервером...');
                 }
             });
 
@@ -316,7 +314,7 @@ class MultiplayerManager {
 
         const pos = isDriving && activeCar
             ? activeCar.chassisBody.position
-            : (player.body ? player.body.position : player.mesh.position);
+            : (player.mesh ? player.mesh.position : (player.body ? new THREE.Vector3(player.body.position.x, player.body.position.y - 0.815, player.body.position.z) : new THREE.Vector3(0, 0, 0)));
 
         const rotY = isDriving && activeCar
             ? activeCar.group.rotation.y
@@ -449,11 +447,11 @@ class MultiplayerManager {
     update(deltaTime, player, playerController, vehicleManager) {
         const now = Date.now();
 
-        // 1. Обновление всех удаленных игроков и проверка таймаута (12 сек отсутствия пакетов)
+        // 1. Обновление всех удаленных игроков и проверка таймаута (20 сек отсутствия пакетов)
         const deadIds = [];
         this.remotePlayers.forEach((remote, pid) => {
             remote.update(deltaTime);
-            if (now - (remote.lastSeen || 0) > 12000) {
+            if (now - (remote.lastSeen || 0) > 20000) {
                 deadIds.push(pid);
             }
         });
@@ -463,7 +461,7 @@ class MultiplayerManager {
         }
 
         // 2. Отправка состояния локального игрока (~13 Hz)
-        if (this.status !== 'CONNECTED' || !player || !player.mesh) {
+        if (this.status === 'OFFLINE' || !player || !player.mesh) {
             return;
         }
 
@@ -475,7 +473,7 @@ class MultiplayerManager {
 
             const pos = isDriving && activeCar
                 ? activeCar.chassisBody.position
-                : (player.body ? player.body.position : player.mesh.position);
+                : (player.mesh ? player.mesh.position : (player.body ? new THREE.Vector3(player.body.position.x, player.body.position.y - 0.815, player.body.position.z) : new THREE.Vector3(0, 0, 0)));
 
             const rotY = isDriving && activeCar
                 ? activeCar.group.rotation.y

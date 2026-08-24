@@ -1175,7 +1175,7 @@
     100% { transform: scale(1.0); opacity: 0.8; }
 }
 
-/* 2. Игровой сетевой чат (скрыт по умолчанию в оффлайне) */
+/* 2. Игровой сетевой чат (скрыт по умолчанию в оффлайне и полностью скрыт на мобильных) */
 .mp-chat-container {
     position: fixed;
     bottom: 25px;
@@ -1195,6 +1195,15 @@
     pointer-events: auto;
     opacity: 0.75;
     transition: opacity 0.25s, border-color 0.25s, transform 0.25s;
+}
+
+body.mobile-mode .mp-chat-container,
+@media (max-width: 900px) {
+    .mp-chat-container {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
 }
 
 .mp-chat-container:hover, .mp-chat-container.active {

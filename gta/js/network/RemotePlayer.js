@@ -9,9 +9,8 @@ class RemotePlayer {
         this.playerId = playerId;
         this.nickname = initialData.nickname || `Игрок_${playerId.substring(0, 4)}`;
         this.health = initialData.health !== undefined ? initialData.health : 100;
-        this.colorSeed = this.hashString(playerId);
-
-        this.currentPos = new THREE.Vector3(initialData.x || 0, initialData.y || 1.5, initialData.z || 0);
+        const initY = initialData.y !== undefined ? initialData.y : 0;
+        this.currentPos = new THREE.Vector3(initialData.x !== undefined ? initialData.x : 0, initY, initialData.z !== undefined ? initialData.z : 0);
         this.targetPos = new THREE.Vector3().copy(this.currentPos);
         this.prevPos = new THREE.Vector3().copy(this.currentPos);
 

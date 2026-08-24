@@ -103,15 +103,23 @@ class MultiplayerHUD {
         }
     }
 
+    isMobileDevice() {
+        return document.body.classList.contains('mobile-mode') || 
+               ('ontouchstart' in window) || 
+               (navigator.maxTouchPoints > 0) || 
+               (window.innerWidth <= 900);
+    }
+
     updateStatusBadge(status, msg) {
         if (!this.statusBadge) return;
         const count = (this.mp.remotePlayers ? this.mp.remotePlayers.size : 0) + 1;
+        const isMobile = this.isMobileDevice();
 
         if (status === 'CONNECTED') {
             this.statusBadge.innerHTML = `<span class="mp-dot online"></span> <b>СЕТЬ:</b> ${count} ИГР. [${this.mp.roomId}]`;
             this.statusBadge.className = 'mp-status-badge online';
             if (this.chatContainer) {
-                this.chatContainer.style.display = 'flex';
+                this.chatContainer.style.display = isMobile ? 'none' : 'flex';
             }
         } else if (status === 'CONNECTING') {
             this.statusBadge.innerHTML = `<span class="mp-dot connecting"></span> ПОДКЛЮЧЕНИЕ...`;
@@ -138,7 +146,7 @@ class MultiplayerHUD {
     }
 
     openChat() {
-        if (this.mp.status !== 'CONNECTED') return;
+        if (this.isMobileDevice() || this.mp.status !== 'CONNECTED') return;
         if (!this.chatContainer || !this.chatInput) return;
         this.isChatOpen = true;
         this.chatContainer.style.display = 'flex';
@@ -155,7 +163,7 @@ class MultiplayerHUD {
     }
 
     toggleChat() {
-        if (this.mp.status !== 'CONNECTED') return;
+        if (this.isMobileDevice() || this.mp.status !== 'CONNECTED') return;
         if (this.isChatOpen) {
             this.closeChat();
         } else {
