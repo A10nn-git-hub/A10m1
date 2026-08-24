@@ -29,11 +29,37 @@
                 this.isBrakingState = false;
                 this.isReversingState = false;
 
+                // Сетевая интерполяция и экстраполяция (Standoff-2 style entity smoothing)
+                this.isRemotelyDriven = false;
+                this.netTargetPos = new THREE.Vector3();
+                this.netTargetRotY = 0;
+                this.netVelocity = new THREE.Vector3();
+                this.netLastPacketTime = 0;
+
                 this.soundController = new VehicleSoundController(window.soundEngine);
                 this.smokeSystem = new CarExhaustSmokeSystem(this.scene);
 
                 this.buildVisualModel(colorHex);
                 this.initRaycastPhysics(posX, posZ, rotY);
+            }
+
+            applyNetworkTransform(x, y, z, rotY, vx = 0, vy = 0, vz = 0, isDriven = true) {
+                this.isRemotelyDriven = !!isDriven;
+                this.netTargetPos.set(x, y, z);
+                this.netTargetRotY = rotY;
+                this.netVelocity.set(vx, vy, vz);
+                this.netLastPacketTime = performance.now();
+
+                // При первом появлении или резком перемещении телепортируем сразу
+                if (this.carGroup.position.distanceTo(this.netTargetPos) > 22.0) {
+                    this.carGroup.position.copy(this.netTargetPos);
+                    this.carGroup.rotation.y = this.netTargetRotY;
+                    if (this.chassisBody) {
+                        this.chassisBody.position.copy(this.netTargetPos);
+                        this.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), this.netTargetRotY);
+                        this.chassisBody.velocity.set(vx, vy, vz);
+                    }
+                }
             }
 
             buildVisualModel(colorHex) {
@@ -476,18 +502,43 @@
             }
 
             update(deltaTime) {
-                const groundY = (window.gameEngine && window.gameEngine.terrainManager)
-                    ? window.gameEngine.terrainManager.getTerrainHeight(this.chassisBody.position.x, this.chassisBody.position.z)
-                    : 0.0;
-                if (this.chassisBody.position.y < groundY + 0.35) {
-                    this.chassisBody.position.y = groundY + 0.35;
-                    if (this.chassisBody.velocity.y < 0) this.chassisBody.velocity.y = 0;
+                const dt = Math.min(deltaTime, 0.1);
+
+                // Если автомобиль управляется союзником по сети — плавная интерполяция 60 FPS
+                if (this.isRemotelyDriven) {
+                    const elapsedSec = Math.min(0.2, (performance.now() - (this.netLastPacketTime || performance.now())) / 1000);
+                    const predictedPos = this.netTargetPos.clone().addScaledVector(this.netVelocity, elapsedSec);
+
+                    const lerpFactor = 1.0 - Math.exp(-22.0 * dt);
+                    this.chassisBody.position.lerp(predictedPos, lerpFactor);
+                    this.carGroup.position.copy(this.chassisBody.position);
+
+                    let diffRot = this.netTargetRotY - this.carGroup.rotation.y;
+                    while (diffRot > Math.PI) diffRot -= Math.PI * 2;
+                    while (diffRot < -Math.PI) diffRot += Math.PI * 2;
+                    this.carGroup.rotation.y += diffRot * lerpFactor;
+                    this.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), this.carGroup.rotation.y);
+
+                    const netSpeed = Math.hypot(this.netVelocity.x, this.netVelocity.z);
+                    for (let i = 0; i < this.wheelHubs.length; i++) {
+                        if (this.wheelHubs[i]) {
+                            this.wheelHubs[i].rotation.x += netSpeed * dt * 4.0;
+                        }
+                    }
+                } else {
+                    const groundY = (window.gameEngine && window.gameEngine.terrainManager)
+                        ? window.gameEngine.terrainManager.getTerrainHeight(this.chassisBody.position.x, this.chassisBody.position.z)
+                        : 0.0;
+                    if (this.chassisBody.position.y < groundY + 0.35) {
+                        this.chassisBody.position.y = groundY + 0.35;
+                        if (this.chassisBody.velocity.y < 0) this.chassisBody.velocity.y = 0;
+                    }
+
+                    this.carGroup.position.copy(this.chassisBody.position);
+                    this.carGroup.quaternion.copy(this.chassisBody.quaternion);
                 }
 
-                this.carGroup.position.copy(this.chassisBody.position);
-                this.carGroup.quaternion.copy(this.chassisBody.quaternion);
-
-                const speedKmh = this.getSpeedKmh();
+                const speedKmh = this.isRemotelyDriven ? Math.hypot(this.netVelocity.x, this.netVelocity.z) * 3.6 : this.getSpeedKmh();
 
                 if (this.headlightsOn) {
                     this.spotLightL.intensity = 5.6;

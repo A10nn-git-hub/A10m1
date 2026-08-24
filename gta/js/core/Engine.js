@@ -98,10 +98,12 @@ class GTAEngine {
             this.vehicleManager = new VehicleManager(this.scene, this.world, this.physicsMaterials);
 
             // Спавн 2-х полноценных управляемых вертолетов:
-            // 1. Вертолет 1: ВСЕГДА спавнится на крыше небоскреба Maze Bank (10 этаж, Helipad на Y = 93.0м)
-            this.helicopterBank = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, -3.5, 93.0, 0.0, 0);
-            // 2. Вертолет 2: Спавнится на вертолетной площадке Госпиталя Pillbox Hill / Городской площадке
-            this.helicopterHospital = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 60.0, 8.0, 60.0, Math.PI / 2);
+            // 1. Вертолет 1: Спавнится на крыше небоскреба Maze Bank (10 этаж, Helipad на X = 0, Y = 92.4м, Z = 51.5м)
+            this.helicopterBank = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 0.0, 92.4, 51.5, 0);
+            this.helicopterBank.heliIndex = 0;
+            // 2. Вертолет 2: Спавнится на вертолетной площадке Госпиталя Pillbox Hill (X = 60.0, Y = 7.2м, Z = 60.0)
+            this.helicopterHospital = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 60.0, 7.2, 60.0, Math.PI / 2);
+            this.helicopterHospital.heliIndex = 1;
             this.helicopters = [this.helicopterBank, this.helicopterHospital];
             this.helicopter = this.helicopterBank;
 

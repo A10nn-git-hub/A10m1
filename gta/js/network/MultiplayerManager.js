@@ -19,7 +19,7 @@ class MultiplayerManager {
 
         this.remotePlayers = new Map(); // playerId -> RemotePlayer
         this.lastPushTime = 0;
-        this.pushIntervalMs = 75; // ~13 пакетов в секунду (оптимально для RTDB + 60 FPS LERP интерполяция)
+        this.pushIntervalMs = 50; // ~20 пакетов в секунду (как в competitive мобильных шутерах Standoff 2)
 
         this.broadcastChannel = null;
         this.storageKey = null;
@@ -327,7 +327,7 @@ class MultiplayerManager {
         }
     }
 
-    broadcastCarSync(carIndex, x, y, z, rotY, isDriven = false) {
+    broadcastCarSync(carIndex, x, y, z, rotY, isDriven = false, vx = 0, vy = 0, vz = 0) {
         if (carIndex === undefined || carIndex < 0) return;
         const data = {
             carIndex,
@@ -335,6 +335,9 @@ class MultiplayerManager {
             y: Math.round((y || 0) * 100) / 100,
             z: Math.round((z || 0) * 100) / 100,
             rotY: Math.round((rotY || 0) * 100) / 100,
+            vx: Math.round((vx || 0) * 100) / 100,
+            vy: Math.round((vy || 0) * 100) / 100,
+            vz: Math.round((vz || 0) * 100) / 100,
             isDriven: !!isDriven,
             driverId: isDriven ? this.localPlayerId : null,
             ts: Date.now()
@@ -351,14 +354,19 @@ class MultiplayerManager {
         }
     }
 
-    broadcastHeliSync(x, y, z, rotY, pitch = 0, roll = 0, isPiloted = false) {
+    broadcastHeliSync(heliIndex, x, y, z, rotY, pitch = 0, roll = 0, isPiloted = false, vx = 0, vy = 0, vz = 0) {
+        const hIdx = (heliIndex !== undefined && !isNaN(heliIndex)) ? heliIndex : 0;
         const data = {
+            heliIndex: hIdx,
             x: Math.round((x || 0) * 100) / 100,
             y: Math.round((y || 0) * 100) / 100,
             z: Math.round((z || 0) * 100) / 100,
             rotY: Math.round((rotY || 0) * 100) / 100,
             pitch: Math.round((pitch || 0) * 100) / 100,
             roll: Math.round((roll || 0) * 100) / 100,
+            vx: Math.round((vx || 0) * 100) / 100,
+            vy: Math.round((vy || 0) * 100) / 100,
+            vz: Math.round((vz || 0) * 100) / 100,
             isPiloted: !!isPiloted,
             pilotId: isPiloted ? this.localPlayerId : null,
             ts: Date.now()
@@ -370,7 +378,7 @@ class MultiplayerManager {
         });
         if (this.heliRef) {
             try {
-                this.heliRef.set(data).catch(() => {});
+                this.heliRef.child(String(hIdx)).set(data).catch(() => {});
             } catch (e) {}
         }
     }
@@ -386,45 +394,27 @@ class MultiplayerManager {
         if (isLocallyDriving) return;
 
         if (data.x !== undefined && data.y !== undefined && data.z !== undefined) {
-            if (car.chassisBody) {
-                car.chassisBody.position.set(data.x, data.y, data.z);
-                car.chassisBody.velocity.set(0, 0, 0);
-                car.chassisBody.angularVelocity.set(0, 0, 0);
-            }
-            if (car.carGroup) {
+            if (typeof car.applyNetworkTransform === 'function') {
+                car.applyNetworkTransform(data.x, data.y, data.z, data.rotY || 0, data.vx || 0, data.vy || 0, data.vz || 0, !!data.isDriven);
+            } else if (car.carGroup) {
                 car.carGroup.position.set(data.x, data.y, data.z);
-                if (data.rotY !== undefined) {
-                    car.carGroup.rotation.set(0, data.rotY, 0);
-                    if (car.chassisBody) {
-                        car.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), data.rotY);
-                    }
-                }
+                if (data.rotY !== undefined) car.carGroup.rotation.set(0, data.rotY, 0);
             }
         }
     }
 
     updateHeliFromNetwork(data) {
-        if (!data || !window.gameEngine || !window.gameEngine.helicopter) return;
-        const heli = window.gameEngine.helicopter;
-        if (heli.isPiloted) return;
+        if (!data || !window.gameEngine) return;
+        const helis = window.gameEngine.helicopters;
+        const hIdx = (data.heliIndex !== undefined && !isNaN(data.heliIndex)) ? data.heliIndex : 0;
+        const heli = (helis && helis[hIdx]) ? helis[hIdx] : window.gameEngine.helicopter;
+        if (!heli || heli.isPiloted) return;
 
         if (data.x !== undefined && data.y !== undefined && data.z !== undefined) {
-            if (heli.body) {
-                heli.body.position.set(data.x, data.y, data.z);
-                heli.body.velocity.set(0, 0, 0);
-                heli.body.angularVelocity.set(0, 0, 0);
-            }
-            if (heli.group) {
+            if (typeof heli.applyNetworkTransform === 'function') {
+                heli.applyNetworkTransform(data.x, data.y, data.z, data.rotY || 0, data.pitch || 0, data.roll || 0, data.vx || 0, data.vy || 0, data.vz || 0, !!data.isPiloted);
+            } else if (heli.group) {
                 heli.group.position.set(data.x, data.y, data.z);
-                if (data.rotY !== undefined) {
-                    heli.headingAngle = data.rotY;
-                    heli.pitchAngle = data.pitch || 0;
-                    heli.rollAngle = data.roll || 0;
-                    heli.group.rotation.set(0, data.rotY, 0);
-                    if (heli.body) {
-                        heli.body.quaternion.setFromEuler(heli.pitchAngle, heli.headingAngle, heli.rollAngle, 'YXZ');
-                    }
-                }
             }
         }
     }
@@ -563,9 +553,38 @@ class MultiplayerManager {
         const seatIndex = isDriving && vehicleManager ? (vehicleManager.seatIndex || 0) : 0;
         const isDriver = isDriving && activeCar && !isPassenger && (seatIndex === 0);
 
-        const isFlyingHeli = !!(heli && (heli.isPiloted || heli.isPassenger));
-        const isHeliPilot = isFlyingHeli && heli && !!heli.isPiloted;
-        const heliSeat = isFlyingHeli && heli ? (heli.isPassenger ? 1 : 0) : 0;
+        let activeHeli = null;
+        let activeHeliIndex = 0;
+        if (window.gameEngine && window.gameEngine.helicopters) {
+            for (let i = 0; i < window.gameEngine.helicopters.length; i++) {
+                const h = window.gameEngine.helicopters[i];
+                if (h && (h.isPiloted || h.isPassenger)) {
+                    activeHeli = h;
+                    activeHeliIndex = i;
+                    break;
+                }
+            }
+        }
+        if (!activeHeli && heli && (heli.isPiloted || heli.isPassenger)) {
+            activeHeli = heli;
+            activeHeliIndex = heli.heliIndex || 0;
+        }
+
+        const isFlyingHeli = !!(activeHeli && (activeHeli.isPiloted || activeHeli.isPassenger));
+        const isHeliPilot = isFlyingHeli && activeHeli && !!activeHeli.isPiloted;
+        const heliSeat = isFlyingHeli && activeHeli ? (activeHeli.isPassenger ? 1 : 0) : 0;
+
+        const pVx = (player.body && player.body.velocity) ? player.body.velocity.x : 0;
+        const pVy = (player.body && player.body.velocity) ? player.body.velocity.y : 0;
+        const pVz = (player.body && player.body.velocity) ? player.body.velocity.z : 0;
+
+        const cVx = (isDriver && activeCar && activeCar.chassisBody) ? activeCar.chassisBody.velocity.x : 0;
+        const cVy = (isDriver && activeCar && activeCar.chassisBody) ? activeCar.chassisBody.velocity.y : 0;
+        const cVz = (isDriver && activeCar && activeCar.chassisBody) ? activeCar.chassisBody.velocity.z : 0;
+
+        const hVx = (isHeliPilot && activeHeli && activeHeli.body) ? activeHeli.body.velocity.x : 0;
+        const hVy = (isHeliPilot && activeHeli && activeHeli.body) ? activeHeli.body.velocity.y : 0;
+        const hVz = (isHeliPilot && activeHeli && activeHeli.body) ? activeHeli.body.velocity.z : 0;
 
         const speed = player.body
             ? Math.hypot(player.body.velocity.x || 0, player.body.velocity.z || 0)
@@ -585,6 +604,9 @@ class MultiplayerManager {
             y: Math.round(posY * 100) / 100,
             z: Math.round(posZ * 100) / 100,
             rotY: Math.round(rotY * 100) / 100,
+            vx: Math.round((isDriver ? cVx : (isHeliPilot ? hVx : pVx)) * 100) / 100,
+            vy: Math.round((isDriver ? cVy : (isHeliPilot ? hVy : pVy)) * 100) / 100,
+            vz: Math.round((isDriver ? cVz : (isHeliPilot ? hVz : pVz)) * 100) / 100,
             speed: Math.round(speed * 10) / 10,
             walkCycle: Math.round(walkCycle * 100) / 100,
             isSprinting: isSprinting,
@@ -596,15 +618,22 @@ class MultiplayerManager {
             carY: (isDriver && activeCar && activeCar.carGroup) ? Math.round(activeCar.carGroup.position.y * 100) / 100 : 0,
             carZ: (isDriver && activeCar && activeCar.carGroup) ? Math.round(activeCar.carGroup.position.z * 100) / 100 : 0,
             carRotY: (isDriver && activeCar && activeCar.carGroup) ? Math.round(activeCar.carGroup.rotation.y * 100) / 100 : 0,
+            carVx: Math.round(cVx * 100) / 100,
+            carVy: Math.round(cVy * 100) / 100,
+            carVz: Math.round(cVz * 100) / 100,
             vehicleId: (isDriving && activeCar && activeCar.carName) ? activeCar.carName : '',
             isFlyingHeli: isFlyingHeli,
+            heliIndex: activeHeliIndex,
             heliSeat: heliSeat,
-            heliX: (isHeliPilot && heli && heli.body) ? Math.round(heli.body.position.x * 100) / 100 : 0,
-            heliY: (isHeliPilot && heli && heli.body) ? Math.round(heli.body.position.y * 100) / 100 : 0,
-            heliZ: (isHeliPilot && heli && heli.body) ? Math.round(heli.body.position.z * 100) / 100 : 0,
-            heliRotY: (isHeliPilot && heli) ? Math.round((heli.headingAngle || 0) * 100) / 100 : 0,
-            heliPitch: (isHeliPilot && heli) ? Math.round((heli.pitchAngle || 0) * 100) / 100 : 0,
-            heliRoll: (isHeliPilot && heli) ? Math.round((heli.rollAngle || 0) * 100) / 100 : 0,
+            heliX: (isHeliPilot && activeHeli && activeHeli.body) ? Math.round(activeHeli.body.position.x * 100) / 100 : 0,
+            heliY: (isHeliPilot && activeHeli && activeHeli.body) ? Math.round(activeHeli.body.position.y * 100) / 100 : 0,
+            heliZ: (isHeliPilot && activeHeli && activeHeli.body) ? Math.round(activeHeli.body.position.z * 100) / 100 : 0,
+            heliRotY: (isHeliPilot && activeHeli) ? Math.round((activeHeli.headingAngle || 0) * 100) / 100 : 0,
+            heliPitch: (isHeliPilot && activeHeli) ? Math.round((activeHeli.pitchAngle || 0) * 100) / 100 : 0,
+            heliRoll: (isHeliPilot && activeHeli) ? Math.round((activeHeli.rollAngle || 0) * 100) / 100 : 0,
+            heliVx: Math.round(hVx * 100) / 100,
+            heliVy: Math.round(hVy * 100) / 100,
+            heliVz: Math.round(hVz * 100) / 100,
             health: health,
             weaponIndex: weaponIdx,
             lastSeen: Date.now()
@@ -782,34 +811,50 @@ class MultiplayerManager {
             }
         }
 
-        // 3. Периодическая синхронизация управляемого транспорта водителем (~4 Hz)
-        if (now - (this.lastVehiclePushTime || 0) >= 250) {
+        // 3. Периодическая синхронизация управляемого транспорта водителем (~16 Hz)
+        if (now - (this.lastVehiclePushTime || 0) >= 60) {
             this.lastVehiclePushTime = now;
             const vm = vehicleManager || window.gameEngine?.vehicleManager;
             if (vm && vm.activeDrivenCar && !vm.isPassenger && vm.seatIndex === 0) {
                 const ac = vm.activeDrivenCar;
                 if (ac.carIndex !== undefined && ac.carGroup) {
+                    const cVx = ac.chassisBody ? ac.chassisBody.velocity.x : 0;
+                    const cVy = ac.chassisBody ? ac.chassisBody.velocity.y : 0;
+                    const cVz = ac.chassisBody ? ac.chassisBody.velocity.z : 0;
                     this.broadcastCarSync(
                         ac.carIndex,
                         ac.carGroup.position.x,
                         ac.carGroup.position.y,
                         ac.carGroup.position.z,
                         ac.carGroup.rotation.y,
-                        true
+                        true,
+                        cVx,
+                        cVy,
+                        cVz
                     );
                 }
             }
-            const heli = window.gameEngine?.helicopter;
-            if (heli && heli.isPiloted && heli.body) {
-                this.broadcastHeliSync(
-                    heli.body.position.x,
-                    heli.body.position.y,
-                    heli.body.position.z,
-                    heli.headingAngle || 0,
-                    heli.pitchAngle || 0,
-                    heli.rollAngle || 0,
-                    true
-                );
+            const helis = window.gameEngine?.helicopters || [window.gameEngine?.helicopter].filter(Boolean);
+            for (let i = 0; i < helis.length; i++) {
+                const heli = helis[i];
+                if (heli && heli.isPiloted && heli.body) {
+                    const hVx = heli.body.velocity.x || 0;
+                    const hVy = heli.body.velocity.y || 0;
+                    const hVz = heli.body.velocity.z || 0;
+                    this.broadcastHeliSync(
+                        i,
+                        heli.body.position.x,
+                        heli.body.position.y,
+                        heli.body.position.z,
+                        heli.headingAngle || 0,
+                        heli.pitchAngle || 0,
+                        heli.rollAngle || 0,
+                        true,
+                        hVx,
+                        hVy,
+                        hVz
+                    );
+                }
             }
         }
     }

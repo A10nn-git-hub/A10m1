@@ -264,15 +264,16 @@ class PlayerController {
             : 0.0;
 
         if (this.jumpCooldown > 0) this.jumpCooldown -= deltaTime;
+        if (this.coyoteTimer > 0) this.coyoteTimer -= deltaTime;
 
-        // Точная проверка физического контакта под ногами (земля, крыша, пол лифта)
+        // 1. Точная проверка физического контакта под ногами через контактный манифольд
         let hasSolidContact = false;
         if (this.world && this.world.contacts) {
             for (let i = 0; i < this.world.contacts.length; i++) {
                 const c = this.world.contacts[i];
                 if (c.bi === body || c.bj === body) {
                     const normalY = (c.bi === body) ? -c.ni.y : c.ni.y;
-                    if (normalY > 0.45) {
+                    if (normalY > 0.35) {
                         hasSolidContact = true;
                         break;
                     }
@@ -280,7 +281,32 @@ class PlayerController {
             }
         }
 
-        // Проверка нахождения на крыше вертолета (позволяет летать сверху вертолета)
+        // 2. Лучевая проверка под ногами (Raycast Down) для всех этажей зданий, мостов и крыш
+        if (!hasSolidContact && this.world && typeof this.world.raycastClosest === 'function') {
+            const rayOffsets = [
+                [0, 0],
+                [0.18, 0.18],
+                [-0.18, 0.18],
+                [0.18, -0.18],
+                [-0.18, -0.18]
+            ];
+            const rayResult = new CANNON.RaycastResult();
+            const rayOptions = { skipBackfaces: true };
+
+            for (let i = 0; i < rayOffsets.length; i++) {
+                const [ox, oz] = rayOffsets[i];
+                const from = new CANNON.Vec3(body.position.x + ox, body.position.y, body.position.z + oz);
+                const to = new CANNON.Vec3(body.position.x + ox, body.position.y - 1.05, body.position.z + oz);
+                rayResult.reset();
+                this.world.raycastClosest(from, to, rayOptions, rayResult);
+                if (rayResult.hasHit && rayResult.body && rayResult.body !== body) {
+                    hasSolidContact = true;
+                    break;
+                }
+            }
+        }
+
+        // 3. Проверка нахождения на крыше вертолета (позволяет летать сверху вертолета)
         const heli = window.gameEngine && window.gameEngine.helicopter;
         let isStandingOnHeliRoof = false;
         if (heli && heli.body && !heli.isPiloted && !heli.isPassenger) {
@@ -303,7 +329,12 @@ class PlayerController {
             if (body.velocity.y < 0) body.velocity.y = 0;
         }
 
-        this.isGrounded = (this.jumpCooldown <= 0) && (onGroundTerrain || hasSolidContact || isInsideElevator || isStandingOnHeliRoof);
+        const physicallyGrounded = (onGroundTerrain || hasSolidContact || isInsideElevator || isStandingOnHeliRoof);
+        if (physicallyGrounded && Math.abs(body.velocity.y) < 0.6) {
+            this.coyoteTimer = 0.15; // Буфер Coyote-Time для мгновенного прыжка на любых этажах
+        }
+
+        this.isGrounded = (this.jumpCooldown <= 0) && (physicallyGrounded || this.coyoteTimer > 0);
 
         let moveX = 0; let moveZ = 0;
         if (!isElevatorMoving) {
@@ -368,10 +399,11 @@ class PlayerController {
         const isJumpJustPressed = this.input.keys.jump && !this.prevJumpKey;
         this.prevJumpKey = !!this.input.keys.jump;
 
-        if (isJumpJustPressed && this.isGrounded && this.jumpCooldown <= 0 && !isElevatorMoving) {
+        if (isJumpJustPressed && (this.isGrounded || this.coyoteTimer > 0) && this.jumpCooldown <= 0 && !isElevatorMoving) {
             body.velocity.y = 6.6;
             this.isGrounded = false;
-            this.jumpCooldown = 0.35;
+            this.coyoteTimer = 0.0;
+            this.jumpCooldown = 0.32;
         } else if (this.isGrounded && !isInsideElevator && body.position.y <= groundY + 0.85) {
             body.position.y = groundY + 0.815;
             if (body.velocity.y < 0) body.velocity.y = 0;

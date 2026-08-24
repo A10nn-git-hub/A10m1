@@ -31,10 +31,39 @@ class HelicopterVehicle {
         this.transitionState = 'IDLE';
         this.transitionTimer = 0.0;
 
+        // Сетевая интерполяция и экстраполяция (Standoff-2 style entity smoothing)
+        this.isRemotelyPiloted = false;
+        this.netTargetPos = new THREE.Vector3(posX, posY, posZ);
+        this.netTargetHeading = rotY;
+        this.netTargetPitch = 0.0;
+        this.netTargetRoll = 0.0;
+        this.netVelocity = new THREE.Vector3();
+        this.netLastPacketTime = 0;
+
         this.buildMaterials();
         this.buildMesh(posX, posY, posZ, rotY);
         this.initPhysics(posX, posY, posZ, rotY);
         this.initAudioSynth();
+    }
+
+    applyNetworkTransform(x, y, z, rotY, pitch = 0, roll = 0, vx = 0, vy = 0, vz = 0, isPiloted = true) {
+        this.isRemotelyPiloted = !!isPiloted;
+        this.netTargetPos.set(x, y, z);
+        this.netTargetHeading = rotY;
+        this.netTargetPitch = pitch;
+        this.netTargetRoll = roll;
+        this.netVelocity.set(vx, vy, vz);
+        this.netLastPacketTime = performance.now();
+
+        if (this.group.position.distanceTo(this.netTargetPos) > 28.0) {
+            this.group.position.copy(this.netTargetPos);
+            this.body.position.copy(this.netTargetPos);
+            this.headingAngle = rotY;
+            this.pitchAngle = pitch;
+            this.rollAngle = roll;
+            this.body.quaternion.setFromEuler(this.pitchAngle, this.headingAngle, this.rollAngle, 'YXZ');
+            this.group.quaternion.copy(this.body.quaternion);
+        }
     }
 
     buildMaterials() {
@@ -570,9 +599,31 @@ class HelicopterVehicle {
             this.navBeacon.intensity = (Math.sin(Date.now() * 0.008) > 0.6) ? 2.5 : 0.2;
         }
 
-        // 2. Управление полетом пилотом
+        // 2. Управление полетом
         if (this.isPiloted) {
             this.applyFlightControls(inputKeys, dt);
+        } else if (this.isRemotelyPiloted) {
+            // Плавная интерполяция перемещения вертолета союзника (Standoff 2 style smoothing)
+            const elapsedSec = Math.min(0.2, (performance.now() - (this.netLastPacketTime || performance.now())) / 1000);
+            const predictedPos = this.netTargetPos.clone().addScaledVector(this.netVelocity, elapsedSec);
+
+            const lerpFactor = 1.0 - Math.exp(-22.0 * dt);
+            this.body.position.lerp(predictedPos, lerpFactor);
+            this.body.velocity.copy(this.netVelocity);
+            this.group.position.copy(this.body.position);
+
+            let diffYaw = this.netTargetHeading - this.headingAngle;
+            while (diffYaw > Math.PI) diffYaw -= Math.PI * 2;
+            while (diffYaw < -Math.PI) diffYaw += Math.PI * 2;
+            this.headingAngle += diffYaw * lerpFactor;
+            this.pitchAngle += (this.netTargetPitch - this.pitchAngle) * lerpFactor;
+            this.rollAngle += (this.netTargetRoll - this.rollAngle) * lerpFactor;
+
+            this.body.quaternion.setFromEuler(this.pitchAngle, this.headingAngle, this.rollAngle, 'YXZ');
+            this.group.quaternion.copy(this.body.quaternion);
+
+            this.targetRotorRPM = 1.0;
+            if (this.rotorRPM < 0.9) this.rotorRPM = 1.0;
         }
 
         // 3. Позиционирование локального персонажа внутри кабины (Пилот или Пассажир)

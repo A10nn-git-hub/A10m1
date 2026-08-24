@@ -15,6 +15,11 @@ class RemotePlayer {
         this.targetPos = new THREE.Vector3().copy(this.currentPos);
         this.prevPos = new THREE.Vector3().copy(this.currentPos);
 
+        // Вектор сетевой скорости и временная метка для экстраполяции (Dead Reckoning)
+        this.interpVelocity = new THREE.Vector3(initialData.vx || 0, initialData.vy || 0, initialData.vz || 0);
+        this.lastPacketTimestamp = performance.now();
+        this.renderVelocity = new THREE.Vector3();
+
         this.currentRotY = initialData.rotY || 0;
         this.targetRotY = initialData.rotY || 0;
 
@@ -321,15 +326,47 @@ class RemotePlayer {
     }
 
     /**
-     * Принять сетевой пакет состояния от Firebase
+     * Принять сетевой пакет состояния от Firebase/BroadcastChannel
      */
     applyNetworkState(data) {
         if (!data) return;
 
         this.prevPos.copy(this.currentPos);
-        if (data.x !== undefined && data.y !== undefined && data.z !== undefined) {
-            this.targetPos.set(data.x, data.y, data.z);
+        const newX = data.x !== undefined ? data.x : this.currentPos.x;
+        const newY = data.y !== undefined ? data.y : this.currentPos.y;
+        const newZ = data.z !== undefined ? data.z : this.currentPos.z;
+
+        // Расчет или извлечение скорости для Dead-Reckoning экстраполяции
+        const now = performance.now();
+        const dtPacket = Math.max(0.016, (now - (this.lastPacketTimestamp || now)) / 1000);
+        const calcVx = (newX - this.targetPos.x) / dtPacket;
+        const calcVy = (newY - this.targetPos.y) / dtPacket;
+        const calcVz = (newZ - this.targetPos.z) / dtPacket;
+
+        this.targetPos.set(newX, newY, newZ);
+        if (data.rotY !== undefined) this.targetRotY = data.rotY;
+
+        const vx = (data.vx !== undefined) ? data.vx : calcVx;
+        const vy = (data.vy !== undefined) ? data.vy : calcVy;
+        const vz = (data.vz !== undefined) ? data.vz : calcVz;
+        this.interpVelocity.set(
+            Math.abs(vx) < 90 ? vx : 0,
+            Math.abs(vy) < 90 ? vy : 0,
+            Math.abs(vz) < 90 ? vz : 0
+        );
+        this.lastPacketTimestamp = now;
+
+        // При телепортации или резком спавне (> 25м) исключаем растянутый полет
+        if (this.currentPos.distanceTo(this.targetPos) > 25.0) {
+            this.currentPos.copy(this.targetPos);
+            this.currentRotY = this.targetRotY;
+            this.group.position.copy(this.currentPos);
+            this.group.rotation.y = this.currentRotY;
         }
+
+        if (data.speed !== undefined) this.speed = data.speed;
+        if (data.isSprinting !== undefined) this.isSprinting = !!data.isSprinting;
+        if (data.walkCycle !== undefined) this.walkCycle = data.walkCycle;
 
         if (data.nickname && data.nickname !== this.nickname) {
             this.nickname = data.nickname;
@@ -351,82 +388,60 @@ class RemotePlayer {
         if (data.vehicleId !== undefined) this.vehicleId = data.vehicleId;
         if (data.weaponIndex !== undefined) this.weaponIndex = data.weaponIndex;
 
-        // Синхронизация занятости мест в автопарке мира
+        // Синхронизация занятости мест в автомобиле
         if (window.gameEngine && window.gameEngine.vehicleManager && window.gameEngine.vehicleManager.cars) {
             const cars = window.gameEngine.vehicleManager.cars;
 
-            // Если игрок вышел из машины или пересел
             if (wasDriving && (!this.isDriving || oldCarIndex !== this.carIndex || oldSeatIndex !== this.seatIndex)) {
                 if (oldCarIndex !== undefined && cars[oldCarIndex]) {
                     cars[oldCarIndex].removeOccupant(this.playerId);
                 }
             }
 
-            // Если игрок сидит в машине
             if (this.isDriving && this.carIndex !== undefined && cars[this.carIndex]) {
                 cars[this.carIndex].setOccupant(this.seatIndex !== undefined ? this.seatIndex : 0, this.playerId);
             }
         }
 
-        // Если удаленный игрок является ВОДИТЕЛЕМ (seatIndex === 0), он авторитетно управляет перемещением машины
+        // Если удаленный союзник — водитель, обновляем автомобиль через плавный сетевой трансформатор
         if (this.isDriving && (this.seatIndex === 0 || this.seatIndex === undefined) && this.carIndex !== undefined && window.gameEngine && window.gameEngine.vehicleManager) {
             const sharedCar = window.gameEngine.vehicleManager.cars[this.carIndex];
             const localCar = window.gameEngine.vehicleManager.activeDrivenCar;
             const localIsDriver = (localCar === sharedCar && !window.gameEngine.vehicleManager.isPassenger && window.gameEngine.vehicleManager.seatIndex === 0);
 
-            // Если локальный игрок НЕ является водителем этого авто (например, он пассажир или пешком)
-            if (sharedCar && !localIsDriver) {
-                if (data.carX !== undefined && data.carY !== undefined && data.carZ !== undefined) {
-                    if (sharedCar.chassisBody) {
-                        sharedCar.chassisBody.position.set(data.carX, data.carY, data.carZ);
-                        sharedCar.chassisBody.velocity.set(0, 0, 0);
-                        sharedCar.chassisBody.angularVelocity.set(0, 0, 0);
-                    }
-                    if (sharedCar.carGroup) {
-                        sharedCar.carGroup.position.set(data.carX, data.carY, data.carZ);
-                        if (data.carRotY !== undefined) {
-                            sharedCar.carGroup.rotation.set(0, data.carRotY, 0);
-                            if (sharedCar.chassisBody) {
-                                sharedCar.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), data.carRotY);
-                            }
-                        }
-                    }
-                }
+            if (sharedCar && !localIsDriver && typeof sharedCar.applyNetworkTransform === 'function') {
+                const cX = data.carX !== undefined ? data.carX : data.x;
+                const cY = data.carY !== undefined ? data.carY : data.y;
+                const cZ = data.carZ !== undefined ? data.carZ : data.z;
+                const cRotY = data.carRotY !== undefined ? data.carRotY : data.rotY;
+                sharedCar.applyNetworkTransform(cX, cY, cZ, cRotY, data.carVx || data.vx || 0, data.carVy || data.vy || 0, data.carVz || data.vz || 0, true);
             }
         }
 
         const wasFlyingHeli = this.isFlyingHeli;
         const oldHeliSeat = this.heliSeat;
+        const oldHeliIndex = this.heliIndex;
 
         if (data.isFlyingHeli !== undefined) this.isFlyingHeli = !!data.isFlyingHeli;
         if (data.heliSeat !== undefined) this.heliSeat = data.heliSeat;
+        if (data.heliIndex !== undefined) this.heliIndex = data.heliIndex;
 
-        const heli = window.gameEngine?.helicopter;
+        const helis = window.gameEngine?.helicopters;
+        const hIdx = (this.heliIndex !== undefined && !isNaN(this.heliIndex)) ? this.heliIndex : 0;
+        const heli = (helis && helis[hIdx]) ? helis[hIdx] : window.gameEngine?.helicopter;
+
         if (heli) {
-            if (wasFlyingHeli && (!this.isFlyingHeli || oldHeliSeat !== this.heliSeat)) {
+            if (wasFlyingHeli && (!this.isFlyingHeli || oldHeliSeat !== this.heliSeat || oldHeliIndex !== this.heliIndex)) {
                 heli.removeOccupant(this.playerId);
             }
             if (this.isFlyingHeli) {
                 heli.setOccupant(this.heliSeat !== undefined ? this.heliSeat : 0, this.playerId);
-                if ((this.heliSeat === 0 || this.heliSeat === undefined) && !heli.isPiloted) {
-                    if (data.heliX !== undefined && data.heliY !== undefined && data.heliZ !== undefined) {
-                        heli.body.position.set(data.heliX, data.heliY, data.heliZ);
-                        heli.body.velocity.set(0, 0, 0);
-                        heli.body.angularVelocity.set(0, 0, 0);
-                        heli.group.position.set(data.heliX, data.heliY, data.heliZ);
-                        if (data.heliRotY !== undefined) {
-                            heli.headingAngle = data.heliRotY;
-                            heli.pitchAngle = data.heliPitch || 0;
-                            heli.rollAngle = data.heliRoll || 0;
-                            heli.group.rotation.set(0, data.heliRotY, 0);
-                            heli.body.quaternion.setFromEuler(heli.pitchAngle, heli.headingAngle, heli.rollAngle, 'YXZ');
-                        }
-                    }
-                    if (heli.rotorRPM < 0.8) {
-                        heli.rotorRPM = 1.0;
-                        heli.targetRotorRPM = 1.0;
-                        heli.startAudio();
-                    }
+                if ((this.heliSeat === 0 || this.heliSeat === undefined) && !heli.isPiloted && typeof heli.applyNetworkTransform === 'function') {
+                    const hX = data.heliX !== undefined ? data.heliX : data.x;
+                    const hY = data.heliY !== undefined ? data.heliY : data.y;
+                    const hZ = data.heliZ !== undefined ? data.heliZ : data.z;
+                    const hRotY = data.heliRotY !== undefined ? data.heliRotY : (data.rotY || 0);
+                    heli.applyNetworkTransform(hX, hY, hZ, hRotY, data.heliPitch || 0, data.heliRoll || 0, data.heliVx || data.vx || 0, data.heliVy || data.vy || 0, data.heliVz || data.vz || 0, true);
                 }
             }
         }
@@ -441,59 +456,52 @@ class RemotePlayer {
     }
 
     /**
-     * Обновление интерполяции и процедурной анимации конечностей
+     * Высокочастотная 60 FPS интерполяция с Dead-Reckoning экстраполяцией (как в Standoff 2)
      */
     update(deltaTime) {
         const dt = Math.min(deltaTime, 0.1);
 
         // 1. Нахождение внутри вертолета Maverick (Пилот или Пассажир)
-        if (this.isFlyingHeli && window.gameEngine && window.gameEngine.helicopter) {
-            const heli = window.gameEngine.helicopter;
-            const seatOffset = heli.getSeatOffset(this.heliSeat || 0);
-            const worldSeat = seatOffset.clone().applyQuaternion(heli.group.quaternion).add(heli.group.position);
+        if (this.isFlyingHeli && window.gameEngine) {
+            const helis = window.gameEngine.helicopters;
+            const hIdx = (this.heliIndex !== undefined && !isNaN(this.heliIndex)) ? this.heliIndex : 0;
+            const heli = (helis && helis[hIdx]) ? helis[hIdx] : window.gameEngine.helicopter;
 
-            this.group.position.copy(worldSeat);
-            this.group.quaternion.copy(heli.group.quaternion);
-            this.characterGroup.scale.set(0.85, 0.85, 0.85);
+            if (heli && heli.group) {
+                const seatOffset = heli.getSeatOffset(this.heliSeat || 0);
+                const worldSeat = seatOffset.clone().applyQuaternion(heli.group.quaternion).add(heli.group.position);
 
-            if (this.nameplateSprite) this.nameplateSprite.position.set(0, 2.35, 0);
+                this.group.position.copy(worldSeat);
+                this.group.quaternion.copy(heli.group.quaternion);
+                this.characterGroup.scale.set(0.85, 0.85, 0.85);
 
-            if (this.limbs.torso) this.limbs.torso.position.y = 0.38;
-            if (this.limbs.leftLeg && this.limbs.rightLeg) {
-                this.limbs.leftLeg.pivot.rotation.x = -1.45;
-                this.limbs.rightLeg.pivot.rotation.x = -1.45;
-                this.limbs.leftLeg.knee.rotation.x = 1.45;
-                this.limbs.rightLeg.knee.rotation.x = 1.45;
+                if (this.nameplateSprite) this.nameplateSprite.position.set(0, 2.35, 0);
+
+                if (this.limbs.torso) this.limbs.torso.position.y = 0.38;
+                if (this.limbs.leftLeg && this.limbs.rightLeg) {
+                    this.limbs.leftLeg.pivot.rotation.x = -1.45;
+                    this.limbs.rightLeg.pivot.rotation.x = -1.45;
+                    this.limbs.leftLeg.knee.rotation.x = 1.45;
+                    this.limbs.rightLeg.knee.rotation.x = 1.45;
+                }
+                if (this.limbs.leftArm && this.limbs.rightArm) {
+                    this.limbs.leftArm.pivot.rotation.set(-0.55, 0.15, 0.2);
+                    this.limbs.rightArm.pivot.rotation.set(-0.55, -0.15, -0.2);
+                }
+                return;
             }
-            if (this.limbs.leftArm && this.limbs.rightArm) {
-                this.limbs.leftArm.pivot.rotation.set(-0.55, 0.15, 0.2);
-                this.limbs.rightArm.pivot.rotation.set(-0.55, -0.15, -0.2);
-            }
-            return;
         }
-        this.characterGroup.scale.set(1, 1, 1);
 
-        // 2. Плавная интерполяция позиции (Hermite Lerp)
-        const lerpFactor = 1.0 - Math.exp(-14.0 * dt);
-        this.currentPos.lerp(this.targetPos, lerpFactor);
-
-        // 3. Плавный поворот персонажа
-        let diff = this.targetRotY - this.currentRotY;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        this.currentRotY += diff * lerpFactor;
-
-        // 3. Проверка нахождения в общем автомобиле мира
-        let isInsideSharedCar = false;
+        // 2. Нахождение внутри автомобиля (Водитель или Пассажир)
         if (this.isDriving && this.carIndex !== undefined && window.gameEngine && window.gameEngine.vehicleManager) {
             const sharedCar = window.gameEngine.vehicleManager.cars[this.carIndex];
             if (sharedCar && sharedCar.carGroup) {
-                isInsideSharedCar = true;
                 const seatOffset = sharedCar.getSeatOffset(this.seatIndex || 0);
                 const worldSeat = seatOffset.clone().applyQuaternion(sharedCar.carGroup.quaternion).add(sharedCar.carGroup.position);
 
                 this.group.position.copy(worldSeat);
                 this.group.quaternion.copy(sharedCar.carGroup.quaternion);
+                this.characterGroup.scale.set(1, 1, 1);
 
                 if (this.nameplateSprite) {
                     this.nameplateSprite.position.set(0, 2.35, 0);
@@ -520,7 +528,20 @@ class RemotePlayer {
             }
         }
 
-        // Вне автомобиля (пешком)
+        this.characterGroup.scale.set(1, 1, 1);
+
+        // 3. Пешком: Плавная интерполяция с непрерывной экстраполяцией скорости (Standoff 2 Dead Reckoning)
+        const elapsedSec = Math.min(0.2, (performance.now() - (this.lastPacketTimestamp || performance.now())) / 1000);
+        const predictedPos = this.targetPos.clone().addScaledVector(this.interpVelocity, elapsedSec);
+
+        const lerpFactor = 1.0 - Math.exp(-24.0 * dt);
+        this.currentPos.lerp(predictedPos, lerpFactor);
+
+        let diff = this.targetRotY - this.currentRotY;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        this.currentRotY += diff * lerpFactor;
+
         this.group.position.copy(this.currentPos);
         this.group.rotation.set(0, this.currentRotY, 0);
         if (this.nameplateSprite) this.nameplateSprite.position.set(0, 2.25, 0);
@@ -536,9 +557,13 @@ class RemotePlayer {
 
         if (this.limbs.torso) this.limbs.torso.position.y = 1.15;
 
-        const isMoving = this.speed > 0.25 || this.currentPos.distanceTo(this.targetPos) > 0.08;
+        // 5. Процедурная кинематика шага и спринта
+        const calculatedSpeed = Math.hypot(this.interpVelocity.x, this.interpVelocity.z);
+        const effectiveSpeed = Math.max(this.speed, calculatedSpeed);
+        const isMoving = effectiveSpeed > 0.25 || this.currentPos.distanceTo(this.targetPos) > 0.08;
+
         if (isMoving) {
-            const freq = this.isSprinting ? 12.0 : 7.5;
+            const freq = this.isSprinting ? 12.5 : 8.0;
             this.walkCycle += dt * freq;
 
             const armSwing = Math.sin(this.walkCycle) * (this.isSprinting ? 0.95 : 0.55);
@@ -557,7 +582,7 @@ class RemotePlayer {
             }
         } else {
             // Плавный сброс в стойку покоя (Idle)
-            const resetLerp = 1.0 - Math.exp(-12.0 * dt);
+            const resetLerp = 1.0 - Math.exp(-14.0 * dt);
             if (this.limbs.leftArm) this.limbs.leftArm.pivot.rotation.x += (0 - this.limbs.leftArm.pivot.rotation.x) * resetLerp;
             if (this.limbs.rightArm) this.limbs.rightArm.pivot.rotation.x += (0 - this.limbs.rightArm.pivot.rotation.x) * resetLerp;
             if (this.limbs.leftLeg) {
