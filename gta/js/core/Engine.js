@@ -97,6 +97,16 @@ class GTAEngine {
             await this.progressTracker.setProgress(76, 'Инициализация автомобильного освещения (Spot Shadows, стоп-сигналы)...');
             this.vehicleManager = new VehicleManager(this.scene, this.world, this.physicsMaterials);
 
+            // Спавн 1 управляемого вертолета в случайном месте на карте (вертолетная площадка Maze Bank, крыша госпиталя, LSPD или стоянка)
+            const heliSpawns = [
+                { x: -3.5, y: 93.0, z: 0.0, rot: 0 },
+                { x: 45.0, y: 7.2, z: -45.0, rot: Math.PI / 2 },
+                { x: 0.0, y: 7.0, z: 25.0, rot: Math.PI },
+                { x: -60.0, y: 0.8, z: -60.0, rot: -Math.PI / 4 }
+            ];
+            const spawnPoint = heliSpawns[Math.floor(Math.random() * heliSpawns.length)];
+            this.helicopter = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, spawnPoint.x, spawnPoint.y, spawnPoint.z, spawnPoint.rot);
+
             await this.progressTracker.setProgress(80, 'Инициализация AI-системы автономного ambient-трафика (24 авто)...');
             this.ambientTrafficManager = new AmbientTrafficManager(
                 this.scene, this.world, this.physicsMaterials, this.terrainManager, this.roadNetwork
@@ -467,6 +477,18 @@ class GTAEngine {
         this.inputController.onSeasonChange = () => { if (this.dayNightCycle) this.dayNightCycle.changeSeason(); };
 
         this.inputController.onToggleVehicle = () => {
+            if (this.helicopter && (this.helicopter.isPiloted || this.helicopter.isPassenger)) {
+                this.helicopter.toggleEnterExit(this.player);
+                return;
+            }
+            if (this.helicopter && !this.helicopter.isPiloted && !this.helicopter.isPassenger && this.player && this.player.body && (!this.vehicleManager || !this.vehicleManager.activeDrivenCar)) {
+                const distToHeli = Math.hypot(this.player.body.position.x - this.helicopter.group.position.x, this.player.body.position.z - this.helicopter.group.position.z);
+                const dy = Math.abs(this.player.body.position.y - this.helicopter.group.position.y);
+                if (distToHeli < 4.5 && dy < 3.5) {
+                    this.helicopter.toggleEnterExit(this.player);
+                    return;
+                }
+            }
             if (this.vehicleManager) {
                 this.vehicleManager.toggleEnterExitVehicle(this.player);
             }
@@ -494,6 +516,13 @@ class GTAEngine {
         this.inputController.onSelectFloor = (floorNum) => {
             if (this.elevatorSystem) {
                 this.elevatorSystem.selectFloor(floorNum);
+            }
+        };
+
+        // Взаимодействие [E] (Залезть / слезть с дерева)
+        this.inputController.onInteract = () => {
+            if (this.playerController) {
+                this.playerController.toggleClimbTree();
             }
         };
 
@@ -827,6 +856,59 @@ class GTAEngine {
             this.vehicleManager.update(delta, this.player, this.inputController ? this.inputController.keys : {});
         }
 
+        // Обновление физики и анимации вертолета
+        if (this.helicopter) {
+            this.helicopter.update(delta, this.player, this.inputController ? this.inputController.keys : {});
+
+            if (!this.helicopter.isPiloted && !this.helicopter.isPassenger && this.player && this.player.body && (!this.vehicleManager || !this.vehicleManager.activeDrivenCar)) {
+                const distToHeli = Math.hypot(this.player.body.position.x - this.helicopter.group.position.x, this.player.body.position.z - this.helicopter.group.position.z);
+                const dy = Math.abs(this.player.body.position.y - this.helicopter.group.position.y);
+                const promptElement = document.getElementById('vehicle-prompt');
+                const promptActionText = document.getElementById('prompt-action-text');
+                const promptCarName = document.getElementById('prompt-car-name');
+                if (distToHeli < 4.5 && dy < 3.5) {
+                    if (promptElement) {
+                        promptElement.style.display = 'block';
+                        if (promptCarName) promptCarName.innerText = this.helicopter.vehicleName;
+                        const seatIdx = this.helicopter.getFirstAvailableSeat();
+                        if (promptActionText) {
+                            if (seatIdx === 0) {
+                                promptActionText.innerText = 'Сесть за штурвал вертолета (Пилот 1/2) [F]';
+                            } else if (seatIdx === 1) {
+                                promptActionText.innerText = 'Сесть пассажиром в вертолет (Пассажир 2/2) [F]';
+                            } else {
+                                promptActionText.innerText = 'Вертолет полон (2/2 мест)';
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Подсказка для лазанья по деревьям
+        if (this.playerController && this.player && this.player.body && !isDriving && (!this.helicopter || (!this.helicopter.isPiloted && !this.helicopter.isPassenger))) {
+            const promptElement = document.getElementById('vehicle-prompt');
+            const promptActionText = document.getElementById('prompt-action-text');
+            const promptCarName = document.getElementById('prompt-car-name');
+
+            if (this.playerController.isClimbingTree) {
+                if (promptElement) {
+                    promptElement.style.display = 'block';
+                    if (promptCarName) promptCarName.innerText = 'Густая листва дерева';
+                    if (promptActionText) promptActionText.innerText = 'Слезть [E] / Спрыгнуть [Space]';
+                }
+            } else {
+                const nearestTree = this.playerController.findNearestTree(2.8);
+                if (nearestTree && (!promptElement || promptElement.style.display === 'none')) {
+                    if (promptElement) {
+                        promptElement.style.display = 'block';
+                        if (promptCarName) promptCarName.innerText = 'Дерево (Укрытие)';
+                        if (promptActionText) promptActionText.innerText = 'Залезть и спрятаться в листве [E]';
+                    }
+                }
+            }
+        }
+
         if (this.mobileTouchController) {
             this.mobileTouchController.update(delta);
         }
@@ -841,7 +923,7 @@ class GTAEngine {
 
         if (this.thirdPersonCamera) {
             const camTargetCar = activeCar || ((this.vehicleManager && this.vehicleManager.transitionCar) ? this.vehicleManager.transitionCar : null);
-            this.thirdPersonCamera.update(delta, isDriving ? camTargetCar : null);
+            this.thirdPersonCamera.update(delta, isDriving ? camTargetCar : null, this.helicopter);
         }
 
         if (this.pedestrianManager && !this.isPowerSavingMode) {

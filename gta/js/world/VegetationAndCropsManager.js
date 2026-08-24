@@ -202,6 +202,113 @@
 
                 // 2. Сельские раскидистые дубы (Countryside Oaks)
                 this.buildCountryOaks();
+                const count = isMobile ? 40 : 100;
+                const bushGeo = new THREE.DodecahedronGeometry(1.2, 1);
+                bushGeo.translate(0, 0.8, 0);
+                const instMesh = new THREE.InstancedMesh(bushGeo, this.matBush, count);
+                instMesh.receiveShadow = true;
+                instMesh.castShadow = true;
+
+                const dummy = new THREE.Object3D();
+                let idx = 0;
+
+                const isBuildingZone = (bx, bz) => {
+                    if (Math.hypot(bx - 0, bz - 60) < 32.0) return true; // Maze Bank elevator lobby
+                    if (Math.hypot(bx - 0, bz - 0) < 32.0) return true; // Maze Bank central tower
+                    if (Math.hypot(bx - 60, bz - 60) < 30.0) return true; // Hospital
+                    if (Math.hypot(bx - (-60), bz - 60) < 30.0) return true; // Police
+                    if (Math.hypot(bx - (-60), bz - (-60)) < 26.0) return true; // House 1
+                    if (Math.hypot(bx - 60, bz - (-60)) < 26.0) return true; // House 2
+                    if (Math.hypot(bx - (-120), bz - 60) < 28.0) return true; // Warehouse
+                    if (Math.hypot(bx - 120, bz - 60) < 28.0) return true; // Factory
+                    return false;
+                };
+
+                for (let i = 0; i < count; i++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const r = 70.0 + Math.random() * 120.0;
+                    const x = Math.cos(angle) * r;
+                    const z = Math.sin(angle) * r;
+
+                    // Исключаем появление кустов внутри или рядом со зданиями
+                    if (isBuildingZone(x, z)) continue;
+
+                    const groundY = this.terrainManager.getTerrainHeight(x, z);
+                    const s = 0.7 + Math.random() * 0.8;
+
+                    dummy.position.set(x, groundY, z);
+                    dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
+                    dummy.scale.set(s, s * (0.8 + Math.random() * 0.4), s);
+                    dummy.updateMatrix();
+
+                    instMesh.setMatrixAt(idx++, dummy.matrix);
+                }
+
+                instMesh.count = idx;
+                instMesh.instanceMatrix.needsUpdate = true;
+                this.scene.add(instMesh);
+            }
+
+            buildScatteredRocks() {
+                const rockGeo = new THREE.DodecahedronGeometry(1.5, 0);
+                const count = 140;
+                const instMesh = new THREE.InstancedMesh(rockGeo, this.matRock, count);
+                instMesh.receiveShadow = true;
+                instMesh.castShadow = true;
+
+                const dummy = new THREE.Object3D();
+                let idx = 0;
+
+                const qCyl = new CANNON.Quaternion();
+                qCyl.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+
+                for (let i = 0; i < count; i++) {
+                    // Камни и валуны размещаются ИСКЛЮЧИТЕЛЬНО в горных и лесных секторах за городом (|x| > 140 или |z| > 140)
+                    const sideX = (Math.random() > 0.5 ? 1 : -1) * (145.0 + Math.random() * 95.0);
+                    const sideZ = (Math.random() > 0.5 ? 1 : -1) * (145.0 + Math.random() * 95.0);
+                    const x = (Math.random() > 0.5) ? sideX : (Math.random() - 0.5) * 360.0;
+                    const z = (Math.random() > 0.5) ? sideZ : (Math.random() - 0.5) * 360.0;
+
+                    // Защитная зона города: в центре (Downtown/Hospital/Police) камни не появляются
+                    if (Math.abs(x) < 130.0 && Math.abs(z) < 130.0) continue;
+
+                    const groundY = this.terrainManager.getTerrainHeight(x, z);
+                    const s = 1.0 + Math.random() * 1.5;
+
+                    dummy.position.set(x, groundY + s * 0.45, z);
+                    dummy.rotation.set(Math.random() * 0.5, Math.random() * Math.PI * 2, Math.random() * 0.5);
+                    dummy.scale.set(s, s * 0.85, s);
+                    dummy.updateMatrix();
+
+                    instMesh.setMatrixAt(idx++, dummy.matrix);
+
+                    // Сплошная монолитная вертикальная цилиндрическая коллизия (полное покрытие 3D-модели камня)
+                    const rockR = 1.45 * s;
+                    const rockH = 1.35 * s;
+                    const rockBody = new CANNON.Body({
+                        mass: 0,
+                        material: this.physicsMaterials.wall,
+                        position: new CANNON.Vec3(x, groundY + rockH / 2, z)
+                    });
+                    rockBody.allowSleep = true;
+                    rockBody.sleep();
+                    rockBody.addShape(new CANNON.Cylinder(rockR * 0.9, rockR * 1.1, rockH, 10), new CANNON.Vec3(0, 0, 0), qCyl);
+                    this.world.addBody(rockBody);
+
+                    this.rockPositions.push({ x, z, radius: rockR });
+                }
+
+                instMesh.count = idx;
+                instMesh.instanceMatrix.needsUpdate = true;
+                this.scene.add(instMesh);
+            }
+
+            buildBiomeTrees() {
+                // 1. Городские парковые деревья (вид пышных лесных дубов, неподвижные)
+                this.buildCityForestTrees();
+
+                // 2. Сельские раскидистые дубы (Countryside Oaks)
+                this.buildCountryOaks();
 
                 // 3. Альпийские сосны на северных хребтах (Mountain Pines)
                 this.buildMountainPines();
@@ -210,19 +317,16 @@
             buildCityForestTrees() {
                 const count = 28;
 
-                // Ствол лесного дуба для городских парков и аллей
                 const trunkGeo = new THREE.CylinderGeometry(0.42, 0.65, 6.8, 7);
                 trunkGeo.translate(0, 3.4, 0);
                 const trunkMesh = new THREE.InstancedMesh(trunkGeo, this.matCityTreeTrunk, count);
                 trunkMesh.castShadow = true;
 
-                // Развилка веток
                 const forkGeo = new THREE.CylinderGeometry(0.95, 0.45, 2.2, 7);
                 forkGeo.translate(0, 7.0, 0);
                 const forkMesh = new THREE.InstancedMesh(forkGeo, this.matCityTreeTrunk, count);
                 forkMesh.castShadow = true;
 
-                // Пышная многослойная крона лесного дерева (3 яруса + боковые ветки)
                 const crownLayers = [];
                 const c1 = new THREE.DodecahedronGeometry(4.2, 1);
                 c1.translate(0, 7.6, 0);
@@ -265,7 +369,6 @@
                     for (const m of crownLayers) m.setMatrixAt(idx, dummy.matrix);
                     idx++;
 
-                    // Вертикальное физическое тело ствола дерева
                     const treeBody = new CANNON.Body({
                         mass: 0,
                         material: this.physicsMaterials.wall,
@@ -276,7 +379,7 @@
                     treeBody.addShape(new CANNON.Cylinder(0.65, 0.85, 6.8, 10), new CANNON.Vec3(0, 0, 0), qCylTree);
                     this.world.addBody(treeBody);
 
-                    this.treePositions.push({ x: pos.x, z: pos.z, type: 'city_tree' });
+                    this.treePositions.push({ x: pos.x, y: 0, z: pos.z, perchY: 4.8, type: 'city_tree' });
                 }
 
                 while (idx < count) {
@@ -355,7 +458,6 @@
                     for (const m of crownLayers) m.setMatrixAt(idx, dummy.matrix);
                     idx++;
 
-                    // STEP 1: Физическое тело коллизии Cannon.js для сельского дуба
                     const treeBody = new CANNON.Body({
                         mass: 0,
                         material: this.physicsMaterials.wall,
@@ -366,7 +468,7 @@
                     treeBody.addShape(new CANNON.Cylinder(0.55 * s, 0.85 * s, 7.5 * s, 8));
                     this.world.addBody(treeBody);
 
-                    this.treePositions.push({ x, z, type: 'oak' });
+                    this.treePositions.push({ x, y: groundY, z, perchY: groundY + 6.2, type: 'oak' });
                 }
 
                 trunkMesh.instanceMatrix.needsUpdate = true;
@@ -425,7 +527,6 @@
                     for (const m of pineLayers) m.setMatrixAt(idx, dummy.matrix);
                     idx++;
 
-                    // STEP 1: Физическое тело коллизии Cannon.js для горной сосны
                     const treeBody = new CANNON.Body({
                         mass: 0,
                         material: this.physicsMaterials.wall,
@@ -436,7 +537,7 @@
                     treeBody.addShape(new CANNON.Cylinder(0.4 * s, 0.65 * s, 16.0 * s, 8));
                     this.world.addBody(treeBody);
 
-                    this.treePositions.push({ x, z, type: 'pine' });
+                    this.treePositions.push({ x, y: groundY, z, perchY: groundY + 7.5, type: 'pine' });
                 }
 
                 trunkMesh.instanceMatrix.needsUpdate = true;

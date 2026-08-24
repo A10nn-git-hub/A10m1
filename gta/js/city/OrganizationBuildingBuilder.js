@@ -131,11 +131,12 @@
                 floorMesh.receiveShadow = true;
                 group.add(floorMesh);
 
-                // 2. Потолок и крыша
+                // 2. Потолок и крыша со сплошным физическим коллайдером
                 const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(width + 0.6, 0.6, depth + 0.6), this.materials.policeConcrete);
                 roofMesh.position.y = height + 0.3;
                 roofMesh.castShadow = true;
                 group.add(roofMesh);
+                this.createStaticBox(x, height + 0.3, z, width + 0.6, 0.6, depth + 0.6);
 
                 // 3. Внешние стены с дверным проемом спереди
                 // Задняя стена
@@ -225,11 +226,12 @@
                 floorMesh.receiveShadow = true;
                 group.add(floorMesh);
 
-                // 2. Потолок и крыша
+                // 2. Потолок и крыша со сплошным физическим коллайдером
                 const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(width + 0.6, 0.6, depth + 0.6), this.materials.hospitalWhite);
                 roofMesh.position.y = height + 0.3;
                 roofMesh.castShadow = true;
                 group.add(roofMesh);
+                this.createStaticBox(x, height + 0.3, z, width + 0.6, 0.6, depth + 0.6);
 
                 // 3. Внешние стены
                 // Задняя стена
@@ -334,22 +336,40 @@
                 const heliSouth = new THREE.Mesh(new THREE.PlaneGeometry(28, 10.05), this.materials.helipad);
                 heliSouth.rotation.x = -Math.PI / 2; heliSouth.position.set(0, 92.05, -8.975);
                 group.add(heliSouth);
+                this.createStaticBox(x, 92.0, z - 8.975, 28.0, 0.6, 10.05);
 
                 const heliNorth = new THREE.Mesh(new THREE.PlaneGeometry(28, 10.05), this.materials.helipad);
                 heliNorth.rotation.x = -Math.PI / 2; heliNorth.position.set(0, 92.05, 8.975);
                 group.add(heliNorth);
+                this.createStaticBox(x, 92.0, z + 8.975, 28.0, 0.6, 10.05);
 
                 const heliEast = new THREE.Mesh(new THREE.PlaneGeometry(13.55, 7.9), this.materials.helipad);
                 heliEast.rotation.x = -Math.PI / 2; heliEast.position.set(7.225, 92.05, 0);
                 group.add(heliEast);
+                this.createStaticBox(x + 7.225, 92.0, z, 13.55, 0.6, 7.9);
 
                 const heliWest = new THREE.Mesh(new THREE.PlaneGeometry(6.55, 7.9), this.materials.helipad);
                 heliWest.rotation.x = -Math.PI / 2; heliWest.position.set(-10.725, 92.05, 0);
                 group.add(heliWest);
+                this.createStaticBox(x - 10.725, 92.0, z, 6.55, 0.6, 7.9);
 
                 const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 4), this.materials.mazeSign);
                 signMesh.position.set(0, 81, 15.35);
                 group.add(signMesh);
+
+                // Физические перекрытия и потолки на каждом этаже Maze Bank Tower
+                const floorElevations = [9.0, 18.0, 27.0, 36.0, 45.0, 54.0, 63.0, 72.0, 81.0];
+                for (let i = 0; i < floorElevations.length; i++) {
+                    const flY = floorElevations[i];
+                    // Южный сегмент перекрытия
+                    this.createStaticBox(x, flY, z - 8.5, 26.0, 0.4, 9.0);
+                    // Северный сегмент перекрытия
+                    this.createStaticBox(x, flY, z + 8.5, 26.0, 0.4, 9.0);
+                    // Восточный сегмент перекрытия
+                    this.createStaticBox(x + 6.5, flY, z, 12.0, 0.4, 8.0);
+                    // Западный сегмент перекрытия
+                    this.createStaticBox(x - 9.5, flY, z, 6.0, 0.4, 8.0);
+                }
 
                 // 3. Внешние стены вестибюля первого этажа
                 // Задняя стена

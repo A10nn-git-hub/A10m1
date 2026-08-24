@@ -547,12 +547,26 @@
                 });
                 this.cabinBody.addShape(new CANNON.Box(new CANNON.Vec3(3.75, 0.07, 3.75)));
                 this.world.addBody(this.cabinBody);
+
+                // Физический барьер закрытых дверей кабины (блокирует выход во время движения)
+                this.doorBarrierBody = new CANNON.Body({
+                    mass: 0,
+                    type: CANNON.Body.KINEMATIC,
+                    material: this.physicsMaterials.wall,
+                    position: new CANNON.Vec3(this.shaftX, this.currentY + 1.8, this.shaftZ - 3.75)
+                });
+                this.doorBarrierBody.addShape(new CANNON.Box(new CANNON.Vec3(2.5, 1.8, 0.2)));
+                this.world.addBody(this.doorBarrierBody);
             }
 
-            selectFloor(floorNum) {
+            selectFloor(floorNum, broadcast = true) {
                 // floorNum: 1..10
                 const targetIdx = Math.max(0, Math.min(this.floors.length - 1, floorNum - 1));
                 if (this.state === 'MOVING' || this.state === 'DOORS_CLOSING') return;
+
+                if (broadcast && window.gameEngine && window.gameEngine.multiplayerManager) {
+                    window.gameEngine.multiplayerManager.broadcastElevatorCall(floorNum);
+                }
 
                 if (targetIdx === this.currentFloorIndex && this.state === 'IDLE') {
                     if (this.hudStatusElement) {
@@ -577,6 +591,10 @@
                     this.hudStatusElement.innerText = `▶ ВЫБРАН: ${targetFl.floor} ЭТАЖ (${targetFl.name}). Закрытие дверей...`;
                 }
                 this.updateFloorButtonsUI(targetIdx);
+            }
+
+            receiveNetworkElevatorCommand(floorNum) {
+                this.selectFloor(floorNum, false);
             }
 
             update(deltaTime, player) {
@@ -613,14 +631,7 @@
 
                     // Автоматический вызов лифта: если игрок подошел к дверям на любом этаже, лифт сразу едет к нему!
                     if (isNearOutside && playerTargetFloor >= 0 && playerTargetFloor !== this.currentFloorIndex && this.state === 'IDLE') {
-                        this.targetFloorIndex = playerTargetFloor;
-                        this.startY = this.currentY;
-                        this.destY = this.floors[this.targetFloorIndex].y;
-                        const distance = Math.abs(this.destY - this.startY);
-                        this.moveDuration = Math.max(1.8, distance / 14.0 + 1.2);
-                        this.moveProgress = 0.0;
-                        this.state = 'DOORS_CLOSING';
-                        this.updateFloorButtonsUI(this.targetFloorIndex);
+                        this.selectFloor(playerTargetFloor + 1, true);
                     }
 
                     if (this.isPlayerInside) {
@@ -685,12 +696,17 @@
 
                     this.cabinGroup.position.y = this.currentY;
                     this.cabinBody.position.y = this.currentY + 0.07;
+                    if (this.doorBarrierBody) this.doorBarrierBody.position.y = this.currentY + 1.8;
 
-                    // Полная фиксация игрока внутри кабины во время движения (0 коллизий с перекрытиями)
+                    // Полная фиксация игрока внутри кабины во время движения (запрет выхода и 0 коллизий)
                     if (this.isPlayerInside && player && player.body) {
+                        player.body.position.x = THREE.MathUtils.clamp(player.body.position.x, this.shaftX - cW / 2 + 0.9, this.shaftX + cW / 2 - 0.9);
+                        player.body.position.z = THREE.MathUtils.clamp(player.body.position.z, this.shaftZ - cD / 2 + 0.9, this.shaftZ + cD / 2 - 0.9);
                         player.body.position.y = this.currentY + 0.88;
                         player.body.velocity.set(0, 0, 0);
-                        if (player.mesh) player.mesh.position.y = this.currentY;
+                        if (player.mesh) {
+                            player.mesh.position.set(player.body.position.x, this.currentY, player.body.position.z);
+                        }
                     }
 
                     if (this.hudStatusElement) {
@@ -702,6 +718,7 @@
                         this.currentY = this.destY;
                         this.cabinGroup.position.y = this.currentY;
                         this.cabinBody.position.y = this.currentY + 0.07;
+                        if (this.doorBarrierBody) this.doorBarrierBody.position.y = this.currentY + 1.8;
                         this.currentFloorIndex = this.targetFloorIndex;
                         this.state = 'ARRIVED';
 
@@ -739,6 +756,14 @@
                 if (this.cabinDoorLeft && this.cabinDoorRight) {
                     this.cabinDoorLeft.position.x = -1.0 - slideDist;
                     this.cabinDoorRight.position.x = 1.0 + slideDist;
+                }
+                // Если двери открыты (> 0.5), убираем коллизию барьера под пол
+                if (this.doorBarrierBody) {
+                    if (this.doorProgress > 0.5 && this.state !== 'MOVING') {
+                        this.doorBarrierBody.position.y = -100.0;
+                    } else {
+                        this.doorBarrierBody.position.y = this.currentY + 1.8;
+                    }
                 }
             }
         }

@@ -7,6 +7,7 @@ class RemotePlayer {
     constructor(scene, playerId, initialData = {}) {
         this.scene = scene;
         this.playerId = playerId;
+        this.colorSeed = this.hashString(playerId);
         this.nickname = initialData.nickname || `Игрок_${playerId.substring(0, 4)}`;
         this.health = initialData.health !== undefined ? initialData.health : 100;
         const initY = initialData.y !== undefined ? initialData.y : 0;
@@ -29,9 +30,13 @@ class RemotePlayer {
         this.chatMessageTimer = 0;
 
         this.group = new THREE.Group();
+        this.characterGroup = new THREE.Group();
+        this.group.add(this.characterGroup);
+        this.carGroup = null;
         this.limbs = {};
 
         this.buildMesh();
+        this.buildRemoteCar();
         this.buildNameplate();
 
         this.group.position.copy(this.currentPos);
@@ -40,6 +45,7 @@ class RemotePlayer {
     }
 
     hashString(str) {
+        if (!str || typeof str !== 'string') return Math.floor(Math.random() * 100);
         let hash = 0;
         for (let i = 0; i < str.length; i++) {
             hash = ((hash << 5) - hash) + str.charCodeAt(i);
@@ -84,7 +90,7 @@ class RemotePlayer {
         belly.position.set(0, -0.18, 0); belly.castShadow = true;
         torsoGroup.add(belly);
 
-        this.group.add(torsoGroup);
+        this.characterGroup.add(torsoGroup);
         this.limbs.torso = torsoGroup;
 
         // Голова
@@ -165,12 +171,62 @@ class RemotePlayer {
             knee.add(shoe);
 
             hip.add(knee);
-            this.group.add(hip);
+            this.characterGroup.add(hip);
             return { pivot: hip, knee };
         };
 
         this.limbs.leftLeg = createLeg(true);
         this.limbs.rightLeg = createLeg(false);
+    }
+
+    buildRemoteCar() {
+        this.carGroup = new THREE.Group();
+        this.carGroup.visible = false;
+
+        const carColors = [0xd32f2f, 0x0288d1, 0xfbc02d, 0x2e7d32, 0x9333ea, 0x15181e];
+        const carCol = carColors[this.colorSeed % carColors.length];
+        const matBody = new THREE.MeshLambertMaterial({ color: carCol });
+        const matGlass = new THREE.MeshLambertMaterial({ color: 0x1e293b, transparent: true, opacity: 0.75 });
+        const matWheel = new THREE.MeshLambertMaterial({ color: 0x18181b });
+
+        // Шасси и кузов
+        const bodyMesh = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.45, 4.2), matBody);
+        bodyMesh.position.set(0, 0.45, 0);
+        bodyMesh.castShadow = true;
+        this.carGroup.add(bodyMesh);
+
+        // Крыша и кабина
+        const cabinMesh = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.5, 2.0), matGlass);
+        cabinMesh.position.set(0, 0.85, -0.2);
+        cabinMesh.castShadow = true;
+        this.carGroup.add(cabinMesh);
+
+        // Колеса
+        const wheelGeo = new THREE.CylinderGeometry(0.38, 0.38, 0.32, 12);
+        wheelGeo.rotateZ(Math.PI / 2);
+        const wheelOffsets = [
+            [-0.95, 0.38, 1.3],
+            [0.95, 0.38, 1.3],
+            [-0.95, 0.38, -1.3],
+            [0.95, 0.38, -1.3]
+        ];
+        wheelOffsets.forEach(([wx, wy, wz]) => {
+            const wMesh = new THREE.Mesh(wheelGeo, matWheel);
+            wMesh.position.set(wx, wy, wz);
+            wMesh.castShadow = true;
+            this.carGroup.add(wMesh);
+        });
+
+        // Фары
+        const matLight = new THREE.MeshBasicMaterial({ color: 0xfff5cc });
+        const hl1 = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.08), matLight);
+        hl1.position.set(-0.65, 0.48, 2.12);
+        const hl2 = hl1.clone();
+        hl2.position.x = 0.65;
+        this.carGroup.add(hl1);
+        this.carGroup.add(hl2);
+
+        this.group.add(this.carGroup);
     }
 
     buildNameplate() {
@@ -275,14 +331,6 @@ class RemotePlayer {
             this.targetPos.set(data.x, data.y, data.z);
         }
 
-        if (data.rotY !== undefined) this.targetRotY = data.rotY;
-        if (data.walkCycle !== undefined) this.walkCycle = data.walkCycle;
-        if (data.speed !== undefined) this.speed = data.speed;
-        if (data.isSprinting !== undefined) this.isSprinting = data.isSprinting;
-        if (data.isDriving !== undefined) this.isDriving = data.isDriving;
-        if (data.vehicleId !== undefined) this.vehicleId = data.vehicleId;
-        if (data.weaponIndex !== undefined) this.weaponIndex = data.weaponIndex;
-
         if (data.nickname && data.nickname !== this.nickname) {
             this.nickname = data.nickname;
             this.redrawNameplate();
@@ -291,6 +339,96 @@ class RemotePlayer {
         if (data.health !== undefined && data.health !== this.health) {
             this.health = data.health;
             this.redrawNameplate();
+        }
+
+        const wasDriving = this.isDriving;
+        const oldCarIndex = this.carIndex;
+        const oldSeatIndex = this.seatIndex;
+
+        if (data.isDriving !== undefined) this.isDriving = !!data.isDriving;
+        if (data.carIndex !== undefined) this.carIndex = data.carIndex;
+        if (data.seatIndex !== undefined) this.seatIndex = data.seatIndex;
+        if (data.vehicleId !== undefined) this.vehicleId = data.vehicleId;
+        if (data.weaponIndex !== undefined) this.weaponIndex = data.weaponIndex;
+
+        // Синхронизация занятости мест в автопарке мира
+        if (window.gameEngine && window.gameEngine.vehicleManager && window.gameEngine.vehicleManager.cars) {
+            const cars = window.gameEngine.vehicleManager.cars;
+
+            // Если игрок вышел из машины или пересел
+            if (wasDriving && (!this.isDriving || oldCarIndex !== this.carIndex || oldSeatIndex !== this.seatIndex)) {
+                if (oldCarIndex !== undefined && cars[oldCarIndex]) {
+                    cars[oldCarIndex].removeOccupant(this.playerId);
+                }
+            }
+
+            // Если игрок сидит в машине
+            if (this.isDriving && this.carIndex !== undefined && cars[this.carIndex]) {
+                cars[this.carIndex].setOccupant(this.seatIndex !== undefined ? this.seatIndex : 0, this.playerId);
+            }
+        }
+
+        // Если удаленный игрок является ВОДИТЕЛЕМ (seatIndex === 0), он авторитетно управляет перемещением машины
+        if (this.isDriving && (this.seatIndex === 0 || this.seatIndex === undefined) && this.carIndex !== undefined && window.gameEngine && window.gameEngine.vehicleManager) {
+            const sharedCar = window.gameEngine.vehicleManager.cars[this.carIndex];
+            const localCar = window.gameEngine.vehicleManager.activeDrivenCar;
+            const localIsDriver = (localCar === sharedCar && !window.gameEngine.vehicleManager.isPassenger && window.gameEngine.vehicleManager.seatIndex === 0);
+
+            // Если локальный игрок НЕ является водителем этого авто (например, он пассажир или пешком)
+            if (sharedCar && !localIsDriver) {
+                if (data.carX !== undefined && data.carY !== undefined && data.carZ !== undefined) {
+                    if (sharedCar.chassisBody) {
+                        sharedCar.chassisBody.position.set(data.carX, data.carY, data.carZ);
+                        sharedCar.chassisBody.velocity.set(0, 0, 0);
+                        sharedCar.chassisBody.angularVelocity.set(0, 0, 0);
+                    }
+                    if (sharedCar.carGroup) {
+                        sharedCar.carGroup.position.set(data.carX, data.carY, data.carZ);
+                        if (data.carRotY !== undefined) {
+                            sharedCar.carGroup.rotation.set(0, data.carRotY, 0);
+                            if (sharedCar.chassisBody) {
+                                sharedCar.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), data.carRotY);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        const wasFlyingHeli = this.isFlyingHeli;
+        const oldHeliSeat = this.heliSeat;
+
+        if (data.isFlyingHeli !== undefined) this.isFlyingHeli = !!data.isFlyingHeli;
+        if (data.heliSeat !== undefined) this.heliSeat = data.heliSeat;
+
+        const heli = window.gameEngine?.helicopter;
+        if (heli) {
+            if (wasFlyingHeli && (!this.isFlyingHeli || oldHeliSeat !== this.heliSeat)) {
+                heli.removeOccupant(this.playerId);
+            }
+            if (this.isFlyingHeli) {
+                heli.setOccupant(this.heliSeat !== undefined ? this.heliSeat : 0, this.playerId);
+                if ((this.heliSeat === 0 || this.heliSeat === undefined) && !heli.isPiloted) {
+                    if (data.heliX !== undefined && data.heliY !== undefined && data.heliZ !== undefined) {
+                        heli.body.position.set(data.heliX, data.heliY, data.heliZ);
+                        heli.body.velocity.set(0, 0, 0);
+                        heli.body.angularVelocity.set(0, 0, 0);
+                        heli.group.position.set(data.heliX, data.heliY, data.heliZ);
+                        if (data.heliRotY !== undefined) {
+                            heli.headingAngle = data.heliRotY;
+                            heli.pitchAngle = data.heliPitch || 0;
+                            heli.rollAngle = data.heliRoll || 0;
+                            heli.group.rotation.set(0, data.heliRotY, 0);
+                            heli.body.quaternion.setFromEuler(heli.pitchAngle, heli.headingAngle, heli.rollAngle, 'YXZ');
+                        }
+                    }
+                    if (heli.rotorRPM < 0.8) {
+                        heli.rotorRPM = 1.0;
+                        heli.targetRotorRPM = 1.0;
+                        heli.startAudio();
+                    }
+                }
+            }
         }
 
         this.lastUpdateTime = Date.now();
@@ -308,42 +446,92 @@ class RemotePlayer {
     update(deltaTime) {
         const dt = Math.min(deltaTime, 0.1);
 
-        // 1. Плавная интерполяция позиции (Hermite Lerp)
+        // 1. Нахождение внутри вертолета Maverick (Пилот или Пассажир)
+        if (this.isFlyingHeli && window.gameEngine && window.gameEngine.helicopter) {
+            const heli = window.gameEngine.helicopter;
+            const seatOffset = heli.getSeatOffset(this.heliSeat || 0);
+            const worldSeat = seatOffset.clone().applyQuaternion(heli.group.quaternion).add(heli.group.position);
+
+            this.group.position.copy(worldSeat);
+            this.group.quaternion.copy(heli.group.quaternion);
+            this.characterGroup.scale.set(0.85, 0.85, 0.85);
+
+            if (this.nameplateSprite) this.nameplateSprite.position.set(0, 2.35, 0);
+
+            if (this.limbs.torso) this.limbs.torso.position.y = 0.38;
+            if (this.limbs.leftLeg && this.limbs.rightLeg) {
+                this.limbs.leftLeg.pivot.rotation.x = -1.45;
+                this.limbs.rightLeg.pivot.rotation.x = -1.45;
+                this.limbs.leftLeg.knee.rotation.x = 1.45;
+                this.limbs.rightLeg.knee.rotation.x = 1.45;
+            }
+            if (this.limbs.leftArm && this.limbs.rightArm) {
+                this.limbs.leftArm.pivot.rotation.set(-0.55, 0.15, 0.2);
+                this.limbs.rightArm.pivot.rotation.set(-0.55, -0.15, -0.2);
+            }
+            return;
+        }
+        this.characterGroup.scale.set(1, 1, 1);
+
+        // 2. Плавная интерполяция позиции (Hermite Lerp)
         const lerpFactor = 1.0 - Math.exp(-14.0 * dt);
         this.currentPos.lerp(this.targetPos, lerpFactor);
-        this.group.position.copy(this.currentPos);
 
-        // 2. Плавный поворот персонажа
+        // 3. Плавный поворот персонажа
         let diff = this.targetRotY - this.currentRotY;
         while (diff > Math.PI) diff -= Math.PI * 2;
         while (diff < -Math.PI) diff += Math.PI * 2;
         this.currentRotY += diff * lerpFactor;
-        this.group.rotation.y = this.currentRotY;
 
-        // 3. Таймер показа сообщения чата
+        // 3. Проверка нахождения в общем автомобиле мира
+        let isInsideSharedCar = false;
+        if (this.isDriving && this.carIndex !== undefined && window.gameEngine && window.gameEngine.vehicleManager) {
+            const sharedCar = window.gameEngine.vehicleManager.cars[this.carIndex];
+            if (sharedCar && sharedCar.carGroup) {
+                isInsideSharedCar = true;
+                const seatOffset = sharedCar.getSeatOffset(this.seatIndex || 0);
+                const worldSeat = seatOffset.clone().applyQuaternion(sharedCar.carGroup.quaternion).add(sharedCar.carGroup.position);
+
+                this.group.position.copy(worldSeat);
+                this.group.quaternion.copy(sharedCar.carGroup.quaternion);
+
+                if (this.nameplateSprite) {
+                    this.nameplateSprite.position.set(0, 2.35, 0);
+                }
+
+                // Посадка в кресло
+                if (this.limbs.torso) this.limbs.torso.position.y = 0.55;
+                if (this.limbs.leftLeg && this.limbs.rightLeg) {
+                    this.limbs.leftLeg.pivot.rotation.x = -1.45;
+                    this.limbs.rightLeg.pivot.rotation.x = -1.45;
+                    this.limbs.leftLeg.knee.rotation.x = 1.45;
+                    this.limbs.rightLeg.knee.rotation.x = 1.45;
+                }
+                if (this.limbs.leftArm && this.limbs.rightArm) {
+                    if (this.seatIndex === 0) {
+                        this.limbs.leftArm.pivot.rotation.set(-0.75, 0.2, 0.3);
+                        this.limbs.rightArm.pivot.rotation.set(-0.75, -0.2, -0.3);
+                    } else {
+                        this.limbs.leftArm.pivot.rotation.set(-0.4, 0.1, 0.1);
+                        this.limbs.rightArm.pivot.rotation.set(-0.4, -0.1, -0.1);
+                    }
+                }
+                return;
+            }
+        }
+
+        // Вне автомобиля (пешком)
+        this.group.position.copy(this.currentPos);
+        this.group.rotation.set(0, this.currentRotY, 0);
+        if (this.nameplateSprite) this.nameplateSprite.position.set(0, 2.25, 0);
+
+        // 4. Таймер показа сообщения чата
         if (this.chatMessageTimer > 0) {
             this.chatMessageTimer -= dt;
             if (this.chatMessageTimer <= 0) {
                 this.chatMessage = '';
                 this.redrawNameplate();
             }
-        }
-
-        // 4. Процедурная анимация ходьбы / бега / вождения
-        if (this.isDriving) {
-            // Персонаж сидит в машине
-            if (this.limbs.leftLeg && this.limbs.rightLeg) {
-                this.limbs.leftLeg.pivot.rotation.x = -Math.PI / 2;
-                this.limbs.rightLeg.pivot.rotation.x = -Math.PI / 2;
-                this.limbs.leftLeg.knee.rotation.x = Math.PI / 2;
-                this.limbs.rightLeg.knee.rotation.x = Math.PI / 2;
-            }
-            if (this.limbs.leftArm && this.limbs.rightArm) {
-                this.limbs.leftArm.pivot.rotation.x = -0.7;
-                this.limbs.rightArm.pivot.rotation.x = -0.7;
-            }
-            if (this.limbs.torso) this.limbs.torso.position.y = 0.85;
-            return;
         }
 
         if (this.limbs.torso) this.limbs.torso.position.y = 1.15;
@@ -384,6 +572,13 @@ class RemotePlayer {
     }
 
     destroy() {
+        if (this.isDriving && this.carIndex !== undefined && window.gameEngine && window.gameEngine.vehicleManager && window.gameEngine.vehicleManager.cars) {
+            const car = window.gameEngine.vehicleManager.cars[this.carIndex];
+            if (car) car.removeOccupant(this.playerId);
+        }
+        if (this.isFlyingHeli && window.gameEngine && window.gameEngine.helicopter) {
+            window.gameEngine.helicopter.removeOccupant(this.playerId);
+        }
         if (this.group && this.scene) {
             this.scene.remove(this.group);
         }

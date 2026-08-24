@@ -63,20 +63,24 @@ class ThirdPersonCameraController {
                 }, { passive: true });
             }
 
-            update(deltaTime, drivenCar) {
+            update(deltaTime, drivenCar, helicopter) {
                 let targetFocus;
                 let isSprinting = false;
                 let currentSpeedKmh = 0;
 
                 const isInsideElevator = (window.gameEngine && window.gameEngine.elevatorSystem && window.gameEngine.elevatorSystem.isPlayerInside);
-                const targetBaseDistance = (isInsideElevator && !drivenCar) ? 2.3 : this.userDistance;
+                const targetBaseDistance = (isInsideElevator && !drivenCar && (!helicopter || (!helicopter.isPiloted && !helicopter.isPassenger))) ? 2.3 : this.userDistance;
 
                 this.currentDistance = THREE.MathUtils.lerp(this.currentDistance, targetBaseDistance, 1.0 - Math.exp(-8.0 * deltaTime));
                 this.distance = this.currentDistance;
 
                 let desiredDistance = this.distance;
 
-                if (drivenCar) {
+                if (helicopter && (helicopter.isPiloted || helicopter.isPassenger)) {
+                    targetFocus = helicopter.group.position.clone().add(new THREE.Vector3(0, 1.4, 0));
+                    const heliSpeed = Math.hypot(helicopter.body.velocity.x, helicopter.body.velocity.y, helicopter.body.velocity.z) * 3.6;
+                    desiredDistance = THREE.MathUtils.lerp(this.distance * 1.8, this.distance * 2.4, Math.min(heliSpeed / 120.0, 1.0));
+                } else if (drivenCar) {
                     targetFocus = drivenCar.carGroup.position.clone().add(new THREE.Vector3(0, 1.2, 0));
                     currentSpeedKmh = drivenCar.getSpeedKmh();
                     desiredDistance = THREE.MathUtils.lerp(this.distance, this.distance * 1.35, Math.min(currentSpeedKmh / 160.0, 1.0));

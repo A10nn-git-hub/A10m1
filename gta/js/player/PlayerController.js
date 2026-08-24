@@ -34,7 +34,66 @@ class PlayerController {
         this.staminaBarFill = document.getElementById('bar-fill-stamina');
         this.moneyElement = document.getElementById('hud-money-val');
 
+        this.isClimbingTree = false;
+        this.currentTree = null;
+
         this.updateHUD();
+    }
+
+    findNearestTree(maxDist = 3.2) {
+        const veg = (window.gameEngine && window.gameEngine.vegetationManager)
+            || (window.gameEngine && window.gameEngine.districtGenerator && window.gameEngine.districtGenerator.vegetationManager);
+        if (!veg || !veg.treePositions || veg.treePositions.length === 0) return null;
+
+        const px = this.player.body.position.x;
+        const pz = this.player.body.position.z;
+        let bestTree = null;
+        let minDist = maxDist;
+
+        for (let i = 0; i < veg.treePositions.length; i++) {
+            const t = veg.treePositions[i];
+            const d = Math.hypot(px - t.x, pz - t.z);
+            if (d < minDist) {
+                minDist = d;
+                bestTree = t;
+            }
+        }
+        return bestTree;
+    }
+
+    toggleClimbTree() {
+        if (this.isClimbingTree) {
+            // Спуститься с дерева на землю
+            const tree = this.currentTree;
+            this.isClimbingTree = false;
+            this.currentTree = null;
+
+            const exitX = tree ? tree.x + 1.2 : this.player.body.position.x;
+            const exitZ = tree ? tree.z + 1.2 : this.player.body.position.z;
+            const groundY = (window.gameEngine && window.gameEngine.terrainManager)
+                ? window.gameEngine.terrainManager.getTerrainHeight(exitX, exitZ)
+                : 0.0;
+
+            this.player.body.position.set(exitX, groundY + 0.82, exitZ);
+            this.player.body.velocity.set(0, 0, 0);
+
+            if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+                window.gameEngine.multiplayerHUD.addSystemMessage('Вы спустились с дерева на землю');
+            }
+        } else {
+            // Залезть на дерево
+            const tree = this.findNearestTree(3.2);
+            if (tree) {
+                this.isClimbingTree = true;
+                this.currentTree = tree;
+                this.player.body.position.set(tree.x, tree.perchY, tree.z);
+                this.player.body.velocity.set(0, 0, 0);
+
+                if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+                    window.gameEngine.multiplayerHUD.addSystemMessage('🌿 Вы залезли на дерево и спрятались в густой листве! [E] Слезть | [Space] Спрыгнуть');
+                }
+            }
+        }
     }
 
     takeDamage(amount) {
@@ -156,27 +215,103 @@ class PlayerController {
         const mesh = this.player.mesh;
         if (!body || !mesh) return;
 
-        const isInsideElevator = (window.gameEngine && window.gameEngine.elevatorSystem && window.gameEngine.elevatorSystem.isPlayerInside);
+        // Если персонаж сидит на дереве в листве
+        if (this.isClimbingTree && this.currentTree) {
+            body.velocity.set(0, 0, 0);
+            body.position.set(this.currentTree.x, this.currentTree.perchY, this.currentTree.z);
+            body.angularVelocity.set(0, 0, 0);
+            body.quaternion.set(0, 0, 0, 1);
+
+            mesh.position.set(this.currentTree.x, this.currentTree.perchY - 0.815, this.currentTree.z);
+            mesh.rotation.y = this.cameraController.yaw;
+
+            const l = this.player.limbs;
+            if (l && l.torso) {
+                l.torso.position.y = 0.55;
+                l.leftLeg.pivot.rotation.x = -1.45;
+                l.rightLeg.pivot.rotation.x = -1.45;
+                l.leftLeg.knee.rotation.x = 1.45;
+                l.rightLeg.knee.rotation.x = 1.45;
+                l.leftArm.pivot.rotation.set(-0.6, 0.2, 0.3);
+                l.rightArm.pivot.rotation.set(-0.6, -0.2, -0.3);
+            }
+
+            const isJumpJustPressed = this.input.keys.jump && !this.prevJumpKey;
+            this.prevJumpKey = !!this.input.keys.jump;
+
+            if (isJumpJustPressed) {
+                // Спрыгнуть с дерева вперед
+                this.isClimbingTree = false;
+                const camYaw = this.cameraController.yaw;
+                const fwd = new THREE.Vector3(-Math.sin(camYaw), 0, -Math.cos(camYaw));
+                body.velocity.set(fwd.x * 7.5, 4.5, fwd.z * 7.5);
+                this.jumpCooldown = 0.4;
+                this.currentTree = null;
+                if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+                    window.gameEngine.multiplayerHUD.addSystemMessage('Вы спрыгнули с дерева');
+                }
+            }
+
+            if (this.speedElement) this.speedElement.innerText = '0.0';
+            return;
+        }
+
+        const elevator = window.gameEngine && window.gameEngine.elevatorSystem;
+        const isInsideElevator = (elevator && elevator.isPlayerInside);
+        const isElevatorMoving = isInsideElevator && (elevator.state === 'MOVING' || elevator.state === 'DOORS_CLOSING' || elevator.state === 'ARRIVED');
         const groundY = (window.gameEngine && window.gameEngine.terrainManager)
             ? window.gameEngine.terrainManager.getTerrainHeight(body.position.x, body.position.z)
             : 0.0;
 
         if (this.jumpCooldown > 0) this.jumpCooldown -= deltaTime;
 
-        if (!isInsideElevator && body.position.y <= groundY + 0.83) {
-            body.position.y = groundY + 0.815;
-            body.velocity.y = 0;
-            if (this.jumpCooldown <= 0) this.isGrounded = true;
-        } else {
-            const isNotAscending = Math.abs(body.velocity.y) <= 0.35;
-            this.isGrounded = (this.jumpCooldown <= 0) && isNotAscending;
+        // Точная проверка физического контакта под ногами (земля, крыша, пол лифта)
+        let hasSolidContact = false;
+        if (this.world && this.world.contacts) {
+            for (let i = 0; i < this.world.contacts.length; i++) {
+                const c = this.world.contacts[i];
+                if (c.bi === body || c.bj === body) {
+                    const normalY = (c.bi === body) ? c.ni.y : -c.ni.y;
+                    if (normalY > 0.45) {
+                        hasSolidContact = true;
+                        break;
+                    }
+                }
+            }
         }
 
+        // Проверка нахождения на крыше вертолета (позволяет летать сверху вертолета)
+        const heli = window.gameEngine && window.gameEngine.helicopter;
+        let isStandingOnHeliRoof = false;
+        if (heli && heli.body && !heli.isPiloted && !heli.isPassenger) {
+            const hPos = heli.body.position;
+            const dx = Math.abs(body.position.x - hPos.x);
+            const dz = Math.abs(body.position.z - hPos.z);
+            const dy = body.position.y - hPos.y;
+            if (dx < 1.15 && dz < 1.85 && dy >= 0.85 && dy <= 2.4) {
+                isStandingOnHeliRoof = true;
+                hasSolidContact = true;
+                body.position.x += heli.body.velocity.x * deltaTime;
+                body.position.y += heli.body.velocity.y * deltaTime;
+                body.position.z += heli.body.velocity.z * deltaTime;
+            }
+        }
+
+        const onGroundTerrain = (!isInsideElevator && !isStandingOnHeliRoof && body.position.y <= groundY + 0.83);
+        if (onGroundTerrain) {
+            body.position.y = groundY + 0.815;
+            if (body.velocity.y < 0) body.velocity.y = 0;
+        }
+
+        this.isGrounded = (this.jumpCooldown <= 0) && (onGroundTerrain || hasSolidContact || isInsideElevator || isStandingOnHeliRoof);
+
         let moveX = 0; let moveZ = 0;
-        if (this.input.keys.forward) moveZ -= 1;
-        if (this.input.keys.backward) moveZ += 1;
-        if (this.input.keys.left) moveX -= 1;
-        if (this.input.keys.right) moveX += 1;
+        if (!isElevatorMoving) {
+            if (this.input.keys.forward) moveZ -= 1;
+            if (this.input.keys.backward) moveZ += 1;
+            if (this.input.keys.left) moveX -= 1;
+            if (this.input.keys.right) moveX += 1;
+        }
 
         const isMoving = (moveX !== 0 || moveZ !== 0);
         const cameraYaw = this.cameraController.yaw;
@@ -230,13 +365,16 @@ class PlayerController {
             body.velocity.z += (0 - body.velocity.z) * decelRate;
         }
 
-        if (this.input.keys.jump && this.isGrounded && this.jumpCooldown <= 0) {
+        const isJumpJustPressed = this.input.keys.jump && !this.prevJumpKey;
+        this.prevJumpKey = !!this.input.keys.jump;
+
+        if (isJumpJustPressed && this.isGrounded && this.jumpCooldown <= 0 && !isElevatorMoving) {
             body.velocity.y = 6.6;
             this.isGrounded = false;
-            this.jumpCooldown = 0.4;
+            this.jumpCooldown = 0.35;
         } else if (this.isGrounded && !isInsideElevator && body.position.y <= groundY + 0.85) {
             body.position.y = groundY + 0.815;
-            body.velocity.y = 0;
+            if (body.velocity.y < 0) body.velocity.y = 0;
         }
 
         body.angularVelocity.set(0, 0, 0);

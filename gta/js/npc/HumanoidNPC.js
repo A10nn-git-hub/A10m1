@@ -436,14 +436,36 @@
                     const cSpeedH = Math.hypot(cVel.x, cVel.z);
                     const cSpeedKmh = cSpeedH * 3.6;
 
-                    const dx = this.body.position.x - cPos.x;
-                    const dz = this.body.position.z - cPos.z;
-                    const distToCar = Math.hypot(dx, dz);
+                    const carQuat = drivenCar.carGroup ? drivenCar.carGroup.quaternion : drivenCar.chassisBody.quaternion;
+                    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(carQuat);
+                    const rgt = new THREE.Vector3(1, 0, 0).applyQuaternion(carQuat);
 
-                    if (distToCar < 2.3 && cSpeedKmh > 8.0) {
+                    const hitPoints = [
+                        cPos,
+                        new THREE.Vector3(cPos.x + fwd.x * 2.2, cPos.y, cPos.z + fwd.z * 2.2),
+                        new THREE.Vector3(cPos.x + fwd.x * 2.2 - rgt.x * 0.9, cPos.y, cPos.z + fwd.z * 2.2 - rgt.z * 0.9),
+                        new THREE.Vector3(cPos.x + fwd.x * 2.2 + rgt.x * 0.9, cPos.y, cPos.z + fwd.z * 2.2 + rgt.z * 0.9),
+                        new THREE.Vector3(cPos.x + fwd.x * 1.1, cPos.y, cPos.z + fwd.z * 1.1)
+                    ];
+
+                    let isPedHit = false;
+                    for (let hp = 0; hp < hitPoints.length; hp++) {
+                        const pt = hitPoints[hp];
+                        const dSq = (pt.x - this.body.position.x) * (pt.x - this.body.position.x) + (pt.z - this.body.position.z) * (pt.z - this.body.position.z);
+                        if (dSq < 1.35 * 1.35) {
+                            isPedHit = true;
+                            break;
+                        }
+                    }
+
+                    if (isPedHit && cSpeedKmh > 7.0) {
                         this.hitByVehicle(drivenCar);
                         return;
                     }
+
+                    const dx = this.body.position.x - cPos.x;
+                    const dz = this.body.position.z - cPos.z;
+                    const distToCar = Math.hypot(dx, dz);
 
                     if (cSpeedKmh > 10.0 && distToCar < 18.0) {
                         const dotMove = (cVel.x * dx + cVel.z * dz) / (cSpeedH * distToCar);

@@ -141,10 +141,20 @@
                 this.taillightPoint.position.set(0, 0.22, -2.4);
                 chassisGroup.add(this.taillightPoint);
 
-                const seatL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.52), matInterior);
-                seatL.position.set(-0.42, 0.28, -0.15); chassisGroup.add(seatL);
-                const seatR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.52), matInterior);
-                seatR.position.set(0.42, 0.28, -0.15); chassisGroup.add(seatR);
+                // 4 полноценных кресла в салоне (Водитель + 3 Пассажира)
+                const seatFL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.52), matInterior);
+                seatFL.position.set(-0.42, 0.28, -0.15); chassisGroup.add(seatFL);
+
+                const seatFR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.52), matInterior);
+                seatFR.position.set(0.42, 0.28, -0.15); chassisGroup.add(seatFR);
+
+                const seatRL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.52), matInterior);
+                seatRL.position.set(-0.42, 0.28, -0.85); chassisGroup.add(seatRL);
+
+                const seatRR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.52), matInterior);
+                seatRR.position.set(0.42, 0.28, -0.85); chassisGroup.add(seatRR);
+
+                this.occupants = [null, null, null, null]; // 0: Водитель, 1: Передний правый, 2: Задний левый, 3: Задний правый
 
                 const steerMesh = new THREE.Mesh(new THREE.TorusGeometry(0.16, 0.024, 8, 20), matInterior);
                 steerMesh.position.set(-0.42, 0.46, 0.3); steerMesh.rotation.x = Math.PI / 3.8;
@@ -376,19 +386,47 @@
 
                 const baseRearGrip = isOnDirt ? 1.65 : 3.4;
                 const baseFrontGrip = isOnDirt ? 2.1 : 3.8;
-                const handbrakeRearGrip = isOnDirt ? 0.65 : 1.05;
+                const driftRearGrip = isOnDirt ? 0.35 : 0.45;
+                const driftFrontGrip = 5.2;
 
-                this.vehicle.wheelInfos[0].frictionSlip = baseFrontGrip;
-                this.vehicle.wheelInfos[1].frictionSlip = baseFrontGrip;
+                const isDrifting = !!keys.jump;
 
-                if (keys.jump) {
-                    brakeForce = Math.max(brakeForce, 160);
+                if (isDrifting) {
+                    // РЕЖИМ ДРИФТА (Ручной тормоз на пробел)
                     this.isBrakingState = true;
-                    this.vehicle.wheelInfos[2].frictionSlip = handbrakeRearGrip;
-                    this.vehicle.wheelInfos[3].frictionSlip = handbrakeRearGrip;
+                    this.vehicle.wheelInfos[0].frictionSlip = driftFrontGrip;
+                    this.vehicle.wheelInfos[1].frictionSlip = driftFrontGrip;
+                    this.vehicle.wheelInfos[2].frictionSlip = driftRearGrip;
+                    this.vehicle.wheelInfos[3].frictionSlip = driftRearGrip;
+
+                    // Передние колеса свободны для тяги и управления, задние блокируются ручником
+                    this.vehicle.setBrake(0, 0);
+                    this.vehicle.setBrake(0, 1);
+                    this.vehicle.setBrake(130, 2);
+                    this.vehicle.setBrake(130, 3);
+
+                    // Дополнительный импульс заноса задней оси при вывернутом руле
+                    if (Math.abs(this.steeringValue) > 0.04 && currentSpeedKmh > 10.0) {
+                        this.chassisBody.angularVelocity.y += this.steeringValue * 3.2 * deltaTime;
+                    }
                 } else {
+                    this.vehicle.wheelInfos[0].frictionSlip = baseFrontGrip;
+                    this.vehicle.wheelInfos[1].frictionSlip = baseFrontGrip;
                     this.vehicle.wheelInfos[2].frictionSlip = baseRearGrip;
                     this.vehicle.wheelInfos[3].frictionSlip = baseRearGrip;
+
+                    if (brakeForce > 0) {
+                        this.vehicle.setBrake(brakeForce * 0.6, 0);
+                        this.vehicle.setBrake(brakeForce * 0.6, 1);
+                        this.vehicle.setBrake(brakeForce * 1.0, 2);
+                        this.vehicle.setBrake(brakeForce * 1.0, 3);
+                    } else {
+                        // Полный сброс тормозов для мгновенного старта машины
+                        this.vehicle.setBrake(0, 0);
+                        this.vehicle.setBrake(0, 1);
+                        this.vehicle.setBrake(0, 2);
+                        this.vehicle.setBrake(0, 3);
+                    }
                 }
 
                 if (currentSpeedKmh > effectiveTopSpeed) {
@@ -402,14 +440,7 @@
                 this.vehicle.applyEngineForce(forwardForce * 0.6, 2);
                 this.vehicle.applyEngineForce(forwardForce * 0.6, 3);
 
-                if (brakeForce > 0) {
-                    this.vehicle.setBrake(brakeForce * 0.6, 0);
-                    this.vehicle.setBrake(brakeForce * 0.6, 1);
-                    this.vehicle.setBrake(brakeForce * 1.0, 2);
-                    this.vehicle.setBrake(brakeForce * 1.0, 3);
-                }
-
-                const steerLimit = THREE.MathUtils.lerp(this.maxSteerAngle, 0.16, Math.min(currentSpeedKmh / 160, 1.0));
+                const steerLimit = THREE.MathUtils.lerp(this.maxSteerAngle, 0.18, Math.min(currentSpeedKmh / 160, 1.0));
                 let targetSteer = 0;
 
                 if (keys.left) targetSteer += steerLimit;
@@ -513,6 +544,50 @@
                     }
                     this.soundController.update(speedKmh, this.isBrakingState, this.steeringValue);
                 }
+            }
+
+            getSeatOffset(seatIndex = 0) {
+                // Локальные смещения для 4 мест
+                switch (seatIndex) {
+                    case 0: return new THREE.Vector3(-0.42, 0.22, -0.15); // Водитель
+                    case 1: return new THREE.Vector3(0.42, 0.22, -0.15);  // Передний пассажир
+                    case 2: return new THREE.Vector3(-0.42, 0.22, -0.85); // Задний левый
+                    case 3: return new THREE.Vector3(0.42, 0.22, -0.85);  // Задний правый
+                    default: return new THREE.Vector3(-0.42, 0.22, -0.15);
+                }
+            }
+
+            getFirstAvailableSeat() {
+                if (!this.occupants) this.occupants = [null, null, null, null];
+                for (let i = 0; i < 4; i++) {
+                    if (!this.occupants[i]) return i;
+                }
+                return -1; // Машина полностью заполнена (4/4)
+            }
+
+            setOccupant(seatIndex, playerId) {
+                if (!this.occupants) this.occupants = [null, null, null, null];
+                if (seatIndex >= 0 && seatIndex < 4) {
+                    this.occupants[seatIndex] = playerId;
+                }
+            }
+
+            removeOccupant(playerId) {
+                if (!this.occupants) return;
+                for (let i = 0; i < 4; i++) {
+                    if (this.occupants[i] === playerId) {
+                        this.occupants[i] = null;
+                    }
+                }
+            }
+
+            getOccupantCount() {
+                if (!this.occupants) return 0;
+                let count = 0;
+                for (let i = 0; i < 4; i++) {
+                    if (this.occupants[i]) count++;
+                }
+                return count;
             }
 
             setEcoMode(isEco) {

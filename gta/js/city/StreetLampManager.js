@@ -368,21 +368,42 @@
                     const carVel = car.chassisBody.velocity;
                     const speedSq = carVel.x * carVel.x + carVel.y * carVel.y + carVel.z * carVel.z;
 
-                    if (speedSq < 14.5) continue;
+                    if (speedSq < 16.0) continue; // Скорость более 14 км/ч
+
+                    const carQuat = car.carGroup ? car.carGroup.quaternion : car.chassisBody.quaternion;
+                    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(carQuat);
+                    const rgt = new THREE.Vector3(1, 0, 0).applyQuaternion(carQuat);
+
+                    // 5 точек контура (центр переднего бампера, левый и правый углы, капот и центр авто)
+                    const hitPoints = [
+                        carPos,
+                        new THREE.Vector3(carPos.x + fwd.x * 2.3, carPos.y, carPos.z + fwd.z * 2.3),
+                        new THREE.Vector3(carPos.x + fwd.x * 2.3 - rgt.x * 0.95, carPos.y, carPos.z + fwd.z * 2.3 - rgt.z * 0.95),
+                        new THREE.Vector3(carPos.x + fwd.x * 2.3 + rgt.x * 0.95, carPos.y, carPos.z + fwd.z * 2.3 + rgt.z * 0.95),
+                        new THREE.Vector3(carPos.x + fwd.x * 1.2, carPos.y, carPos.z + fwd.z * 1.2)
+                    ];
 
                     for (let p = 0; p < this.props.length; p++) {
                         const prop = this.props[p];
                         if (prop.isBroken) continue;
 
                         const propPos = prop.body.position;
-                        const dx = carPos.x - propPos.x;
-                        const dz = carPos.z - propPos.z;
-                        if (Math.abs(dx) > 3.0 || Math.abs(dz) > 3.0) continue;
+                        if (Math.abs(carPos.x - propPos.x) > 4.5 || Math.abs(carPos.z - propPos.z) > 4.5) continue;
 
-                        // Пропсы остаются прочными монолитными препятствиями, не проваливаются сквозь землю
-                        const distSq = dx * dx + dz * dz;
-                        const hitThreshold = prop.radius + 1.2;
-                        if (distSq < hitThreshold * hitThreshold && speedSq > 80.0 && prop.type === 'FIRE_HYDRANT') {
+                        const hitThreshold = prop.radius + 0.9;
+                        const hitThresholdSq = hitThreshold * hitThreshold;
+
+                        let isHit = false;
+                        for (let hp = 0; hp < hitPoints.length; hp++) {
+                            const pt = hitPoints[hp];
+                            const dSq = (pt.x - propPos.x) * (pt.x - propPos.x) + (pt.z - propPos.z) * (pt.z - propPos.z);
+                            if (dSq < hitThresholdSq) {
+                                isHit = true;
+                                break;
+                            }
+                        }
+
+                        if (isHit) {
                             this.breakProp(prop, carVel);
                         }
                     }

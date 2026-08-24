@@ -240,6 +240,10 @@
                 const bKitchen = this.createStaticBox(pKitchen.x, 0.5, pKitchen.z, 4.2, 1.0, 1.0, cx, cz);
                 bKitchen.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotationY);
 
+                // Сплошной физический коллайдер крыши и перекрытия дома
+                const bRoof = this.createStaticBox(posX, houseH + 0.15, posZ, houseW + 0.6, 0.4, houseD + 0.6, cx, cz);
+                bRoof.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), rotationY);
+
                 this.houses.push({
                     pos: { x: posX, z: posZ },
                     entrance: getRotVec(0, -houseD / 2 - 1.4),
