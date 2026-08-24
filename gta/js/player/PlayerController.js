@@ -271,7 +271,7 @@ class PlayerController {
             for (let i = 0; i < this.world.contacts.length; i++) {
                 const c = this.world.contacts[i];
                 if (c.bi === body || c.bj === body) {
-                    const normalY = (c.bi === body) ? c.ni.y : -c.ni.y;
+                    const normalY = (c.bi === body) ? -c.ni.y : c.ni.y;
                     if (normalY > 0.45) {
                         hasSolidContact = true;
                         break;

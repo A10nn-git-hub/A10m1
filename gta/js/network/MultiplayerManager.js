@@ -29,7 +29,11 @@ class MultiplayerManager {
         this.localPlayerRef = null;
         this.chatRef = null;
         this.elevatorRef = null;
+        this.propsRef = null;
+        this.vehiclesRef = null;
+        this.heliRef = null;
         this.connectedRef = null;
+        this.lastVehiclePushTime = 0;
 
         this.onStatusChange = null;
         this.onChatMessageReceived = null;
@@ -169,6 +173,9 @@ class MultiplayerManager {
             this.playersRef = this.database.ref(`${rootPath}/players`);
             this.localPlayerRef = this.database.ref(`${rootPath}/players/${this.localPlayerId}`);
             this.chatRef = this.database.ref(`${rootPath}/chat`);
+            this.propsRef = this.database.ref(`${rootPath}/props`);
+            this.vehiclesRef = this.database.ref(`${rootPath}/vehicles`);
+            this.heliRef = this.database.ref(`${rootPath}/helicopter`);
             this.connectedRef = this.database.ref('.info/connected');
 
             // Обработка статуса подключения
@@ -227,6 +234,36 @@ class MultiplayerManager {
                 }
             });
 
+            // Синхронизация сбитых фонарей, гидрантов, заборов, урн и скамеек
+            this.propsRef.on('child_added', (snapshot) => {
+                const propId = parseInt(snapshot.key);
+                const data = snapshot.val();
+                if (data && !isNaN(propId) && window.gameEngine && window.gameEngine.streetLampManager) {
+                    window.gameEngine.streetLampManager.receiveNetworkBreakProp(propId, data.vx || 0, data.vy || 4, data.vz || 0);
+                }
+            }, (err) => {
+                console.error('[Multiplayer] Firebase propsRef error:', err);
+            });
+
+            // Синхронизация местоположения автомобилей автопарка
+            const handleVehicleSync = (snapshot) => {
+                const carIndex = parseInt(snapshot.key);
+                const data = snapshot.val();
+                if (data && !isNaN(carIndex) && data.driverId !== this.localPlayerId) {
+                    this.updateCarFromNetwork(carIndex, data);
+                }
+            };
+            this.vehiclesRef.on('child_added', handleVehicleSync);
+            this.vehiclesRef.on('child_changed', handleVehicleSync);
+
+            // Синхронизация вертолета Maverick
+            this.heliRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.pilotId !== this.localPlayerId) {
+                    this.updateHeliFromNetwork(data);
+                }
+            });
+
             // Синхронизация чата
             this.chatRef.limitToLast(25).on('child_added', (snapshot) => {
                 const msg = snapshot.val();
@@ -269,6 +306,129 @@ class MultiplayerManager {
         }
     }
 
+    broadcastPropBreak(propId, vx, vy, vz) {
+        if (propId === undefined) return;
+        const data = {
+            propId,
+            vx: Math.round((vx || 0) * 10) / 10,
+            vy: Math.round((vy || 4) * 10) / 10,
+            vz: Math.round((vz || 0) * 10) / 10,
+            ts: Date.now()
+        };
+        this.broadcastPacket({
+            type: 'PROP_BREAK',
+            pid: this.localPlayerId,
+            data
+        });
+        if (this.propsRef) {
+            try {
+                this.propsRef.child(String(propId)).set(data).catch(() => {});
+            } catch (e) {}
+        }
+    }
+
+    broadcastCarSync(carIndex, x, y, z, rotY, isDriven = false) {
+        if (carIndex === undefined || carIndex < 0) return;
+        const data = {
+            carIndex,
+            x: Math.round((x || 0) * 100) / 100,
+            y: Math.round((y || 0) * 100) / 100,
+            z: Math.round((z || 0) * 100) / 100,
+            rotY: Math.round((rotY || 0) * 100) / 100,
+            isDriven: !!isDriven,
+            driverId: isDriven ? this.localPlayerId : null,
+            ts: Date.now()
+        };
+        this.broadcastPacket({
+            type: 'VEHICLE_SYNC',
+            pid: this.localPlayerId,
+            data
+        });
+        if (this.vehiclesRef) {
+            try {
+                this.vehiclesRef.child(String(carIndex)).set(data).catch(() => {});
+            } catch (e) {}
+        }
+    }
+
+    broadcastHeliSync(x, y, z, rotY, pitch = 0, roll = 0, isPiloted = false) {
+        const data = {
+            x: Math.round((x || 0) * 100) / 100,
+            y: Math.round((y || 0) * 100) / 100,
+            z: Math.round((z || 0) * 100) / 100,
+            rotY: Math.round((rotY || 0) * 100) / 100,
+            pitch: Math.round((pitch || 0) * 100) / 100,
+            roll: Math.round((roll || 0) * 100) / 100,
+            isPiloted: !!isPiloted,
+            pilotId: isPiloted ? this.localPlayerId : null,
+            ts: Date.now()
+        };
+        this.broadcastPacket({
+            type: 'HELI_SYNC',
+            pid: this.localPlayerId,
+            data
+        });
+        if (this.heliRef) {
+            try {
+                this.heliRef.set(data).catch(() => {});
+            } catch (e) {}
+        }
+    }
+
+    updateCarFromNetwork(carIndex, data) {
+        if (!data || carIndex === undefined || isNaN(carIndex)) return;
+        if (!window.gameEngine || !window.gameEngine.vehicleManager || !window.gameEngine.vehicleManager.cars) return;
+        const car = window.gameEngine.vehicleManager.cars[carIndex];
+        if (!car) return;
+
+        const activeCar = window.gameEngine.vehicleManager.activeDrivenCar;
+        const isLocallyDriving = (activeCar === car && !window.gameEngine.vehicleManager.isPassenger && window.gameEngine.vehicleManager.seatIndex === 0);
+        if (isLocallyDriving) return;
+
+        if (data.x !== undefined && data.y !== undefined && data.z !== undefined) {
+            if (car.chassisBody) {
+                car.chassisBody.position.set(data.x, data.y, data.z);
+                car.chassisBody.velocity.set(0, 0, 0);
+                car.chassisBody.angularVelocity.set(0, 0, 0);
+            }
+            if (car.carGroup) {
+                car.carGroup.position.set(data.x, data.y, data.z);
+                if (data.rotY !== undefined) {
+                    car.carGroup.rotation.set(0, data.rotY, 0);
+                    if (car.chassisBody) {
+                        car.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), data.rotY);
+                    }
+                }
+            }
+        }
+    }
+
+    updateHeliFromNetwork(data) {
+        if (!data || !window.gameEngine || !window.gameEngine.helicopter) return;
+        const heli = window.gameEngine.helicopter;
+        if (heli.isPiloted) return;
+
+        if (data.x !== undefined && data.y !== undefined && data.z !== undefined) {
+            if (heli.body) {
+                heli.body.position.set(data.x, data.y, data.z);
+                heli.body.velocity.set(0, 0, 0);
+                heli.body.angularVelocity.set(0, 0, 0);
+            }
+            if (heli.group) {
+                heli.group.position.set(data.x, data.y, data.z);
+                if (data.rotY !== undefined) {
+                    heli.headingAngle = data.rotY;
+                    heli.pitchAngle = data.pitch || 0;
+                    heli.rollAngle = data.roll || 0;
+                    heli.group.rotation.set(0, data.rotY, 0);
+                    if (heli.body) {
+                        heli.body.quaternion.setFromEuler(heli.pitchAngle, heli.headingAngle, heli.rollAngle, 'YXZ');
+                    }
+                }
+            }
+        }
+    }
+
     broadcastPacket(packet) {
         if (!packet) return;
 
@@ -298,6 +458,18 @@ class MultiplayerManager {
         } else if (type === 'ELEVATOR') {
             if (data && data.floorNum && window.gameEngine && window.gameEngine.elevatorSystem) {
                 window.gameEngine.elevatorSystem.receiveNetworkElevatorCommand(data.floorNum);
+            }
+        } else if (type === 'PROP_BREAK') {
+            if (data && data.propId !== undefined && window.gameEngine && window.gameEngine.streetLampManager) {
+                window.gameEngine.streetLampManager.receiveNetworkBreakProp(data.propId, data.vx, data.vy, data.vz);
+            }
+        } else if (type === 'VEHICLE_SYNC') {
+            if (data && data.carIndex !== undefined && pid !== this.localPlayerId) {
+                this.updateCarFromNetwork(data.carIndex, data);
+            }
+        } else if (type === 'HELI_SYNC') {
+            if (data && pid !== this.localPlayerId) {
+                this.updateHeliFromNetwork(data);
             }
         } else if (type === 'CHAT') {
             if (this.onChatMessageReceived) {
@@ -499,6 +671,18 @@ class MultiplayerManager {
             try { this.elevatorRef.off(); } catch (e) {}
             this.elevatorRef = null;
         }
+        if (this.propsRef) {
+            try { this.propsRef.off(); } catch (e) {}
+            this.propsRef = null;
+        }
+        if (this.vehiclesRef) {
+            try { this.vehiclesRef.off(); } catch (e) {}
+            this.vehiclesRef = null;
+        }
+        if (this.heliRef) {
+            try { this.heliRef.off(); } catch (e) {}
+            this.heliRef = null;
+        }
         if (this.connectedRef) {
             try { this.connectedRef.off(); } catch (e) {}
             this.connectedRef = null;
@@ -595,6 +779,37 @@ class MultiplayerManager {
                 try {
                     this.localPlayerRef.set(payload).catch(() => {});
                 } catch (e) {}
+            }
+        }
+
+        // 3. Периодическая синхронизация управляемого транспорта водителем (~4 Hz)
+        if (now - (this.lastVehiclePushTime || 0) >= 250) {
+            this.lastVehiclePushTime = now;
+            const vm = vehicleManager || window.gameEngine?.vehicleManager;
+            if (vm && vm.activeDrivenCar && !vm.isPassenger && vm.seatIndex === 0) {
+                const ac = vm.activeDrivenCar;
+                if (ac.carIndex !== undefined && ac.carGroup) {
+                    this.broadcastCarSync(
+                        ac.carIndex,
+                        ac.carGroup.position.x,
+                        ac.carGroup.position.y,
+                        ac.carGroup.position.z,
+                        ac.carGroup.rotation.y,
+                        true
+                    );
+                }
+            }
+            const heli = window.gameEngine?.helicopter;
+            if (heli && heli.isPiloted && heli.body) {
+                this.broadcastHeliSync(
+                    heli.body.position.x,
+                    heli.body.position.y,
+                    heli.body.position.z,
+                    heli.headingAngle || 0,
+                    heli.pitchAngle || 0,
+                    heli.rollAngle || 0,
+                    true
+                );
             }
         }
     }

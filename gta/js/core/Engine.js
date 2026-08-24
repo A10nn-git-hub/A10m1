@@ -97,15 +97,13 @@ class GTAEngine {
             await this.progressTracker.setProgress(76, 'Инициализация автомобильного освещения (Spot Shadows, стоп-сигналы)...');
             this.vehicleManager = new VehicleManager(this.scene, this.world, this.physicsMaterials);
 
-            // Спавн 1 управляемого вертолета в случайном месте на карте (вертолетная площадка Maze Bank, крыша госпиталя, LSPD или стоянка)
-            const heliSpawns = [
-                { x: -3.5, y: 93.0, z: 0.0, rot: 0 },
-                { x: 45.0, y: 7.2, z: -45.0, rot: Math.PI / 2 },
-                { x: 0.0, y: 7.0, z: 25.0, rot: Math.PI },
-                { x: -60.0, y: 0.8, z: -60.0, rot: -Math.PI / 4 }
-            ];
-            const spawnPoint = heliSpawns[Math.floor(Math.random() * heliSpawns.length)];
-            this.helicopter = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, spawnPoint.x, spawnPoint.y, spawnPoint.z, spawnPoint.rot);
+            // Спавн 2-х полноценных управляемых вертолетов:
+            // 1. Вертолет 1: ВСЕГДА спавнится на крыше небоскреба Maze Bank (10 этаж, Helipad на Y = 93.0м)
+            this.helicopterBank = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, -3.5, 93.0, 0.0, 0);
+            // 2. Вертолет 2: Спавнится на вертолетной площадке Госпиталя Pillbox Hill / Городской площадке
+            this.helicopterHospital = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 60.0, 8.0, 60.0, Math.PI / 2);
+            this.helicopters = [this.helicopterBank, this.helicopterHospital];
+            this.helicopter = this.helicopterBank;
 
             await this.progressTracker.setProgress(80, 'Инициализация AI-системы автономного ambient-трафика (24 авто)...');
             this.ambientTrafficManager = new AmbientTrafficManager(
@@ -138,6 +136,14 @@ class GTAEngine {
             this.initPlayer();
             this.initControllers();
             this.initEvents();
+
+            // Инициализация боевой системы, VFX, полиции и системы розыска (1-5 звезд)
+            this.vfxManager = new CombatVFXManager(this.scene);
+            this.explosionSystem = new VehicleExplosionSystem(this.scene, this.world, this.vfxManager);
+            this.policeManager = new PoliceVehicleManager(this.scene, this.world, this.physicsMaterials);
+            this.wantedManager = new WantedLevelManager(this.scene, this.world, this.policeManager);
+            this.weaponSystem = new WeaponSystem(this.scene, this.camera, this.player, this.vfxManager, this.explosionSystem);
+            this.missionManager = new MissionManager(this.scene, this.playerController);
 
             // Инициализация сетевого мультиплеера на базе Firebase Realtime Database
             this.multiplayerManager = new MultiplayerManager(this.scene);
@@ -477,18 +483,30 @@ class GTAEngine {
         this.inputController.onSeasonChange = () => { if (this.dayNightCycle) this.dayNightCycle.changeSeason(); };
 
         this.inputController.onToggleVehicle = () => {
-            if (this.helicopter && (this.helicopter.isPiloted || this.helicopter.isPassenger)) {
-                this.helicopter.toggleEnterExit(this.player);
-                return;
-            }
-            if (this.helicopter && !this.helicopter.isPiloted && !this.helicopter.isPassenger && this.player && this.player.body && (!this.vehicleManager || !this.vehicleManager.activeDrivenCar)) {
-                const distToHeli = Math.hypot(this.player.body.position.x - this.helicopter.group.position.x, this.player.body.position.z - this.helicopter.group.position.z);
-                const dy = Math.abs(this.player.body.position.y - this.helicopter.group.position.y);
-                if (distToHeli < 4.5 && dy < 3.5) {
-                    this.helicopter.toggleEnterExit(this.player);
+            const helis = this.helicopters || (this.helicopter ? [this.helicopter] : []);
+            // 1. Высадка из текущего вертолета
+            for (let i = 0; i < helis.length; i++) {
+                const h = helis[i];
+                if (h && (h.isPiloted || h.isPassenger)) {
+                    h.toggleEnterExit(this.player);
                     return;
                 }
             }
+            // 2. Посадка в ближайший вертолет
+            if (this.player && this.player.body && (!this.vehicleManager || !this.vehicleManager.activeDrivenCar)) {
+                for (let i = 0; i < helis.length; i++) {
+                    const h = helis[i];
+                    if (h && !h.isPiloted && !h.isPassenger) {
+                        const distToHeli = Math.hypot(this.player.body.position.x - h.group.position.x, this.player.body.position.z - h.group.position.z);
+                        const dy = Math.abs(this.player.body.position.y - h.group.position.y);
+                        if (distToHeli < 4.8 && dy < 3.8) {
+                            h.toggleEnterExit(this.player);
+                            return;
+                        }
+                    }
+                }
+            }
+            // 3. Автомобили
             if (this.vehicleManager) {
                 this.vehicleManager.toggleEnterExitVehicle(this.player);
             }
@@ -524,6 +542,23 @@ class GTAEngine {
             if (this.playerController) {
                 this.playerController.toggleClimbTree();
             }
+        };
+
+        // Управление стрельбой и оружием
+        this.inputController.onFire = () => {
+            if (this.weaponSystem) this.weaponSystem.startFiring();
+        };
+        this.inputController.onStopFire = () => {
+            if (this.weaponSystem) this.weaponSystem.stopFiring();
+        };
+        this.inputController.onNextWeapon = () => {
+            if (this.weaponSystem) this.weaponSystem.nextWeapon();
+        };
+        this.inputController.onPrevWeapon = () => {
+            if (this.weaponSystem) this.weaponSystem.prevWeapon();
+        };
+        this.inputController.onSelectWeapon = (idx) => {
+            if (this.weaponSystem) this.weaponSystem.selectWeapon(idx);
         };
 
         this.inputController.onToggleHud = () => {
@@ -921,30 +956,47 @@ class GTAEngine {
             this.vehicleManager.update(delta, this.player, this.inputController ? this.inputController.keys : {});
         }
 
-        // Обновление физики и анимации вертолета
-        if (this.helicopter) {
-            this.helicopter.update(delta, this.player, this.inputController ? this.inputController.keys : {});
+        // Обновление физики и анимации всех вертолетов в мире
+        const helis = this.helicopters || (this.helicopter ? [this.helicopter] : []);
+        let activeHeli = null;
+        let nearestHeli = null;
+        let minHeliDist = Infinity;
 
-            if (!this.helicopter.isPiloted && !this.helicopter.isPassenger && this.player && this.player.body && (!this.vehicleManager || !this.vehicleManager.activeDrivenCar)) {
-                const distToHeli = Math.hypot(this.player.body.position.x - this.helicopter.group.position.x, this.player.body.position.z - this.helicopter.group.position.z);
-                const dy = Math.abs(this.player.body.position.y - this.helicopter.group.position.y);
-                const promptElement = document.getElementById('vehicle-prompt');
-                const promptActionText = document.getElementById('prompt-action-text');
-                const promptCarName = document.getElementById('prompt-car-name');
-                if (distToHeli < 4.5 && dy < 3.5) {
-                    if (promptElement) {
-                        promptElement.style.display = 'block';
-                        if (promptCarName) promptCarName.innerText = this.helicopter.vehicleName;
-                        const seatIdx = this.helicopter.getFirstAvailableSeat();
-                        if (promptActionText) {
-                            if (seatIdx === 0) {
-                                promptActionText.innerText = 'Сесть за штурвал вертолета (Пилот 1/2) [F]';
-                            } else if (seatIdx === 1) {
-                                promptActionText.innerText = 'Сесть пассажиром в вертолет (Пассажир 2/2) [F]';
-                            } else {
-                                promptActionText.innerText = 'Вертолет полон (2/2 мест)';
-                            }
-                        }
+        for (let i = 0; i < helis.length; i++) {
+            const h = helis[i];
+            if (h) {
+                h.update(delta, this.player, this.inputController ? this.inputController.keys : {});
+                if (h.isPiloted || h.isPassenger) {
+                    activeHeli = h;
+                }
+                if (this.player && this.player.body) {
+                    const d = Math.hypot(this.player.body.position.x - h.group.position.x, this.player.body.position.z - h.group.position.z);
+                    const dy = Math.abs(this.player.body.position.y - h.group.position.y);
+                    if (d < 4.8 && dy < 3.8 && d < minHeliDist) {
+                        minHeliDist = d;
+                        nearestHeli = h;
+                    }
+                }
+            }
+        }
+        this.helicopter = activeHeli || (nearestHeli || this.helicopterBank || helis[0]);
+
+        // Подсказка на вход в вертолет
+        if (!activeHeli && nearestHeli && !nearestHeli.isPiloted && !nearestHeli.isPassenger && this.player && this.player.body && (!this.vehicleManager || !this.vehicleManager.activeDrivenCar)) {
+            const promptElement = document.getElementById('vehicle-prompt');
+            const promptActionText = document.getElementById('prompt-action-text');
+            const promptCarName = document.getElementById('prompt-car-name');
+            if (promptElement) {
+                promptElement.style.display = 'block';
+                if (promptCarName) promptCarName.innerText = nearestHeli.vehicleName;
+                const seatIdx = nearestHeli.getFirstAvailableSeat();
+                if (promptActionText) {
+                    if (seatIdx === 0) {
+                        promptActionText.innerText = 'Сесть за штурвал вертолета (Пилот 1/2) [F]';
+                    } else if (seatIdx === 1) {
+                        promptActionText.innerText = 'Сесть пассажиром в вертолет (Пассажир 2/2) [F]';
+                    } else {
+                        promptActionText.innerText = 'Вертолет полон (2/2 мест)';
                     }
                 }
             }
@@ -1053,6 +1105,35 @@ class GTAEngine {
         // STEP 28: Обновление интерактивного лифта небоскреба Maze Bank (10 этажей)
         if (this.elevatorSystem) {
             this.elevatorSystem.update(delta, this.player);
+        }
+
+        // Обновление визуальных эффектов (трассеры, дульные вспышки, взрывы)
+        if (this.vfxManager) {
+            this.vfxManager.update(delta);
+        }
+
+        // Обновление системы взрывов и горения автомобилей
+        if (this.explosionSystem) {
+            this.explosionSystem.update(delta, allCars);
+        }
+
+        // Обновление системы вооружения и ракет RPG
+        if (this.weaponSystem) {
+            this.weaponSystem.update(delta);
+        }
+
+        // Обновление полиции и погони со стелс-механикой укрытия в растительности
+        if (this.policeManager && !this.isPowerSavingMode) {
+            const stars = (this.wantedManager) ? this.wantedManager.stars : 0;
+            this.policeManager.update(delta, focusPos, stars);
+        }
+
+        if (this.wantedManager) {
+            this.wantedManager.update(delta, focusPos);
+        }
+
+        if (this.missionManager) {
+            this.missionManager.update(delta, focusPos);
         }
 
         // STEP 29 & STEP 39: Обновление пространственного звука, дождя, ночных цикад и районного эмбиента

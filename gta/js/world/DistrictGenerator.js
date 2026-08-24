@@ -222,13 +222,18 @@
                     proxyMesh.position.set(px, (bH + extraHeight * 0.5) / 2, pz);
                     this.chunkManager.registerLowLOD(cx, cz, proxyMesh);
 
-                    // Физическое тело Cannon.js со сплошным коллайдером
+                    // Физическое тело Cannon.js со сплошным коллайдером и коллизией вертолетной площадки
                     const body = new CANNON.Body({
                         mass: 0,
                         material: this.physicsMaterials.wall,
                         position: new CANNON.Vec3(px, bH / 2, pz)
                     });
                     body.addShape(new CANNON.Box(new CANNON.Vec3(bW / 2, bH / 2, bD / 2)));
+                    if (roofType === 0) {
+                        const hpW = Math.min(bW - 2.0, 20.0);
+                        const hpD = Math.min(bD - 2.0, 20.0);
+                        body.addShape(new CANNON.Box(new CANNON.Vec3(hpW / 2 + 0.5, 0.65, hpD / 2 + 0.5)), new CANNON.Vec3(0, bH / 2 + 0.6, 0));
+                    }
                     this.chunkManager.registerPhysicsBody(cx, cz, body);
                 } else {
                     this.scene.add(highGroup);
@@ -238,6 +243,11 @@
                         position: new CANNON.Vec3(px, bH / 2, pz)
                     });
                     body.addShape(new CANNON.Box(new CANNON.Vec3(bW / 2, bH / 2, bD / 2)));
+                    if (roofType === 0) {
+                        const hpW = Math.min(bW - 2.0, 20.0);
+                        const hpD = Math.min(bD - 2.0, 20.0);
+                        body.addShape(new CANNON.Box(new CANNON.Vec3(hpW / 2 + 0.5, 0.65, hpD / 2 + 0.5)), new CANNON.Vec3(0, bH / 2 + 0.6, 0));
+                    }
                     this.world.addBody(body);
                 }
             }

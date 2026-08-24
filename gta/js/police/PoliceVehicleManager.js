@@ -60,12 +60,22 @@ class PoliceVehicleManager {
             this.spawnCooldown -= dt;
         }
 
-        // Автоматический спавн подкрепления при розыске >= 2 звезд
-        if (wantedStars >= 2 && playerPos && this.spawnCooldown <= 0) {
-            const maxCars = (wantedStars >= 4) ? 4 : (wantedStars >= 3 ? 2 : 1);
-            if (this.policeCars.length < maxCars) {
-                this.spawnPoliceCar(playerPos);
-                this.spawnCooldown = 8.0 - wantedStars * 1.0;
+        // Автоматический спавн подкрепления при розыске
+        if (wantedStars >= 1 && playerPos && this.spawnCooldown <= 0) {
+            if (wantedStars === 1 && this.officers.length === 0 && this.policeCars.length === 0) {
+                // 1 звезда: 1 пеший патрульный офицер
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 32.0 + Math.random() * 10.0;
+                const offPos = new THREE.Vector3(playerPos.x + Math.sin(angle) * dist, 0.5, playerPos.z + Math.cos(angle) * dist);
+                const officer = new PoliceOfficerNPC(this.scene, this.world, this.physicsMaterials, offPos);
+                this.officers.push(officer);
+                this.spawnCooldown = 10.0;
+            } else if (wantedStars >= 2) {
+                const maxCars = (wantedStars >= 5) ? 4 : (wantedStars >= 4 ? 3 : (wantedStars >= 3 ? 2 : 1));
+                if (this.policeCars.length < maxCars) {
+                    this.spawnPoliceCar(playerPos);
+                    this.spawnCooldown = 8.0 - wantedStars * 0.8;
+                }
             }
         }
 

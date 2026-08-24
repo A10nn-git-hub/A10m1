@@ -171,6 +171,11 @@ class PoliceOfficerNPC {
                 window.soundEngine.playCashPickup();
             }
         }
+
+        // Оповещение системы розыска об убийстве полицейского
+        if (window.gameEngine && window.gameEngine.wantedManager) {
+            window.gameEngine.wantedManager.reportCrime('KILL_COP', this.group.position);
+        }
     }
 
     update(deltaTime, playerPos) {
@@ -196,20 +201,65 @@ class PoliceOfficerNPC {
 
         if (!playerPos) return;
 
-        const dx = playerPos.x - this.body.position.x;
-        const dz = playerPos.z - this.body.position.z;
-        const distToPlayer = Math.hypot(dx, dz);
+        const wantedMgr = window.gameEngine && window.gameEngine.wantedManager;
+        const isHidden = wantedMgr && wantedMgr.isPlayerHidden(this.body.position);
 
-        this.targetRotation = Math.atan2(dx, dz);
+        // Целевая позиция движения: если игрок скрыт в листве, идем к последней известной точке
+        let targetPos = playerPos;
+        if (isHidden) {
+            if (wantedMgr.lastKnownPosition) {
+                targetPos = wantedMgr.lastKnownPosition;
+            } else {
+                targetPos = this.body.position;
+            }
+        }
+
+        const dx = targetPos.x - this.body.position.x;
+        const dz = targetPos.z - this.body.position.z;
+        const distToTarget = Math.hypot(dx, dz);
+        const distToActualPlayer = Math.hypot(playerPos.x - this.body.position.x, playerPos.z - this.body.position.z);
+
+        // Если коп подошел в упор к спрятавшемуся игроку (< 2.2м), он его находит
+        if (isHidden && distToActualPlayer < 2.2) {
+            if (wantedMgr) wantedMgr.revealPlayer();
+        }
+
+        if (distToTarget > 0.5) {
+            this.targetRotation = Math.atan2(dx, dz);
+        }
         this.group.rotation.y = this.targetRotation;
 
-        const moveSpeed = 6.2; // Быстрый бег к игроку
+        const moveSpeed = isHidden ? 3.2 : 6.2; // При поиске медленный шаг с осмотром
 
-        if (distToPlayer > 28.0) {
+        if (isHidden) {
+            // Режим поиска (Search / Patrol)
+            if (distToTarget > 2.5) {
+                const moveX = (dx / distToTarget) * moveSpeed;
+                const moveZ = (dz / distToTarget) * moveSpeed;
+                this.body.velocity.x = moveX;
+                this.body.velocity.z = moveZ;
+
+                this.walkCycle += dt * 7.0;
+                const sinW = Math.sin(this.walkCycle);
+                this.limbs.leftLeg.pivot.rotation.x = sinW * 0.5;
+                this.limbs.rightLeg.pivot.rotation.x = -sinW * 0.5;
+                this.limbs.leftArm.pivot.rotation.x = -sinW * 0.4;
+                this.limbs.rightArm.pivot.rotation.set(-0.8, 0, 0);
+            } else {
+                // Осматривается по сторонам
+                this.body.velocity.x *= 0.7;
+                this.body.velocity.z *= 0.7;
+                this.targetRotation += Math.sin(Date.now() * 0.002) * 0.03;
+                this.group.rotation.y = this.targetRotation;
+                this.limbs.leftLeg.pivot.rotation.x = 0;
+                this.limbs.rightLeg.pivot.rotation.x = 0;
+                this.limbs.rightArm.pivot.rotation.set(-0.5, 0, 0);
+            }
+        } else if (distToTarget > 24.0) {
             // Бежим к игроку
             this.state = 'CHASE';
-            const moveX = (dx / distToPlayer) * moveSpeed;
-            const moveZ = (dz / distToPlayer) * moveSpeed;
+            const moveX = (dx / distToTarget) * moveSpeed;
+            const moveZ = (dz / distToTarget) * moveSpeed;
             this.body.velocity.x = moveX;
             this.body.velocity.z = moveZ;
 

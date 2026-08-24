@@ -136,7 +136,9 @@ class MinimapRenderer {
         // 8. Полицейские патрули (мигающие сине-красные значки)
         if (window.gameEngine && window.gameEngine.policeManager) {
             const pCars = window.gameEngine.policeManager.policeCars;
+            const pOfficers = window.gameEngine.policeManager.officers;
             const isRed = Math.sin(this.blipPulseTimer * 8.0) > 0;
+
             for (let i = 0; i < pCars.length; i++) {
                 const pc = pCars[i];
                 if (!pc.chassisBody) continue;
@@ -146,6 +148,19 @@ class MinimapRenderer {
                 ctx.lineWidth = 1.2;
                 ctx.beginPath();
                 ctx.arc(pp.x * this.scale, pp.z * this.scale, 4.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+            }
+
+            for (let i = 0; i < pOfficers.length; i++) {
+                const off = pOfficers[i];
+                if (!off.body || off.isDead) continue;
+                const op = off.body.position;
+                ctx.fillStyle = isRed ? '#3b82f6' : '#ef4444';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.0;
+                ctx.beginPath();
+                ctx.arc(op.x * this.scale, op.z * this.scale, 3.0, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.stroke();
             }
@@ -216,6 +231,32 @@ class MinimapRenderer {
                 ctx.stroke();
 
                 ctx.restore();
+            }
+        }
+
+        // 11. Вертолеты (Золотые маркеры "H" на мини-карте)
+        if (window.gameEngine && window.gameEngine.helicopters) {
+            const helis = window.gameEngine.helicopters;
+            for (let i = 0; i < helis.length; i++) {
+                const h = helis[i];
+                if (h && h.group && !h.isPiloted) {
+                    const hx = h.group.position.x * this.scale;
+                    const hz = h.group.position.z * this.scale;
+
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.strokeStyle = '#000000';
+                    ctx.lineWidth = 1.2;
+                    ctx.beginPath();
+                    ctx.arc(hx, hz, 4.5, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.stroke();
+
+                    ctx.fillStyle = '#000000';
+                    ctx.font = 'bold 6px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('H', hx, hz);
+                }
             }
         }
 

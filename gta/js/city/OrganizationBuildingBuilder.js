@@ -226,12 +226,29 @@
                 floorMesh.receiveShadow = true;
                 group.add(floorMesh);
 
-                // 2. Потолок и крыша со сплошным физическим коллайдером
+                // 2. Потолок и крыша со сплошным физическим коллайдером и вертолетной площадкой ("H")
                 const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(width + 0.6, 0.6, depth + 0.6), this.materials.hospitalWhite);
                 roofMesh.position.y = height + 0.3;
                 roofMesh.castShadow = true;
                 group.add(roofMesh);
                 this.createStaticBox(x, height + 0.3, z, width + 0.6, 0.6, depth + 0.6);
+
+                // Вертолетная площадка Госпиталя ("H") с прочным физическим коллайдером
+                const helipadMesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 16), this.materials.helipad);
+                helipadMesh.rotation.x = -Math.PI / 2;
+                helipadMesh.position.set(0, height + 0.62, 0);
+                helipadMesh.receiveShadow = true;
+                group.add(helipadMesh);
+                this.createStaticBox(x, height + 0.6, z, 16.0, 0.65, 16.0);
+
+                // Сигнальные огни вертолетной площадки
+                for (let lx of [-7.5, 7.5]) {
+                    for (let lz of [-7.5, 7.5]) {
+                        const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshBasicMaterial({ color: 0x00e676 }));
+                        beacon.position.set(lx, height + 0.85, lz);
+                        group.add(beacon);
+                    }
+                }
 
                 // 3. Внешние стены
                 // Задняя стена

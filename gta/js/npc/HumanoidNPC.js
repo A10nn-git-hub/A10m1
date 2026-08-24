@@ -840,6 +840,28 @@
                 this.group.rotation.y += rotDiff * Math.min(deltaTime * 12.0, 1.0);
             }
 
+            takeDamage(amount) {
+                if (this.isDead) return;
+                this.health = (this.health !== undefined) ? this.health - amount : (60 - amount);
+                this.state = 'KNOCKED_DOWN';
+                this.knockedDownTimer = 4.5;
+
+                // Оповещение полиции об атаке / убийстве гражданина
+                if (this.health <= 0) {
+                    this.isDead = true;
+                    if (window.gameEngine && window.gameEngine.wantedManager) {
+                        window.gameEngine.wantedManager.reportCrime('KILL_CIVILIAN', this.body ? this.body.position : null);
+                    }
+                    if (window.gameEngine && window.gameEngine.playerController) {
+                        window.gameEngine.playerController.addMoney(150 + Math.floor(Math.random() * 200));
+                    }
+                } else {
+                    if (window.gameEngine && window.gameEngine.wantedManager) {
+                        window.gameEngine.wantedManager.reportCrime('PUNCH', this.body ? this.body.position : null);
+                    }
+                }
+            }
+
             setShadowsEnabled(enabled) {
                 if (this.group) {
                     this.group.traverse((child) => {

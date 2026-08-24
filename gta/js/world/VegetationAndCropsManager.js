@@ -2,39 +2,94 @@
          * STEP 34: Менеджер растительности, сельхозполей и деревьев (InstancedMesh + кастомный GPU Vertex Shader ветра)
          * - Сельскохозяйственные поля: тысячи колосьев пшеницы/кукурузы (InstancedMesh).
          * - Кустарники и скальные валуны на холмах и в горах.
-         * - Региональные типы деревьев по биомам:
-         *   1. Городские калифорнийские пальмы (City Palms) вдоль бульваров и площадей.
-         *   2. Сельские раскидистые дубы (Countryside Oaks) в долинах и холмах.
-         *   3. Альпийские хвойные сосны (Mountain Pines) на горных хребтах.
-         * - Кастомный GPU-шейдер ветра (onBeforeCompile) для покачивания травы, урожая и листвы.
-         */
-        class VegetationAndCropsManager {
-            constructor(scene, world, terrainManager, physicsMaterials) {
-                this.scene = scene;
-                this.world = world;
-                this.terrainManager = terrainManager;
-                this.physicsMaterials = physicsMaterials || { wall: new CANNON.Material('wall') };
-
-                this.treePositions = [];
-                this.rockPositions = [];
-
-                this.windMaterials = [];
-                this.windUniform = { value: 0.0 };
-
-                this.initMaterials();
-                this.buildBushesAndShrubs();
-                this.buildScatteredRocks();
-                this.buildBiomeTrees();
+                        float swayFactor = max(0.0, transformed.y * ${heightFactor.toFixed(2)});
+                        #ifdef USE_INSTANCING
+                            vec4 wWorldPos = instanceMatrix * vec4(position, 1.0);
+                            float wAngle = uWindTime * 2.1 + wWorldPos.x * 0.05 + wWorldPos.z * 0.05;
+                        #else
+                            float wAngle = uWindTime * 2.1 + position.x * 0.05 + position.z * 0.05;
+                        #endif
+                        float wWave = sin(wAngle) * 0.75 + cos(wAngle * 1.5 + 0.3) * 0.25;
+                        transformed.x += wWave * swayFactor * ${swayStrength.toFixed(3)};
+                        transformed.z += wWave * 0.6 * swayFactor * ${swayStrength.toFixed(3)};
+                        `
+                    );
+                };
+                this.windMaterials.push(material);
+                return material;
             }
 
-            injectWindShader(material, swayStrength = 0.35, heightFactor = 0.8) {
-                material.userData.uWindTime = this.windUniform;
-                material.onBeforeCompile = (shader) => {
-                    shader.uniforms.uWindTime = material.userData.uWindTime;
-                    shader.vertexShader = 'uniform float uWindTime;\n' + shader.vertexShader;
-                    shader.vertexShader = shader.vertexShader.replace(
-                        '#include <begin_vertex>',
-                        `
+            initMaterials() {
+                // 1. Золотистая спелая пшеница/кукуруза (с ветром)
+                this.matWheat = this.injectWindShader(new THREE.MeshStandardMaterial({
+                    color: 0xdeb841,
+                    roughness: 0.9,
+                    metalness: 0.0,
+                    side: THREE.DoubleSide
+                }), 0.45, 0.9);
+
+                // 2. Зеленые кустарники
+                this.matBush = this.injectWindShader(new THREE.MeshStandardMaterial({
+                    color: 0x365314,
+                    roughness: 0.85,
+                    metalness: 0.05
+/**
+ * VegetationAndCropsManager - Менеджер растительности, сельхозполей и деревьев
+ */
+class VegetationAndCropsManager {
+    constructor(scene, world, terrainManager, physicsMaterials) {
+        this.scene = scene;
+        this.world = world;
+        this.terrainManager = terrainManager;
+        this.physicsMaterials = physicsMaterials || { wall: new CANNON.Material('wall') };
+
+        this.treePositions = [];
+        this.bushPositions = [];
+        this.rockPositions = [];
+
+        this.windMaterials = [];
+        this.windUniform = { value: 0.0 };
+
+        this.initMaterials();
+        this.buildBushesAndShrubs();
+        this.buildScatteredRocks();
+        this.buildBiomeTrees();
+    }
+
+    checkFoliageAt(pos, isClimbingTree = false) {
+        if (!pos) return null;
+        if (isClimbingTree) {
+            return { inFoliage: true, type: 'tree_climb', position: pos };
+        }
+        if (this.bushPositions) {
+            for (let i = 0; i < this.bushPositions.length; i++) {
+                const b = this.bushPositions[i];
+                const d = Math.hypot(pos.x - b.x, pos.z - b.z);
+                if (d <= (b.radius || 2.2)) {
+                    return { inFoliage: true, type: 'bush', position: b, dist: d };
+                }
+            }
+        }
+        if (this.treePositions) {
+            for (let i = 0; i < this.treePositions.length; i++) {
+                const t = this.treePositions[i];
+                const d = Math.hypot(pos.x - t.x, pos.z - t.z);
+                if (d <= (t.radius || 3.8)) {
+                    return { inFoliage: true, type: 'tree', position: t, dist: d };
+                }
+            }
+        }
+        return null;
+    }
+
+    injectWindShader(material, swayStrength = 0.35, heightFactor = 0.8) {
+        material.userData.uWindTime = this.windUniform;
+        material.onBeforeCompile = (shader) => {
+            shader.uniforms.uWindTime = material.userData.uWindTime;
+            shader.vertexShader = 'uniform float uWindTime;\n' + shader.vertexShader;
+            shader.vertexShader = shader.vertexShader.replace(
+                '#include <begin_vertex>',
+                `
                         #include <begin_vertex>
                         float swayFactor = max(0.0, transformed.y * ${heightFactor.toFixed(2)});
                         #ifdef USE_INSTANCING
@@ -135,113 +190,7 @@
                     dummy.updateMatrix();
 
                     instMesh.setMatrixAt(idx++, dummy.matrix);
-                }
-
-                instMesh.count = idx;
-                instMesh.instanceMatrix.needsUpdate = true;
-                this.scene.add(instMesh);
-            }
-
-            buildScatteredRocks() {
-                const rockGeo = new THREE.DodecahedronGeometry(1.5, 0);
-                const count = 140;
-                const instMesh = new THREE.InstancedMesh(rockGeo, this.matRock, count);
-                instMesh.receiveShadow = true;
-                instMesh.castShadow = true;
-
-                const dummy = new THREE.Object3D();
-                let idx = 0;
-
-                const qCyl = new CANNON.Quaternion();
-                qCyl.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
-
-                for (let i = 0; i < count; i++) {
-                    // Камни и валуны размещаются ИСКЛЮЧИТЕЛЬНО в горных и лесных секторах за городом (|x| > 140 или |z| > 140)
-                    const sideX = (Math.random() > 0.5 ? 1 : -1) * (145.0 + Math.random() * 95.0);
-                    const sideZ = (Math.random() > 0.5 ? 1 : -1) * (145.0 + Math.random() * 95.0);
-                    const x = (Math.random() > 0.5) ? sideX : (Math.random() - 0.5) * 360.0;
-                    const z = (Math.random() > 0.5) ? sideZ : (Math.random() - 0.5) * 360.0;
-
-                    // Защитная зона города: в центре (Downtown/Hospital/Police) камни не появляются
-                    if (Math.abs(x) < 130.0 && Math.abs(z) < 130.0) continue;
-
-                    const groundY = this.terrainManager.getTerrainHeight(x, z);
-                    const s = 1.0 + Math.random() * 1.5;
-
-                    dummy.position.set(x, groundY + s * 0.45, z);
-                    dummy.rotation.set(Math.random() * 0.5, Math.random() * Math.PI * 2, Math.random() * 0.5);
-                    dummy.scale.set(s, s * 0.85, s);
-                    dummy.updateMatrix();
-
-                    instMesh.setMatrixAt(idx++, dummy.matrix);
-
-                    // Сплошная монолитная вертикальная цилиндрическая коллизия (полное покрытие 3D-модели камня)
-                    const rockR = 1.45 * s;
-                    const rockH = 1.35 * s;
-                    const rockBody = new CANNON.Body({
-                        mass: 0,
-                        material: this.physicsMaterials.wall,
-                        position: new CANNON.Vec3(x, groundY + rockH / 2, z)
-                    });
-                    rockBody.allowSleep = true;
-                    rockBody.sleep();
-                    rockBody.addShape(new CANNON.Cylinder(rockR * 0.9, rockR * 1.1, rockH, 10), new CANNON.Vec3(0, 0, 0), qCyl);
-                    this.world.addBody(rockBody);
-
-                    this.rockPositions.push({ x, z, radius: rockR });
-                }
-
-                instMesh.count = idx;
-                instMesh.instanceMatrix.needsUpdate = true;
-                this.scene.add(instMesh);
-            }
-
-            buildBiomeTrees() {
-                // 1. Городские парковые деревья (вид пышных лесных дубов, неподвижные)
-                this.buildCityForestTrees();
-
-                // 2. Сельские раскидистые дубы (Countryside Oaks)
-                this.buildCountryOaks();
-                const count = isMobile ? 40 : 100;
-                const bushGeo = new THREE.DodecahedronGeometry(1.2, 1);
-                bushGeo.translate(0, 0.8, 0);
-                const instMesh = new THREE.InstancedMesh(bushGeo, this.matBush, count);
-                instMesh.receiveShadow = true;
-                instMesh.castShadow = true;
-
-                const dummy = new THREE.Object3D();
-                let idx = 0;
-
-                const isBuildingZone = (bx, bz) => {
-                    if (Math.hypot(bx - 0, bz - 60) < 32.0) return true; // Maze Bank elevator lobby
-                    if (Math.hypot(bx - 0, bz - 0) < 32.0) return true; // Maze Bank central tower
-                    if (Math.hypot(bx - 60, bz - 60) < 30.0) return true; // Hospital
-                    if (Math.hypot(bx - (-60), bz - 60) < 30.0) return true; // Police
-                    if (Math.hypot(bx - (-60), bz - (-60)) < 26.0) return true; // House 1
-                    if (Math.hypot(bx - 60, bz - (-60)) < 26.0) return true; // House 2
-                    if (Math.hypot(bx - (-120), bz - 60) < 28.0) return true; // Warehouse
-                    if (Math.hypot(bx - 120, bz - 60) < 28.0) return true; // Factory
-                    return false;
-                };
-
-                for (let i = 0; i < count; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const r = 70.0 + Math.random() * 120.0;
-                    const x = Math.cos(angle) * r;
-                    const z = Math.sin(angle) * r;
-
-                    // Исключаем появление кустов внутри или рядом со зданиями
-                    if (isBuildingZone(x, z)) continue;
-
-                    const groundY = this.terrainManager.getTerrainHeight(x, z);
-                    const s = 0.7 + Math.random() * 0.8;
-
-                    dummy.position.set(x, groundY, z);
-                    dummy.rotation.set(0, Math.random() * Math.PI * 2, 0);
-                    dummy.scale.set(s, s * (0.8 + Math.random() * 0.4), s);
-                    dummy.updateMatrix();
-
-                    instMesh.setMatrixAt(idx++, dummy.matrix);
+                    this.bushPositions.push({ x, y: groundY, z, radius: 2.2 * s });
                 }
 
                 instMesh.count = idx;

@@ -130,40 +130,65 @@ class PoliceVehicle {
         // 2. ИИ преследования игрока
         if (playerPos && this.isChasing) {
             const pos = this.chassisBody.position;
-            const dx = playerPos.x - pos.x;
-            const dz = playerPos.z - pos.z;
+            const wantedMgr = window.gameEngine && window.gameEngine.wantedManager;
+            const isHidden = wantedMgr && wantedMgr.isPlayerHidden(pos);
+
+            // Если игрок скрыт в листве — едем к последней известной позиции
+            let targetPos = playerPos;
+            if (isHidden) {
+                if (wantedMgr.lastKnownPosition) {
+                    targetPos = wantedMgr.lastKnownPosition;
+                } else {
+                    targetPos = pos;
+                }
+            }
+
+            const dx = targetPos.x - pos.x;
+            const dz = targetPos.z - pos.z;
             const dist = Math.hypot(dx, dz);
+            const distToActualPlayer = Math.hypot(playerPos.x - pos.x, playerPos.z - pos.z);
 
-            const targetAngle = Math.atan2(-dx, -dz);
-            const currentEuler = new THREE.Euler().setFromQuaternion(
-                new THREE.Quaternion(
-                    this.chassisBody.quaternion.x,
-                    this.chassisBody.quaternion.y,
-                    this.chassisBody.quaternion.z,
-                    this.chassisBody.quaternion.w
-                ),
-                'YXZ'
-            );
+            // Если машина подъехала в упор к спрятавшемуся (< 3.5м), раскрываем игрока
+            if (isHidden && distToActualPlayer < 3.5) {
+                if (wantedMgr) wantedMgr.revealPlayer();
+            }
 
-            let diffAngle = targetAngle - currentEuler.y;
-            while (diffAngle > Math.PI) diffAngle -= Math.PI * 2;
-            while (diffAngle < -Math.PI) diffAngle += Math.PI * 2;
+            if (dist > 1.5) {
+                const targetAngle = Math.atan2(-dx, -dz);
+                const currentEuler = new THREE.Euler().setFromQuaternion(
+                    new THREE.Quaternion(
+                        this.chassisBody.quaternion.x,
+                        this.chassisBody.quaternion.y,
+                        this.chassisBody.quaternion.z,
+                        this.chassisBody.quaternion.w
+                    ),
+                    'YXZ'
+                );
 
-            // Поворот машины к игроку
-            const turnRate = 3.2;
-            const newYaw = currentEuler.y + Math.max(-turnRate * dt, Math.min(turnRate * dt, diffAngle));
-            this.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), newYaw);
+                let diffAngle = targetAngle - currentEuler.y;
+                while (diffAngle > Math.PI) diffAngle -= Math.PI * 2;
+                while (diffAngle < -Math.PI) diffAngle += Math.PI * 2;
 
-            // Разгон и таран
-            const forwardX = -Math.sin(newYaw);
-            const forwardZ = -Math.cos(newYaw);
-            const speed = (dist > 12.0) ? 26.0 : 18.0;
+                // Поворот машины
+                const turnRate = 3.2;
+                const newYaw = currentEuler.y + Math.max(-turnRate * dt, Math.min(turnRate * dt, diffAngle));
+                this.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), newYaw);
 
-            this.chassisBody.velocity.x = THREE.MathUtils.lerp(this.chassisBody.velocity.x, forwardX * speed, dt * 2.5);
-            this.chassisBody.velocity.z = THREE.MathUtils.lerp(this.chassisBody.velocity.z, forwardZ * speed, dt * 2.5);
+                // Разгон
+                const forwardX = -Math.sin(newYaw);
+                const forwardZ = -Math.cos(newYaw);
+                const speed = isHidden ? 14.0 : ((dist > 12.0) ? 26.0 : 18.0);
 
-            // Высадка офицеров, если машина подъехала близко к игроку
-            if (dist < 14.0 && !this.disembarked && officerManager) {
+                this.chassisBody.velocity.x = THREE.MathUtils.lerp(this.chassisBody.velocity.x, forwardX * speed, dt * 2.5);
+                this.chassisBody.velocity.z = THREE.MathUtils.lerp(this.chassisBody.velocity.z, forwardZ * speed, dt * 2.5);
+            } else {
+                // Остановка в точке поиска
+                this.chassisBody.velocity.x *= 0.8;
+                this.chassisBody.velocity.z *= 0.8;
+            }
+
+            // Высадка офицеров для пешего прочесывания местности
+            if (((!isHidden && dist < 14.0) || (isHidden && dist < 8.0)) && !this.disembarked && officerManager) {
                 this.disembarked = true;
                 this.isChasing = false;
                 officerManager.spawnOfficersNearCar(pos);

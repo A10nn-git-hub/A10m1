@@ -383,6 +383,17 @@ class HelicopterVehicle {
             }
             if (window.gameEngine && window.gameEngine.multiplayerManager) {
                 window.gameEngine.multiplayerManager.sendLocalStateNow();
+                if (wasPilot) {
+                    window.gameEngine.multiplayerManager.broadcastHeliSync(
+                        this.body.position.x,
+                        this.body.position.y,
+                        this.body.position.z,
+                        this.headingAngle || 0,
+                        0,
+                        0,
+                        false
+                    );
+                }
             }
         } else {
             // Посадка в вертолет (Пилот или Пассажир)
@@ -456,30 +467,31 @@ class HelicopterVehicle {
         const isDescending = !!(inputKeys.sprint || (window.inputManager && window.inputManager.keys && window.inputManager.keys.sprint));
 
         if (isAscending) {
-            const targetVelY = 15.0;
+            const targetVelY = 16.0;
             this.body.velocity.y += (targetVelY - this.body.velocity.y) * Math.min(1.0, dt * 7.0);
         } else if (isDescending) {
-            const targetVelY = -6.5;
+            const targetVelY = -7.5;
             this.body.velocity.y += (targetVelY - this.body.velocity.y) * Math.min(1.0, dt * 7.0);
         } else if (isGrounded) {
-            // На земле при отсутствии газа вертолет стоит неподвижно (без дрифта)
             this.body.velocity.y = 0;
         } else {
-            // Зависание на текущей высоте с компенсацией гравитации
-            this.body.velocity.y += (0.0 - this.body.velocity.y) * Math.min(1.0, dt * 5.0);
+            // Идеальное зависание на текущей высоте с компенсацией гравитации
+            this.body.velocity.y += (0.0 - this.body.velocity.y) * Math.min(1.0, dt * 6.0);
             this.body.applyForce(new CANNON.Vec3(0, 1250 * 9.82, 0), this.body.position);
         }
 
-        // 2. Управление курсом (Yaw / Поворот носа влево-вправо)
+        // 2. Управление курсом (Поворот носа влево / вправо)
+        // Влево (A): headingAngle уменьшается, вертолет плавно кренится влево
+        // Вправо (D): headingAngle увеличивается, вертолет плавно кренится вправо
         let yawRate = 0.0;
         let targetRoll = 0.0;
         if (inputKeys.left) {
-            yawRate = 1.85;
-            targetRoll = 0.25;
+            yawRate = -1.75;
+            targetRoll = 0.26;
         }
         if (inputKeys.right) {
-            yawRate = -1.85;
-            targetRoll = -0.25;
+            yawRate = 1.75;
+            targetRoll = -0.26;
         }
         this.headingAngle += yawRate * dt;
 
@@ -488,29 +500,36 @@ class HelicopterVehicle {
         let targetForwardVel = 0.0;
         let targetPitch = 0.0;
         if (inputKeys.forward) {
-            targetForwardVel = 32.0; // Вперед ~115 км/ч
-            targetPitch = -0.22;
+            targetForwardVel = 35.0; // Вперед ~125 км/ч
+            targetPitch = -0.24;
         } else if (inputKeys.backward) {
-            targetForwardVel = -16.0; // Назад / торможение
+            targetForwardVel = -18.0; // Назад / торможение
             targetPitch = 0.22;
         }
 
-        this.pitchAngle = THREE.MathUtils.lerp(this.pitchAngle, targetPitch, Math.min(1.0, dt * 5.0));
-        this.rollAngle = THREE.MathUtils.lerp(this.rollAngle, targetRoll, Math.min(1.0, dt * 5.0));
+        this.pitchAngle = THREE.MathUtils.lerp(this.pitchAngle, targetPitch, Math.min(1.0, dt * 5.5));
+        this.rollAngle = THREE.MathUtils.lerp(this.rollAngle, targetRoll, Math.min(1.0, dt * 5.5));
 
-        // 4. Горизонтальное перемещение в направлении носа (+Z в локальных координатах)
+        // 4. Стабилизированная аэродинамика движения (без заносов и кружения по спирали)
         const fwdX = Math.sin(this.headingAngle);
         const fwdZ = Math.cos(this.headingAngle);
-        const targetVx = fwdX * targetForwardVel;
-        const targetVz = fwdZ * targetForwardVel;
+        const rightX = Math.cos(this.headingAngle);
+        const rightZ = -Math.sin(this.headingAngle);
 
         if (isGrounded && targetForwardVel === 0) {
-            // На земле без газа горизонтальная скорость мгновенно гасится
             this.body.velocity.x = 0;
             this.body.velocity.z = 0;
         } else {
-            this.body.velocity.x += (targetVx - this.body.velocity.x) * Math.min(1.0, dt * 4.5);
-            this.body.velocity.z += (targetVz - this.body.velocity.z) * Math.min(1.0, dt * 4.5);
+            // Разложение текущей скорости на продольную и поперечную
+            const currentForward = this.body.velocity.x * fwdX + this.body.velocity.z * fwdZ;
+            const currentLateral = this.body.velocity.x * rightX + this.body.velocity.z * rightZ;
+
+            // Плавное ускорение вперед и быстрое гашение бокового сноса (Lateral Damping)
+            const newForward = THREE.MathUtils.lerp(currentForward, targetForwardVel, Math.min(1.0, dt * 4.8));
+            const newLateral = currentLateral * Math.exp(-6.5 * dt);
+
+            this.body.velocity.x = fwdX * newForward + rightX * newLateral;
+            this.body.velocity.z = fwdZ * newForward + rightZ * newLateral;
         }
 
         // 5. Ориентация вертолета

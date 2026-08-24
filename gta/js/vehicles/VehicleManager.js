@@ -87,6 +87,13 @@ class VehicleManager {
         player.body.velocity.set(-3.0, 2.5, 0);
         player.mesh.visible = true;
 
+        const carIndex = car.carIndex;
+        const carX = car.carGroup ? car.carGroup.position.x : car.chassisBody.position.x;
+        const carY = car.carGroup ? car.carGroup.position.y : car.chassisBody.position.y;
+        const carZ = car.carGroup ? car.carGroup.position.z : car.chassisBody.position.z;
+        const carRotY = car.carGroup ? car.carGroup.rotation.y : 0;
+        const wasDriver = !this.isPassenger;
+
         this.activeDrivenCar = null;
         this.isPassenger = false;
         this.seatIndex = 0;
@@ -94,6 +101,9 @@ class VehicleManager {
 
         if (window.gameEngine && window.gameEngine.multiplayerManager) {
             window.gameEngine.multiplayerManager.sendLocalStateNow();
+            if (wasDriver && carIndex !== undefined) {
+                window.gameEngine.multiplayerManager.broadcastCarSync(carIndex, carX, carY, carZ, carRotY, false);
+            }
         }
 
         if (this.playerModeElement) this.playerModeElement.innerText = 'Пешком';
@@ -142,6 +152,11 @@ class VehicleManager {
                     // Немедленное оповещение сети о занятии места
                     if (window.gameEngine && window.gameEngine.multiplayerManager) {
                         window.gameEngine.multiplayerManager.sendLocalStateNow();
+                    }
+
+                    // Оповещение системы розыска об угоне авто
+                    if (window.gameEngine && window.gameEngine.wantedManager && !this.isPassenger) {
+                        window.gameEngine.wantedManager.reportCrime('STEAL_CAR', nearest.chassisBody ? nearest.chassisBody.position : null);
                     }
 
                     if (this.hudModeTitle) {
@@ -284,6 +299,14 @@ class VehicleManager {
                     window.soundEngine.playDoorClose(carPos.x, carPos.y, carPos.z);
                 }
 
+                const exitedCar = this.transitionCar;
+                const wasDriver = !this.isPassenger;
+                const carIdx = exitedCar ? exitedCar.carIndex : undefined;
+                const cX = exitedCar && exitedCar.carGroup ? exitedCar.carGroup.position.x : carPos.x;
+                const cY = exitedCar && exitedCar.carGroup ? exitedCar.carGroup.position.y : carPos.y;
+                const cZ = exitedCar && exitedCar.carGroup ? exitedCar.carGroup.position.z : carPos.z;
+                const cRotY = exitedCar && exitedCar.carGroup ? exitedCar.carGroup.rotation.y : 0;
+
                 this.activeDrivenCar = null;
                 this.isPassenger = false;
                 this.seatIndex = 0;
@@ -292,6 +315,9 @@ class VehicleManager {
 
                 if (window.gameEngine && window.gameEngine.multiplayerManager) {
                     window.gameEngine.multiplayerManager.sendLocalStateNow();
+                    if (wasDriver && carIdx !== undefined) {
+                        window.gameEngine.multiplayerManager.broadcastCarSync(carIdx, cX, cY, cZ, cRotY, false);
+                    }
                 }
 
                 if (this.playerModeElement) this.playerModeElement.innerText = 'Пешком';

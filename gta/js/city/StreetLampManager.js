@@ -118,6 +118,7 @@
                 this.world.addBody(body);
 
                 const propObj = {
+                    id: this.props.length,
                     type: 'STREETLIGHT',
                     mesh: group,
                     body: body,
@@ -170,6 +171,7 @@
                 this.world.addBody(body);
 
                 this.props.push({
+                    id: this.props.length,
                     type: 'FIRE_HYDRANT',
                     mesh: group,
                     body: body,
@@ -217,6 +219,7 @@
                 this.world.addBody(body);
 
                 this.props.push({
+                    id: this.props.length,
                     type: 'WOODEN_FENCE',
                     mesh: group,
                     body: body,
@@ -250,6 +253,7 @@
                 this.world.addBody(body);
 
                 this.props.push({
+                    id: this.props.length,
                     type: 'TRASH_CAN',
                     mesh: group,
                     body: body,
@@ -300,6 +304,7 @@
                 this.world.addBody(body);
 
                 this.props.push({
+                    id: this.props.length,
                     type: 'PARK_BENCH',
                     mesh: group,
                     body: body,
@@ -310,8 +315,8 @@
                 });
             }
 
-            breakProp(prop, impactVelocity) {
-                if (prop.isBroken) return;
+            breakProp(prop, impactVelocity, broadcast = true) {
+                if (!prop || prop.isBroken) return;
                 prop.isBroken = true;
 
                 prop.body.wakeUp();
@@ -319,7 +324,7 @@
                 prop.body.mass = prop.dynamicMass;
                 prop.body.updateMassProperties();
 
-                const imp = impactVelocity.clone().scale(1.25);
+                const imp = impactVelocity ? impactVelocity.clone().scale(1.25) : new CANNON.Vec3(0, 4, 0);
                 imp.y += 3.8 + Math.random() * 2.0;
                 prop.body.velocity.copy(imp);
 
@@ -338,6 +343,22 @@
 
                 if (prop.type === 'FIRE_HYDRANT') {
                     this.geyserSystem.addGeyser(pos.x, 0.1, pos.z);
+                }
+
+                if (broadcast && window.gameEngine && window.gameEngine.multiplayerManager) {
+                    window.gameEngine.multiplayerManager.broadcastPropBreak(
+                        prop.id,
+                        prop.body.velocity.x,
+                        prop.body.velocity.y,
+                        prop.body.velocity.z
+                    );
+                }
+            }
+
+            receiveNetworkBreakProp(propId, vx, vy, vz) {
+                if (propId !== undefined && this.props[propId] && !this.props[propId].isBroken) {
+                    const vel = new CANNON.Vec3(vx || 0, vy || 4, vz || 0);
+                    this.breakProp(this.props[propId], vel, false);
                 }
             }
 

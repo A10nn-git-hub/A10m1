@@ -247,10 +247,13 @@ class WeaponSystem {
     performMeleeAttack(origin, dir, damage) {
         const attackRange = 2.4;
         const peds = (window.gameEngine && window.gameEngine.pedestrianManager) ? window.gameEngine.pedestrianManager.pedestrians : [];
+        const cops = (window.gameEngine && window.gameEngine.policeManager) ? window.gameEngine.policeManager.officers : [];
 
-        for (let i = 0; i < peds.length; i++) {
-            const npc = peds[i];
-            if (!npc.body) continue;
+        const allTargets = [...peds, ...cops];
+
+        for (let i = 0; i < allTargets.length; i++) {
+            const npc = allTargets[i];
+            if (!npc.body || npc.isDead) continue;
             const dist = origin.distanceTo(new THREE.Vector3(npc.body.position.x, npc.body.position.y, npc.body.position.z));
             if (dist < attackRange) {
                 npc.body.velocity.x += dir.x * 6.0;
@@ -290,12 +293,37 @@ class WeaponSystem {
             }
         }
 
-        // 2. Проверка машин
-        const cars = (window.gameEngine && window.gameEngine.vehicleManager) ? window.gameEngine.vehicleManager.cars : [];
+        // 2. Проверка офицеров полиции
+        const cops = (window.gameEngine && window.gameEngine.policeManager) ? window.gameEngine.policeManager.officers : [];
+        for (let i = 0; i < cops.length; i++) {
+            const cop = cops[i];
+            if (cop.group && !cop.isDead) {
+                cop.group.traverse((c) => {
+                    if (c.isMesh) {
+                        c.userData.npcRef = cop;
+                        hitTargets.push(c);
+                    }
+                });
+            }
+        }
+
+        // 3. Проверка машин (автопарк, полиция, трафик)
+        const cars = [];
+        if (window.gameEngine && window.gameEngine.vehicleManager && window.gameEngine.vehicleManager.cars) {
+            cars.push(...window.gameEngine.vehicleManager.cars);
+        }
+        if (window.gameEngine && window.gameEngine.policeManager && window.gameEngine.policeManager.policeCars) {
+            cars.push(...window.gameEngine.policeManager.policeCars);
+        }
+        if (window.gameEngine && window.gameEngine.ambientTrafficManager && window.gameEngine.ambientTrafficManager.vehicles) {
+            cars.push(...window.gameEngine.ambientTrafficManager.vehicles);
+        }
+
         for (let i = 0; i < cars.length; i++) {
             const car = cars[i];
-            if (car.carGroup) {
-                car.carGroup.traverse((c) => {
+            const grp = car.carGroup || car.group;
+            if (grp) {
+                grp.traverse((c) => {
                     if (c.isMesh) {
                         c.userData.carRef = car;
                         hitTargets.push(c);
@@ -391,14 +419,19 @@ class WeaponSystem {
                 if (this.vfx) {
                     this.vfx.createExplosion(hitPos, 7.5);
                 }
-                if (window.soundEngine && typeof window.soundEngine.playExplosion === 'function') {
-                    window.soundEngine.playExplosion();
-                }
-
                 this.scene.remove(r.mesh);
                 this.rockets.splice(i, 1);
             }
         }
+    }
+
+    startFiring() {
+        this.isFiring = true;
+        this.fire();
+    }
+
+    stopFiring() {
+        this.isFiring = false;
     }
 }
 window.WeaponSystem = WeaponSystem;
