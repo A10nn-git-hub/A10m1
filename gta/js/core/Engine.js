@@ -822,6 +822,8 @@ class GTAEngine {
 
         const isDriving = this.vehicleManager && this.vehicleManager.activeDrivenCar !== null;
         const isTransitioning = this.vehicleManager && (this.vehicleManager.transitionState === 'ENTERING_VEHICLE' || this.vehicleManager.transitionState === 'EXITING_VEHICLE');
+        const isFlyingHeli = !!(this.helicopter && (this.helicopter.isPiloted || this.helicopter.isPassenger));
+        const isDrivingOrFlying = isDriving || isTransitioning || isFlyingHeli;
 
         const balls = (this.pedestrianManager && !this.isPowerSavingMode) ? this.pedestrianManager.soccerBalls : [];
         const activeCar = (this.vehicleManager && this.vehicleManager.activeDrivenCar)
@@ -836,7 +838,7 @@ class GTAEngine {
 
         const focusPos = isDriving
             ? this.vehicleManager.activeDrivenCar.chassisBody.position
-            : (this.player.mesh ? this.player.mesh.position : (this.player.body ? this.player.body.position : null));
+            : (isFlyingHeli && this.helicopter ? this.helicopter.group.position : (this.player.mesh ? this.player.mesh.position : (this.player.body ? this.player.body.position : null)));
 
         this.updateSectorHUD(focusPos);
 
@@ -849,7 +851,7 @@ class GTAEngine {
         }
 
         if (this.playerController) {
-            this.playerController.update(delta, isDriving || isTransitioning, balls);
+            this.playerController.update(delta, isDrivingOrFlying, balls);
         }
 
         if (this.vehicleManager) {

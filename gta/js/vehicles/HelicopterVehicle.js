@@ -364,8 +364,14 @@ class HelicopterVehicle {
             const groundY = (window.gameEngine && window.gameEngine.terrainManager)
                 ? window.gameEngine.terrainManager.getTerrainHeight(exitPos.x, exitPos.z)
                 : 0.0;
-            player.body.position.set(exitPos.x, Math.max(groundY + 0.82, this.group.position.y - 0.2), exitPos.z);
-            player.body.velocity.set(0, 0, 0);
+            const spawnY = Math.max(groundY + 0.82, this.group.position.y - 0.15);
+
+            player.mesh.position.set(exitPos.x, spawnY - 0.815, exitPos.z);
+            if (player.body) {
+                player.body.position.set(exitPos.x, spawnY, exitPos.z);
+                player.body.velocity.set(0, 0, 0);
+                player.body.wakeUp();
+            }
 
             const modeElem = document.getElementById('stat-player-mode');
             const titleElem = document.getElementById('hud-mode-title');
@@ -393,13 +399,19 @@ class HelicopterVehicle {
             this.isPassenger = (seatIdx === 1);
             this.setOccupant(seatIdx, 'local');
 
-            // Полная остановка любого начального дрифта/смещения
-            this.body.velocity.set(0, 0, 0);
-            this.body.angularVelocity.set(0, 0, 0);
-            this.pitchAngle = 0.0;
-            this.rollAngle = 0.0;
+            // Изоляция физического тела игрока от коллизий с фюзеляжем вертолета
+            if (player && player.body) {
+                player.body.position.set(0, -500, 0);
+                player.body.velocity.set(0, 0, 0);
+                player.body.sleep();
+            }
 
             if (this.isPiloted) {
+                // Если садится пилот — подготовка к взлету
+                this.body.velocity.set(0, 0, 0);
+                this.body.angularVelocity.set(0, 0, 0);
+                this.pitchAngle = 0.0;
+                this.rollAngle = 0.0;
                 this.rotorRPM = 1.0;
                 this.targetRotorRPM = 1.0;
                 this.body.wakeUp();
@@ -563,10 +575,6 @@ class HelicopterVehicle {
                     l.leftArm.pivot.rotation.set(-0.55, 0.15, 0.2);
                     l.rightArm.pivot.rotation.set(-0.55, -0.15, -0.2);
                 }
-            }
-            if (player && player.body) {
-                player.body.position.copy(worldSeat);
-                player.body.velocity.set(0, 0, 0);
             }
 
             // Обновление HUD
