@@ -1175,7 +1175,7 @@
     100% { transform: scale(1.0); opacity: 0.8; }
 }
 
-/* 2. Игровой сетевой чат */
+/* 2. Игровой сетевой чат (скрыт по умолчанию в оффлайне) */
 .mp-chat-container {
     position: fixed;
     bottom: 25px;
@@ -1188,7 +1188,7 @@
     backdrop-filter: blur(12px);
     border-radius: 12px;
     padding: 10px 12px;
-    display: flex;
+    display: none;
     flex-direction: column;
     gap: 8px;
     z-index: 150;
@@ -1335,25 +1335,72 @@
     box-shadow: 0 0 12px rgba(0, 229, 255, 0.45);
 }
 
-.mp-config-accordion {
-    background: rgba(2, 6, 23, 0.4);
-    border: 1px dashed rgba(255, 255, 255, 0.15);
-    border-radius: 8px;
-    padding: 12px 14px;
+.mp-room-presets-section {
     margin-top: 10px;
+    margin-bottom: 12px;
 }
 
-.mp-hint-desc {
+.mp-presets-label {
     font-size: 11px;
+    font-weight: 800;
     color: #94a3b8;
-    margin: 4px 0 8px 0;
-    line-height: 1.4;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
 }
 
-.mp-cfg-btn-row {
+.mp-room-presets {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.mp-preset-btn {
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    color: #94a3b8;
+    padding: 7px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.mp-preset-btn:hover {
+    border-color: #00e5ff;
+    color: #ffffff;
+    background: rgba(0, 229, 255, 0.1);
+    transform: translateY(-1px);
+}
+
+.mp-preset-btn.active {
+    background: rgba(0, 229, 255, 0.2);
+    border-color: #00e5ff;
+    color: #00e5ff;
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+}
+
+.mp-info-box {
+    background: rgba(2, 6, 23, 0.5);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
     display: flex;
     gap: 10px;
-    margin-top: 10px;
+    align-items: flex-start;
+    margin-top: 8px;
+}
+
+.mp-info-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.mp-info-text {
+    font-size: 11px;
+    color: #94a3b8;
+    line-height: 1.45;
 }
 
 /* 4. Таблица игроков онлайн (Scoreboard) */

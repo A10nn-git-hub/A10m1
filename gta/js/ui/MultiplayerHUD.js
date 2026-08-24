@@ -1,7 +1,7 @@
 /**
  * Пользовательский интерфейс мультиплеера (MultiplayerHUD)
  * Управляет внутриигровым чатом, плашкой сетевого статуса, списком игроков онлайн
- * и модальным окном настройки подключения к Firebase.
+ * и модальным окном настройки подключения к серверу.
  */
 class MultiplayerHUD {
     constructor(multiplayerManager) {
@@ -73,23 +73,19 @@ class MultiplayerHUD {
             });
         }
 
-        // Кнопка сохранения настроек Firebase
-        const btnSaveConfig = document.getElementById('btn-mp-save-config');
-        if (btnSaveConfig) {
-            btnSaveConfig.addEventListener('click', () => {
-                this.saveCustomFirebaseConfig();
+        // Пресеты комнат (быстрый выбор)
+        const presetBtns = document.querySelectorAll('.mp-preset-btn');
+        presetBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const room = btn.getAttribute('data-room');
+                const inpRoom = document.getElementById('mp-input-room');
+                if (inpRoom && room) {
+                    inpRoom.value = room;
+                    presetBtns.forEach((b) => b.classList.remove('active'));
+                    btn.classList.add('active');
+                }
             });
-        }
-
-        // Кнопка сброса настроек Firebase
-        const btnResetConfig = document.getElementById('btn-mp-reset-config');
-        if (btnResetConfig) {
-            btnResetConfig.addEventListener('click', () => {
-                FirebaseConfig.resetConfig();
-                this.populateSettingsFields();
-                this.addSystemMessage('Параметры Firebase сброшены по умолчанию.');
-            });
-        }
+        });
 
         // Клик по сетевой плашке открывает список игроков / настройки
         if (this.statusBadge) {
@@ -114,21 +110,38 @@ class MultiplayerHUD {
         if (status === 'CONNECTED') {
             this.statusBadge.innerHTML = `<span class="mp-dot online"></span> <b>СЕТЬ:</b> ${count} ИГР. [${this.mp.roomId}]`;
             this.statusBadge.className = 'mp-status-badge online';
+            if (this.chatContainer) {
+                this.chatContainer.style.display = 'flex';
+            }
         } else if (status === 'CONNECTING') {
             this.statusBadge.innerHTML = `<span class="mp-dot connecting"></span> ПОДКЛЮЧЕНИЕ...`;
             this.statusBadge.className = 'mp-status-badge connecting';
+            if (this.chatContainer) {
+                this.chatContainer.style.display = 'none';
+            }
+            this.closeChat();
         } else if (status === 'ERROR') {
             this.statusBadge.innerHTML = `<span class="mp-dot error"></span> СЕТЬ: ОШИБКА`;
             this.statusBadge.className = 'mp-status-badge error';
+            if (this.chatContainer) {
+                this.chatContainer.style.display = 'none';
+            }
+            this.closeChat();
         } else {
             this.statusBadge.innerHTML = `<span class="mp-dot offline"></span> ОФФЛАЙН (ОДИН)`;
             this.statusBadge.className = 'mp-status-badge offline';
+            if (this.chatContainer) {
+                this.chatContainer.style.display = 'none';
+            }
+            this.closeChat();
         }
     }
 
     openChat() {
+        if (this.mp.status !== 'CONNECTED') return;
         if (!this.chatContainer || !this.chatInput) return;
         this.isChatOpen = true;
+        this.chatContainer.style.display = 'flex';
         this.chatContainer.classList.add('active');
         this.chatInput.focus();
     }
@@ -142,6 +155,7 @@ class MultiplayerHUD {
     }
 
     toggleChat() {
+        if (this.mp.status !== 'CONNECTED') return;
         if (this.isChatOpen) {
             this.closeChat();
         } else {
@@ -210,15 +224,18 @@ class MultiplayerHUD {
     populateSettingsFields() {
         const inpNick = document.getElementById('mp-input-nickname');
         const inpRoom = document.getElementById('mp-input-room');
-        const inpUrl = document.getElementById('mp-input-dburl');
-        const inpKey = document.getElementById('mp-input-apikey');
 
         if (inpNick) inpNick.value = this.mp.nickname;
         if (inpRoom) inpRoom.value = this.mp.roomId;
 
-        const cfg = FirebaseConfig.getConfig();
-        if (inpUrl) inpUrl.value = cfg.databaseURL || '';
-        if (inpKey) inpKey.value = cfg.apiKey || '';
+        const presetBtns = document.querySelectorAll('.mp-preset-btn');
+        presetBtns.forEach((btn) => {
+            if (btn.getAttribute('data-room') === this.mp.roomId) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
 
         this.updateSettingsModalState();
     }
@@ -259,28 +276,11 @@ class MultiplayerHUD {
         const nick = inpNick ? inpNick.value.trim() : this.mp.nickname;
         const room = inpRoom ? inpRoom.value.trim() : this.mp.roomId;
 
-        this.saveCustomFirebaseConfig();
-        this.mp.connect(FirebaseConfig.getConfig(), nick, room);
-    }
+        if (nick) FirebaseConfig.saveNickname(nick);
+        if (room) FirebaseConfig.saveRoomId(room);
 
-    saveCustomFirebaseConfig() {
-        const inpUrl = document.getElementById('mp-input-dburl');
-        const inpKey = document.getElementById('mp-input-apikey');
-        const inpNick = document.getElementById('mp-input-nickname');
-        const inpRoom = document.getElementById('mp-input-room');
-
-        if (inpNick && inpNick.value.trim()) FirebaseConfig.saveNickname(inpNick.value.trim());
-        if (inpRoom && inpRoom.value.trim()) FirebaseConfig.saveRoomId(inpRoom.value.trim());
-
-        if (inpUrl && inpUrl.value.trim()) {
-            const curCfg = FirebaseConfig.getConfig();
-            const newCfg = {
-                ...curCfg,
-                databaseURL: inpUrl.value.trim(),
-                apiKey: inpKey && inpKey.value.trim() ? inpKey.value.trim() : curCfg.apiKey
-            };
-            FirebaseConfig.saveConfig(newCfg);
-        }
+        this.mp.connect(null, nick, room);
+        this.closeSettingsModal();
     }
 
     toggleScoreboard() {

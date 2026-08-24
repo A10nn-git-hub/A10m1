@@ -185,17 +185,39 @@
                     this.buildFloorLobby(fl);
                 }
 
-                // 3. 9-й Этаж: Панорамная смотровая площадка (Sky Deck на Y = 74.0м)
+                // 3. 9-й Этаж: Панорамная смотровая площадка (Sky Deck на Y = 74.0м) с вырезом под шахту лифта
                 const skyDeckGroup = new THREE.Group();
                 skyDeckGroup.position.set(0, 74.0, 60.0);
 
-                const deckFloor = new THREE.Mesh(new THREE.BoxGeometry(28.0, 0.4, 28.0), this.materials.floorGranite);
-                deckFloor.position.y = -0.2;
-                skyDeckGroup.add(deckFloor);
+                // Пол 9 этажа с открытой шахтой лифта
+                const deckSouthFloor = new THREE.Mesh(new THREE.BoxGeometry(28.0, 0.4, 10.05), this.materials.floorGranite);
+                deckSouthFloor.position.set(0, -0.2, -8.975); skyDeckGroup.add(deckSouthFloor);
+                this.createStaticFloorBox(0, 73.8, 60.0 - 8.975, 28.0, 0.4, 10.05);
 
-                const deckCeil = new THREE.Mesh(new THREE.BoxGeometry(28.0, 0.4, 28.0), this.materials.titaniumWall);
-                deckCeil.position.y = 5.2;
-                skyDeckGroup.add(deckCeil);
+                const deckNorthFloor = new THREE.Mesh(new THREE.BoxGeometry(28.0, 0.4, 10.05), this.materials.floorGranite);
+                deckNorthFloor.position.set(0, -0.2, 8.975); skyDeckGroup.add(deckNorthFloor);
+                this.createStaticFloorBox(0, 73.8, 60.0 + 8.975, 28.0, 0.4, 10.05);
+
+                const deckEastFloor = new THREE.Mesh(new THREE.BoxGeometry(13.55, 0.4, 7.9), this.materials.floorGranite);
+                deckEastFloor.position.set(7.225, -0.2, 0); skyDeckGroup.add(deckEastFloor);
+                this.createStaticFloorBox(7.225, 73.8, 60.0, 13.55, 0.4, 7.9);
+
+                const deckWestFloor = new THREE.Mesh(new THREE.BoxGeometry(6.55, 0.4, 7.9), this.materials.floorGranite);
+                deckWestFloor.position.set(-10.725, -0.2, 0); skyDeckGroup.add(deckWestFloor);
+                this.createStaticFloorBox(-10.725, 73.8, 60.0, 6.55, 0.4, 7.9);
+
+                // Потолок 9 этажа с открытой шахтой лифта
+                const deckSouthCeil = new THREE.Mesh(new THREE.BoxGeometry(28.0, 0.4, 10.05), this.materials.titaniumWall);
+                deckSouthCeil.position.set(0, 5.2, -8.975); skyDeckGroup.add(deckSouthCeil);
+
+                const deckNorthCeil = new THREE.Mesh(new THREE.BoxGeometry(28.0, 0.4, 10.05), this.materials.titaniumWall);
+                deckNorthCeil.position.set(0, 5.2, 8.975); skyDeckGroup.add(deckNorthCeil);
+
+                const deckEastCeil = new THREE.Mesh(new THREE.BoxGeometry(13.55, 0.4, 7.9), this.materials.titaniumWall);
+                deckEastCeil.position.set(7.225, 5.2, 0); skyDeckGroup.add(deckEastCeil);
+
+                const deckWestCeil = new THREE.Mesh(new THREE.BoxGeometry(6.55, 0.4, 7.9), this.materials.titaniumWall);
+                deckWestCeil.position.set(-10.725, 5.2, 0); skyDeckGroup.add(deckWestCeil);
 
                 // Панорамные стеклянные стены по периметру
                 const gNorth = new THREE.Mesh(new THREE.BoxGeometry(28.0, 5.2, 0.2), this.materials.glassWindows);
@@ -267,10 +289,14 @@
 
                 this.scene.add(helipadExitGroup);
 
-                // Коллизии для 1, 9 и 10 этажей
+                // Коллизии для пола 1 этажа
                 this.createStaticFloorBox(0, -0.2, 60, 32, 0.4, 32);
-                this.createStaticFloorBox(0, 73.9, 60, 28, 0.4, 28);
-                this.createStaticFloorBox(0, 91.95, 60, 28, 0.4, 28);
+
+                // Коллизии для вертолетной площадки 10 этажа с вырезом под портал шахты
+                this.createStaticFloorBox(0, 91.95, 60.0 - 8.975, 28.0, 0.4, 10.05);
+                this.createStaticFloorBox(0, 91.95, 60.0 + 8.975, 28.0, 0.4, 10.05);
+                this.createStaticFloorBox(7.225, 91.95, 60.0, 13.55, 0.4, 7.9);
+                this.createStaticFloorBox(-10.725, 91.95, 60.0, 6.55, 0.4, 7.9);
 
                 // Защитные стены по периметру 9 и 10 этажей
                 this.createStaticWallBox(0, 76.6, 74.0, 28, 5.2, 0.4);
@@ -290,50 +316,50 @@
 
                 const fW = 30.0; const fD = 30.0; const fH = 4.2;
 
-                // 1. Пол этажа с открытой шахтой для лифта (шахта X = -3.5, Z = 60.0 свободна!)
+                // 1. Пол этажа с открытой шахтой для лифта (вырез: X от -7.45 до +0.45, Z от -3.95 до +3.95)
                 // Южный сегмент пола (перед лифтом)
-                const southFloor = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.35, 11.0), this.materials.floorGranite);
-                southFloor.position.set(0, -0.175, -9.5);
+                const southFloor = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.35, 11.05), this.materials.floorGranite);
+                southFloor.position.set(0, -0.175, -9.475);
                 southFloor.receiveShadow = true;
                 floorGroup.add(southFloor);
-                this.createStaticFloorBox(0, fl.y - 0.175, 60.0 - 9.5, fW, 0.35, 11.0);
+                this.createStaticFloorBox(0, fl.y - 0.175, 60.0 - 9.475, fW, 0.35, 11.05);
 
                 // Северный сегмент пола (за лифтом)
-                const northFloor = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.35, 11.0), this.materials.floorGranite);
-                northFloor.position.set(0, -0.175, 9.5);
+                const northFloor = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.35, 11.05), this.materials.floorGranite);
+                northFloor.position.set(0, -0.175, 9.475);
                 northFloor.receiveShadow = true;
                 floorGroup.add(northFloor);
-                this.createStaticFloorBox(0, fl.y - 0.175, 60.0 + 9.5, fW, 0.35, 11.0);
+                this.createStaticFloorBox(0, fl.y - 0.175, 60.0 + 9.475, fW, 0.35, 11.05);
 
                 // Восточный сегмент пола (справа от шахты)
-                const eastFloor = new THREE.Mesh(new THREE.BoxGeometry(19.0, 0.35, 8.0), this.materials.floorGranite);
-                eastFloor.position.set(5.5, -0.175, 0);
+                const eastFloor = new THREE.Mesh(new THREE.BoxGeometry(14.55, 0.35, 7.9), this.materials.floorGranite);
+                eastFloor.position.set(7.725, -0.175, 0);
                 eastFloor.receiveShadow = true;
                 floorGroup.add(eastFloor);
-                this.createStaticFloorBox(5.5, fl.y - 0.175, 60.0, 19.0, 0.35, 8.0);
+                this.createStaticFloorBox(7.725, fl.y - 0.175, 60.0, 14.55, 0.35, 7.9);
 
                 // Западный сегмент пола (слева от шахты)
-                const westFloor = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.35, 8.0), this.materials.floorGranite);
-                westFloor.position.set(-11.5, -0.175, 0);
+                const westFloor = new THREE.Mesh(new THREE.BoxGeometry(7.55, 0.35, 7.9), this.materials.floorGranite);
+                westFloor.position.set(-11.225, -0.175, 0);
                 westFloor.receiveShadow = true;
                 floorGroup.add(westFloor);
-                this.createStaticFloorBox(-11.5, fl.y - 0.175, 60.0, 7.0, 0.35, 8.0);
+                this.createStaticFloorBox(-11.225, fl.y - 0.175, 60.0, 7.55, 0.35, 7.9);
 
-                // Потолок этажа (с открытой шахтой для свободного движения кабины без ударов о перекрытия)
-                const southCeil = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.35, 11.0), this.materials.titaniumWall);
-                southCeil.position.set(0, fH, -9.5);
+                // Потолок этажа (с открытой шахтой для свободного движения кабины без пересечения перекрытий)
+                const southCeil = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.35, 11.05), this.materials.titaniumWall);
+                southCeil.position.set(0, fH, -9.475);
                 floorGroup.add(southCeil);
 
-                const northCeil = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.35, 11.0), this.materials.titaniumWall);
-                northCeil.position.set(0, fH, 9.5);
+                const northCeil = new THREE.Mesh(new THREE.BoxGeometry(fW, 0.35, 11.05), this.materials.titaniumWall);
+                northCeil.position.set(0, fH, 9.475);
                 floorGroup.add(northCeil);
 
-                const eastCeil = new THREE.Mesh(new THREE.BoxGeometry(19.0, 0.35, 8.0), this.materials.titaniumWall);
-                eastCeil.position.set(5.5, fH, 0);
+                const eastCeil = new THREE.Mesh(new THREE.BoxGeometry(14.55, 0.35, 7.9), this.materials.titaniumWall);
+                eastCeil.position.set(7.725, fH, 0);
                 floorGroup.add(eastCeil);
 
-                const westCeil = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.35, 8.0), this.materials.titaniumWall);
-                westCeil.position.set(-11.5, fH, 0);
+                const westCeil = new THREE.Mesh(new THREE.BoxGeometry(7.55, 0.35, 7.9), this.materials.titaniumWall);
+                westCeil.position.set(-11.225, fH, 0);
                 floorGroup.add(westCeil);
 
                 // Стеклянные панорамные стены по внешнему периметру этажа

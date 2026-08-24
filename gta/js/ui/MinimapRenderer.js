@@ -63,7 +63,9 @@ class MinimapRenderer {
     render(playerPos, cameraYaw, allCars, allNPCs, soccerBalls, remotePlayers = []) {
         if (!this.ctx || !playerPos) return;
         this.renderFrameSkip = (this.renderFrameSkip || 0) + 1;
-        if (this.renderFrameSkip % 2 !== 0) return; // 30 FPS рендер миникарты для снижения нагрузки на GPU
+        const isEco = window.gameEngine && window.gameEngine.isPowerSavingMode;
+        const skipThreshold = isEco ? 4 : 2; // В режиме ЭКО рендер миникарты на 15 FPS для освобождения CPU
+        if (this.renderFrameSkip % skipThreshold !== 0) return;
         const ctx = this.ctx;
         this.blipPulseTimer += 0.05;
 

@@ -36,6 +36,7 @@ var br3D = {
     
     // Local player state
     myP: null,
+    selectedTeam: 'Counter-Terrorists',
     keys: {},
     mouse: { x: 0, y: 0, worldX: 0, worldZ: 0, isDown: false, rightDown: false, midDown: false },
     touch: {
@@ -1112,20 +1113,19 @@ function init3DBots(mode) {
     if (mode === 'duel_1v1') maxTeamSize = 1;
     else if (mode === 'duel_2v2') maxTeamSize = 2;
 
-    const myTeam = br3D.myP ? br3D.myP.team : 'Counter-Terrorists';
+    const myTeam = br3D.myP ? br3D.myP.team : br3D.selectedTeam;
     const enemyTeam = (myTeam === 'Counter-Terrorists') ? 'Terrorists' : 'Counter-Terrorists';
 
-    let ctRealCount = 0, tRealCount = 0;
-    if (lobbyId && typeof lobbyPlayers !== 'undefined') {
+    let ctRealCount = (myTeam === 'Counter-Terrorists') ? 1 : 0;
+    let tRealCount = (myTeam === 'Terrorists') ? 1 : 0;
+
+    if (lobbyId && typeof lobbyPlayers !== 'undefined' && Array.isArray(lobbyPlayers)) {
         Object.values(br3D.remotePlayers).forEach(p => {
-            if (p.team === 'Counter-Terrorists') ctRealCount++;
-            else if (p.team === 'Terrorists') tRealCount++;
+            if (p.id === myId) return;
+            const t = brNormalizeTeam(p.team);
+            if (t === 'Counter-Terrorists') ctRealCount++;
+            else if (t === 'Terrorists') tRealCount++;
         });
-        if (myTeam === 'Counter-Terrorists') ctRealCount++;
-        else tRealCount++;
-    } else {
-        if (myTeam === 'Counter-Terrorists') ctRealCount = 1;
-        else tRealCount = 1;
     }
 
     const ctBotCount = Math.max(0, maxTeamSize - ctRealCount);
@@ -1203,6 +1203,7 @@ function update3DBots(dt) {
             }
 
             Object.keys(br3D.remotePlayers).forEach(rpId => {
+                if (rpId === myId) return;
                 const rp = br3D.remotePlayers[rpId];
                 if (rp && rp.alive && rp.team !== bot.team && now >= (rp.invulnUntil || 0)) {
                     const dist = Math.hypot(rp.x - bot.x, rp.z - bot.z);
@@ -1270,10 +1271,9 @@ function update3DBots(dt) {
                 bot.x = nextX;
                 bot.z = nextZ;
             } else {
-                // Slide / Avoid obstacle
                 if (!checkPlayerWallCollision3D(nextX, bot.z, 0.8)) bot.x = nextX;
                 else if (!checkPlayerWallCollision3D(bot.x, nextZ, 0.8)) bot.z = nextZ;
-                bot.nextThink = now; // Recalculate route
+                bot.nextThink = now;
             }
         } else {
             bot.vx = 0;
@@ -1778,7 +1778,6 @@ function showRespawnTimer(seconds, callback) {
 // -----------------------------------------------------------------------------
 function brPublicPlayerState(includeHealth) {
     if (!br3D.myP) return {};
-    const now = Date.now();
     return {
         id: myId,
         name: typeof myName !== 'undefined' ? myName : 'Игрок',
@@ -2070,38 +2069,71 @@ function render3DRadar() {
 // LOBBY & TEAM SELECTOR (STANDOFF 2 STYLE)
 // -----------------------------------------------------------------------------
 function selectTeam(teamName) {
+    br3D.selectedTeam = teamName;
+
+    // Immediately hide the team selection overlay and spawn the local player
+    const overlay = document.getElementById('so2-lobby-overlay');
+    if (overlay) overlay.style.display = 'none';
+
+    // Initialize/update local player immediately so there is ZERO hang or freeze
+    const submode = br3D.mode || 'tdm_5v5';
+    const spawn = get3DSpawnPos(teamName, submode);
+    const mySettings = (typeof mergedSettingsForGame === 'function' ? mergedSettingsForGame('br_2d') : {})?.players?.[myId] || {};
+    const myMaxHp = Math.max(1, parseInt(mySettings.lives) || 100);
+    const mySpeed = brNormalizeSpeed(mySettings.speed);
+
+    if (!br3D.myP) {
+        br3D.myP = {
+            id: myId,
+            team: teamName,
+            x: spawn.x,
+            y: 0,
+            z: spawn.z,
+            vx: 0, vz: 0,
+            rotY: (teamName === 'Counter-Terrorists' || teamName === 'CT') ? Math.PI / 2 : -Math.PI / 2,
+            hp: myMaxHp,
+            maxHp: myMaxHp,
+            speed: mySpeed,
+            alive: true,
+            kills: 0,
+            shotSeq: 0,
+            invulnUntil: Date.now() + 3000
+        };
+        br3D.cameraCtrl.yaw = br3D.myP.rotY;
+        br3D.cameraCtrl.targetYaw = br3D.myP.rotY;
+    } else {
+        br3D.myP.team = teamName;
+        br3D.myP.x = spawn.x;
+        br3D.myP.z = spawn.z;
+        br3D.myP.rotY = (teamName === 'Counter-Terrorists' || teamName === 'CT') ? Math.PI / 2 : -Math.PI / 2;
+    }
+
+    // Ensure 3D Loop is running
+    if (!br3D.animFrameId) {
+        br3D.animFrameId = requestAnimationFrame(br3DLoop);
+    }
+
     if (!lobbyId) {
-        if (br3D.myP) br3D.myP.team = teamName;
+        init3DBots(submode);
         return;
     }
 
-    db.ref(`lobbies/${lobbyId}/br/players`).once('value').then(s => {
-        const players = s.exists() ? s.val() : {};
-        let ctCount = 0, tCount = 0;
+    // In a lobby: update Firebase and notify others
+    const base = `lobbies/${lobbyId}/br`;
+    db.ref(`${base}/players/${myId}/team`).set(teamName).catch(() => {});
+    syncBrPlayerState(true);
 
-        Object.keys(players).forEach(id => {
-            if (typeof isAiFriendId === 'function' && isAiFriendId(id)) return;
-            if (id === myId) return;
-            const t = brNormalizeTeam(players[id].team);
-            if (t === 'Counter-Terrorists') ctCount++;
-            else if (t === 'Terrorists') tCount++;
-        });
-
-        let maxTeamSize = 5;
-        if (br3D.mode === 'duel_1v1') maxTeamSize = 1;
-        else if (br3D.mode === 'duel_2v2') maxTeamSize = 2;
-
-        if (teamName === 'Counter-Terrorists' && ctCount >= maxTeamSize) {
-            if (typeof showNegativeAlert === 'function') showNegativeAlert("Команда CT заполнена!");
-            return;
-        }
-        if (teamName === 'Terrorists' && tCount >= maxTeamSize) {
-            if (typeof showNegativeAlert === 'function') showNegativeAlert("Команда T заполнена!");
-            return;
-        }
-
-        db.ref(`lobbies/${lobbyId}/br/players/${myId}/team`).set(teamName).catch(() => {});
-    });
+    if (isHost && !br3D.spawningBotsStarted) {
+        br3D.spawningBotsStarted = true;
+        setTimeout(() => {
+            db.ref(`${base}/players`).once('value').then(snap => {
+                const players = snap.exists() ? snap.val() : { [myId]: { team: teamName } };
+                finalize3DMatchStart(players, submode);
+            }).catch(() => {
+                finalize3DMatchStart({ [myId]: { team: teamName } }, submode);
+            });
+        }, 600);
+    }
 }
 window.selectTeam = selectTeam;
 
@@ -2113,7 +2145,7 @@ function finalize3DMatchStart(players, mode) {
     else if (mode === 'duel_2v2') maxTeamSize = 2;
 
     let ctRealIds = [], tRealIds = [];
-    Object.keys(players).forEach(id => {
+    Object.keys(players || {}).forEach(id => {
         const team = brNormalizeTeam(players[id].team);
         if (team === 'Counter-Terrorists') ctRealIds.push(id);
         else if (team === 'Terrorists') tRealIds.push(id);
@@ -2132,35 +2164,34 @@ function finalize3DMatchStart(players, mode) {
         bots.push(create3DBotObj('bot_t_' + (i + 1), 'Бот T-' + (i + 1), 'Terrorists', sp.x, sp.z));
     }
 
-    generate3DMap(mode);
+    br3D.bots = bots;
     const base = `lobbies/${lobbyId}/br`;
-    const updates = {};
 
-    updates[`${base}/bots`] = bots;
-    updates[`${base}/damage`] = {};
-    updates[`${base}/ctScore`] = 0;
-    updates[`${base}/tScore`] = 0;
-    updates[`${base}/ctRounds`] = 0;
-    updates[`${base}/tRounds`] = 0;
-    updates[`${base}/currentRound`] = 1;
-    updates[`${base}/matchStartTime`] = Date.now();
-    updates[`${base}/roundStartCountdownUntil`] = Date.now() + 3000;
+    db.ref(base).update({
+        bots: bots,
+        damage: {},
+        ctScore: 0,
+        tScore: 0,
+        ctRounds: 0,
+        tRounds: 0,
+        currentRound: 1,
+        matchStartTime: Date.now(),
+        roundStartCountdownUntil: Date.now() + 3000,
+        matchGameplayStarted: true
+    }).catch(() => {});
 
-    Object.keys(players).forEach(id => {
+    Object.keys(players || {}).forEach(id => {
         const p = players[id];
         const team = brNormalizeTeam(p.team);
         const sp = get3DSpawnPos(team, mode);
-        updates[`${base}/players/${id}/x`] = Number(sp.x.toFixed(2));
-        updates[`${base}/players/${id}/z`] = Number(sp.z.toFixed(2));
-        updates[`${base}/players/${id}/hp`] = p.maxHp || 100;
-        updates[`${base}/players/${id}/maxHp`] = p.maxHp || 100;
-        updates[`${base}/players/${id}/alive`] = true;
-        updates[`${base}/damage/${id}`] = 0;
+        db.ref(`${base}/players/${id}`).update({
+            x: Number(sp.x.toFixed(2)),
+            z: Number(sp.z.toFixed(2)),
+            hp: p.maxHp || 100,
+            maxHp: p.maxHp || 100,
+            alive: true
+        }).catch(() => {});
     });
-
-    updates[`${base}/matchGameplayStarted`] = true;
-    br3D.bots = bots;
-    db.ref().update(updates).catch(() => {});
 }
 
 // -----------------------------------------------------------------------------
@@ -2175,7 +2206,7 @@ function br3DLoop() {
     // Update Local Player
     update3DLocalPlayer(dt);
 
-    // Update Bots AI (Host runs AI, clients receive sync)
+    // Update Bots AI (Host or Solo runs AI)
     if (!lobbyId || isHost) {
         update3DBots(dt);
     }
@@ -2212,39 +2243,11 @@ function start3DMatchClient(submode) {
     const overlay = document.getElementById('so2-lobby-overlay');
     if (overlay) overlay.style.display = 'none';
 
-    db.ref(`${base}/players/${myId}`).once('value').then(playerSnap => {
-        const p = playerSnap.val() || {};
-        const team = brNormalizeTeam(p.team) || 'Counter-Terrorists';
-        const spawn = get3DSpawnPos(team, submode);
+    // 1. Disconnect handler
+    db.ref(`${base}/players/${myId}`).onDisconnect().update({ alive: false, hp: 0 });
 
-        const mySettings = (typeof mergedSettingsForGame === 'function' ? mergedSettingsForGame('br_2d') : {})?.players?.[myId] || {};
-        const myMaxHp = Math.max(1, parseInt(mySettings.lives) || 100);
-        const mySpeed = brNormalizeSpeed(mySettings.speed);
-
-        br3D.myP = {
-            id: myId,
-            team: team,
-            x: spawn.x,
-            y: 0,
-            z: spawn.z,
-            vx: 0, vz: 0,
-            rotY: (team === 'Counter-Terrorists') ? Math.PI / 2 : -Math.PI / 2,
-            hp: myMaxHp,
-            maxHp: myMaxHp,
-            speed: mySpeed,
-            alive: true,
-            kills: 0,
-            shotSeq: 0,
-            invulnUntil: Date.now() + 3000
-        };
-
-        br3D.cameraCtrl.yaw = br3D.myP.rotY;
-        br3D.cameraCtrl.targetYaw = br3D.myP.rotY;
-
-        // 1. Disconnect handler
-        db.ref(`${base}/players/${myId}`).onDisconnect().update({ alive: false, hp: 0 });
-
-        // 2. Players list sync
+    // 2. Players list sync
+    if (!br3D.playersListener) {
         br3D.playersListener = playersSnap => {
             if (!playersSnap.exists()) return;
             const data = playersSnap.val();
@@ -2258,8 +2261,10 @@ function start3DMatchClient(submode) {
             }
         };
         db.ref(`${base}/players`).on('value', br3D.playersListener);
+    }
 
-        // 3. Remote shots listener
+    // 3. Remote shots listener
+    if (!br3D.shotsListener) {
         br3D.shotsListener = snap => {
             const p = snap.exists() ? Object.assign({ id: snap.key }, snap.val()) : null;
             if (!p || p.id === myId) return;
@@ -2267,8 +2272,10 @@ function start3DMatchClient(submode) {
             apply3DRemoteShot(p);
         };
         db.ref(`${base}/players`).on('child_changed', br3D.shotsListener);
+    }
 
-        // 4. Damage listener
+    // 4. Damage listener
+    if (!br3D.damageListener) {
         br3D.damageListener = damageSnap => {
             br3D.damageByPlayer = damageSnap.exists() ? damageSnap.val() : {};
             const myDamage = Math.max(0, parseInt(br3D.damageByPlayer[myId]) || 0);
@@ -2286,19 +2293,21 @@ function start3DMatchClient(submode) {
             }
         };
         db.ref(`${base}/damage`).on('value', br3D.damageListener);
+    }
 
-        // 5. Bots listener (Clients receive bot state from host)
-        if (!isHost) {
-            br3D.botsListener = botsSnap => {
-                if (botsSnap.exists()) {
-                    const val = botsSnap.val();
-                    br3D.bots = Array.isArray(val) ? val : Object.values(val);
-                }
-            };
-            db.ref(`${base}/bots`).on('value', br3D.botsListener);
-        }
+    // 5. Bots listener (Clients receive bot state from host)
+    if (!isHost && !br3D.botsListener) {
+        br3D.botsListener = botsSnap => {
+            if (botsSnap.exists()) {
+                const val = botsSnap.val();
+                br3D.bots = Array.isArray(val) ? val : Object.values(val);
+            }
+        };
+        db.ref(`${base}/bots`).on('value', br3D.botsListener);
+    }
 
-        // 6. Rounds & Match State listener
+    // 6. Rounds & Match State listener
+    if (!br3D.roundsListener) {
         br3D.roundsListener = roundsSnap => {
             if (!roundsSnap.exists()) return;
             const data = roundsSnap.val();
@@ -2329,24 +2338,26 @@ function start3DMatchClient(submode) {
             }
         };
         db.ref(`${base}`).on('value', br3D.roundsListener);
+    }
 
-        // 7. Sync Timers
+    // 7. Sync Timers
+    if (!br3D.syncTimer) {
         br3D.syncTimer = setInterval(() => syncBrPlayerState(), 80);
+    }
 
-        if (isHost) {
-            br3D.hostBotTimer = setInterval(() => {
-                if (br3D.active && lobbyId && br3D.bots.length > 0) {
-                    db.ref(`${base}/bots`).set(br3D.bots).catch(() => {});
-                }
-            }, 100);
-        }
+    if (isHost && !br3D.hostBotTimer) {
+        br3D.hostBotTimer = setInterval(() => {
+            if (br3D.active && lobbyId && br3D.bots.length > 0) {
+                db.ref(`${base}/bots`).set(br3D.bots).catch(() => {});
+            }
+        }, 100);
+    }
 
-        syncBrPlayerState(true);
+    syncBrPlayerState(true);
 
-        if (!br3D.animFrameId) {
-            br3D.animFrameId = requestAnimationFrame(br3DLoop);
-        }
-    });
+    if (!br3D.animFrameId) {
+        br3D.animFrameId = requestAnimationFrame(br3DLoop);
+    }
 }
 
 function initBR() {
@@ -2365,6 +2376,7 @@ function initBR() {
     br3D.ammo = 30;
     br3D.isReloading = false;
     br3D.spawningBotsStarted = false;
+    br3D.myP = null;
 
     // Detect game mode
     const submode = (typeof appState !== 'undefined' && appState.selectedGameId && appState.selectedGameId.startsWith('br_')) 
@@ -2442,6 +2454,13 @@ function initBR() {
                 if (ctCountEl) ctCountEl.innerText = ctCount;
                 if (tCountEl) tCountEl.innerText = tCount;
 
+                const myPData = players[myId];
+                if (myPData && myPData.team) {
+                    // Hide overlay if my team was already selected
+                    const ov = document.getElementById('so2-lobby-overlay');
+                    if (ov) ov.style.display = 'none';
+                }
+
                 const realPlayers = (typeof lobbyPlayers !== 'undefined' && Array.isArray(lobbyPlayers) && lobbyPlayers.length > 0)
                     ? lobbyPlayers.filter(p => !isAiFriendId(p.id))
                     : [{ id: myId }];
@@ -2455,7 +2474,7 @@ function initBR() {
                         br3D.spawningBotsStarted = true;
                         setTimeout(() => {
                             finalize3DMatchStart(players, submode);
-                        }, 1000);
+                        }, 800);
                     }
                 } else {
                     if (footerText) footerText.innerText = 'Ожидание выбора команд игроками...';
@@ -2500,36 +2519,7 @@ function initBR() {
         // -------------------------------------------------------------
         // Solo / Local Offline Play (Instant Start with Bots)
         // -------------------------------------------------------------
-        const overlay = document.getElementById('so2-lobby-overlay');
-        if (overlay) overlay.style.display = 'none';
-
-        const myTeam = (typeof selectedTeam !== 'undefined' && selectedTeam) ? selectedTeam : 'Counter-Terrorists';
-        const spawn = get3DSpawnPos(myTeam, submode);
-
-        br3D.myP = {
-            id: myId,
-            team: myTeam,
-            x: spawn.x,
-            y: 0,
-            z: spawn.z,
-            vx: 0, vz: 0,
-            rotY: (myTeam === 'Counter-Terrorists') ? Math.PI / 2 : -Math.PI / 2,
-            hp: 100,
-            maxHp: 100,
-            speed: 12,
-            alive: true,
-            kills: 0,
-            shotSeq: 0,
-            invulnUntil: Date.now() + 3000
-        };
-
-        init3DBots(submode);
-
-        br3D.cameraCtrl.yaw = br3D.myP.rotY;
-        br3D.cameraCtrl.targetYaw = br3D.myP.rotY;
-
-        if (br3D.animFrameId) cancelAnimationFrame(br3D.animFrameId);
-        br3D.animFrameId = requestAnimationFrame(br3DLoop);
+        selectTeam('Counter-Terrorists');
     }
 }
 

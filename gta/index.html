@@ -95,8 +95,8 @@
             <span class="mp-dot offline"></span> ОФФЛАЙН (ОДИН)
         </div>
 
-        <!-- In-Game Multiplayer Chat Overlay -->
-        <div class="mp-chat-container" id="mp-chat-container">
+        <!-- In-Game Multiplayer Chat Overlay (Отображается только в онлайн режиме) -->
+        <div class="mp-chat-container" id="mp-chat-container" style="display: none;">
             <div class="mp-chat-messages" id="mp-chat-messages">
                 <div class="mp-chat-row system"><span class="mp-chat-system-text">⚡ Нажмите [T] или [Enter] для ввода сообщения в чат</span></div>
             </div>
@@ -342,13 +342,13 @@
     </div>
 
     <!-- =========================================================================
-         МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ СЕТЕВОГО МУЛЬТИПЛЕЕРА (FIREBASE)
+         МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ СЕТЕВОГО МУЛЬТИПЛЕЕРА
          ========================================================================= -->
     <div id="mp-settings-modal" class="game-modal">
         <div class="modal-window mp-modal-window">
             <div class="modal-header">
                 <div class="modal-title-group">
-                    <div class="modal-title">🌐 СЕТЕВОЙ МУЛЬТИПЛЕЕР (FIREBASE)</div>
+                    <div class="modal-title">🌐 СЕТЕВОЙ МУЛЬТИПЛЕЕР</div>
                     <div class="modal-subtitle">ИГРАЙТЕ С ДРУЗЬЯМИ В РЕАЛЬНОМ ВРЕМЕНИ ПО ВСЕМУ ЛОС-САНТОСУ</div>
                 </div>
                 <button class="modal-close-btn" id="btn-close-mp-settings">✕</button>
@@ -370,20 +370,19 @@
                     </div>
                 </div>
 
-                <div class="mp-config-accordion">
-                    <div class="keybind-category-title">⚙️ Пользовательская база данных Firebase (Опционально)</div>
-                    <p class="mp-hint-desc">По умолчанию используется глобальный сервер. Вы можете подключить свою Realtime Database:</p>
-                    <div class="mp-field-group" style="margin-top:8px;">
-                        <label for="mp-input-dburl">Database URL:</label>
-                        <input type="text" id="mp-input-dburl" class="mp-input" placeholder="https://your-project-default-rtdb.firebaseio.com">
+                <div class="mp-room-presets-section">
+                    <div class="mp-presets-label">⚡ БЫСТРЫЙ ВЫБОР КОМНАТЫ:</div>
+                    <div class="mp-room-presets">
+                        <button type="button" class="mp-preset-btn active" data-room="los_santos_main">🌆 Главный Город (los_santos_main)</button>
+                        <button type="button" class="mp-preset-btn" data-room="drift_city">🏎️ Дрифт & Гонки (drift_city)</button>
+                        <button type="button" class="mp-preset-btn" data-room="police_chase">🚓 Погони & Спецоперации (police_chase)</button>
                     </div>
-                    <div class="mp-field-group" style="margin-top:8px;">
-                        <label for="mp-input-apikey">API Key (Опционально):</label>
-                        <input type="text" id="mp-input-apikey" class="mp-input" placeholder="AIzaSy...">
-                    </div>
-                    <div class="mp-cfg-btn-row">
-                        <button type="button" class="menu-btn" id="btn-mp-save-config" style="padding:6px 14px; font-size:11px;">СОХРАНИТЬ ДАННЫЕ</button>
-                        <button type="button" class="menu-btn danger" id="btn-mp-reset-config" style="padding:6px 14px; font-size:11px;">СБРОСИТЬ</button>
+                </div>
+
+                <div class="mp-info-box">
+                    <div class="mp-info-icon">💡</div>
+                    <div class="mp-info-text">
+                        Подключение и синхронизация мира происходят автоматически. Игроки в одной комнате видят перемещения, анимации, транспорт и сообщения в чате в реальном времени.
                     </div>
                 </div>
             </div>

@@ -317,22 +317,35 @@
                 floorMesh.receiveShadow = true;
                 group.add(floorMesh);
 
-                // 2. Цоколь и верхняя башня небоскреба (надежные двухсторонние меши)
-                const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(18, 19.5, 12, 32), this.materials.darkGranite);
+                // 2. Цоколь и верхняя башня небоскреба (полые цилиндры openEnded=true без внутренних перекрытий, пересекающих шахту)
+                const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(18, 19.5, 12, 32, 1, true), this.materials.darkGranite);
                 baseMesh.position.y = 13; baseMesh.castShadow = true; baseMesh.receiveShadow = true;
                 group.add(baseMesh);
 
-                const towerMesh = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 65, 32), this.materials.skyscraperGlass);
+                const towerMesh = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 65, 32, 1, true), this.materials.skyscraperGlass);
                 towerMesh.position.y = 51.5; towerMesh.castShadow = true; towerMesh.receiveShadow = true;
                 group.add(towerMesh);
 
-                const crownMesh = new THREE.Mesh(new THREE.CylinderGeometry(12.5, 15, 8, 32), this.materials.darkGranite);
+                const crownMesh = new THREE.Mesh(new THREE.CylinderGeometry(12.5, 15, 8, 32, 1, true), this.materials.darkGranite);
                 crownMesh.position.y = 88; crownMesh.castShadow = true; crownMesh.receiveShadow = true;
                 group.add(crownMesh);
 
-                const heliMesh = new THREE.Mesh(new THREE.PlaneGeometry(28, 28), this.materials.helipad);
-                heliMesh.rotation.x = -Math.PI / 2; heliMesh.position.y = 92.05;
-                group.add(heliMesh);
+                // Вертолетная площадка с аккуратным вырезом под портал лифта (шахта X = -3.5, Z = 0)
+                const heliSouth = new THREE.Mesh(new THREE.PlaneGeometry(28, 10.05), this.materials.helipad);
+                heliSouth.rotation.x = -Math.PI / 2; heliSouth.position.set(0, 92.05, -8.975);
+                group.add(heliSouth);
+
+                const heliNorth = new THREE.Mesh(new THREE.PlaneGeometry(28, 10.05), this.materials.helipad);
+                heliNorth.rotation.x = -Math.PI / 2; heliNorth.position.set(0, 92.05, 8.975);
+                group.add(heliNorth);
+
+                const heliEast = new THREE.Mesh(new THREE.PlaneGeometry(13.55, 7.9), this.materials.helipad);
+                heliEast.rotation.x = -Math.PI / 2; heliEast.position.set(7.225, 92.05, 0);
+                group.add(heliEast);
+
+                const heliWest = new THREE.Mesh(new THREE.PlaneGeometry(6.55, 7.9), this.materials.helipad);
+                heliWest.rotation.x = -Math.PI / 2; heliWest.position.set(-10.725, 92.05, 0);
+                group.add(heliWest);
 
                 const signMesh = new THREE.Mesh(new THREE.PlaneGeometry(16, 4), this.materials.mazeSign);
                 signMesh.position.set(0, 81, 15.35);

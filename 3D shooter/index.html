@@ -503,14 +503,14 @@
                                     <div class="so2-team-name"><span class="so2-full-name">COUNTER-TERRORISTS</span><span class="so2-short-name">КТ</span></div>
                                     <div class="so2-team-players" id="so2-ct-players-list"></div>
                                     <div class="so2-team-count" id="so2-ct-count">0</div>
-                                    <button class="so2-select-btn ct-btn">ВСТУПИТЬ</button>
+                                    <button class="so2-select-btn ct-btn" onclick="event.stopPropagation(); selectTeam('Counter-Terrorists')">ВСТУПИТЬ</button>
                                 </div>
                                 <div class="so2-team-column so2-t-team" onclick="selectTeam('Terrorists')">
                                     <div class="so2-team-icon">💣</div>
                                     <div class="so2-team-name"><span class="so2-full-name">TERRORISTS</span><span class="so2-short-name">Т</span></div>
                                     <div class="so2-team-players" id="so2-t-players-list"></div>
                                     <div class="so2-team-count" id="so2-t-count">0</div>
-                                    <button class="so2-select-btn t-btn">ВСТУПИТЬ</button>
+                                    <button class="so2-select-btn t-btn" onclick="event.stopPropagation(); selectTeam('Terrorists')">ВСТУПИТЬ</button>
                                 </div>
                             </div>
                             <div class="so2-team-footer" id="so2-team-select-footer-text">

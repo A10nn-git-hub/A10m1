@@ -534,7 +534,11 @@ class GTAEngine {
     }
 
     updatePhysics(deltaTime) {
-        this.world.step(1 / 60, Math.min(deltaTime, 0.1), 3);
+        if (this.isPowerSavingMode) {
+            this.world.step(1 / 60, Math.min(deltaTime, 0.04), 1);
+        } else {
+            this.world.step(1 / 60, Math.min(deltaTime, 0.1), 3);
+        }
 
         const isDriving = this.vehicleManager && this.vehicleManager.activeDrivenCar !== null;
         const isTransitioning = this.vehicleManager && (this.vehicleManager.transitionState === 'ENTERING_VEHICLE' || this.vehicleManager.transitionState === 'EXITING_VEHICLE');
@@ -558,12 +562,6 @@ class GTAEngine {
                 ? this.vehicleManager.activeDrivenCar.chassisBody.position
                 : this.player.mesh.position;
 
-            const sPos = this.dayNightCycle.sunPosition;
-            const normH = Math.hypot(sPos.x, sPos.z) || 1;
-            const normX = sPos.x / normH;
-            const normZ = sPos.z / normH;
-
-            // Крутой зенитный угол освещения для коротких, компактных теней прямо под ногами и колесами
             this.sunLight.position.set(focusPos.x, focusPos.y + 140.0, focusPos.z);
             this.sunLight.target.position.copy(focusPos);
             this.sunLight.target.updateMatrixWorld();
@@ -622,27 +620,51 @@ class GTAEngine {
             }
         }
 
-        // 3. Очистка полицейских машин при включении режима
+        // 3. Очистка полицейских машин
         if (this.policeManager && this.isPowerSavingMode) {
             this.policeManager.clearAllPolice();
         }
 
-        // 4. Оптимизация рендерера и графики для максимального FPS
+        // 4. Оптимизация машин в автопарке (отключение фар/точечных источников и сон)
+        if (this.vehicleManager && typeof this.vehicleManager.setPowerSavingMode === 'function') {
+            this.vehicleManager.setPowerSavingMode(this.isPowerSavingMode);
+        }
+
+        // 5. Оптимизация уличных фонарей (отключение точечных источников света)
+        if (this.streetLampManager && this.streetLampManager.activeDynamicLights) {
+            if (this.isPowerSavingMode) {
+                for (let i = 0; i < this.streetLampManager.activeDynamicLights.length; i++) {
+                    this.streetLampManager.activeDynamicLights[i].intensity = 0.0;
+                }
+            }
+        }
+
+        // 6. Оптимизация погоды (отключение тяжелых частиц дождя)
+        if (this.weatherManager && this.isPowerSavingMode) {
+            this.weatherManager.rainIntensity = 0.0;
+            this.weatherManager.wetness = 0.0;
+            if (this.weatherManager.rainLines) this.weatherManager.rainLines.visible = false;
+        }
+
+        // 7. Оптимизация рендерера и графики для 30-60 FPS на слабых устройствах
         if (this.renderer) {
             if (this.isPowerSavingMode) {
-                // Отключаем ресурсоемкие карты теней
+                // Отключаем тени полностью (минус 50% нагрузки на GPU)
                 this.renderer.shadowMap.enabled = false;
+                this.renderer.shadowMap.autoUpdate = false;
                 if (this.sunLight) this.sunLight.castShadow = false;
-                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio * 0.75, 0.85));
-                if (this.camera) this.camera.far = 450;
+                // Снижаем разрешение рендеринга для слабого мобильного GPU
+                this.renderer.setPixelRatio(Math.min(window.devicePixelRatio * 0.55, 0.65));
+                if (this.camera) this.camera.far = 280;
                 if (this.scene && this.scene.fog) {
-                    this.scene.fog.near = 140;
-                    this.scene.fog.far = 420;
+                    this.scene.fog.near = 90;
+                    this.scene.fog.far = 270;
                 }
                 if (this.world) this.world.solver.iterations = 2;
             } else {
                 // Возврат к стандартным настройкам
                 this.renderer.shadowMap.enabled = true;
+                this.renderer.shadowMap.autoUpdate = true;
                 if (this.sunLight) this.sunLight.castShadow = true;
                 this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.0));
                 if (this.camera) this.camera.far = 1400;
@@ -656,7 +678,7 @@ class GTAEngine {
             if (this.camera) this.camera.updateProjectionMatrix();
         }
 
-        // 5. Обновление индикатора режима в статусе
+        // 8. Обновление индикатора режима в статусе
         const modeEl = document.getElementById('stat-player-mode');
         if (modeEl) {
             const isDriving = this.vehicleManager && this.vehicleManager.activeDrivenCar !== null;
@@ -836,13 +858,13 @@ class GTAEngine {
             this.chunkManager.update(focusPos);
         }
 
-        // STEP 34: Обновление покачивания растительности и крон деревьев на ветру (GPU Wind Shader)
-        if (this.vegetationManager) {
+        // STEP 34: Обновление покачивания растительности и крон деревьев на ветру (в режиме ЭКО пропускаем для разгрузки GPU/CPU)
+        if (!this.isPowerSavingMode && this.vegetationManager) {
             this.vegetationManager.update(delta);
         }
 
         // STEP 36: Обновление процедурного океана (волны, блики солнца, отражения)
-        if (this.oceanManager) {
+        if (!this.isPowerSavingMode && this.oceanManager) {
             const sunPos = this.dayNightCycle ? this.dayNightCycle.sunPosition : new THREE.Vector3(0, 1, 0);
             const sunCol = (this.dayNightCycle && this.dayNightCycle.sunLight) ? this.dayNightCycle.sunLight.color : new THREE.Color(0xfffaea);
             const fogCol = (this.scene && this.scene.fog) ? this.scene.fog.color : new THREE.Color(0xa6cbe8);
@@ -850,9 +872,11 @@ class GTAEngine {
             this.oceanManager.update(delta, sunPos, sunCol, fogCol, nightF);
         }
 
-        // STEP 37: Обновление интерактивных разрушаемых пропсов (столкновения, динамические тела, водяные гейзеры)
+        // STEP 37: Обновление интерактивных разрушаемых пропсов (в режиме ЭКО проверяем раз в 6 кадров)
         if (this.streetLampManager) {
-            this.streetLampManager.update(delta, focusPos, activeCar, allCars);
+            if (!this.isPowerSavingMode || (this.frameCount % 6 === 0)) {
+                this.streetLampManager.update(delta, focusPos, activeCar, allCars);
+            }
         }
 
         // STEP 38: Обновление триггерных зон районов (GTA-Style Neighborhood HUD Banner)
@@ -860,13 +884,15 @@ class GTAEngine {
             this.districtManager.update(delta, focusPos);
         }
 
-        // STEP 26: Обновление интерактивных дверей зданий и жилых домов при приближении игрока
+        // STEP 26: Обновление интерактивных дверей зданий и жилых домов (в режиме ЭКО раз в 12 кадров)
         const pPos = (this.player && this.player.body) ? this.player.body.position : null;
-        if (this.orgBuildingBuilder) {
-            this.orgBuildingBuilder.update(delta, pPos);
-        }
-        if (this.houseBuilder) {
-            this.houseBuilder.update(delta, pPos);
+        if (!this.isPowerSavingMode || (this.frameCount % 12 === 0)) {
+            if (this.orgBuildingBuilder) {
+                this.orgBuildingBuilder.update(delta, pPos);
+            }
+            if (this.houseBuilder) {
+                this.houseBuilder.update(delta, pPos);
+            }
         }
 
         // STEP 28: Обновление интерактивного лифта небоскреба Maze Bank (10 этажей)

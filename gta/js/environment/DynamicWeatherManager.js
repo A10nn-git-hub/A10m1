@@ -138,6 +138,13 @@
             }
 
             update(deltaTime, focusPos) {
+                if (window.gameEngine && window.gameEngine.isPowerSavingMode) {
+                    if (this.rainLines && this.rainLines.visible) this.rainLines.visible = false;
+                    this.rainIntensity = 0.0;
+                    this.wetness = 0.0;
+                    return;
+                }
+
                 this.weatherTimer += deltaTime;
                 if (this.weatherTimer >= this.autoWeatherDuration) {
                     this.weatherTimer = 0.0;

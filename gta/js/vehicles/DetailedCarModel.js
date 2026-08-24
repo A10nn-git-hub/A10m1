@@ -514,4 +514,18 @@
                     this.soundController.update(speedKmh, this.isBrakingState, this.steeringValue);
                 }
             }
+
+            setEcoMode(isEco) {
+                if (this.spotLightL) {
+                    this.spotLightL.castShadow = false;
+                    if (isEco) this.spotLightL.intensity = 0.0;
+                }
+                if (this.spotLightR) {
+                    this.spotLightR.castShadow = false;
+                    if (isEco) this.spotLightR.intensity = 0.0;
+                }
+                if (this.taillightPoint) {
+                    if (isEco) this.taillightPoint.intensity = 0.0;
+                }
+            }
         }

@@ -124,9 +124,10 @@ class InputController {
                 (document.getElementById('mp-settings-modal') && document.getElementById('mp-settings-modal').classList.contains('active'))
             );
 
-            // Горячие клавиши мультиплеера: T или Enter для чата, F2 для таблицы игроков
+            // Горячие клавиши мультиплеера: T или Enter для чата (только в онлайн режиме), F2 для таблицы игроков
             if (!isRebinding && !isMainMenuOpen && !isSettingsOrAboutOpen) {
-                if (e.code === 'KeyT' || e.code === 'Enter') {
+                const isOnline = window.gameEngine && window.gameEngine.multiplayerManager && window.gameEngine.multiplayerManager.status === 'CONNECTED';
+                if (isOnline && (e.code === 'KeyT' || e.code === 'Enter')) {
                     e.preventDefault();
                     if (mpHud) mpHud.toggleChat();
                     return;

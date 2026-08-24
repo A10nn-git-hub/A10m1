@@ -308,4 +308,16 @@
                     this.cars[i].update(deltaTime);
                 }
             }
+
+            setPowerSavingMode(isEco) {
+                for (let i = 0; i < this.cars.length; i++) {
+                    const car = this.cars[i];
+                    if (typeof car.setEcoMode === 'function') {
+                        car.setEcoMode(isEco);
+                    }
+                    if (isEco && car !== this.activeDrivenCar && car.chassisBody) {
+                        car.chassisBody.sleep();
+                    }
+                }
+            }
         }

@@ -7,8 +7,7 @@ class FirebaseConfig {
     static ROOM_KEY = 'gta_multiplayer_room';
 
     /**
-     * Конфигурация по умолчанию (Демонстрационная база данных для быстрого старта)
-     * Пользователь может переопределить эти параметры через меню "Мультиплеер" в игре.
+     * Конфигурация по умолчанию
      */
     static DEFAULT_CONFIG = {
         apiKey: "AIzaSyDemoKeyGTA3DWorldEngine2026",
@@ -21,48 +20,10 @@ class FirebaseConfig {
     };
 
     /**
-     * Получить активную конфигурацию Firebase (из localStorage или по умолчанию)
+     * Получить активную конфигурацию
      */
     static getConfig() {
-        try {
-            const saved = localStorage.getItem(FirebaseConfig.STORAGE_KEY);
-            if (saved) {
-                const parsed = JSON.parse(saved);
-                if (parsed && parsed.databaseURL) {
-                    return parsed;
-                }
-            }
-        } catch (e) {
-            console.warn('[FirebaseConfig] Ошибка чтения конфигурации из localStorage:', e);
-        }
         return FirebaseConfig.DEFAULT_CONFIG;
-    }
-
-    /**
-     * Сохранить пользовательскую конфигурацию в localStorage
-     */
-    static saveConfig(config) {
-        try {
-            if (!config || !config.databaseURL) {
-                throw new Error('Параметр databaseURL обязателен для Realtime Database.');
-            }
-            localStorage.setItem(FirebaseConfig.STORAGE_KEY, JSON.stringify(config));
-            return true;
-        } catch (e) {
-            console.error('[FirebaseConfig] Не удалось сохранить конфигурацию:', e);
-            return false;
-        }
-    }
-
-    /**
-     * Сбросить конфигурацию на значения по умолчанию
-     */
-    static resetConfig() {
-        try {
-            localStorage.removeItem(FirebaseConfig.STORAGE_KEY);
-        } catch (e) {
-            console.warn(e);
-        }
     }
 
     /**
