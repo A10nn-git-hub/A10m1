@@ -471,6 +471,7 @@ function generate3DMap(mode) {
 
     generate3DSmokeZones(mode);
     br3D.scene.add(br3D.mapGroup);
+    buildRadarBackground();
 }
 
 let _cachedWallMat = null;
@@ -600,7 +601,11 @@ function getSharedCharResources() {
             vestGeo: new THREE.BoxGeometry(0.92, 0.85, 0.56),
             limbGeo: new THREE.CylinderGeometry(0.14, 0.14, 0.85, 8),
             weaponGeo: new THREE.BoxGeometry(0.16, 0.18, 1.1),
-            barrelGeo: new THREE.CylinderGeometry(0.04, 0.04, 0.6, 6)
+            barrelGeo: new THREE.CylinderGeometry(0.04, 0.04, 0.6, 6),
+            magGeo: new THREE.BoxGeometry(0.1, 0.35, 0.2),
+            shieldGeo: new THREE.SphereGeometry(1.6, 16, 12),
+            ctShieldMat: new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.35, wireframe: true }),
+            tShieldMat: new THREE.MeshBasicMaterial({ color: 0xffaa00, transparent: true, opacity: 0.35, wireframe: true })
         };
     }
     return _charRes;
@@ -671,7 +676,7 @@ function create3DCharacterModel(team) {
     rightArm.rotation.x = Math.PI / 3;
     rightArm.rotation.z = Math.PI / 10;
     group.add(rightArm);
-    group.rightLegNode = rightArm;
+    group.rightArmNode = rightArm;
 
     const weaponGroup = create3DWeaponMesh(isCT, res);
     weaponGroup.position.set(0.22, 1.25, 0.65);
@@ -680,14 +685,7 @@ function create3DCharacterModel(team) {
     group.weaponNode = weaponGroup;
 
     // 5. Shield / Invulnerability Hologram (Tactical Spawn Shield)
-    const shieldGeo = new THREE.SphereGeometry(1.6, 16, 12);
-    const shieldMat = new THREE.MeshBasicMaterial({
-        color: isCT ? 0x00d4ff : 0xffaa00,
-        transparent: true,
-        opacity: 0.35,
-        wireframe: true
-    });
-    const shield = new THREE.Mesh(shieldGeo, shieldMat);
+    const shield = new THREE.Mesh(res.shieldGeo, isCT ? res.ctShieldMat : res.tShieldMat);
     shield.position.y = 1.2;
     shield.visible = false;
     group.add(shield);
@@ -706,8 +704,7 @@ function create3DWeaponMesh(isCT, res) {
     barrel.position.set(0, 0.04, 0.7);
     wGroup.add(barrel);
 
-    const magGeo = new THREE.BoxGeometry(0.1, 0.35, 0.2);
-    const mag = new THREE.Mesh(magGeo, res.barrelMat);
+    const mag = new THREE.Mesh(res.magGeo, res.barrelMat);
     mag.position.set(0, -0.22, 0.1);
     mag.rotation.x = 0.2;
     wGroup.add(mag);
@@ -767,15 +764,22 @@ function showSensitivityToast(sens) {
 }
 
 // -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
 // CONTROLS & CAMERA SYSTEM (PC KEYBOARD/MOUSE + MOBILE TOUCH VIRTUAL JOYSTICK)
 // -----------------------------------------------------------------------------
 function bind3DControls() {
     window.addEventListener('keydown', e => {
-        br3D.keys[e.code] = true;
-        if (e.code === 'KeyR') reload3DWeapon();
+        if (e.code) br3D.keys[e.code] = true;
+        if (e.key) br3D.keys[e.key.toLowerCase()] = true;
+        if (typeof brKeys !== 'undefined') {
+            if (e.code) brKeys[e.code] = true;
+            if (e.key) brKeys[e.key.toLowerCase()] = true;
+        }
+
+        if (e.code === 'KeyR' || e.key === 'r' || e.key === 'к' || e.key === 'К') reload3DWeapon();
         if (e.code === 'Space') jumpOrDash3D();
-        if (e.code === 'KeyC') toggle3DCameraMode();
-        if (e.code === 'KeyV') reset3DCameraBehind();
+        if (e.code === 'KeyC' || e.key === 'c' || e.key === 'с' || e.key === 'С') toggle3DCameraMode();
+        if (e.code === 'KeyV' || e.key === 'v' || e.key === 'м' || e.key === 'М') reset3DCameraBehind();
 
         // Sensitivity Hotkeys [ and ]
         if (e.code === 'BracketLeft') {
@@ -790,7 +794,21 @@ function bind3DControls() {
     });
 
     window.addEventListener('keyup', e => {
-        br3D.keys[e.code] = false;
+        if (e.code) br3D.keys[e.code] = false;
+        if (e.key) br3D.keys[e.key.toLowerCase()] = false;
+        if (typeof brKeys !== 'undefined') {
+            if (e.code) brKeys[e.code] = false;
+            if (e.key) brKeys[e.key.toLowerCase()] = false;
+        }
+    });
+
+    window.addEventListener('blur', () => {
+        br3D.keys = {};
+        if (typeof brKeys !== 'undefined') {
+            Object.keys(brKeys).forEach(k => delete brKeys[k]);
+        }
+        br3D.mouse.isDown = false;
+        br3D.mouse.rightDown = false;
     });
 
     const canvas = br3D.canvas;
@@ -819,11 +837,15 @@ function bind3DControls() {
             request3DPointerLock();
         }
 
+        br3D._lastMouseX = e.clientX;
+        br3D._lastMouseY = e.clientY;
+
         if (e.button === 0) {
             br3D.mouse.isDown = true;
             tryFire3DWeapon();
         } else if (e.button === 2) {
             e.preventDefault();
+            br3D.mouse.rightDown = true;
             br3D.mouse.aimDownSights = true;
             br3D.cameraCtrl.targetDistance = 3.2;
             if (br3D.camera) {
@@ -837,6 +859,7 @@ function bind3DControls() {
         if (e.button === 0) {
             br3D.mouse.isDown = false;
         } else if (e.button === 2) {
+            br3D.mouse.rightDown = false;
             br3D.mouse.aimDownSights = false;
             br3D.cameraCtrl.targetDistance = 5.5;
             if (br3D.camera) {
@@ -846,27 +869,39 @@ function bind3DControls() {
         }
     });
 
-    // Mouse Move with Pointer Lock
+    // Mouse Move with Pointer Lock or Drag
     window.addEventListener('mousemove', e => {
+        let movementX = 0, movementY = 0;
         if (br3D.isPointerLocked) {
-            const movementX = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
-            const movementY = e.movementY || e.mozMovementY || e.webkitMovementY || 0;
-
-            const baseSens = br3D.sensitivity || 0.0024;
-            const adsMultiplier = br3D.mouse.aimDownSights ? 0.6 : 1.0;
-            const sens = baseSens * adsMultiplier;
-
-            // Rotate camera horizontally (yaw) and vertically (pitch)
-            br3D.cameraCtrl.targetYaw += movementX * sens;
-            br3D.cameraCtrl.targetPitch = Math.min(
-                0.85,
-                Math.max(-0.65, br3D.cameraCtrl.targetPitch - movementY * sens)
-            );
-
-            // Orient local player to always aim forward with the mouse
-            if (br3D.myP && br3D.myP.alive) {
-                br3D.myP.rotY = br3D.cameraCtrl.targetYaw;
+            movementX = e.movementX || e.mozMovementX || e.webkitMovementX || 0;
+            movementY = e.movementY || e.mozMovementY || e.webkitMovementY || 0;
+        } else if (br3D.mouse.isDown || br3D.mouse.rightDown) {
+            if (br3D._lastMouseX !== undefined && br3D._lastMouseY !== undefined) {
+                movementX = e.clientX - br3D._lastMouseX;
+                movementY = e.clientY - br3D._lastMouseY;
             }
+            br3D._lastMouseX = e.clientX;
+            br3D._lastMouseY = e.clientY;
+        } else {
+            br3D._lastMouseX = e.clientX;
+            br3D._lastMouseY = e.clientY;
+            return;
+        }
+
+        const baseSens = br3D.sensitivity || 0.0024;
+        const adsMultiplier = br3D.mouse.aimDownSights ? 0.6 : 1.0;
+        const sens = baseSens * adsMultiplier;
+
+        // Rotate camera horizontally (yaw) and vertically (pitch)
+        br3D.cameraCtrl.targetYaw += movementX * sens;
+        br3D.cameraCtrl.targetPitch = Math.min(
+            0.85,
+            Math.max(-0.65, br3D.cameraCtrl.targetPitch - movementY * sens)
+        );
+
+        // Orient local player to always aim forward with the mouse
+        if (br3D.myP && br3D.myP.alive) {
+            br3D.myP.rotY = br3D.cameraCtrl.targetYaw;
         }
     });
 
@@ -1044,16 +1079,43 @@ function jumpOrDash3D() {
 }
 
 // -----------------------------------------------------------------------------
-// 3D BALLISTICS, TRACERS & PARTICLE EFFECTS
+// 3D BALLISTICS, TRACERS & PARTICLE EFFECTS (POOLED WEBGL RESOURCES)
 // -----------------------------------------------------------------------------
+let _sharedTracerGeo = null;
+let _sharedTracerMatCT = null;
+let _sharedTracerMatT = null;
+let _sharedSparkGeo = null;
+let _sharedSparkBloodMat = null;
+let _sharedSparkRicochetMat = null;
+let _sharedBloodDecalGeo = null;
+let _sharedBloodDecalMat = null;
+let _muzzleFlashLight = null;
+let _muzzleFlashTimer = null;
+
+function getSharedVfxResources() {
+    if (!_sharedTracerGeo) {
+        _sharedTracerGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.0, 6);
+        _sharedTracerMatCT = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+        _sharedTracerMatT = new THREE.MeshBasicMaterial({ color: 0xffaa00 });
+        _sharedSparkGeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
+        _sharedSparkBloodMat = new THREE.MeshBasicMaterial({ color: 0xcc1111 });
+        _sharedSparkRicochetMat = new THREE.MeshBasicMaterial({ color: 0xffcc33 });
+        _sharedBloodDecalGeo = new THREE.CircleGeometry(0.8, 12);
+        _sharedBloodDecalMat = new THREE.MeshBasicMaterial({
+            color: 0x660000,
+            transparent: true,
+            opacity: 0.7,
+            side: THREE.DoubleSide
+        });
+    }
+}
+
 function fire3DBullet(fromPos, dir, shooterId, team) {
     play3DSound('gunshot');
+    getSharedVfxResources();
 
-    const tracerGeo = new THREE.CylinderGeometry(0.04, 0.04, 2.0, 6);
-    const tracerMat = new THREE.MeshBasicMaterial({
-        color: (team === 'Counter-Terrorists' || team === 'CT') ? 0x00f0ff : 0xffaa00
-    });
-    const tracer = new THREE.Mesh(tracerGeo, tracerMat);
+    const isCT = (team === 'Counter-Terrorists' || team === 'CT');
+    const tracer = new THREE.Mesh(_sharedTracerGeo, isCT ? _sharedTracerMatCT : _sharedTracerMatT);
     tracer.position.copy(fromPos);
     tracer.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
 
@@ -1072,35 +1134,39 @@ function fire3DBullet(fromPos, dir, shooterId, team) {
 }
 
 function create3DMuzzleFlash(pos) {
-    const flashLight = new THREE.PointLight(0xffaa22, 3, 10);
-    flashLight.position.copy(pos);
-    br3D.scene.add(flashLight);
-    setTimeout(() => {
-        br3D.scene.remove(flashLight);
-    }, 40);
+    if (!br3D.scene) return;
+    if (!_muzzleFlashLight) {
+        _muzzleFlashLight = new THREE.PointLight(0xffaa22, 0, 12);
+        br3D.scene.add(_muzzleFlashLight);
+    }
+    _muzzleFlashLight.position.copy(pos);
+    _muzzleFlashLight.intensity = 3.0;
+    if (_muzzleFlashTimer) clearTimeout(_muzzleFlashTimer);
+    _muzzleFlashTimer = setTimeout(() => {
+        if (_muzzleFlashLight) _muzzleFlashLight.intensity = 0;
+    }, 45);
 }
 
 function create3DHitSparks(pos, isBlood) {
     play3DSound(isBlood ? 'hit' : 'ricochet');
-    const color = isBlood ? 0xcc1111 : 0xffcc33;
-    const count = isBlood ? 8 : 5;
+    getSharedVfxResources();
+    const count = isBlood ? 6 : 4;
+    const mat = isBlood ? _sharedSparkBloodMat : _sharedSparkRicochetMat;
 
     for (let i = 0; i < count; i++) {
-        const pGeo = new THREE.BoxGeometry(0.08, 0.08, 0.08);
-        const pMat = new THREE.MeshBasicMaterial({ color: color });
-        const pMesh = new THREE.Mesh(pGeo, pMat);
+        const pMesh = new THREE.Mesh(_sharedSparkGeo, mat);
         pMesh.position.copy(pos);
 
         const velocity = new THREE.Vector3(
-            (Math.random() - 0.5) * 8,
-            Math.random() * 6 + 1,
-            (Math.random() - 0.5) * 8
+            (Math.random() - 0.5) * 7,
+            Math.random() * 5 + 1,
+            (Math.random() - 0.5) * 7
         );
         br3D.scene.add(pMesh);
         br3D.particleSystems.push({
             mesh: pMesh,
             vel: velocity,
-            life: 0.4
+            life: 0.35
         });
     }
 
@@ -1110,29 +1176,34 @@ function create3DHitSparks(pos, isBlood) {
 }
 
 function add3DBloodDecal(x, z) {
-    const decalGeo = new THREE.CircleGeometry(0.6 + Math.random() * 0.5, 12);
-    const decalMat = new THREE.MeshBasicMaterial({
-        color: 0x660000,
-        transparent: true,
-        opacity: 0.7,
-        side: THREE.DoubleSide
-    });
-    const decal = new THREE.Mesh(decalGeo, decalMat);
+    getSharedVfxResources();
+    const decal = new THREE.Mesh(_sharedBloodDecalGeo, _sharedBloodDecalMat);
     decal.rotation.x = -Math.PI / 2;
+    const scale = 0.7 + Math.random() * 0.5;
+    decal.scale.set(scale, scale, 1);
     decal.position.set(x, 0.02, z);
     br3D.scene.add(decal);
     br3D.bloodDecals.push(decal);
 
-    if (br3D.bloodDecals.length > 30) {
+    if (br3D.bloodDecals.length > 25) {
         const old = br3D.bloodDecals.shift();
-        br3D.scene.remove(old);
+        if (old && br3D.scene) br3D.scene.remove(old);
     }
 }
 
 function spawn3DFloatingDamage(pos, damage, isCrit = false) {
+    if (!br3D.camera) return;
     const screenPos = pos.clone().project(br3D.camera);
+    // Don't render damage indicators if behind camera
+    if (screenPos.z > 1) return;
+
     const container = document.getElementById('br-container');
     if (!container) return;
+
+    if (br3D.floatingTexts.length > 12) {
+        const oldest = br3D.floatingTexts.shift();
+        if (oldest) oldest.remove();
+    }
 
     const x = (screenPos.x * 0.5 + 0.5) * container.clientWidth;
     const y = (-(screenPos.y * 0.5) + 0.5) * container.clientHeight;
@@ -1145,35 +1216,52 @@ function spawn3DFloatingDamage(pos, damage, isCrit = false) {
     dEl.style.top = `${y}px`;
     dEl.style.color = isCrit ? '#ff3b30' : '#ffd60a';
     dEl.style.fontWeight = 'bold';
-    dEl.style.fontSize = '20px';
+    dEl.style.fontSize = isCrit ? '24px' : '18px';
     dEl.style.pointerEvents = 'none';
     dEl.style.zIndex = '1005';
-    dEl.style.transition = 'all 0.6s ease-out';
+    dEl.style.transition = 'all 0.5s ease-out';
+    dEl.style.textShadow = '0 2px 8px rgba(0,0,0,0.8)';
     container.appendChild(dEl);
+    br3D.floatingTexts.push(dEl);
 
     requestAnimationFrame(() => {
-        dEl.style.top = `${y - 40}px`;
+        dEl.style.top = `${y - 35}px`;
         dEl.style.opacity = '0';
     });
 
-    setTimeout(() => { dEl.remove(); }, 600);
+    setTimeout(() => {
+        dEl.remove();
+        const idx = br3D.floatingTexts.indexOf(dEl);
+        if (idx !== -1) br3D.floatingTexts.splice(idx, 1);
+    }, 500);
 }
 
 // -----------------------------------------------------------------------------
-// 3D COLLISION DETECTION & RAYCASTING
+// 3D COLLISION DETECTION & FAST RAYCASTING
 // -----------------------------------------------------------------------------
 function checkPlayerWallCollision3D(px, pz, radius = 0.8) {
-    for (let wall of br3D.walls) {
+    const walls = br3D.walls;
+    const len = walls.length;
+    const rSq = radius * radius;
+    for (let i = 0; i < len; i++) {
+        const wall = walls[i];
+        if (px + radius < wall.minX || px - radius > wall.maxX || pz + radius < wall.minZ || pz - radius > wall.maxZ) {
+            continue;
+        }
         const nearestX = Math.max(wall.minX, Math.min(px, wall.maxX));
         const nearestZ = Math.max(wall.minZ, Math.min(pz, wall.maxZ));
-        const dist = Math.hypot(px - nearestX, pz - nearestZ);
-        if (dist < radius) return true;
+        const dx = px - nearestX;
+        const dz = pz - nearestZ;
+        if (dx * dx + dz * dz < rSq) return true;
     }
     return false;
 }
 
 function checkBulletWallCollision3D(bx, bz) {
-    for (let wall of br3D.walls) {
+    const walls = br3D.walls;
+    const len = walls.length;
+    for (let i = 0; i < len; i++) {
+        const wall = walls[i];
         if (bx >= wall.minX && bx <= wall.maxX && bz >= wall.minZ && bz <= wall.maxZ) {
             return true;
         }
@@ -1182,7 +1270,7 @@ function checkBulletWallCollision3D(bx, bz) {
 }
 
 function checkLineOfSight3D(x1, z1, x2, z2) {
-    const steps = 15;
+    const steps = 10;
     const dx = (x2 - x1) / steps;
     const dz = (z2 - z1) / steps;
     for (let i = 1; i < steps; i++) {
@@ -1405,8 +1493,8 @@ function tryFire3DWeapon() {
     br3D.myP.shotSeq = (br3D.myP.shotSeq || 0) + 1;
 
     // Bullet direction towards crosshair center in 3D
-    const yaw = br3D.cameraCtrl.yaw;
-    const pitch = br3D.cameraCtrl.pitch;
+    const yaw = br3D.cameraCtrl.targetYaw;
+    const pitch = br3D.cameraCtrl.targetPitch;
     const dir = new THREE.Vector3(
         Math.sin(yaw) * Math.cos(pitch),
         Math.sin(pitch),
@@ -1424,16 +1512,32 @@ function tryFire3DWeapon() {
     }
 }
 
+function is3DKeyPressed(codes, keys) {
+    const k = br3D.keys;
+    if (!k) return false;
+    for (let i = 0; i < codes.length; i++) {
+        if (k[codes[i]]) return true;
+    }
+    for (let j = 0; j < keys.length; j++) {
+        if (k[keys[j]]) return true;
+    }
+    return false;
+}
+
 function update3DLocalPlayer(dt) {
     if (!br3D.myP || !br3D.myP.alive) return;
     const p = br3D.myP;
 
     // 1. Keyboard / Joystick Input
     let moveForward = 0, moveRight = 0;
-    if (br3D.keys['KeyW'] || br3D.keys['ArrowUp']) moveForward += 1;
-    if (br3D.keys['KeyS'] || br3D.keys['ArrowDown']) moveForward -= 1;
-    if (br3D.keys['KeyA'] || br3D.keys['ArrowLeft']) moveRight -= 1;
-    if (br3D.keys['KeyD'] || br3D.keys['ArrowRight']) moveRight += 1;
+    // W / Up / Ц
+    if (is3DKeyPressed(['KeyW', 'ArrowUp', 'KeyЦ', 'Keyw'], ['w', 'W', 'ц', 'Ц'])) moveForward += 1;
+    // S / Down / Ы
+    if (is3DKeyPressed(['KeyS', 'ArrowDown', 'KeyЫ', 'Keys'], ['s', 'S', 'ы', 'Ы'])) moveForward -= 1;
+    // A / Left / Ф (Strafe Left)
+    if (is3DKeyPressed(['KeyA', 'ArrowLeft', 'KeyФ', 'Keya'], ['a', 'A', 'ф', 'Ф'])) moveRight -= 1;
+    // D / Right / В (Strafe Right)
+    if (is3DKeyPressed(['KeyD', 'ArrowRight', 'KeyВ', 'Keyd'], ['d', 'D', 'в', 'В'])) moveRight += 1;
 
     if (br3D.touch.joystickActive) {
         moveRight += br3D.touch.dx;
@@ -1441,12 +1545,12 @@ function update3DLocalPlayer(dt) {
     }
 
     const inputLen = Math.hypot(moveForward, moveRight);
-    if (inputLen > 0.1) {
+    if (inputLen > 0.05) {
         const normFwd = moveForward / inputLen;
         const normRt = moveRight / inputLen;
 
-        // Align movement relative to camera yaw
-        const camYaw = br3D.cameraCtrl.yaw;
+        // Align movement relative to camera orientation with zero lag
+        const camYaw = br3D.cameraCtrl.targetYaw;
         const worldMoveX = normFwd * Math.sin(camYaw) + normRt * Math.cos(camYaw);
         const worldMoveZ = normFwd * Math.cos(camYaw) - normRt * Math.sin(camYaw);
 
@@ -1595,7 +1699,9 @@ function sync3DCharacterMeshes(dt) {
 
         mesh.visible = rp.alive !== false && (rp.hp === undefined || rp.hp > 0);
         if (mesh.visible) {
-            mesh.position.lerp(new THREE.Vector3(rp.x, 0, rp.z), 0.35);
+            mesh.position.x += (rp.x - mesh.position.x) * 0.35;
+            mesh.position.z += (rp.z - mesh.position.z) * 0.35;
+            mesh.position.y = rp.y || 0;
             mesh.rotation.y = rp.rotY || rp.a || 0;
             animate3DLegs(mesh, rp.vx || 0, rp.vz || rp.vy || 0, dt);
 
@@ -1616,7 +1722,7 @@ function sync3DCharacterMeshes(dt) {
 }
 
 function animate3DLegs(mesh, vx, vz, dt) {
-    const isMoving = Math.hypot(vx, vz) > 0.5;
+    const isMoving = (vx * vx + vz * vz) > 0.25;
     if (!mesh.walkPhase) mesh.walkPhase = 0;
 
     if (isMoving) {
@@ -1624,28 +1730,35 @@ function animate3DLegs(mesh, vx, vz, dt) {
         const swing = Math.sin(mesh.walkPhase) * 0.45;
         if (mesh.leftLegNode) mesh.leftLegNode.rotation.x = swing;
         if (mesh.rightLegNode) mesh.rightLegNode.rotation.x = -swing;
-        if (mesh.leftArmNode) mesh.leftArmNode.rotation.x = -swing * 0.7;
+        if (mesh.leftArmNode) mesh.leftArmNode.rotation.x = Math.PI / 3 - swing * 0.25;
+        if (mesh.rightArmNode) mesh.rightArmNode.rotation.x = Math.PI / 3 + swing * 0.25;
     } else {
         if (mesh.leftLegNode) mesh.leftLegNode.rotation.x *= 0.8;
         if (mesh.rightLegNode) mesh.rightLegNode.rotation.x *= 0.8;
-        if (mesh.leftArmNode) mesh.leftArmNode.rotation.x *= 0.8;
+        if (mesh.leftArmNode) mesh.leftArmNode.rotation.x = (mesh.leftArmNode.rotation.x - Math.PI / 3) * 0.8 + Math.PI / 3;
+        if (mesh.rightArmNode) mesh.rightArmNode.rotation.x = (mesh.rightArmNode.rotation.x - Math.PI / 3) * 0.8 + Math.PI / 3;
     }
 }
 
 // -----------------------------------------------------------------------------
 // 3D BULLET & PROJECTILE SIMULATION (LOCAL & NETWORK)
 // -----------------------------------------------------------------------------
+const _bulletScratchVec = new THREE.Vector3();
+
 function update3DBullets(dt) {
     for (let i = br3D.bulletMeshes.length - 1; i >= 0; i--) {
         const b = br3D.bulletMeshes[i];
         b.life -= dt;
 
         const moveDist = b.speed * dt;
-        const nextPos = b.pos.clone().addScaledVector(b.dir, moveDist);
+        const nextPosX = b.pos.x + b.dir.x * moveDist;
+        const nextPosY = b.pos.y + b.dir.y * moveDist;
+        const nextPosZ = b.pos.z + b.dir.z * moveDist;
+        _bulletScratchVec.set(nextPosX, nextPosY, nextPosZ);
 
         // 1. Check Collision with 3D Walls
-        if (checkBulletWallCollision3D(nextPos.x, nextPos.z)) {
-            create3DHitSparks(nextPos, false);
+        if (checkBulletWallCollision3D(nextPosX, nextPosZ)) {
+            create3DHitSparks(_bulletScratchVec, false);
             br3D.scene.remove(b.mesh);
             br3D.bulletMeshes.splice(i, 1);
             continue;
@@ -1653,9 +1766,11 @@ function update3DBullets(dt) {
 
         // 2. Check Collision with Local Player
         if (b.shooterId !== myId && br3D.myP && br3D.myP.alive && b.team !== br3D.myP.team) {
-            if (Math.hypot(nextPos.x - br3D.myP.x, nextPos.z - br3D.myP.z) < 1.1) {
+            const dx = nextPosX - br3D.myP.x;
+            const dz = nextPosZ - br3D.myP.z;
+            if (dx * dx + dz * dz < 1.3) {
                 damage3DPlayer(br3D.myP, br3D.damagePerHit, b.shooterId);
-                create3DHitSparks(nextPos, true);
+                create3DHitSparks(_bulletScratchVec, true);
                 br3D.scene.remove(b.mesh);
                 br3D.bulletMeshes.splice(i, 1);
                 continue;
@@ -1669,8 +1784,10 @@ function update3DBullets(dt) {
                 if (rpId === myId) continue;
                 const rp = br3D.remotePlayers[rpId];
                 if (rp && rp.alive && rp.team !== b.team) {
-                    if (Math.hypot(nextPos.x - rp.x, nextPos.z - rp.z) < 1.1) {
-                        create3DHitSparks(nextPos, true);
+                    const dx = nextPosX - rp.x;
+                    const dz = nextPosZ - rp.z;
+                    if (dx * dx + dz * dz < 1.3) {
+                        create3DHitSparks(_bulletScratchVec, true);
                         spawn3DFloatingDamage(new THREE.Vector3(rp.x, 1.8, rp.z), br3D.damagePerHit);
                         br3D.damageDealt += br3D.damagePerHit;
 
@@ -1693,9 +1810,11 @@ function update3DBullets(dt) {
         let hitBot = false;
         for (let bot of br3D.bots) {
             if (b.shooterId !== bot.id && bot.alive && b.team !== bot.team) {
-                if (Math.hypot(nextPos.x - bot.x, nextPos.z - bot.z) < 1.1) {
+                const dx = nextPosX - bot.x;
+                const dz = nextPosZ - bot.z;
+                if (dx * dx + dz * dz < 1.3) {
                     damage3DBot(bot, br3D.damagePerHit, b.shooterId);
-                    create3DHitSparks(nextPos, true);
+                    create3DHitSparks(_bulletScratchVec, true);
                     br3D.scene.remove(b.mesh);
                     br3D.bulletMeshes.splice(i, 1);
                     hitBot = true;
@@ -1706,8 +1825,8 @@ function update3DBullets(dt) {
         if (hitBot) continue;
 
         // Update tracer position
-        b.pos.copy(nextPos);
-        b.mesh.position.copy(nextPos);
+        b.pos.set(nextPosX, nextPosY, nextPosZ);
+        b.mesh.position.set(nextPosX, nextPosY, nextPosZ);
 
         if (b.life <= 0) {
             br3D.scene.remove(b.mesh);
@@ -2117,15 +2236,17 @@ function update3DHUD() {
     }
 }
 
-function render3DRadar() {
-    const minimap = document.getElementById('br-minimap-canvas');
-    if (!minimap) return;
-    const ctx = minimap.getContext('2d');
-    const w = minimap.width;
-    const h = minimap.height;
-    ctx.clearRect(0, 0, w, h);
+let _radarBgCanvas = null;
 
-    ctx.fillStyle = 'rgba(15, 20, 30, 0.85)';
+function buildRadarBackground() {
+    const w = 120, h = 120;
+    if (!_radarBgCanvas) {
+        _radarBgCanvas = document.createElement('canvas');
+        _radarBgCanvas.width = w;
+        _radarBgCanvas.height = h;
+    }
+    const ctx = _radarBgCanvas.getContext('2d');
+    ctx.fillStyle = 'rgba(15, 20, 30, 0.88)';
     ctx.fillRect(0, 0, w, h);
 
     const half = br3D.mapSize / 2;
@@ -2140,6 +2261,36 @@ function render3DRadar() {
         const rd = (wall.maxZ - wall.minZ) * scale;
         ctx.fillRect(rx, rz, rw, rd);
     });
+
+    // Bases
+    if (br3D.baseRects.ct) {
+        ctx.fillStyle = 'rgba(50, 173, 230, 0.3)';
+        const b = br3D.baseRects.ct;
+        ctx.fillRect((b.minX + half) * scale, (b.minZ + half) * scale, (b.maxX - b.minX) * scale, (b.maxZ - b.minZ) * scale);
+    }
+    if (br3D.baseRects.t) {
+        ctx.fillStyle = 'rgba(255, 159, 10, 0.3)';
+        const b = br3D.baseRects.t;
+        ctx.fillRect((b.minX + half) * scale, (b.minZ + half) * scale, (b.maxX - b.minX) * scale, (b.maxZ - b.minZ) * scale);
+    }
+}
+
+function render3DRadar() {
+    const minimap = document.getElementById('br-minimap-canvas');
+    if (!minimap) return;
+    const ctx = minimap.getContext('2d');
+    const w = minimap.width;
+    const h = minimap.height;
+
+    if (_radarBgCanvas) {
+        ctx.drawImage(_radarBgCanvas, 0, 0, w, h);
+    } else {
+        ctx.fillStyle = 'rgba(15, 20, 30, 0.85)';
+        ctx.fillRect(0, 0, w, h);
+    }
+
+    const half = br3D.mapSize / 2;
+    const scale = w / br3D.mapSize;
 
     // Local Player
     if (br3D.myP && br3D.myP.alive) {

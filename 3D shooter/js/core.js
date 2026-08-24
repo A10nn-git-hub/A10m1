@@ -760,6 +760,10 @@ function updatePauseSens(val) {
     }
     
     localStorage.setItem('game_sensitivity', sens.toFixed(1));
+    if (typeof br3D !== 'undefined') {
+        br3D.sensitivity = (sens / 5.0) * 0.0024;
+        localStorage.setItem('br3d_sens', br3D.sensitivity.toString());
+    }
 }
 
 function renderPauseTeamsList() {
@@ -828,16 +832,27 @@ function exitToLobby() {
     const exitingBr2d = exitingGame === 'br_2d' || (typeof exitingGame === 'string' && exitingGame.startsWith('br_'));
     if (exitingGame) suppressCurrentLobbyGameStart(exitingGame);
     togglePause(false, { localOnly: !isHost });
-    document.getElementById('game-container').style.display = 'none';
-    document.getElementById('view-lobby').style.display = 'flex';
-    document.getElementById('pause-btn').style.display = 'none';
-    document.getElementById('dynamic-island').style.display = 'none';
-    document.getElementById('ai-game-overlay').style.display = 'none';
+    
+    const gc = document.getElementById('game-container');
+    if (gc) gc.style.display = 'none';
+    const vl = document.getElementById('view-lobby');
+    if (vl) vl.style.display = 'flex';
+    const pb = document.getElementById('pause-btn');
+    if (pb) pb.style.display = 'none';
+    const di = document.getElementById('dynamic-island');
+    if (di) di.style.display = 'none';
+    const aiGov = document.getElementById('ai-game-overlay');
+    if (aiGov) aiGov.style.display = 'none';
+    const ro = document.getElementById('result-overlay');
+    if (ro) ro.classList.add('hidden');
+    const ds = document.getElementById('br-death-screen');
+    if (ds) ds.style.display = 'none';
+    
     document.body.classList.remove('let5-active');
     unbindContestResultsListener();
-    if (exitingBr2d && typeof stopBR === 'function') stopBR();
+    if (typeof stopBR === 'function') stopBR();
     if (exitingGame === 'tictactoe' && typeof stopTicTacToeSync === 'function') stopTicTacToeSync();
-    if (isHost && lobbyId) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
+    if (isHost && lobbyId) db.ref(`lobbies/${lobbyId}/status`).set('waiting').catch(() => {});
     appState.game = null;
 }
 
@@ -1963,29 +1978,34 @@ function initApp() {
         if (isMobile) {
             document.body.classList.add('is-mobile');
         } else {
-            document.getElementById('wdl-kb').style.display = 'none';
+            const wdl = document.getElementById('wdl-kb');
+            if (wdl) wdl.style.display = 'none';
         }
 
         document.addEventListener('keydown', (e) => {
-            if (appState.game === 'br_2d') brKeys[e.code] = true;
+            if (typeof brKeys !== 'undefined') {
+                brKeys[e.code] = true;
+                if (e.key) brKeys[e.key.toLowerCase()] = true;
+            }
             if (appState.game !== 'let5') return;
             if (/^[А-Яа-яЁё]$/.test(e.key)) { wPress(e.key.toUpperCase()); }
             if (e.key === 'Backspace') { wBack(); }
             if (e.key === 'Enter') { wEnter(); }
         });
         document.addEventListener('keyup', (e) => {
-            if (appState.game === 'br_2d') brKeys[e.code] = false;
+            if (typeof brKeys !== 'undefined') {
+                brKeys[e.code] = false;
+                if (e.key) brKeys[e.key.toLowerCase()] = false;
+            }
         });
         document.addEventListener('mousemove', (e) => {
-            if (appState.game === 'br_2d') {
-                let c = document.getElementById('br-canvas');
+            let c = document.getElementById('br-canvas');
+            if (c && appState.game === 'br_2d' && br && br.myP && typeof br.myP.a !== 'undefined') {
                 let rect = c.getBoundingClientRect();
                 let mx = e.clientX - rect.left;
                 let my = e.clientY - rect.top;
                 let cx = c.width / 2; let cy = c.height / 2;
-                if (br.myP) {
-                    br.myP.a = Math.atan2(my - cy, mx - cx);
-                }
+                br.myP.a = Math.atan2(my - cy, mx - cx);
             }
         });
         const brCanvas = document.getElementById('br-canvas');
