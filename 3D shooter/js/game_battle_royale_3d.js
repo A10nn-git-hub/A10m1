@@ -332,6 +332,88 @@ function play3DSound(type, pos) {
             noiseGain.connect(ctx.destination);
             noise.start(now);
 
+        } else if (type === 'scope_zoom') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(300, now);
+            osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
+
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.09);
+
+        } else if (type === 'smoke_hiss') {
+            const bufferSize = ctx.sampleRate * 1.5;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+
+            const filter = ctx.createBiquadFilter();
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(1800, now);
+
+            const gain = ctx.createGain();
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+
+            noise.connect(filter);
+            filter.connect(gain);
+            gain.connect(ctx.destination);
+            noise.start(now);
+
+        } else if (type === 'step') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(110, now);
+            osc.frequency.exponentialRampToValueAtTime(40, now + 0.07);
+
+            gain.gain.setValueAtTime(0.2, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.07);
+
+        } else if (type === 'pickup') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(520, now);
+            osc.frequency.setValueAtTime(780, now + 0.06);
+
+            gain.gain.setValueAtTime(0.25, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.14);
+
+        } else if (type === 'inspect') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(600, now);
+            osc.frequency.setValueAtTime(900, now + 0.05);
+            osc.frequency.setValueAtTime(1200, now + 0.1);
+
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.2);
+
         } else if (type === 'ping') {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -868,7 +950,11 @@ function bind3DControls() {
         if (e.code === 'Digit1' || e.code === 'Numpad1') select3DWeapon(1);
         if (e.code === 'Digit2' || e.code === 'Numpad2') select3DWeapon(2);
         if (e.code === 'Digit3' || e.code === 'Numpad3') select3DWeapon(3);
+        if (e.code === 'Digit4' || e.code === 'Numpad4') select3DWeapon(4);
         if (e.code === 'KeyG' || e.key === 'g' || e.key === 'п' || e.key === 'П') throw3DGrenade();
+        if (e.code === 'KeyX' || e.key === 'x' || e.key === 'ч' || e.key === 'Ч') throw3DSmokeGrenade();
+        if (e.code === 'KeyE' || e.key === 'e' || e.key === 'у' || e.key === 'У') tryPickupNearbyWeapon();
+        if (e.code === 'KeyF' || e.key === 'f' || e.key === 'а' || e.key === 'А') inspect3DWeapon();
 
         // Sensitivity Hotkeys [ and ]
         if (e.code === 'BracketLeft') {
@@ -886,11 +972,11 @@ function bind3DControls() {
         if (!br3D.active || !br3D.myP || !br3D.myP.alive) return;
         if (e.deltaY > 0) {
             let nextSlot = (br3D.currentWeaponSlot || 1) + 1;
-            if (nextSlot > 3) nextSlot = 1;
+            if (nextSlot > 4) nextSlot = 1;
             select3DWeapon(nextSlot);
         } else if (e.deltaY < 0) {
             let prevSlot = (br3D.currentWeaponSlot || 1) - 1;
-            if (prevSlot < 1) prevSlot = 3;
+            if (prevSlot < 1) prevSlot = 4;
             select3DWeapon(prevSlot);
         }
     }, { passive: true });
@@ -923,6 +1009,7 @@ function bind3DControls() {
         if (!locked) {
             br3D.mouse.isDown = false;
             br3D.mouse.aimDownSights = false;
+            if (br3D.isScoped) toggle3DScope();
             if (br3D.camera) {
                 br3D.camera.fov = 55;
                 br3D.camera.updateProjectionMatrix();
@@ -947,12 +1034,16 @@ function bind3DControls() {
             tryFire3DWeapon();
         } else if (e.button === 2) {
             e.preventDefault();
-            br3D.mouse.rightDown = true;
-            br3D.mouse.aimDownSights = true;
-            br3D.cameraCtrl.targetDistance = 3.2;
-            if (br3D.camera) {
-                br3D.camera.fov = 42;
-                br3D.camera.updateProjectionMatrix();
+            if (br3D.currentWeaponSlot === 4) {
+                toggle3DScope();
+            } else {
+                br3D.mouse.rightDown = true;
+                br3D.mouse.aimDownSights = true;
+                br3D.cameraCtrl.targetDistance = 3.2;
+                if (br3D.camera) {
+                    br3D.camera.fov = 42;
+                    br3D.camera.updateProjectionMatrix();
+                }
             }
         }
     });
@@ -961,12 +1052,14 @@ function bind3DControls() {
         if (e.button === 0) {
             br3D.mouse.isDown = false;
         } else if (e.button === 2) {
-            br3D.mouse.rightDown = false;
-            br3D.mouse.aimDownSights = false;
-            br3D.cameraCtrl.targetDistance = 5.5;
-            if (br3D.camera) {
-                br3D.camera.fov = 55;
-                br3D.camera.updateProjectionMatrix();
+            if (br3D.currentWeaponSlot !== 4) {
+                br3D.mouse.rightDown = false;
+                br3D.mouse.aimDownSights = false;
+                br3D.cameraCtrl.targetDistance = 5.5;
+                if (br3D.camera) {
+                    br3D.camera.fov = 55;
+                    br3D.camera.updateProjectionMatrix();
+                }
             }
         }
     });
@@ -1165,22 +1258,33 @@ function updateCameraModeUI() {
 // -----------------------------------------------------------------------------
 // WEAPON ARSENAL, HITMARKERS, KILLFEED & GRENADES SYSTEM
 // -----------------------------------------------------------------------------
+// WEAPON ARSENAL, HITMARKERS, KILLFEED, AWP SCOPE & GRENADES SYSTEM
+// -----------------------------------------------------------------------------
 const WEAPONS_CONFIG = {
     1: { id: 'rifle', name: 'AK-47', ctName: 'M4A1', damage: 28, fireRate: 0.11, maxAmmo: 30, speedMult: 1.0, icon: '🔫', reloadTime: 1200 },
     2: { id: 'pistol', name: 'DEAGLE', ctName: 'DEAGLE', damage: 55, fireRate: 0.28, maxAmmo: 7, speedMult: 1.08, icon: '🎯', reloadTime: 1000 },
-    3: { id: 'knife', name: 'KNIFE', ctName: 'KNIFE', damage: 65, backstabDamage: 125, fireRate: 0.45, maxAmmo: Infinity, speedMult: 1.25, icon: '🔪', reloadTime: 0 }
+    3: { id: 'knife', name: 'KNIFE', ctName: 'KNIFE', damage: 65, backstabDamage: 125, fireRate: 0.45, maxAmmo: Infinity, speedMult: 1.25, icon: '🔪', reloadTime: 0 },
+    4: { id: 'awp', name: 'AWP', ctName: 'AWP', damage: 115, fireRate: 1.15, maxAmmo: 5, speedMult: 0.88, icon: '🔭', reloadTime: 2200, hasScope: true }
 };
 
 br3D.currentWeaponSlot = 1;
 br3D.currentWeapon = WEAPONS_CONFIG[1];
 br3D.grenades = 1;
+br3D.smokeGrenades = 1;
 br3D.killstreak = 0;
 br3D.lastKillTime = 0;
 br3D.grenadesList = [];
+br3D.smokeGrenadesList = [];
+br3D.smokeClouds = [];
+br3D.weaponDrops = [];
+br3D.isScoped = false;
 
 function select3DWeapon(slot) {
     if (!WEAPONS_CONFIG[slot]) return;
     if (br3D.currentWeaponSlot === slot) return;
+    if (br3D.isScoped && slot !== 4) {
+        toggle3DScope();
+    }
     br3D.currentWeaponSlot = slot;
     const w = WEAPONS_CONFIG[slot];
     br3D.currentWeapon = w;
@@ -1204,12 +1308,15 @@ function select3DWeapon(slot) {
 window.select3DWeapon = select3DWeapon;
 
 function updateWeaponSlotsUI() {
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 4; i++) {
         const el = document.getElementById(`wslot-${i}`);
         if (el) el.classList.toggle('active', br3D.currentWeaponSlot === i);
     }
     const gBadge = document.getElementById('wslot-grenades-count');
     if (gBadge) gBadge.innerText = br3D.grenades || 0;
+    const sBadge = document.getElementById('wslot-smokes-count');
+    if (sBadge) sBadge.innerText = br3D.smokeGrenades || 0;
+
     const ammoMaxEl = document.getElementById('br-ammo-max');
     if (ammoMaxEl) {
         ammoMaxEl.innerText = (br3D.maxAmmo === Infinity) ? '∞' : `/ ${br3D.maxAmmo}`;
@@ -1220,6 +1327,272 @@ function updateWeaponSlotsUI() {
         slot1Name.innerText = isCT ? 'M4A1' : 'AK-47';
     }
 }
+
+function toggle3DScope() {
+    if (!br3D.active || !br3D.myP || !br3D.myP.alive) return;
+    if (br3D.currentWeaponSlot !== 4) return;
+
+    br3D.isScoped = !br3D.isScoped;
+    const scopeEl = document.getElementById('br-sniper-scope');
+    const dot = document.querySelector('.hud-crosshair-dot');
+
+    if (br3D.isScoped) {
+        play3DSound('scope_zoom');
+        if (scopeEl) scopeEl.classList.remove('hidden');
+        if (dot) dot.style.display = 'none';
+        if (br3D.camera) {
+            br3D.camera.fov = 18;
+            br3D.camera.updateProjectionMatrix();
+        }
+    } else {
+        play3DSound('scope_zoom');
+        if (scopeEl) scopeEl.classList.add('hidden');
+        if (dot) dot.style.display = 'block';
+        if (br3D.camera) {
+            br3D.camera.fov = 55;
+            br3D.camera.updateProjectionMatrix();
+        }
+    }
+}
+window.toggle3DScope = toggle3DScope;
+
+function throw3DSmokeGrenade() {
+    if (!br3D.active || !br3D.myP || !br3D.myP.alive) return;
+    if ((br3D.smokeGrenades || 0) <= 0) return;
+    br3D.smokeGrenades--;
+    updateWeaponSlotsUI();
+
+    play3DSound('throw');
+    const yaw = br3D.cameraCtrl.targetYaw;
+    const pitch = br3D.cameraCtrl.targetPitch;
+    const dir = new THREE.Vector3(
+        Math.sin(yaw) * Math.cos(pitch),
+        -Math.sin(pitch) + 0.22,
+        Math.cos(yaw) * Math.cos(pitch)
+    ).normalize();
+
+    const gGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.3, 8);
+    const gMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.4, metalness: 0.6 });
+    const gMesh = new THREE.Mesh(gGeo, gMat);
+    const fromPos = new THREE.Vector3(br3D.myP.x, 1.4, br3D.myP.z).addScaledVector(dir, 0.8);
+    gMesh.position.copy(fromPos);
+    br3D.scene.add(gMesh);
+
+    br3D.smokeGrenadesList.push({
+        mesh: gMesh,
+        pos: fromPos,
+        vel: dir.multiplyScalar(22),
+        timer: 1.8,
+        team: br3D.myP.team
+    });
+}
+window.throw3DSmokeGrenade = throw3DSmokeGrenade;
+
+function update3DSmokeGrenades(dt) {
+    for (let i = br3D.smokeGrenadesList.length - 1; i >= 0; i--) {
+        const g = br3D.smokeGrenadesList[i];
+        g.timer -= dt;
+        g.vel.y -= 22 * dt;
+
+        const nextX = g.pos.x + g.vel.x * dt;
+        const nextY = g.pos.y + g.vel.y * dt;
+        const nextZ = g.pos.z + g.vel.z * dt;
+
+        if (checkBulletWallCollision3D(nextX, g.pos.z)) g.vel.x *= -0.55;
+        else g.pos.x = nextX;
+
+        if (checkBulletWallCollision3D(g.pos.x, nextZ)) g.vel.z *= -0.55;
+        else g.pos.z = nextZ;
+
+        if (nextY <= 0.15) {
+            g.pos.y = 0.15;
+            g.vel.y = Math.abs(g.vel.y) * 0.4;
+            g.vel.x *= 0.8;
+            g.vel.z *= 0.8;
+        } else {
+            g.pos.y = nextY;
+        }
+
+        g.mesh.position.copy(g.pos);
+
+        if (g.timer <= 0) {
+            spawn3DSmokeCloud(g.pos);
+            br3D.scene.remove(g.mesh);
+            br3D.smokeGrenadesList.splice(i, 1);
+        }
+    }
+}
+
+function spawn3DSmokeCloud(pos) {
+    play3DSound('smoke_hiss');
+    const cloudParticles = [];
+    const pGeo = new THREE.DodecahedronGeometry(1.2, 1);
+    
+    for (let i = 0; i < 28; i++) {
+        const pMat = new THREE.MeshLambertMaterial({
+            color: 0xcccccc,
+            transparent: true,
+            opacity: 0.65,
+            depthWrite: false
+        });
+        const mesh = new THREE.Mesh(pGeo, pMat);
+        const offset = new THREE.Vector3(
+            (Math.random() - 0.5) * 3.5,
+            Math.random() * 2.2 + 0.4,
+            (Math.random() - 0.5) * 3.5
+        );
+        mesh.position.copy(pos).add(offset);
+        mesh.scale.set(0.4, 0.4, 0.4);
+        mesh.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+        br3D.scene.add(mesh);
+
+        cloudParticles.push({
+            mesh: mesh,
+            targetScale: Math.random() * 2.2 + 2.0,
+            basePos: mesh.position.clone()
+        });
+    }
+
+    br3D.smokeClouds.push({
+        pos: pos.clone(),
+        particles: cloudParticles,
+        life: 14.0,
+        maxLife: 14.0
+    });
+}
+
+function update3DSmokeClouds(dt) {
+    for (let i = br3D.smokeClouds.length - 1; i >= 0; i--) {
+        const cloud = br3D.smokeClouds[i];
+        cloud.life -= dt;
+        const progress = 1 - (cloud.life / cloud.maxLife);
+
+        cloud.particles.forEach(p => {
+            if (progress < 0.2) {
+                const factor = progress / 0.2;
+                p.mesh.scale.setScalar(p.targetScale * factor);
+            } else if (progress > 0.75) {
+                const fadeFactor = (1 - progress) / 0.25;
+                p.mesh.material.opacity = 0.65 * Math.max(0, fadeFactor);
+            }
+            p.mesh.rotation.y += 0.2 * dt;
+        });
+
+        if (cloud.life <= 0) {
+            cloud.particles.forEach(p => br3D.scene.remove(p.mesh));
+            br3D.smokeClouds.splice(i, 1);
+        }
+    }
+}
+
+function spawn3DWeaponDrop(pos, slot, weaponName) {
+    const isAwp = (slot === 4);
+    const gGeo = isAwp ? new THREE.BoxGeometry(0.18, 0.2, 1.8) : new THREE.BoxGeometry(0.18, 0.25, 1.2);
+    const gMat = new THREE.MeshStandardMaterial({
+        color: isAwp ? 0x228833 : 0xcc8833,
+        roughness: 0.4,
+        metalness: 0.8
+    });
+    const mesh = new THREE.Mesh(gGeo, gMat);
+    mesh.position.set(pos.x, 0.4, pos.z);
+    br3D.scene.add(mesh);
+
+    const ringGeo = new THREE.RingGeometry(0.5, 0.7, 16);
+    const ringMat = new THREE.MeshBasicMaterial({ color: 0x00ffcc, side: THREE.DoubleSide, transparent: true, opacity: 0.6 });
+    const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+    ringMesh.rotation.x = -Math.PI / 2;
+    ringMesh.position.set(pos.x, 0.05, pos.z);
+    br3D.scene.add(ringMesh);
+
+    br3D.weaponDrops.push({
+        slot: slot,
+        name: weaponName,
+        mesh: mesh,
+        ring: ringMesh,
+        pos: pos.clone(),
+        time: 0
+    });
+}
+
+function update3DWeaponPickups(dt) {
+    let nearestDrop = null;
+    let minDist = 3.0;
+
+    for (let i = br3D.weaponDrops.length - 1; i >= 0; i--) {
+        const drop = br3D.weaponDrops[i];
+        drop.time += dt;
+        drop.mesh.rotation.y += 2.0 * dt;
+        drop.mesh.position.y = 0.4 + Math.sin(drop.time * 3) * 0.1;
+        drop.ring.rotation.z += 1.5 * dt;
+
+        if (br3D.myP && br3D.myP.alive) {
+            const d = Math.hypot(br3D.myP.x - drop.pos.x, br3D.myP.z - drop.pos.z);
+            if (d < minDist) {
+                minDist = d;
+                nearestDrop = drop;
+            }
+        }
+    }
+
+    br3D.nearestWeaponDrop = nearestDrop;
+    const prompt = document.getElementById('br-pickup-prompt');
+    const promptText = document.getElementById('br-pickup-text');
+
+    if (nearestDrop) {
+        if (prompt) prompt.classList.remove('hidden');
+        if (promptText) promptText.innerText = `Подобрать ${nearestDrop.name}`;
+    } else {
+        if (prompt) prompt.classList.add('hidden');
+    }
+}
+
+function tryPickupNearbyWeapon() {
+    if (!br3D.nearestWeaponDrop || !br3D.myP || !br3D.myP.alive) return;
+    const drop = br3D.nearestWeaponDrop;
+    play3DSound('pickup');
+
+    br3D.scene.remove(drop.mesh);
+    br3D.scene.remove(drop.ring);
+    br3D.weaponDrops = br3D.weaponDrops.filter(d => d !== drop);
+    br3D.nearestWeaponDrop = null;
+
+    const prompt = document.getElementById('br-pickup-prompt');
+    if (prompt) prompt.classList.add('hidden');
+
+    select3DWeapon(drop.slot);
+    br3D.ammo = br3D.maxAmmo;
+    update3DHUD();
+}
+window.tryPickupNearbyWeapon = tryPickupNearbyWeapon;
+
+let _footstepPhase = 0;
+function update3DFootsteps(isMoving, isSilent, dt) {
+    if (!isMoving || isSilent) return;
+    _footstepPhase += 14 * dt;
+    if (_footstepPhase >= Math.PI) {
+        _footstepPhase -= Math.PI;
+        play3DSound('step');
+    }
+}
+
+let _inspectTimer = null;
+function inspect3DWeapon() {
+    if (!br3D.active || !br3D.myP || !br3D.myP.alive) return;
+    play3DSound('inspect');
+    const mesh = br3D.localPlayerMesh;
+    if (mesh && mesh.rightArmNode) {
+        mesh.rightArmNode.rotation.z += 0.6;
+        mesh.rightArmNode.rotation.y -= 0.4;
+        if (_inspectTimer) clearTimeout(_inspectTimer);
+        _inspectTimer = setTimeout(() => {
+            if (mesh && mesh.rightArmNode) {
+                mesh.rightArmNode.rotation.z = 0;
+                mesh.rightArmNode.rotation.y = 0;
+            }
+        }, 1100);
+    }
+}
+window.inspect3DWeapon = inspect3DWeapon;
 
 let _hitmarkerTimer = null;
 function trigger3DHitmarker(isHeadshot = false) {
@@ -1955,7 +2328,10 @@ function update3DLocalPlayer(dt) {
     }
 
     const inputLen = Math.hypot(moveForward, moveRight);
-    if (inputLen > 0.05) {
+    const isShift = is3DKeyPressed(['ShiftLeft', 'ShiftRight'], ['shift']);
+    const isMoving = inputLen > 0.05;
+
+    if (isMoving) {
         const normFwd = moveForward / inputLen;
         const normRt = moveRight / inputLen;
 
@@ -1964,12 +2340,13 @@ function update3DLocalPlayer(dt) {
         const worldMoveX = normFwd * Math.sin(camYaw) + normRt * Math.cos(camYaw);
         const worldMoveZ = normFwd * Math.cos(camYaw) - normRt * Math.sin(camYaw);
 
-        const moveDist = (p.speed || 12) * dt;
+        const currentSpeed = (p.speed || 12) * (isShift ? 0.55 : 1.0);
+        const moveDist = currentSpeed * dt;
         const nextX = p.x + worldMoveX * moveDist;
         const nextZ = p.z + worldMoveZ * moveDist;
 
-        p.vx = worldMoveX * (p.speed || 12);
-        p.vz = worldMoveZ * (p.speed || 12);
+        p.vx = worldMoveX * currentSpeed;
+        p.vz = worldMoveZ * currentSpeed;
 
         if (!checkPlayerWallCollision3D(nextX, nextZ, 0.8)) {
             p.x = nextX;
@@ -1981,6 +2358,11 @@ function update3DLocalPlayer(dt) {
     } else {
         p.vx = 0;
         p.vz = 0;
+    }
+
+    // Footsteps sound timing (silent on Shift or airborne)
+    if ((p.y || 0) <= 0.05) {
+        update3DFootsteps(isMoving, isShift, dt);
     }
 
     // Always aim forward where camera is pointing
@@ -2337,6 +2719,12 @@ function handle3DPlayerDeath(p, attackerId, isHeadshot = false) {
     update3DHUD();
     syncBrPlayerState(true);
 
+    // Spawn Weapon Drop
+    const randP = Math.random();
+    const pDropSlot = randP < 0.3 ? 4 : (randP < 0.6 ? 2 : 1);
+    const pDropName = pDropSlot === 4 ? 'AWP' : (pDropSlot === 2 ? 'DEAGLE' : (p.team === 'Counter-Terrorists' ? 'M4A1' : 'AK-47'));
+    spawn3DWeaponDrop(new THREE.Vector3(p.x, 0.4, p.z), pDropSlot, pDropName);
+
     if (br3D.mode === 'tdm_5v5') {
         showRespawnTimer(1.5, () => {
             respawn3DPlayer();
@@ -2354,6 +2742,12 @@ function handle3DBotDeath(bot, attackerId, isHeadshot = false) {
     const weaponName = (attackerId === myId && br3D.currentWeapon) ? br3D.currentWeapon.name : 'AK-47';
 
     add3DKillFeed(killerName, bot.name || ('Бот ' + bot.id), killerTeam, bot.team, weaponName, isHeadshot);
+
+    // Spawn Weapon Drop from bot
+    const randB = Math.random();
+    const bDropSlot = randB < 0.25 ? 4 : (randB < 0.55 ? 2 : 1);
+    const bDropName = bDropSlot === 4 ? 'AWP' : (bDropSlot === 2 ? 'DEAGLE' : (bot.team === 'Counter-Terrorists' ? 'M4A1' : 'AK-47'));
+    spawn3DWeaponDrop(new THREE.Vector3(bot.x, 0.4, bot.z), bDropSlot, bDropName);
 
     if (attackerId === myId) {
         br3D.kills++;
@@ -2395,6 +2789,8 @@ function respawn3DPlayer() {
     br3D.myP.invulnUntil = Date.now() + 3000;
     br3D.ammo = br3D.maxAmmo;
     br3D.grenades = 1;
+    br3D.smokeGrenades = 1;
+    if (br3D.isScoped) toggle3DScope();
     br3D.isSpectator = false;
     updateWeaponSlotsUI();
 
@@ -2918,8 +3314,13 @@ function br3DLoop() {
     // Update Bullets & Ballistics
     update3DBullets(dt);
 
-    // Update Grenades
+    // Update Grenades & Smokes
     update3DGrenades(dt);
+    update3DSmokeGrenades(dt);
+    update3DSmokeClouds(dt);
+
+    // Update Weapon Pickups on Ground
+    update3DWeaponPickups(dt);
 
     // Update Camera Position & Orbit
     update3DCamera(dt);
@@ -3087,9 +3488,18 @@ function initBR() {
     br3D.damagePerHit = 28;
     br3D.fireRate = 0.11;
     br3D.grenades = 1;
+    br3D.smokeGrenades = 1;
     br3D.killstreak = 0;
     br3D.lastKillTime = 0;
     br3D.grenadesList = [];
+    br3D.smokeGrenadesList = [];
+    br3D.smokeClouds = [];
+    br3D.weaponDrops = [];
+    br3D.isScoped = false;
+    const scopeEl = document.getElementById('br-sniper-scope');
+    if (scopeEl) scopeEl.classList.add('hidden');
+    const dot = document.querySelector('.hud-crosshair-dot');
+    if (dot) dot.style.display = 'block';
     br3D.isReloading = false;
     br3D.spawningBotsStarted = false;
     br3D.myP = null;
@@ -3309,6 +3719,30 @@ function stopBR() {
         br3D.particleSystems.forEach(p => br3D.scene && br3D.scene.remove(p.mesh));
         br3D.particleSystems = [];
     }
+    if (br3D.grenadesList) {
+        br3D.grenadesList.forEach(g => br3D.scene && br3D.scene.remove(g.mesh));
+        br3D.grenadesList = [];
+    }
+    if (br3D.smokeGrenadesList) {
+        br3D.smokeGrenadesList.forEach(g => br3D.scene && br3D.scene.remove(g.mesh));
+        br3D.smokeGrenadesList = [];
+    }
+    if (br3D.smokeClouds) {
+        br3D.smokeClouds.forEach(c => c.particles.forEach(p => br3D.scene && br3D.scene.remove(p.mesh)));
+        br3D.smokeClouds = [];
+    }
+    if (br3D.weaponDrops) {
+        br3D.weaponDrops.forEach(d => {
+            if (br3D.scene) {
+                br3D.scene.remove(d.mesh);
+                br3D.scene.remove(d.ring);
+            }
+        });
+        br3D.weaponDrops = [];
+    }
+    br3D.nearestWeaponDrop = null;
+    br3D.isScoped = false;
+
     Object.keys(br3D.playerMeshes).forEach(id => {
         if (br3D.scene) br3D.scene.remove(br3D.playerMeshes[id]);
     });
@@ -3328,6 +3762,12 @@ function stopBR() {
     if (resultOverlay) resultOverlay.classList.add('hidden');
     const deathScreen = document.getElementById('br-death-screen');
     if (deathScreen) deathScreen.style.display = 'none';
+    const scopeEl = document.getElementById('br-sniper-scope');
+    if (scopeEl) scopeEl.classList.add('hidden');
+    const prompt = document.getElementById('br-pickup-prompt');
+    if (prompt) prompt.classList.add('hidden');
+    const dot = document.querySelector('.hud-crosshair-dot');
+    if (dot) dot.style.display = 'block';
 }
 
 // Global exports

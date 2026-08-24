@@ -453,6 +453,26 @@
                     
                     <!-- Dynamic Kill Feed -->
                     <div id="br-killfeed" class="br-killfeed-container"></div>
+
+                    <!-- Sniper Optical Scope Overlay (AWP Scope Lens) -->
+                    <div id="br-sniper-scope" class="hud-sniper-scope hidden">
+                        <div class="scope-dark-side left"></div>
+                        <div class="scope-dark-side right"></div>
+                        <div class="scope-dark-side top"></div>
+                        <div class="scope-dark-side bottom"></div>
+                        <div class="scope-circle-overlay">
+                            <div class="scope-line-v"></div>
+                            <div class="scope-line-h"></div>
+                            <div class="scope-center-dot"></div>
+                            <div class="scope-range-lines"></div>
+                        </div>
+                    </div>
+
+                    <!-- Pickup Interaction Prompt ([E] Подобрать) -->
+                    <div id="br-pickup-prompt" class="hud-pickup-prompt hidden">
+                        <span class="pickup-key">[E]</span>
+                        <span id="br-pickup-text">Подобрать AWP</span>
+                    </div>
                     
                     <!-- Bottom Status Bar (Health & Ammo) -->
                     <div class="hud-bottom-status">
@@ -469,7 +489,7 @@
                         </div>
                     </div>
 
-                    <!-- Weapon Arsenal Selector HUD (Slots 1, 2, 3, G) -->
+                    <!-- Weapon Arsenal Selector HUD (Slots 1, 2, 3, 4, G, X) -->
                     <div id="br-weapon-hud" class="br-weapon-hud">
                         <div class="weapon-slot active" id="wslot-1" onclick="select3DWeapon(1)">
                             <span class="wslot-num">1</span>
@@ -486,11 +506,22 @@
                             <span class="wslot-icon">🔪</span>
                             <span class="wslot-name">KNIFE</span>
                         </div>
-                        <div class="weapon-slot grenade-slot" id="wslot-4" onclick="throw3DGrenade()">
+                        <div class="weapon-slot" id="wslot-4" onclick="select3DWeapon(4)">
+                            <span class="wslot-num">4</span>
+                            <span class="wslot-icon">🔭</span>
+                            <span class="wslot-name">AWP</span>
+                        </div>
+                        <div class="weapon-slot grenade-slot" id="wslot-g" onclick="throw3DGrenade()">
                             <span class="wslot-num">G</span>
                             <span class="wslot-icon">💣</span>
                             <span class="wslot-name">GRENADE</span>
                             <span class="wslot-badge" id="wslot-grenades-count">1</span>
+                        </div>
+                        <div class="weapon-slot smoke-slot" id="wslot-smoke" onclick="throw3DSmokeGrenade()">
+                            <span class="wslot-num">X</span>
+                            <span class="wslot-icon">💨</span>
+                            <span class="wslot-name">SMOKE</span>
+                            <span class="wslot-badge" id="wslot-smokes-count">1</span>
                         </div>
                     </div>
 
@@ -561,7 +592,9 @@
                             <div id="br-stick" style="width:50px; height:50px; background:rgba(255,255,255,0.7); border-radius:50%; position:absolute; top:40px; left:40px; box-shadow: 0 4px 10px rgba(0,0,0,0.5);"></div>
                         </div>
                         <button id="br-shoot-btn" style="position:absolute; bottom:40px; right:40px; width:90px; height:90px; border-radius:50%; background:rgba(255,69,58,0.85); border:3px solid #fff; font-weight:bold; color:white; font-size:16px; pointer-events:auto; box-shadow: 0 4px 20px rgba(255,69,58,0.6);">ОГОНЬ</button>
+                        <button id="br-mobile-scope" onclick="toggle3DScope()" style="position:absolute; bottom:145px; right:115px; width:52px; height:52px; border-radius:50%; background:rgba(120,120,128,0.85); border:2px solid #fff; font-size:22px; pointer-events:auto; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 12px rgba(0,0,0,0.5);">🔭</button>
                         <button id="br-mobile-grenade" onclick="throw3DGrenade()" style="position:absolute; bottom:145px; right:45px; width:52px; height:52px; border-radius:50%; background:rgba(255,159,10,0.85); border:2px solid #fff; font-size:22px; pointer-events:auto; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 12px rgba(0,0,0,0.5);">💣</button>
+                        <button id="br-mobile-smoke" onclick="throw3DSmokeGrenade()" style="position:absolute; bottom:210px; right:45px; width:48px; height:48px; border-radius:50%; background:rgba(200,200,200,0.85); border:2px solid #fff; font-size:20px; pointer-events:auto; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 12px rgba(0,0,0,0.5);">💨</button>
                         <button id="br-mobile-reload" onclick="reload3DWeapon()" style="position:absolute; bottom:45px; right:145px; width:52px; height:52px; border-radius:50%; background:rgba(50,173,230,0.85); border:2px solid #fff; font-size:20px; pointer-events:auto; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 12px rgba(0,0,0,0.5);">🔄</button>
                     </div>
                 </div>
