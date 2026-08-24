@@ -617,14 +617,11 @@ function generate3DMap(mode) {
         add3DWallBlock(35, -55, 6, 24, 4.0);
         add3DWallBlock(35, 55, 6, 24, 4.0);
 
-        add3DWallBlock(-80, 0, 8, 35, 3.6);
-        add3DWallBlock(80, 0, 8, 35, 3.6);
-
-        // Small Tactical Boxes & Barriers
+        // Small Tactical Boxes & Barriers in Midfield
         const crateCoords = [
             [-20, -15], [-20, 15], [20, -15], [20, 15],
-            [-65, -60], [-65, 60], [65, -60], [65, 60],
-            [-10, -70], [10, -70], [-10, 70], [10, 70]
+            [-45, -40], [-45, 40], [45, -40], [45, 40],
+            [-10, -50], [10, -50], [-10, 50], [10, 50]
         ];
         crateCoords.forEach(([cx, cz]) => {
             add3DWallBlock(cx, cz, 4.5, 4.5, 2.8);
@@ -2181,19 +2178,22 @@ function update3DBots(dt) {
 
 function get3DSpawnPos(team, mode) {
     const isCT = (team === 'Counter-Terrorists' || team === 'CT');
+    const isDuel = (mode === 'duel_1v1' || mode === 'duel_2v2');
+    const defaultX = isCT ? (isDuel ? -50 : -95) : (isDuel ? 50 : 95);
     const base = isCT ? br3D.baseRects.ct : br3D.baseRects.t;
-    const spread = (mode === 'duel_1v1' || mode === 'duel_2v2') ? 12 : 22;
+    const baseX = base ? base.x : defaultX;
+    const baseZ = base ? base.z : 0;
+    const spreadX = isDuel ? 8 : 16;
+    const spreadZ = isDuel ? 12 : 24;
 
-    if (base) {
-        return {
-            x: base.x + (Math.random() - 0.5) * spread,
-            z: base.z + (Math.random() - 0.5) * spread
-        };
+    for (let attempts = 0; attempts < 40; attempts++) {
+        const testX = baseX + (Math.random() - 0.5) * spreadX;
+        const testZ = baseZ + (Math.random() - 0.5) * spreadZ;
+        if (!checkPlayerWallCollision3D(testX, testZ, 1.8)) {
+            return { x: testX, z: testZ };
+        }
     }
-    return {
-        x: isCT ? -80 : 80,
-        z: (Math.random() - 0.5) * 30
-    };
+    return { x: baseX, z: baseZ };
 }
 
 // -----------------------------------------------------------------------------
@@ -2281,7 +2281,7 @@ function tryFire3DWeapon() {
     const pitch = br3D.cameraCtrl.targetPitch;
     const dir = new THREE.Vector3(
         Math.sin(yaw) * Math.cos(pitch),
-        -Math.sin(pitch),
+        Math.sin(pitch),
         Math.cos(yaw) * Math.cos(pitch)
     ).normalize();
 
@@ -2399,26 +2399,26 @@ function update3DCamera(dt) {
 
     // Smooth camera orbit angles
     const c = br3D.cameraCtrl;
-    c.yaw += (c.targetYaw - c.yaw) * 0.35;
-    c.pitch += (c.targetPitch - c.pitch) * 0.35;
-    c.distance += (c.targetDistance - c.distance) * 0.25;
+    c.yaw += (c.targetYaw - c.yaw) * 0.45;
+    c.pitch += (c.targetPitch - c.pitch) * 0.45;
+    c.distance += (c.targetDistance - c.distance) * 0.35;
 
     // Tactical Right Shoulder Offset (shifted right relative to camera view angle)
-    const shoulderDist = c.shoulderOffset || 0.55;
+    const shoulderDist = c.shoulderOffset || 0.65;
     const rightX = Math.cos(c.yaw) * shoulderDist;
     const rightZ = -Math.sin(c.yaw) * shoulderDist;
 
     // Spherical orbit coordinates positioned behind player
-    const horizDist = c.distance * Math.cos(c.pitch);
+    const horizDist = Math.max(1.5, c.distance * Math.cos(c.pitch));
     const eyeX = targetX + rightX - horizDist * Math.sin(c.yaw);
-    const eyeY = targetY + c.distance * Math.sin(c.pitch) + 0.35;
+    const eyeY = targetY - c.distance * Math.sin(c.pitch) * 0.45 + 0.35;
     const eyeZ = targetZ + rightZ - horizDist * Math.cos(c.yaw);
 
-    br3D.camera.position.set(eyeX, Math.max(0.3, eyeY), eyeZ);
+    br3D.camera.position.set(eyeX, Math.max(0.4, eyeY), eyeZ);
 
-    // Look ahead through the crosshair
+    // Look ahead through the crosshair (pitch > 0 is up, pitch < 0 is down)
     const lookTargetX = targetX + rightX + 60 * Math.sin(c.yaw) * Math.cos(c.pitch);
-    const lookTargetY = targetY - 60 * Math.sin(c.pitch);
+    const lookTargetY = targetY + 60 * Math.sin(c.pitch);
     const lookTargetZ = targetZ + rightZ + 60 * Math.cos(c.yaw) * Math.cos(c.pitch);
 
     br3D.camera.lookAt(lookTargetX, lookTargetY, lookTargetZ);
