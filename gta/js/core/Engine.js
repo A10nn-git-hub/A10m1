@@ -435,10 +435,11 @@ class GTAEngine {
 
         const capsuleRadius = 0.36;
         const capsuleHeight = 0.96;
+        const spawnOffset = (Math.random() - 0.5) * 3.0;
         const playerBody = new CANNON.Body({
             mass: 75,
             material: this.physicsMaterials.player,
-            position: new CANNON.Vec3(0, 1.5, 15.0),
+            position: new CANNON.Vec3(spawnOffset, 1.5, 15.0),
             linearDamping: 0.05,
             fixedRotation: true
         });

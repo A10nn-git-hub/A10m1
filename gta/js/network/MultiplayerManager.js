@@ -12,13 +12,14 @@ class MultiplayerManager {
         this.status = 'OFFLINE'; // 'OFFLINE', 'CONNECTING', 'CONNECTED', 'ERROR'
         this.statusMessage = 'Автономный режим';
 
+        // Генерация уникального ID на каждый экземпляр/вкладку (защита от клонирования sessionStorage)
         this.localPlayerId = this.generatePlayerId();
         this.nickname = FirebaseConfig.getNickname();
         this.roomId = FirebaseConfig.getRoomId();
 
         this.remotePlayers = new Map(); // playerId -> RemotePlayer
         this.lastPushTime = 0;
-        this.pushIntervalMs = 50; // 20 пакетов в секунду (плавная интерполяция 60 FPS)
+        this.pushIntervalMs = 75; // ~13 пакетов в секунду (оптимально для RTDB + 60 FPS LERP интерполяция)
 
         this.broadcastChannel = null;
         this.storageKey = null;
@@ -42,11 +43,10 @@ class MultiplayerManager {
     }
 
     generatePlayerId() {
-        const stored = sessionStorage.getItem('gta_multiplayer_pid');
-        if (stored) return stored;
-        const newId = 'usr_' + Math.random().toString(36).substring(2, 10);
-        try { sessionStorage.setItem('gta_multiplayer_pid', newId); } catch (e) {}
-        return newId;
+        // Уникальный ID для каждой запущенной сессии/вкладки
+        const rand = Math.random().toString(36).substring(2, 8);
+        const timePart = Date.now().toString(36).substring(4);
+        return `usr_${rand}_${timePart}`;
     }
 
     init() {
@@ -55,7 +55,7 @@ class MultiplayerManager {
     }
 
     /**
-     * Подключиться к сетевой сессии (автоматически)
+     * Подключиться к сетевой сессии
      */
     connect(config = null, nickname = null, roomId = null) {
         if (nickname) {
@@ -63,7 +63,7 @@ class MultiplayerManager {
             FirebaseConfig.saveNickname(this.nickname);
         }
         if (roomId) {
-            this.roomId = roomId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').substring(0, 24) || this.roomId;
+            this.roomId = FirebaseConfig.sanitizeRoomId(roomId);
             FirebaseConfig.saveRoomId(this.roomId);
         }
 
@@ -74,29 +74,28 @@ class MultiplayerManager {
             // 1. Инициализация локального / кросс-вкладочного высокоскоростного канала
             this.initLocalTransport();
 
-            // 2. Попытка инициализации Firebase (если доступен), с таймаут-защитой от зависания
+            // 2. Инициализация Firebase Realtime Database
             this.initFirebaseTransport(config);
 
-            // 3. Мгновенное подтверждение подключения (не блокирует игрока)
+            // 3. Отправка приветственного пакета в локальный канал
+            this.broadcastPacket({
+                type: 'JOIN',
+                pid: this.localPlayerId,
+                data: {
+                    nickname: this.nickname,
+                    x: 0, y: 1.5, z: 15.0,
+                    rotY: 0,
+                    health: 100
+                }
+            });
+
+            // Страховочный таймер подтверждения подключения
             setTimeout(() => {
                 if (this.status === 'CONNECTING') {
                     this.updateStatus('CONNECTED', `В сети [Комната: ${this.roomId}]`);
-                    this.broadcastPacket({
-                        type: 'JOIN',
-                        pid: this.localPlayerId,
-                        data: {
-                            nickname: this.nickname,
-                            x: 0, y: 1.5, z: 15.0,
-                            rotY: 0,
-                            health: 100
-                        }
-                    });
-
-                    if (window.gameEngine && window.gameEngine.multiplayerHUD) {
-                        window.gameEngine.multiplayerHUD.addSystemMessage(`⚡ Вы подключились к комнате [${this.roomId}]. Приятной игры!`);
-                    }
+                    this.sendLocalStateNow();
                 }
-            }, 300);
+            }, 1200);
 
             return true;
         } catch (err) {
@@ -110,7 +109,7 @@ class MultiplayerManager {
         const channelName = `gta_mp_room_${this.roomId}`;
         this.storageKey = `gta_mp_pkt_${this.roomId}`;
 
-        // BroadcastChannel API
+        // BroadcastChannel API (для мгновенного обмена между вкладками в одном браузере)
         if (typeof BroadcastChannel !== 'undefined') {
             try {
                 this.broadcastChannel = new BroadcastChannel(channelName);
@@ -122,7 +121,7 @@ class MultiplayerManager {
             }
         }
 
-        // Storage Event Fallback (для поддержки окон/вкладок)
+        // Storage Event Fallback
         this.storageHandler = (e) => {
             if (e.key === this.storageKey && e.newValue) {
                 try {
@@ -135,10 +134,17 @@ class MultiplayerManager {
     }
 
     initFirebaseTransport(config) {
-        if (typeof firebase === 'undefined') return;
+        if (typeof firebase === 'undefined') {
+            console.warn('[Multiplayer] Firebase SDK не обнаружен. Работает в локальном режиме.');
+            this.updateStatus('CONNECTED', `В сети [Комната: ${this.roomId}]`);
+            return;
+        }
 
         const activeConfig = config || FirebaseConfig.getConfig();
-        if (!activeConfig || !activeConfig.databaseURL) return;
+        if (!activeConfig || !activeConfig.databaseURL) {
+            this.updateStatus('CONNECTED', `В сети [Комната: ${this.roomId}]`);
+            return;
+        }
 
         try {
             if (!firebase.apps || firebase.apps.length === 0) {
@@ -150,7 +156,7 @@ class MultiplayerManager {
             if (firebase.auth) {
                 try {
                     firebase.auth().signInAnonymously().catch((e) => {
-                        console.warn('[Multiplayer] Anonymous auth notice:', e);
+                        console.warn('[Multiplayer] Anonymous auth notice:', e.message || e);
                     });
                 } catch (e) {}
             }
@@ -164,11 +170,15 @@ class MultiplayerManager {
             this.connectedRef = this.database.ref('.info/connected');
 
             this.connectedRef.on('value', (snap) => {
-                if (snap.val() === true) {
+                const isOnline = snap.val() === true;
+                if (isOnline) {
+                    this.updateStatus('CONNECTED', `В сети [Комната: ${this.roomId}]`);
                     if (this.localPlayerRef) {
                         this.localPlayerRef.onDisconnect().remove();
                     }
                     this.sendLocalStateNow();
+                } else if (this.status !== 'OFFLINE') {
+                    this.updateStatus('CONNECTING', 'Связь с сервером...');
                 }
             });
 
@@ -177,6 +187,10 @@ class MultiplayerManager {
                 if (pid === this.localPlayerId) return;
                 const data = snapshot.val();
                 this.handlePlayerState(pid, data);
+                // Отправляем свое актуальное состояние новому игроку
+                this.sendLocalStateNow();
+            }, (err) => {
+                console.error('[Multiplayer] Firebase playersRef child_added error:', err);
             });
 
             this.playersRef.on('child_changed', (snapshot) => {
@@ -184,15 +198,19 @@ class MultiplayerManager {
                 if (pid === this.localPlayerId) return;
                 const data = snapshot.val();
                 this.handlePlayerState(pid, data);
+            }, (err) => {
+                console.error('[Multiplayer] Firebase playersRef child_changed error:', err);
             });
 
             this.playersRef.on('child_removed', (snapshot) => {
                 const pid = snapshot.key;
                 if (pid === this.localPlayerId) return;
                 this.removeRemotePlayer(pid);
+            }, (err) => {
+                console.error('[Multiplayer] Firebase playersRef child_removed error:', err);
             });
 
-            this.chatRef.limitToLast(20).on('child_added', (snapshot) => {
+            this.chatRef.limitToLast(25).on('child_added', (snapshot) => {
                 const msg = snapshot.val();
                 if (!msg || msg.senderId === this.localPlayerId) return;
                 if (this.onChatMessageReceived) {
@@ -202,9 +220,16 @@ class MultiplayerManager {
                 if (remote && msg.text) {
                     remote.setChatMessage(msg.text);
                 }
+            }, (err) => {
+                console.error('[Multiplayer] Firebase chatRef error:', err);
             });
+
+            // Первичная запись локального состояния
+            this.sendLocalStateNow();
+
         } catch (e) {
             console.warn('[Multiplayer] Firebase initialization notice:', e);
+            this.updateStatus('CONNECTED', `В сети [Комната: ${this.roomId}]`);
         }
     }
 
@@ -250,11 +275,6 @@ class MultiplayerManager {
     handlePlayerState(pid, data) {
         if (!pid || pid === this.localPlayerId || !data) return;
 
-        // Фильтрация старых неактивных сессий
-        if (data.lastSeen && (Date.now() - data.lastSeen > 10000)) {
-            return;
-        }
-
         let remote = this.remotePlayers.get(pid);
         if (!remote) {
             remote = new RemotePlayer(this.scene, pid, data);
@@ -284,7 +304,7 @@ class MultiplayerManager {
     }
 
     sendLocalStateNow() {
-        if (this.status !== 'CONNECTED') return;
+        if (this.status !== 'CONNECTED' && this.status !== 'CONNECTING') return;
         const player = window.gameEngine?.player;
         const playerController = window.gameEngine?.playerController;
         const vehicleManager = window.gameEngine?.vehicleManager;
@@ -326,7 +346,9 @@ class MultiplayerManager {
 
         if (this.localPlayerRef) {
             try {
-                this.localPlayerRef.set(payload).catch(() => {});
+                this.localPlayerRef.set(payload).catch((err) => {
+                    console.warn('[Multiplayer] localPlayerRef.set warning:', err);
+                });
             } catch (e) {}
         }
     }
@@ -411,7 +433,7 @@ class MultiplayerManager {
             data: msg
         });
 
-        // Отправка в Firebase (если подключен)
+        // Отправка в Firebase
         if (this.chatRef) {
             try {
                 this.chatRef.push(msg);
@@ -427,11 +449,11 @@ class MultiplayerManager {
     update(deltaTime, player, playerController, vehicleManager) {
         const now = Date.now();
 
-        // 1. Обновление всех удаленных игроков и проверка таймаута (5 сек)
+        // 1. Обновление всех удаленных игроков и проверка таймаута (12 сек отсутствия пакетов)
         const deadIds = [];
         this.remotePlayers.forEach((remote, pid) => {
             remote.update(deltaTime);
-            if (now - (remote.lastSeen || 0) > 5000) {
+            if (now - (remote.lastSeen || 0) > 12000) {
                 deadIds.push(pid);
             }
         });
@@ -440,7 +462,7 @@ class MultiplayerManager {
             deadIds.forEach((pid) => this.removeRemotePlayer(pid));
         }
 
-        // 2. Отправка состояния локального игрока (20 Hz)
+        // 2. Отправка состояния локального игрока (~13 Hz)
         if (this.status !== 'CONNECTED' || !player || !player.mesh) {
             return;
         }
@@ -521,3 +543,4 @@ class MultiplayerManager {
 }
 
 window.MultiplayerManager = MultiplayerManager;
+

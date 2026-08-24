@@ -56,12 +56,22 @@ class FirebaseConfig {
     }
 
     /**
+     * Очистка и валидация имени комнаты
+     */
+    static sanitizeRoomId(roomId) {
+        if (!roomId || typeof roomId !== 'string') return 'los_santos_main';
+        // Разрешаем русские и английские буквы, цифры, дефис и подчеркивание, заменяя спецсимволы Firebase
+        const clean = roomId.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_').substring(0, 32);
+        return clean || 'los_santos_main';
+    }
+
+    /**
      * Получить текущую комнату (лобби)
      */
     static getRoomId() {
         try {
             const room = localStorage.getItem(FirebaseConfig.ROOM_KEY);
-            if (room && room.trim().length > 0) return room.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').substring(0, 24);
+            if (room && room.trim().length > 0) return FirebaseConfig.sanitizeRoomId(room);
         } catch (e) {
             console.warn(e);
         }
@@ -73,7 +83,7 @@ class FirebaseConfig {
      */
     static saveRoomId(roomId) {
         if (!roomId) return;
-        const clean = roomId.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '').substring(0, 24);
+        const clean = FirebaseConfig.sanitizeRoomId(roomId);
         try {
             localStorage.setItem(FirebaseConfig.ROOM_KEY, clean || 'los_santos_main');
         } catch (e) {
@@ -83,3 +93,4 @@ class FirebaseConfig {
 }
 
 window.FirebaseConfig = FirebaseConfig;
+
