@@ -26,14 +26,18 @@ class MainMenuManager {
                 this.btnCloseAboutFooter = document.getElementById('btn-close-about-footer');
 
                 this.minimapBtn = document.getElementById('minimap-radar-btn');
+                this.toggleEcoMenu = document.getElementById('toggle-power-saving-menu');
+                this.toggleEcoSettings = document.getElementById('toggle-power-saving-settings');
 
                 this.activeRebindAction = null;
                 this.isMenuOpen = true;
                 this.isGameStarted = false;
+                this.isPowerSavingMode = localStorage.getItem('gta_power_saving') === 'true';
 
                 this.tempBindings = JSON.parse(JSON.stringify(this.inputController.bindings));
 
                 this.initUI();
+                this.initEcoToggle();
                 if (this.auroraRenderer) {
                     this.auroraRenderer.start();
                 }
@@ -43,7 +47,9 @@ class MainMenuManager {
                 const isSettings = this.settingsModal && this.settingsModal.classList.contains('active');
                 const isAbout = this.aboutModal && this.aboutModal.classList.contains('active');
                 const isMap = this.fullMapRenderer && this.fullMapRenderer.isOpen;
-                return isSettings || isAbout || isMap;
+                const isMpSettings = document.getElementById('mp-settings-modal')?.classList.contains('active');
+                const isScoreboard = document.getElementById('mp-scoreboard-modal')?.classList.contains('active');
+                return isSettings || isAbout || isMap || isMpSettings || isScoreboard;
             }
 
             setMenuMode(mode) {
@@ -133,6 +139,34 @@ class MainMenuManager {
                 if (this.inputController) {
                     this.inputController.onToggleMenu = () => this.toggleMenuFromGame();
                     this.inputController.onToggleMap = () => this.fullMapRenderer.toggle();
+                }
+            }
+
+            initEcoToggle() {
+                if (this.toggleEcoMenu) {
+                    this.toggleEcoMenu.checked = this.isPowerSavingMode;
+                    this.toggleEcoMenu.addEventListener('change', (e) => {
+                        e.stopPropagation();
+                        this.handleEcoChange(e.target.checked);
+                    });
+                }
+                if (this.toggleEcoSettings) {
+                    this.toggleEcoSettings.checked = this.isPowerSavingMode;
+                    this.toggleEcoSettings.addEventListener('change', (e) => {
+                        e.stopPropagation();
+                        this.handleEcoChange(e.target.checked);
+                    });
+                }
+            }
+
+            handleEcoChange(enabled) {
+                this.isPowerSavingMode = enabled;
+                localStorage.setItem('gta_power_saving', enabled ? 'true' : 'false');
+                if (this.toggleEcoMenu) this.toggleEcoMenu.checked = enabled;
+                if (this.toggleEcoSettings) this.toggleEcoSettings.checked = enabled;
+
+                if (window.gameEngine && typeof window.gameEngine.setPowerSavingMode === 'function') {
+                    window.gameEngine.setPowerSavingMode(enabled, true);
                 }
             }
 

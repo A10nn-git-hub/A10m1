@@ -376,14 +376,16 @@ class MobileTouchController {
         // Кнопки этажей лифта
         const floorBtns = document.querySelectorAll('.floor-btn');
         floorBtns.forEach(btn => {
-            btn.addEventListener('touchstart', (e) => {
+            const handleFloorSelect = (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 const floor = parseInt(btn.getAttribute('data-floor'), 10);
                 if (this.input && this.input.onSelectFloor && !isNaN(floor)) {
                     this.input.onSelectFloor(floor);
                 }
-            }, { passive: false });
+            };
+            btn.addEventListener('touchstart', handleFloorSelect, { passive: false });
+            btn.addEventListener('click', handleFloorSelect);
         });
     }
 

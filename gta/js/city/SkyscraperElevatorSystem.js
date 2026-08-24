@@ -69,6 +69,46 @@
                 this.buildShaftAndFloors();
                 this.buildCabin();
                 this.initPhysics();
+                this.initFloorButtonsUI();
+            }
+
+            initFloorButtonsUI() {
+                this.floorButtonsContainer = document.getElementById('elevator-floor-buttons');
+                if (!this.floorButtonsContainer) return;
+                this.floorButtonsContainer.innerHTML = '';
+                for (let i = 0; i < this.floors.length; i++) {
+                    const fl = this.floors[i];
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'elevator-floor-btn' + (fl.floor === 10 ? ' heli-floor-btn' : '');
+                    btn.dataset.floor = fl.floor;
+                    btn.title = `${fl.floor} этаж: ${fl.name}`;
+                    btn.innerHTML = fl.floor === 10 ? '10 🚁' : `${fl.floor}`;
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        this.selectFloor(fl.floor);
+                    });
+                    this.floorButtonsContainer.appendChild(btn);
+                }
+                this.updateFloorButtonsUI(this.currentFloorIndex);
+            }
+
+            updateFloorButtonsUI(targetIndex) {
+                if (!this.floorButtonsContainer) {
+                    this.floorButtonsContainer = document.getElementById('elevator-floor-buttons');
+                }
+                if (!this.floorButtonsContainer) return;
+                const btns = this.floorButtonsContainer.querySelectorAll('.elevator-floor-btn');
+                btns.forEach((btn, idx) => {
+                    btn.classList.remove('current-floor', 'target-floor');
+                    if (idx === this.currentFloorIndex) {
+                        btn.classList.add('current-floor');
+                    }
+                    if (targetIndex !== undefined && idx === targetIndex && targetIndex !== this.currentFloorIndex) {
+                        btn.classList.add('target-floor');
+                    }
+                });
             }
 
             buildShaftAndFloors() {
@@ -486,17 +526,31 @@
             selectFloor(floorNum) {
                 // floorNum: 1..10
                 const targetIdx = Math.max(0, Math.min(this.floors.length - 1, floorNum - 1));
-                if (targetIdx === this.currentFloorIndex && this.state === 'IDLE' && this.selectionCountdown <= 0) return;
                 if (this.state === 'MOVING' || this.state === 'DOORS_CLOSING') return;
 
-                // Запуск 3-секундного окна выбора (Request 5)
-                this.pendingFloorIndex = targetIdx;
-                this.selectionCountdown = 3.0;
+                if (targetIdx === this.currentFloorIndex && this.state === 'IDLE') {
+                    if (this.hudStatusElement) {
+                        this.hudStatusElement.innerText = `Вы уже на ${this.floors[targetIdx].floor} этаже (${this.floors[targetIdx].name})`;
+                    }
+                    this.updateFloorButtonsUI(this.currentFloorIndex);
+                    return;
+                }
+
+                this.targetFloorIndex = targetIdx;
+                this.pendingFloorIndex = -1;
+                this.selectionCountdown = 0.0;
+                this.startY = this.currentY;
+                this.destY = this.floors[this.targetFloorIndex].y;
+                const distance = Math.abs(this.destY - this.startY);
+                this.moveDuration = Math.max(1.8, distance / 14.0 + 1.2);
+                this.moveProgress = 0.0;
+                this.state = 'DOORS_CLOSING';
 
                 if (this.hudStatusElement) {
                     const targetFl = this.floors[targetIdx];
-                    this.hudStatusElement.innerText = `▶ ВЫБРАН: ${targetFl.floor} ЭТАЖ (${targetFl.name}). Запуск через 3.0 сек...`;
+                    this.hudStatusElement.innerText = `▶ ВЫБРАН: ${targetFl.floor} ЭТАЖ (${targetFl.name}). Закрытие дверей...`;
                 }
+                this.updateFloorButtonsUI(targetIdx);
             }
 
             update(deltaTime, player) {
@@ -532,7 +586,7 @@
                     }
 
                     // Автоматический вызов лифта: если игрок подошел к дверям на любом этаже, лифт сразу едет к нему!
-                    if (isNearOutside && playerTargetFloor >= 0 && playerTargetFloor !== this.currentFloorIndex && this.state === 'IDLE' && this.selectionCountdown <= 0) {
+                    if (isNearOutside && playerTargetFloor >= 0 && playerTargetFloor !== this.currentFloorIndex && this.state === 'IDLE') {
                         this.targetFloorIndex = playerTargetFloor;
                         this.startY = this.currentY;
                         this.destY = this.floors[this.targetFloorIndex].y;
@@ -540,49 +594,30 @@
                         this.moveDuration = Math.max(1.8, distance / 14.0 + 1.2);
                         this.moveProgress = 0.0;
                         this.state = 'DOORS_CLOSING';
+                        this.updateFloorButtonsUI(this.targetFloorIndex);
                     }
 
                     if (this.isPlayerInside) {
                         if (this.hudPromptElement) {
                             this.hudPromptElement.style.display = 'block';
-                            if (this.state === 'IDLE' && this.selectionCountdown <= 0) {
+                            this.hudPromptElement.classList.add('active');
+                            if (this.state === 'IDLE') {
                                 if (this.hudStatusElement) {
                                     this.hudStatusElement.innerText = `Текущий: ${this.floors[this.currentFloorIndex].floor} этаж — ${this.floors[this.currentFloorIndex].name}`;
                                 }
+                                this.updateFloorButtonsUI(this.currentFloorIndex);
                             }
                         }
                     } else {
                         if (this.hudPromptElement && this.state === 'IDLE') {
                             this.hudPromptElement.style.display = 'none';
+                            this.hudPromptElement.classList.remove('active');
                         }
-                    }
-                }
-
-                // 3-секундный таймер выбора этажа с клавиатуры (1..9, 0)
-                if (this.selectionCountdown > 0) {
-                    this.selectionCountdown -= dt;
-                    if (this.hudStatusElement && this.pendingFloorIndex >= 0) {
-                        const targetFl = this.floors[this.pendingFloorIndex];
-                        const secLeft = Math.max(0.1, this.selectionCountdown).toFixed(1);
-                        this.hudStatusElement.innerText = `▶ ВЫБРАН: ${targetFl.floor} ЭТАЖ (${targetFl.name}). Запуск через ${secLeft} сек...`;
-                    }
-                    if (this.selectionCountdown <= 0) {
-                        this.selectionCountdown = 0.0;
-                        if (this.pendingFloorIndex >= 0 && this.pendingFloorIndex !== this.currentFloorIndex) {
-                            this.targetFloorIndex = this.pendingFloorIndex;
-                            this.startY = this.currentY;
-                            this.destY = this.floors[this.targetFloorIndex].y;
-                            const distance = Math.abs(this.destY - this.startY);
-                            this.moveDuration = Math.max(1.8, distance / 14.0 + 1.2);
-                            this.moveProgress = 0.0;
-                            this.state = 'DOORS_CLOSING';
-                        }
-                        this.pendingFloorIndex = -1;
                     }
                 }
 
                 // Логика автоматического открытия дверей
-                if (this.state === 'IDLE' && this.selectionCountdown <= 0) {
+                if (this.state === 'IDLE') {
                     if (isNearOutside && playerTargetFloor === this.currentFloorIndex) {
                         if (this.doorProgress < 1.0) this.state = 'DOORS_OPENING';
                         this.insideStayTimer = 0.0;
@@ -653,6 +688,7 @@
                         if (this.hudStatusElement) {
                             this.hudStatusElement.innerText = `Прибыли: ${this.floors[this.currentFloorIndex].floor} этаж — ${this.floors[this.currentFloorIndex].name}!`;
                         }
+                        this.updateFloorButtonsUI(this.currentFloorIndex);
 
                         setTimeout(() => {
                             if (this.state === 'ARRIVED') this.state = 'DOORS_OPENING';
@@ -666,6 +702,7 @@
                         if (this.hudStatusElement) {
                             this.hudStatusElement.innerText = `Текущий: ${this.floors[this.currentFloorIndex].floor} этаж — ${this.floors[this.currentFloorIndex].name}`;
                         }
+                        this.updateFloorButtonsUI(this.currentFloorIndex);
                     }
                 }
             }

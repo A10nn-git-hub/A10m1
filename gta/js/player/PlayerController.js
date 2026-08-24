@@ -156,20 +156,20 @@ class PlayerController {
         const mesh = this.player.mesh;
         if (!body || !mesh) return;
 
+        const isInsideElevator = (window.gameEngine && window.gameEngine.elevatorSystem && window.gameEngine.elevatorSystem.isPlayerInside);
         const groundY = (window.gameEngine && window.gameEngine.terrainManager)
             ? window.gameEngine.terrainManager.getTerrainHeight(body.position.x, body.position.z)
             : 0.0;
 
         if (this.jumpCooldown > 0) this.jumpCooldown -= deltaTime;
 
-        if (body.position.y <= groundY + 0.83) {
+        if (!isInsideElevator && body.position.y <= groundY + 0.83) {
             body.position.y = groundY + 0.815;
             body.velocity.y = 0;
             if (this.jumpCooldown <= 0) this.isGrounded = true;
         } else {
-            const isAtFloorSurface = body.position.y <= groundY + 0.85;
-            const isNotAscending = body.velocity.y <= 0.05;
-            this.isGrounded = (this.jumpCooldown <= 0) && isAtFloorSurface && isNotAscending;
+            const isNotAscending = Math.abs(body.velocity.y) <= 0.35;
+            this.isGrounded = (this.jumpCooldown <= 0) && isNotAscending;
         }
 
         let moveX = 0; let moveZ = 0;
@@ -234,7 +234,7 @@ class PlayerController {
             body.velocity.y = 6.6;
             this.isGrounded = false;
             this.jumpCooldown = 0.4;
-        } else if (this.isGrounded) {
+        } else if (this.isGrounded && !isInsideElevator && body.position.y <= groundY + 0.85) {
             body.position.y = groundY + 0.815;
             body.velocity.y = 0;
         }

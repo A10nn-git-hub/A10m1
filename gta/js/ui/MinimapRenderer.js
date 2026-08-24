@@ -60,7 +60,7 @@ class MinimapRenderer {
         sctx.stroke();
     }
 
-    render(playerPos, cameraYaw, allCars, allNPCs, soccerBalls) {
+    render(playerPos, cameraYaw, allCars, allNPCs, soccerBalls, remotePlayers = []) {
         if (!this.ctx || !playerPos) return;
         this.renderFrameSkip = (this.renderFrameSkip || 0) + 1;
         if (this.renderFrameSkip % 2 !== 0) return; // 30 FPS рендер миникарты для снижения нагрузки на GPU
@@ -188,6 +188,32 @@ class MinimapRenderer {
                     ctx.textBaseline = 'middle';
                     ctx.fillText(label, mp.x * this.scale, mp.z * this.scale);
                 });
+            }
+        }
+
+        // 10. Сетевые игроки (Голубые светящиеся ромбы)
+        if (remotePlayers && remotePlayers.length > 0) {
+            for (let i = 0; i < remotePlayers.length; i++) {
+                const rp = remotePlayers[i];
+                const rx = rp.x * this.scale;
+                const rz = rp.z * this.scale;
+
+                ctx.save();
+                ctx.translate(rx, rz);
+                ctx.fillStyle = '#00e5ff';
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.4;
+
+                ctx.beginPath();
+                ctx.moveTo(0, -4.5);
+                ctx.lineTo(4.5, 0);
+                ctx.lineTo(0, 4.5);
+                ctx.lineTo(-4.5, 0);
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.restore();
             }
         }
 

@@ -104,13 +104,39 @@ class InputController {
 
     initListeners() {
         window.addEventListener('keydown', (e) => {
+            const isTyping = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA');
+            const mpHud = window.gameEngine && window.gameEngine.multiplayerHUD;
+
+            if (isTyping) {
+                if (e.code === 'Escape') {
+                    if (mpHud) mpHud.closeChat();
+                    e.target.blur();
+                }
+                return; // Не активируем игровые клавиши во время ввода текста в чат или настройки
+            }
+
             const menuMgr = window.gameEngine && window.gameEngine.mainMenuManager;
             const isRebinding = menuMgr && menuMgr.activeRebindAction !== null;
             const isMainMenuOpen = menuMgr && menuMgr.isMenuOpen;
             const isSettingsOrAboutOpen = menuMgr && (
                 (menuMgr.settingsModal && menuMgr.settingsModal.classList.contains('active')) ||
-                (menuMgr.aboutModal && menuMgr.aboutModal.classList.contains('active'))
+                (menuMgr.aboutModal && menuMgr.aboutModal.classList.contains('active')) ||
+                (document.getElementById('mp-settings-modal') && document.getElementById('mp-settings-modal').classList.contains('active'))
             );
+
+            // Горячие клавиши мультиплеера: T или Enter для чата, F2 для таблицы игроков
+            if (!isRebinding && !isMainMenuOpen && !isSettingsOrAboutOpen) {
+                if (e.code === 'KeyT' || e.code === 'Enter') {
+                    e.preventDefault();
+                    if (mpHud) mpHud.toggleChat();
+                    return;
+                }
+                if (e.code === 'F2') {
+                    e.preventDefault();
+                    if (mpHud) mpHud.toggleScoreboard();
+                    return;
+                }
+            }
 
             if (!isRebinding && !isMainMenuOpen && !isSettingsOrAboutOpen && this.matches('map', e, true)) {
                 if (this.onToggleMap) {
@@ -120,6 +146,14 @@ class InputController {
             }
 
             if (e.code === 'Escape') {
+                if (mpHud && mpHud.isChatOpen) {
+                    mpHud.closeChat();
+                    return;
+                }
+                if (mpHud && mpHud.scoreboardModal && mpHud.scoreboardModal.classList.contains('active')) {
+                    mpHud.closeScoreboard();
+                    return;
+                }
                 if (this.onToggleMenu) this.onToggleMenu();
                 return;
             }
@@ -151,28 +185,35 @@ class InputController {
             }
 
             // Проверка лифта vs оружия
+            const elevatorSystem = window.gameEngine && window.gameEngine.elevatorSystem;
             const elevatorPrompt = document.getElementById('elevator-hud-prompt');
-            const isElevatorActive = elevatorPrompt && elevatorPrompt.classList.contains('active');
+            const isElevatorActive = (elevatorSystem && elevatorSystem.isPlayerInside) ||
+                                     (elevatorPrompt && (elevatorPrompt.classList.contains('active') || elevatorPrompt.style.display === 'block'));
 
             const c = e.code;
-            if (isElevatorActive) {
-                if (c === 'Digit1' || c === 'Numpad1') if (this.onSelectFloor) this.onSelectFloor(1);
-                if (c === 'Digit2' || c === 'Numpad2') if (this.onSelectFloor) this.onSelectFloor(2);
-                if (c === 'Digit3' || c === 'Numpad3') if (this.onSelectFloor) this.onSelectFloor(3);
-                if (c === 'Digit4' || c === 'Numpad4') if (this.onSelectFloor) this.onSelectFloor(4);
-                if (c === 'Digit5' || c === 'Numpad5') if (this.onSelectFloor) this.onSelectFloor(5);
-                if (c === 'Digit6' || c === 'Numpad6') if (this.onSelectFloor) this.onSelectFloor(6);
-                if (c === 'Digit7' || c === 'Numpad7') if (this.onSelectFloor) this.onSelectFloor(7);
-                if (c === 'Digit8' || c === 'Numpad8') if (this.onSelectFloor) this.onSelectFloor(8);
-                if (c === 'Digit9' || c === 'Numpad9') if (this.onSelectFloor) this.onSelectFloor(9);
-                if (c === 'Digit0' || c === 'Numpad0') if (this.onSelectFloor) this.onSelectFloor(10);
-            } else {
-                // Горячие клавиши переключения оружия (1-5)
-                if (c === 'Digit1') if (this.onSelectWeapon) this.onSelectWeapon(0); // FISTS
-                if (c === 'Digit2') if (this.onSelectWeapon) this.onSelectWeapon(1); // PISTOL
-                if (c === 'Digit3') if (this.onSelectWeapon) this.onSelectWeapon(2); // SMG
-                if (c === 'Digit4') if (this.onSelectWeapon) this.onSelectWeapon(3); // SHOTGUN
-                if (c === 'Digit5') if (this.onSelectWeapon) this.onSelectWeapon(4); // RPG
+            const k = e.key;
+
+            let floorSelected = -1;
+            if (c === 'Digit1' || c === 'Numpad1' || k === '1') floorSelected = 1;
+            else if (c === 'Digit2' || c === 'Numpad2' || k === '2') floorSelected = 2;
+            else if (c === 'Digit3' || c === 'Numpad3' || k === '3') floorSelected = 3;
+            else if (c === 'Digit4' || c === 'Numpad4' || k === '4') floorSelected = 4;
+            else if (c === 'Digit5' || c === 'Numpad5' || k === '5') floorSelected = 5;
+            else if (c === 'Digit6' || c === 'Numpad6' || k === '6') floorSelected = 6;
+            else if (c === 'Digit7' || c === 'Numpad7' || k === '7') floorSelected = 7;
+            else if (c === 'Digit8' || c === 'Numpad8' || k === '8') floorSelected = 8;
+            else if (c === 'Digit9' || c === 'Numpad9' || k === '9') floorSelected = 9;
+            else if (c === 'Digit0' || c === 'Numpad0' || k === '0') floorSelected = 10;
+
+            if (isElevatorActive && floorSelected > 0) {
+                if (this.onSelectFloor) {
+                    this.onSelectFloor(floorSelected);
+                }
+                return;
+            }
+
+            if (!isElevatorActive && floorSelected > 0 && floorSelected <= 5) {
+                if (this.onSelectWeapon) this.onSelectWeapon(floorSelected - 1);
             }
         });
 

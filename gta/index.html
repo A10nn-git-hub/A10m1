@@ -16,6 +16,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cannon.js/0.6.2/cannon.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/objects/Sky.js"></script>
 
+    <!-- Firebase Realtime Database SDK (v9/10 Compat) -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
     <!-- Post-Processing Shaders & Passes (FXAA, SSAO, UnrealBloom) -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
@@ -76,13 +80,30 @@
         <!-- STEP 28: Interactive Elevator Prompt UI -->
         <div class="elevator-hud-prompt" id="elevator-hud-prompt">
             <div class="elevator-title">ЛИФТ MAZE BANK TOWER</div>
-            <div class="elevator-sub">Нажмите <kbd>1</kbd>–<kbd>9</kbd> или <kbd>0</kbd> (10 этаж: Вертолетная площадка)</div>
+            <div class="elevator-sub">Нажмите клавишу <kbd>1</kbd>–<kbd>9</kbd>, <kbd>0</kbd> или выберите этаж:</div>
+            <div class="elevator-floor-buttons" id="elevator-floor-buttons"></div>
             <div class="elevator-status" id="elevator-status-text">Текущий: 1 этаж — Вестибюль</div>
         </div>
 
         <!-- Money Display in top right corner -->
         <div class="money-hud" id="money-hud">
             <span class="money-currency">$</span><span class="money-amount" id="hud-money-val">250,000</span>
+        </div>
+
+        <!-- Multiplayer Network Status Badge (Click to open Scoreboard) -->
+        <div class="mp-status-badge offline" id="mp-status-badge" title="Нажмите для открытия списка игроков (F2)">
+            <span class="mp-dot offline"></span> ОФФЛАЙН (ОДИН)
+        </div>
+
+        <!-- In-Game Multiplayer Chat Overlay -->
+        <div class="mp-chat-container" id="mp-chat-container">
+            <div class="mp-chat-messages" id="mp-chat-messages">
+                <div class="mp-chat-row system"><span class="mp-chat-system-text">⚡ Нажмите [T] или [Enter] для ввода сообщения в чат</span></div>
+            </div>
+            <form class="mp-chat-form" id="mp-chat-form">
+                <input type="text" id="mp-chat-input" class="mp-chat-input" placeholder="Сообщение в чат... [Enter]" maxlength="140" autocomplete="off">
+                <button type="submit" class="mp-chat-send-btn">➔</button>
+            </form>
         </div>
 
         <!-- Динамическая панель статуса (Только полезные данные реального времени) -->
@@ -147,6 +168,10 @@
                     <span class="btn-icon">▶</span>
                     <span class="btn-text" id="btn-play-text">НАЧАТЬ ИГРУ</span>
                 </button>
+                <button class="menu-btn online-pulse-btn" id="btn-menu-multiplayer">
+                    <span class="btn-icon">🌐</span>
+                    <span class="btn-text">МУЛЬТИПЛЕЕР (ОНЛАЙН)</span>
+                </button>
                 <button class="menu-btn" id="btn-menu-settings">
                     <span class="btn-icon">⚙</span>
                     <span class="btn-text">НАСТРОЙКИ</span>
@@ -159,6 +184,21 @@
                     <span class="btn-icon">🚪</span>
                     <span class="btn-text">ВЫХОД В ГЛАВНОЕ МЕНЮ</span>
                 </button>
+            </div>
+
+            <!-- Ползунок режима энергосбережения в Главном Меню -->
+            <div class="menu-eco-panel" id="menu-eco-panel">
+                <div class="eco-left">
+                    <span class="eco-icon">⚡</span>
+                    <div class="eco-texts">
+                        <span class="eco-title">ЭНЕРГОСБЕРЕЖЕНИЕ</span>
+                        <span class="eco-desc">Отключение ботов & трафика, Max FPS</span>
+                    </div>
+                </div>
+                <label class="eco-switch" title="Включить режим энергосбережения">
+                    <input type="checkbox" id="toggle-power-saving-menu">
+                    <span class="eco-slider"></span>
+                </label>
             </div>
 
             <div class="menu-footer-hint" id="menu-footer-hint">
@@ -174,12 +214,28 @@
         <div class="modal-window">
             <div class="modal-header">
                 <div class="modal-title-group">
-                    <div class="modal-title">НАСТРОЙКИ УПРАВЛЕНИЯ</div>
-                    <div class="modal-subtitle">КЛИКНИТЕ ПО КНОПКЕ ДЛЯ ПЕРЕНАЗНАЧЕНИЯ (КЛАВИШИ МОГУТ СОВПАДАТЬ МЕЖДУ РАЗДЕЛАМИ, НО НЕ ВНУТРИ ОДНОГО)</div>
+                    <div class="modal-title">НАСТРОЙКИ ИГРЫ</div>
+                    <div class="modal-subtitle">КЛИКНИТЕ ПО КНОПКЕ ДЛЯ ПЕРЕНАЗНАЧЕНИЯ ИЛИ НАСТРОЙТЕ ПРОИЗВОДИТЕЛЬНОСТЬ</div>
                 </div>
                 <button class="modal-close-btn" id="btn-close-settings">✕</button>
             </div>
             <div class="modal-body">
+                <!-- Категория: Производительность и Энергосбережение -->
+                <div class="keybind-category-title">⚡ Производительность и Графика</div>
+                <div class="settings-eco-row">
+                    <div class="eco-left">
+                        <span class="eco-icon">⚡</span>
+                        <div class="eco-texts">
+                            <span class="eco-title">Режим энергосбережения (ЭКО)</span>
+                            <span class="eco-desc">Отключение всех ботов и трафика, отключение теней, максимальный FPS</span>
+                        </div>
+                    </div>
+                    <label class="eco-switch">
+                        <input type="checkbox" id="toggle-power-saving-settings">
+                        <span class="eco-slider"></span>
+                    </label>
+                </div>
+
                 <!-- Категория 1: Пешком -->
                 <div class="keybind-category-title">🏃 Управление персонажем (Пешком)</div>
                 <div class="keybinds-grid">
@@ -211,6 +267,20 @@
                     <div class="keybind-row"><span class="keybind-label">Смена погоды:</span><button class="keybind-btn" data-action="sys_weather" data-category="sys">U</button></div>
                     <div class="keybind-row"><span class="keybind-label">Прокрутка времени (+2ч):</span><button class="keybind-btn" data-action="sys_time" data-category="sys">T</button></div>
                     <div class="keybind-row"><span class="keybind-label">Скрыть / Показать HUD:</span><button class="keybind-btn" data-action="sys_hud" data-category="sys">Tab</button></div>
+                </div>
+
+                <!-- Категория 4: Геймпад / Контроллер -->
+                <div class="keybind-category-title">🎮 Физический геймпад (Xbox / PlayStation / USB)</div>
+                <div class="keybinds-grid">
+                    <div class="keybind-row"><span class="keybind-label">Движение / Руление:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">Левый Стик (L3)</span></div>
+                    <div class="keybind-row"><span class="keybind-label">Вращение камеры:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">Правый Стик (R3)</span></div>
+                    <div class="keybind-row"><span class="keybind-label">Газ (Авто) / Стрельба:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">RT / R2</span></div>
+                    <div class="keybind-row"><span class="keybind-label">Тормоз (Авто) / Реверс:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">LT / L2</span></div>
+                    <div class="keybind-row"><span class="keybind-label">Прыжок пешком / Ручник:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">A / ✕ (Крест)</span></div>
+                    <div class="keybind-row"><span class="keybind-label">Посадка / Высадка:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">Y / △ (Треугольник)</span></div>
+                    <div class="keybind-row"><span class="keybind-label">Смена оружия:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">LB / RB (L1 / R1)</span></div>
+                    <div class="keybind-row"><span class="keybind-label">Спринт / Бег:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">L3 (Нажатие стика)</span></div>
+                    <div class="keybind-row"><span class="keybind-label">Карта / Пауза:</span><span class="badge-role" style="font-size:11px; padding:4px 8px;">Back / Start</span></div>
                 </div>
 
                 <!-- Предупреждение о конфликте клавиш в одном разделе -->
@@ -267,6 +337,88 @@
             </div>
             <div class="modal-footer">
                 <button class="menu-btn primary" style="padding:10px 22px; font-size:13px;" id="btn-close-about-footer">ЗАКРЫТЬ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ СЕТЕВОГО МУЛЬТИПЛЕЕРА (FIREBASE)
+         ========================================================================= -->
+    <div id="mp-settings-modal" class="game-modal">
+        <div class="modal-window mp-modal-window">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-title">🌐 СЕТЕВОЙ МУЛЬТИПЛЕЕР (FIREBASE)</div>
+                    <div class="modal-subtitle">ИГРАЙТЕ С ДРУЗЬЯМИ В РЕАЛЬНОМ ВРЕМЕНИ ПО ВСЕМУ ЛОС-САНТОСУ</div>
+                </div>
+                <button class="modal-close-btn" id="btn-close-mp-settings">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="mp-status-banner">
+                    <span>Текущий статус:</span>
+                    <span id="mp-modal-status-text" class="mp-status-text offline">Автономный режим</span>
+                </div>
+
+                <div class="mp-form-grid">
+                    <div class="mp-field-group">
+                        <label for="mp-input-nickname">Ваш никнейм в игре:</label>
+                        <input type="text" id="mp-input-nickname" class="mp-input" placeholder="Player_1" maxlength="18">
+                    </div>
+                    <div class="mp-field-group">
+                        <label for="mp-input-room">Имя комнаты (Session Room):</label>
+                        <input type="text" id="mp-input-room" class="mp-input" placeholder="los_santos_main" maxlength="24">
+                    </div>
+                </div>
+
+                <div class="mp-config-accordion">
+                    <div class="keybind-category-title">⚙️ Пользовательская база данных Firebase (Опционально)</div>
+                    <p class="mp-hint-desc">По умолчанию используется глобальный сервер. Вы можете подключить свою Realtime Database:</p>
+                    <div class="mp-field-group" style="margin-top:8px;">
+                        <label for="mp-input-dburl">Database URL:</label>
+                        <input type="text" id="mp-input-dburl" class="mp-input" placeholder="https://your-project-default-rtdb.firebaseio.com">
+                    </div>
+                    <div class="mp-field-group" style="margin-top:8px;">
+                        <label for="mp-input-apikey">API Key (Опционально):</label>
+                        <input type="text" id="mp-input-apikey" class="mp-input" placeholder="AIzaSy...">
+                    </div>
+                    <div class="mp-cfg-btn-row">
+                        <button type="button" class="menu-btn" id="btn-mp-save-config" style="padding:6px 14px; font-size:11px;">СОХРАНИТЬ ДАННЫЕ</button>
+                        <button type="button" class="menu-btn danger" id="btn-mp-reset-config" style="padding:6px 14px; font-size:11px;">СБРОСИТЬ</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer mp-modal-footer">
+                <button class="menu-btn primary" id="btn-mp-connect">ПОДКЛЮЧИТЬСЯ К СЕССИИ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================================================
+         МОДАЛЬНОЕ ОКНО: ТАБЛИЦА ИГРОКОВ ОНЛАЙН (SCOREBOARD / F2)
+         ========================================================================= -->
+    <div id="mp-scoreboard-modal" class="game-modal">
+        <div class="modal-window scoreboard-window">
+            <div class="modal-header">
+                <div class="modal-title-group">
+                    <div class="modal-title">СЕТЕВАЯ СЕССИЯ: ИГРОКИ ОНЛАЙН</div>
+                    <div class="modal-subtitle">АКТИВНЫЕ ИГРОКИ В КОМНАТЕ (<span id="mp-players-count">1</span> ЧЕЛ.)</div>
+                </div>
+                <button class="modal-close-btn" id="btn-close-scoreboard">✕</button>
+            </div>
+            <div class="modal-body scoreboard-body">
+                <table class="mp-scoreboard-table">
+                    <thead>
+                        <tr>
+                            <th>ИГРОК</th>
+                            <th>РЕЖИМ</th>
+                            <th>ЗДОРОВЬЕ</th>
+                            <th>СТАТУС</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mp-scoreboard-body">
+                        <!-- Заполняется динамически -->
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -352,6 +504,7 @@
 
     <!-- Управление, интерфейс и меню -->
     <script src="js/core/InputController.js"></script>
+    <script src="js/core/GamepadController.js"></script>
     <script src="js/core/MobileTouchController.js"></script>
     <script src="js/ui/MinimapRenderer.js"></script>
     <script src="js/ui/FullMapRenderer.js"></script>
@@ -374,6 +527,12 @@
     <script src="js/missions/MissionMarker3D.js"></script>
     <script src="js/missions/MissionHUD.js"></script>
     <script src="js/missions/MissionManager.js"></script>
+
+    <!-- Сетевой мультиплеер (Firebase Realtime Database) -->
+    <script src="js/network/FirebaseConfig.js"></script>
+    <script src="js/network/RemotePlayer.js"></script>
+    <script src="js/network/MultiplayerManager.js"></script>
+    <script src="js/ui/MultiplayerHUD.js"></script>
 
     <!-- Главный движок и запуск -->
     <script src="js/core/Engine.js"></script>

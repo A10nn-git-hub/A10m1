@@ -207,9 +207,15 @@ class WeaponSystem {
         const shootDir = new THREE.Vector3();
         this.camera.getWorldDirection(shootDir);
 
-        // 3. Вспышка выстрела
+        // 3. Вспышка выстрела и тактильная вибрация геймпада
         if (cur.id !== 'FISTS' && this.vfx) {
             this.vfx.createMuzzleFlash(shootOrigin, shootDir);
+        }
+
+        if (window.gameEngine && window.gameEngine.gamepadController) {
+            const strong = cur.id === 'RPG' ? 1.0 : (cur.id === 'SHOTGUN' ? 0.85 : (cur.id === 'FISTS' ? 0.35 : 0.45));
+            const dur = cur.id === 'RPG' ? 320 : (cur.id === 'SHOTGUN' ? 200 : 90);
+            window.gameEngine.gamepadController.vibrate(dur, strong, strong * 0.75);
         }
 
         // 4. Поведение по типам оружия

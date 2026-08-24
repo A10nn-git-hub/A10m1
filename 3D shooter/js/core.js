@@ -825,7 +825,7 @@ function togglePause(p, options = {}) {
 
 function exitToLobby() {
     const exitingGame = appState.game;
-    const exitingBr2d = exitingGame === 'br_2d';
+    const exitingBr2d = exitingGame === 'br_2d' || (typeof exitingGame === 'string' && exitingGame.startsWith('br_'));
     if (exitingGame) suppressCurrentLobbyGameStart(exitingGame);
     togglePause(false, { localOnly: !isHost });
     document.getElementById('game-container').style.display = 'none';
@@ -835,7 +835,7 @@ function exitToLobby() {
     document.getElementById('ai-game-overlay').style.display = 'none';
     document.body.classList.remove('let5-active');
     unbindContestResultsListener();
-    if (exitingBr2d) stopBR();
+    if (exitingBr2d && typeof stopBR === 'function') stopBR();
     if (exitingGame === 'tictactoe' && typeof stopTicTacToeSync === 'function') stopTicTacToeSync();
     if (isHost && lobbyId) db.ref(`lobbies/${lobbyId}/status`).set('waiting');
     appState.game = null;

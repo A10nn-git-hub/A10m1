@@ -64,9 +64,12 @@ class VehicleExplosionSystem {
             this.vfx.createExplosion(blastPos, 6.5);
         }
 
-        // 2. Звук взрыва
+        // 2. Звук взрыва и мощная вибрация геймпада
         if (window.soundEngine && typeof window.soundEngine.playExplosion === 'function') {
             window.soundEngine.playExplosion();
+        }
+        if (window.gameEngine && window.gameEngine.gamepadController) {
+            window.gameEngine.gamepadController.vibrate(450, 1.0, 0.9);
         }
 
         // 3. Подбрасывание и вращение корпуса автомобиля в физике Cannon.js
