@@ -147,8 +147,16 @@ class MultiplayerManager {
                 this.app = firebase.apps[0];
             }
 
+            if (firebase.auth) {
+                try {
+                    firebase.auth().signInAnonymously().catch((e) => {
+                        console.warn('[Multiplayer] Anonymous auth notice:', e);
+                    });
+                } catch (e) {}
+            }
+
             this.database = firebase.database();
-            const rootPath = `rooms/${this.roomId}`;
+            const rootPath = `gta_rooms/${this.roomId}`;
 
             this.playersRef = this.database.ref(`${rootPath}/players`);
             this.localPlayerRef = this.database.ref(`${rootPath}/players/${this.localPlayerId}`);
@@ -160,6 +168,7 @@ class MultiplayerManager {
                     if (this.localPlayerRef) {
                         this.localPlayerRef.onDisconnect().remove();
                     }
+                    this.sendLocalStateNow();
                 }
             });
 
@@ -195,7 +204,7 @@ class MultiplayerManager {
                 }
             });
         } catch (e) {
-            console.warn('[Multiplayer] Firebase инициализация пропущена, используется локальный транспорт:', e);
+            console.warn('[Multiplayer] Firebase initialization notice:', e);
         }
     }
 
@@ -240,6 +249,11 @@ class MultiplayerManager {
 
     handlePlayerState(pid, data) {
         if (!pid || pid === this.localPlayerId || !data) return;
+
+        // Фильтрация старых неактивных сессий
+        if (data.lastSeen && (Date.now() - data.lastSeen > 10000)) {
+            return;
+        }
 
         let remote = this.remotePlayers.get(pid);
         if (!remote) {
@@ -300,7 +314,8 @@ class MultiplayerManager {
             isDriving: isDriving,
             vehicleId: isDriving && activeCar ? (activeCar.name || 'car') : null,
             health: playerController ? Math.round(playerController.health) : 100,
-            weaponIndex: 0
+            weaponIndex: 0,
+            lastSeen: Date.now()
         };
 
         this.broadcastPacket({
@@ -308,6 +323,12 @@ class MultiplayerManager {
             pid: this.localPlayerId,
             data: payload
         });
+
+        if (this.localPlayerRef) {
+            try {
+                this.localPlayerRef.set(payload).catch(() => {});
+            } catch (e) {}
+        }
     }
 
     /**
@@ -476,7 +497,7 @@ class MultiplayerManager {
 
             if (this.localPlayerRef) {
                 try {
-                    this.localPlayerRef.update(payload).catch(() => {});
+                    this.localPlayerRef.set(payload).catch(() => {});
                 } catch (e) {}
             }
         }

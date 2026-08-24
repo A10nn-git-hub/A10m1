@@ -132,6 +132,7 @@ class GTAEngine {
             // Инициализация сетевого мультиплеера на базе Firebase Realtime Database
             this.multiplayerManager = new MultiplayerManager(this.scene);
             this.multiplayerHUD = new MultiplayerHUD(this.multiplayerManager);
+            this.multiplayerManager.connect();
 
             clearTimeout(timeoutWatchdog);
             await this.progressTracker.complete();

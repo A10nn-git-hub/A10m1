@@ -7,16 +7,16 @@ class FirebaseConfig {
     static ROOM_KEY = 'gta_multiplayer_room';
 
     /**
-     * Конфигурация по умолчанию
+     * Конфигурация по умолчанию (Realtime Database проекта)
      */
     static DEFAULT_CONFIG = {
-        apiKey: "AIzaSyDemoKeyGTA3DWorldEngine2026",
-        authDomain: "gta5-open-world-3d.firebaseapp.com",
-        databaseURL: "https://gta5-open-world-3d-default-rtdb.firebaseio.com",
-        projectId: "gta5-open-world-3d",
-        storageBucket: "gta5-open-world-3d.appspot.com",
-        messagingSenderId: "100000000000",
-        appId: "1:100000000000:web:gta3dwebengine2026"
+        apiKey: "AIzaSyBc2Q4dAM5fo4SD0sbqwDIy_B9Z5xiM4tg",
+        authDomain: "mini-games-b9400.firebaseapp.com",
+        databaseURL: "https://mini-games-b9400-default-rtdb.europe-west1.firebasedatabase.app",
+        projectId: "mini-games-b9400",
+        storageBucket: "mini-games-b9400.firebasestorage.app",
+        messagingSenderId: "523964322575",
+        appId: "1:523964322575:web:a5502d0bf28f17b10f247a"
     };
 
     /**
