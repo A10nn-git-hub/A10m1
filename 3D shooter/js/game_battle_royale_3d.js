@@ -258,6 +258,80 @@ function play3DSound(type, pos) {
             osc.start(now);
             osc.stop(now + 0.25);
 
+        } else if (type === 'headshot') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1800, now);
+            osc.frequency.exponentialRampToValueAtTime(2400, now + 0.12);
+
+            gain.gain.setValueAtTime(0.5, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.15);
+
+        } else if (type === 'switch') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(400, now);
+            osc.frequency.setValueAtTime(800, now + 0.04);
+
+            gain.gain.setValueAtTime(0.3, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.08);
+
+        } else if (type === 'throw') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(250, now);
+            osc.frequency.exponentialRampToValueAtTime(120, now + 0.15);
+
+            gain.gain.setValueAtTime(0.35, now);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.15);
+
+        } else if (type === 'explosion') {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(120, now);
+            osc.frequency.exponentialRampToValueAtTime(25, now + 0.4);
+
+            gain.gain.setValueAtTime(0.7, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.5);
+
+            // Explosion sub-noise
+            const bufferSize = ctx.sampleRate * 0.4;
+            const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            const noise = ctx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseGain = ctx.createGain();
+            noiseGain.gain.setValueAtTime(0.6, now);
+            noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            noise.connect(noiseGain);
+            noiseGain.connect(ctx.destination);
+            noise.start(now);
+
         } else if (type === 'ping') {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -790,6 +864,12 @@ function bind3DControls() {
         if (e.code === 'KeyC' || e.key === 'c' || e.key === 'с' || e.key === 'С') toggle3DCameraMode();
         if (e.code === 'KeyV' || e.key === 'v' || e.key === 'м' || e.key === 'М') reset3DCameraBehind();
 
+        // Weapon Slots & Grenades
+        if (e.code === 'Digit1' || e.code === 'Numpad1') select3DWeapon(1);
+        if (e.code === 'Digit2' || e.code === 'Numpad2') select3DWeapon(2);
+        if (e.code === 'Digit3' || e.code === 'Numpad3') select3DWeapon(3);
+        if (e.code === 'KeyG' || e.key === 'g' || e.key === 'п' || e.key === 'П') throw3DGrenade();
+
         // Sensitivity Hotkeys [ and ]
         if (e.code === 'BracketLeft') {
             br3D.sensitivity = Math.max(0.0006, (br3D.sensitivity || 0.0024) - 0.0004);
@@ -801,6 +881,19 @@ function bind3DControls() {
             showSensitivityToast(br3D.sensitivity);
         }
     });
+
+    window.addEventListener('wheel', e => {
+        if (!br3D.active || !br3D.myP || !br3D.myP.alive) return;
+        if (e.deltaY > 0) {
+            let nextSlot = (br3D.currentWeaponSlot || 1) + 1;
+            if (nextSlot > 3) nextSlot = 1;
+            select3DWeapon(nextSlot);
+        } else if (e.deltaY < 0) {
+            let prevSlot = (br3D.currentWeaponSlot || 1) - 1;
+            if (prevSlot < 1) prevSlot = 3;
+            select3DWeapon(prevSlot);
+        }
+    }, { passive: true });
 
     window.addEventListener('keyup', e => {
         if (e.code) br3D.keys[e.code] = false;
@@ -1069,16 +1162,262 @@ function updateCameraModeUI() {
     }
 }
 
+// -----------------------------------------------------------------------------
+// WEAPON ARSENAL, HITMARKERS, KILLFEED & GRENADES SYSTEM
+// -----------------------------------------------------------------------------
+const WEAPONS_CONFIG = {
+    1: { id: 'rifle', name: 'AK-47', ctName: 'M4A1', damage: 28, fireRate: 0.11, maxAmmo: 30, speedMult: 1.0, icon: '🔫', reloadTime: 1200 },
+    2: { id: 'pistol', name: 'DEAGLE', ctName: 'DEAGLE', damage: 55, fireRate: 0.28, maxAmmo: 7, speedMult: 1.08, icon: '🎯', reloadTime: 1000 },
+    3: { id: 'knife', name: 'KNIFE', ctName: 'KNIFE', damage: 65, backstabDamage: 125, fireRate: 0.45, maxAmmo: Infinity, speedMult: 1.25, icon: '🔪', reloadTime: 0 }
+};
+
+br3D.currentWeaponSlot = 1;
+br3D.currentWeapon = WEAPONS_CONFIG[1];
+br3D.grenades = 1;
+br3D.killstreak = 0;
+br3D.lastKillTime = 0;
+br3D.grenadesList = [];
+
+function select3DWeapon(slot) {
+    if (!WEAPONS_CONFIG[slot]) return;
+    if (br3D.currentWeaponSlot === slot) return;
+    br3D.currentWeaponSlot = slot;
+    const w = WEAPONS_CONFIG[slot];
+    br3D.currentWeapon = w;
+    br3D.fireRate = w.fireRate;
+    br3D.damagePerHit = w.damage;
+    br3D.maxAmmo = w.maxAmmo;
+    br3D.ammo = (w.maxAmmo === Infinity) ? Infinity : Math.min(br3D.ammo, w.maxAmmo);
+    if (w.maxAmmo !== Infinity && (br3D.ammo === 0 || isNaN(br3D.ammo))) br3D.ammo = w.maxAmmo;
+    br3D.isReloading = false;
+
+    play3DSound('switch');
+
+    // Update player movement speed modifier
+    if (br3D.myP) {
+        br3D.myP.speed = (br3D.myBaseSpeed || 12) * (w.speedMult || 1.0);
+    }
+
+    updateWeaponSlotsUI();
+    update3DHUD();
+}
+window.select3DWeapon = select3DWeapon;
+
+function updateWeaponSlotsUI() {
+    for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById(`wslot-${i}`);
+        if (el) el.classList.toggle('active', br3D.currentWeaponSlot === i);
+    }
+    const gBadge = document.getElementById('wslot-grenades-count');
+    if (gBadge) gBadge.innerText = br3D.grenades || 0;
+    const ammoMaxEl = document.getElementById('br-ammo-max');
+    if (ammoMaxEl) {
+        ammoMaxEl.innerText = (br3D.maxAmmo === Infinity) ? '∞' : `/ ${br3D.maxAmmo}`;
+    }
+    const slot1Name = document.getElementById('wslot-1-name');
+    if (slot1Name && br3D.myP) {
+        const isCT = (br3D.myP.team === 'Counter-Terrorists' || br3D.myP.team === 'CT');
+        slot1Name.innerText = isCT ? 'M4A1' : 'AK-47';
+    }
+}
+
+let _hitmarkerTimer = null;
+function trigger3DHitmarker(isHeadshot = false) {
+    const hm = document.getElementById('hud-hitmarker');
+    if (!hm) return;
+    hm.className = 'hud-hitmarker active' + (isHeadshot ? ' headshot' : '');
+    play3DSound(isHeadshot ? 'headshot' : 'hit');
+    if (_hitmarkerTimer) clearTimeout(_hitmarkerTimer);
+    _hitmarkerTimer = setTimeout(() => {
+        if (hm) hm.className = 'hud-hitmarker';
+    }, 160);
+}
+
+function add3DKillFeed(killerName, victimName, killerTeam, victimTeam, weaponName = 'AK-47', isHeadshot = false) {
+    const feed = document.getElementById('br-killfeed');
+    if (!feed) return;
+
+    const item = document.createElement('div');
+    item.className = 'killfeed-item';
+    const kClass = (killerTeam === 'Counter-Terrorists' || killerTeam === 'CT') ? 'ct' : 't';
+    const vClass = (victimTeam === 'Counter-Terrorists' || victimTeam === 'CT') ? 'ct' : 't';
+    const hsIcon = isHeadshot ? '<span class="killfeed-headshot">🎯</span>' : '';
+
+    item.innerHTML = `
+        <span class="killfeed-killer ${kClass}">${killerName || 'Игрок'}</span>
+        <span class="killfeed-weapon">[${weaponName}]</span>
+        ${hsIcon}
+        <span class="killfeed-victim ${vClass}">${victimName || 'Бот'}</span>
+    `;
+
+    feed.prepend(item);
+    if (feed.children.length > 5) {
+        feed.lastElementChild.remove();
+    }
+    setTimeout(() => {
+        if (item.parentNode) item.remove();
+    }, 4500);
+}
+
+let _streakBannerTimer = null;
+function record3DKill(victimName, isHeadshot = false) {
+    const now = Date.now();
+    if (now - (br3D.lastKillTime || 0) < 6500) {
+        br3D.killstreak = (br3D.killstreak || 0) + 1;
+    } else {
+        br3D.killstreak = 1;
+    }
+    br3D.lastKillTime = now;
+
+    const streak = br3D.killstreak;
+    let bannerText = '';
+    let bonus = 0;
+
+    if (streak === 2) { bannerText = '🔥 DOUBLE KILL! +50 🪙'; bonus = 50; }
+    else if (streak === 3) { bannerText = '⚡ TRIPLE KILL! +100 🪙'; bonus = 100; }
+    else if (streak === 4) { bannerText = '💀 ULTRA KILL! +150 🪙'; bonus = 150; }
+    else if (streak >= 5) { bannerText = '👑 RAMPAGE! +200 🪙'; bonus = 200; }
+    else if (isHeadshot) { bannerText = '🎯 HEADSHOT! +25 🪙'; bonus = 25; }
+
+    if (bonus > 0 && typeof addCoins === 'function') {
+        addCoins(bonus);
+    }
+
+    if (bannerText) {
+        const banner = document.getElementById('br-killstreak-banner');
+        if (banner) {
+            banner.innerText = bannerText;
+            banner.classList.remove('hidden');
+            if (_streakBannerTimer) clearTimeout(_streakBannerTimer);
+            _streakBannerTimer = setTimeout(() => {
+                if (banner) banner.classList.add('hidden');
+            }, 2400);
+        }
+    }
+}
+
+function throw3DGrenade() {
+    if (!br3D.active || !br3D.myP || !br3D.myP.alive) return;
+    if ((br3D.grenades || 0) <= 0) return;
+    br3D.grenades--;
+    updateWeaponSlotsUI();
+
+    play3DSound('throw');
+    const yaw = br3D.cameraCtrl.targetYaw;
+    const pitch = br3D.cameraCtrl.targetPitch;
+    const dir = new THREE.Vector3(
+        Math.sin(yaw) * Math.cos(pitch),
+        -Math.sin(pitch) + 0.22,
+        Math.cos(yaw) * Math.cos(pitch)
+    ).normalize();
+
+    const gGeo = new THREE.SphereGeometry(0.18, 8, 8);
+    const gMat = new THREE.MeshStandardMaterial({ color: 0x334422, roughness: 0.5, metalness: 0.8 });
+    const gMesh = new THREE.Mesh(gGeo, gMat);
+    const fromPos = new THREE.Vector3(br3D.myP.x, 1.4, br3D.myP.z).addScaledVector(dir, 0.8);
+    gMesh.position.copy(fromPos);
+    br3D.scene.add(gMesh);
+
+    br3D.grenadesList.push({
+        mesh: gMesh,
+        pos: fromPos,
+        vel: dir.multiplyScalar(24),
+        timer: 2.0,
+        shooterId: myId,
+        team: br3D.myP.team
+    });
+}
+window.throw3DGrenade = throw3DGrenade;
+
+function update3DGrenades(dt) {
+    for (let i = br3D.grenadesList.length - 1; i >= 0; i--) {
+        const g = br3D.grenadesList[i];
+        g.timer -= dt;
+        g.vel.y -= 22 * dt;
+
+        const nextX = g.pos.x + g.vel.x * dt;
+        const nextY = g.pos.y + g.vel.y * dt;
+        const nextZ = g.pos.z + g.vel.z * dt;
+
+        if (checkBulletWallCollision3D(nextX, g.pos.z)) {
+            g.vel.x *= -0.55;
+        } else {
+            g.pos.x = nextX;
+        }
+        if (checkBulletWallCollision3D(g.pos.x, nextZ)) {
+            g.vel.z *= -0.55;
+        } else {
+            g.pos.z = nextZ;
+        }
+
+        if (nextY <= 0.18) {
+            g.pos.y = 0.18;
+            g.vel.y = Math.abs(g.vel.y) * 0.45;
+            g.vel.x *= 0.85;
+            g.vel.z *= 0.85;
+        } else {
+            g.pos.y = nextY;
+        }
+
+        g.mesh.position.copy(g.pos);
+
+        if (g.timer <= 0) {
+            explode3DGrenade(g.pos, g.shooterId, g.team);
+            br3D.scene.remove(g.mesh);
+            br3D.grenadesList.splice(i, 1);
+        }
+    }
+}
+
+function explode3DGrenade(pos, shooterId, team) {
+    play3DSound('explosion');
+    create3DMuzzleFlash(pos);
+
+    for (let i = 0; i < 20; i++) {
+        const pGeo = new THREE.BoxGeometry(0.18, 0.18, 0.18);
+        const pMat = new THREE.MeshBasicMaterial({ color: (i % 2 === 0) ? 0xff5500 : 0xffcc00 });
+        const pMesh = new THREE.Mesh(pGeo, pMat);
+        pMesh.position.copy(pos);
+        const vel = new THREE.Vector3(
+            (Math.random() - 0.5) * 16,
+            Math.random() * 12 + 2,
+            (Math.random() - 0.5) * 16
+        );
+        br3D.scene.add(pMesh);
+        br3D.particleSystems.push({ mesh: pMesh, vel: vel, life: 0.65 });
+    }
+
+    const damageRadius = 10;
+    if (br3D.myP && br3D.myP.alive) {
+        const d = Math.hypot(br3D.myP.x - pos.x, br3D.myP.z - pos.z);
+        if (d < damageRadius) {
+            const dmg = Math.round((1 - d / damageRadius) * 105);
+            damage3DPlayer(br3D.myP, dmg, shooterId);
+        }
+    }
+    br3D.bots.forEach(bot => {
+        if (bot.alive && bot.team !== team) {
+            const d = Math.hypot(bot.x - pos.x, bot.z - pos.z);
+            if (d < damageRadius) {
+                const dmg = Math.round((1 - d / damageRadius) * 105);
+                damage3DBot(bot, dmg, shooterId);
+                if (shooterId === myId) trigger3DHitmarker(false);
+            }
+        }
+    });
+}
+
 function reload3DWeapon() {
-    if (br3D.isReloading || br3D.ammo >= br3D.maxAmmo) return;
+    if (br3D.isReloading || br3D.ammo >= br3D.maxAmmo || br3D.maxAmmo === Infinity) return;
     br3D.isReloading = true;
     play3DSound('reload');
     update3DHUD();
+    const reloadTime = (br3D.currentWeapon && br3D.currentWeapon.reloadTime) || 1200;
     setTimeout(() => {
         br3D.ammo = br3D.maxAmmo;
         br3D.isReloading = false;
         update3DHUD();
-    }, 1200);
+    }, reloadTime);
 }
 
 function jumpOrDash3D() {
@@ -1490,8 +1829,71 @@ function get3DSpawnPos(team, mode) {
 function tryFire3DWeapon() {
     if (!br3D.active || !br3D.myP || !br3D.myP.alive || br3D.isReloading) return;
     const now = Date.now();
-    if (now - br3D.lastShotTime < br3D.fireRate * 1000) return;
+    const fireInterval = (br3D.currentWeapon ? br3D.currentWeapon.fireRate : (br3D.fireRate || 0.12)) * 1000;
+    if (now - br3D.lastShotTime < fireInterval) return;
 
+    // Knife Melee Attack
+    if (br3D.currentWeaponSlot === 3) {
+        br3D.lastShotTime = now;
+        play3DSound('switch');
+
+        const yaw = br3D.cameraCtrl.targetYaw;
+        const forwardX = Math.sin(yaw);
+        const forwardZ = Math.cos(yaw);
+        const knifeRange = 2.8;
+
+        let hitAny = false;
+        // Check bots
+        for (let bot of br3D.bots) {
+            if (bot.alive && bot.team !== br3D.myP.team) {
+                const dx = bot.x - br3D.myP.x;
+                const dz = bot.z - br3D.myP.z;
+                const dist = Math.hypot(dx, dz);
+                if (dist < knifeRange) {
+                    const dot = (dx * forwardX + dz * forwardZ) / dist;
+                    if (dot > 0.5) {
+                        const angleDiff = Math.abs((bot.rotY - yaw + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+                        const isBackstab = angleDiff < 1.0;
+                        const dmg = isBackstab ? 125 : 65;
+                        damage3DBot(bot, dmg, myId, isBackstab);
+                        trigger3DHitmarker(isBackstab);
+                        create3DHitSparks(new THREE.Vector3(bot.x, 1.4, bot.z), true);
+                        hitAny = true;
+                        break;
+                    }
+                }
+            }
+        }
+        // Check remote players
+        if (!hitAny) {
+            for (let rpId of Object.keys(br3D.remotePlayers)) {
+                if (rpId === myId) continue;
+                const rp = br3D.remotePlayers[rpId];
+                if (rp && rp.alive && rp.team !== br3D.myP.team) {
+                    const dx = rp.x - br3D.myP.x;
+                    const dz = rp.z - br3D.myP.z;
+                    const dist = Math.hypot(dx, dz);
+                    if (dist < knifeRange) {
+                        const dot = (dx * forwardX + dz * forwardZ) / dist;
+                        if (dot > 0.5) {
+                            const isBackstab = Math.abs(((rp.rotY || rp.a || 0) - yaw + Math.PI * 3) % (Math.PI * 2) - Math.PI) < 1.0;
+                            const dmg = isBackstab ? 125 : 65;
+                            trigger3DHitmarker(isBackstab);
+                            create3DHitSparks(new THREE.Vector3(rp.x, 1.4, rp.z), true);
+                            spawn3DFloatingDamage(new THREE.Vector3(rp.x, 1.8, rp.z), dmg, isBackstab);
+                            if (lobbyId) {
+                                db.ref(`lobbies/${lobbyId}/br/damage/${rpId}`).transaction(v => (parseInt(v) || 0) + dmg).catch(() => {});
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return;
+    }
+
+    // Guns (Rifle & Pistol)
     if (br3D.ammo <= 0) {
         reload3DWeapon();
         return;
@@ -1515,7 +1917,6 @@ function tryFire3DWeapon() {
     fire3DBullet(fromPos, dir, myId, br3D.myP.team);
     update3DHUD();
 
-    // Broadcast shot immediately to Firebase
     if (lobbyId) {
         syncBrPlayerState(true);
     }
@@ -1777,12 +2178,17 @@ function update3DBullets(dt) {
             continue;
         }
 
+        // Check Headshot height (height >= 1.65m from ground)
+        const isHeadshot = (nextPosY >= 1.65);
+        const baseDmg = (b.shooterId === myId && br3D.damagePerHit) ? br3D.damagePerHit : 28;
+        const finalDamage = isHeadshot ? Math.round(baseDmg * 2.5) : baseDmg;
+
         // 2. Check Collision with Local Player
         if (b.shooterId !== myId && br3D.myP && br3D.myP.alive && b.team !== br3D.myP.team) {
             const dx = nextPosX - br3D.myP.x;
             const dz = nextPosZ - br3D.myP.z;
             if (dx * dx + dz * dz < 1.3) {
-                damage3DPlayer(br3D.myP, br3D.damagePerHit, b.shooterId);
+                damage3DPlayer(br3D.myP, finalDamage, b.shooterId, isHeadshot);
                 create3DHitSparks(_bulletScratchVec, true);
                 br3D.scene.remove(b.mesh);
                 br3D.bulletMeshes.splice(i, 1);
@@ -1800,13 +2206,14 @@ function update3DBullets(dt) {
                     const dx = nextPosX - rp.x;
                     const dz = nextPosZ - rp.z;
                     if (dx * dx + dz * dz < 1.3) {
+                        trigger3DHitmarker(isHeadshot);
                         create3DHitSparks(_bulletScratchVec, true);
-                        spawn3DFloatingDamage(new THREE.Vector3(rp.x, 1.8, rp.z), br3D.damagePerHit);
-                        br3D.damageDealt += br3D.damagePerHit;
+                        spawn3DFloatingDamage(new THREE.Vector3(rp.x, isHeadshot ? 2.0 : 1.6, rp.z), finalDamage, isHeadshot);
+                        br3D.damageDealt += finalDamage;
 
                         // Transmit damage via Firebase
                         if (lobbyId) {
-                            db.ref(`lobbies/${lobbyId}/br/damage/${rpId}`).transaction(v => (parseInt(v) || 0) + br3D.damagePerHit).catch(() => {});
+                            db.ref(`lobbies/${lobbyId}/br/damage/${rpId}`).transaction(v => (parseInt(v) || 0) + finalDamage).catch(() => {});
                         }
 
                         br3D.scene.remove(b.mesh);
@@ -1826,7 +2233,10 @@ function update3DBullets(dt) {
                 const dx = nextPosX - bot.x;
                 const dz = nextPosZ - bot.z;
                 if (dx * dx + dz * dz < 1.3) {
-                    damage3DBot(bot, br3D.damagePerHit, b.shooterId);
+                    if (b.shooterId === myId) {
+                        trigger3DHitmarker(isHeadshot);
+                    }
+                    damage3DBot(bot, finalDamage, b.shooterId, isHeadshot);
                     create3DHitSparks(_bulletScratchVec, true);
                     br3D.scene.remove(b.mesh);
                     br3D.bulletMeshes.splice(i, 1);
@@ -1861,35 +2271,29 @@ function update3DBullets(dt) {
     }
 }
 
-function get3DHitDamage(currentHp) {
-    if (currentHp > 25) return 25;
-    if (currentHp > 1) return currentHp - 1;
-    return Math.max(1, currentHp);
-}
-
-function damage3DPlayer(p, rawDamage, attackerId) {
+function damage3DPlayer(p, rawDamage, attackerId, isHeadshot = false) {
     const now = Date.now();
     if (now < p.invulnUntil || !p.alive) return;
 
-    const damage = get3DHitDamage(p.hp);
+    const damage = Math.max(1, rawDamage);
     p.hp -= damage;
-    spawn3DFloatingDamage(new THREE.Vector3(p.x, 1.8, p.z), damage);
+    spawn3DFloatingDamage(new THREE.Vector3(p.x, isHeadshot ? 2.0 : 1.6, p.z), damage, isHeadshot);
     update3DHUD();
 
     if (p.hp <= 0) {
         p.hp = 0;
         p.alive = false;
-        handle3DPlayerDeath(p, attackerId);
+        handle3DPlayerDeath(p, attackerId, isHeadshot);
     }
 }
 
-function damage3DBot(bot, rawDamage, attackerId) {
+function damage3DBot(bot, rawDamage, attackerId, isHeadshot = false) {
     const now = Date.now();
     if (now < bot.invulnUntil || !bot.alive) return;
 
-    const damage = get3DHitDamage(bot.hp);
+    const damage = Math.max(1, rawDamage);
     bot.hp -= damage;
-    spawn3DFloatingDamage(new THREE.Vector3(bot.x, 1.8, bot.z), damage);
+    spawn3DFloatingDamage(new THREE.Vector3(bot.x, isHeadshot ? 2.0 : 1.6, bot.z), damage, isHeadshot);
 
     if (attackerId === myId) {
         br3D.damageDealt += damage;
@@ -1898,19 +2302,26 @@ function damage3DBot(bot, rawDamage, attackerId) {
     if (bot.hp <= 0) {
         bot.hp = 0;
         bot.alive = false;
-        handle3DBotDeath(bot, attackerId);
+        handle3DBotDeath(bot, attackerId, isHeadshot);
     }
 }
 
-function handle3DPlayerDeath(p, attackerId) {
+function handle3DPlayerDeath(p, attackerId, isHeadshot = false) {
+    const killerName = (attackerId === myId) ? (typeof myName !== 'undefined' ? myName : 'Вы') : (br3D.remotePlayers[attackerId]?.name || 'Бот');
+    const killerTeam = (attackerId === myId) ? br3D.myP?.team : (br3D.remotePlayers[attackerId]?.team || 'Terrorists');
+    const weaponName = (attackerId === myId && br3D.currentWeapon) ? br3D.currentWeapon.name : 'AK-47';
+
+    add3DKillFeed(killerName, p.name || 'Игрок', killerTeam, p.team, weaponName, isHeadshot);
+
     if (attackerId === myId) {
         br3D.kills++;
+        record3DKill(p.name || 'Игрок', isHeadshot);
     } else if (lobbyId && attackerId) {
         db.ref(`lobbies/${lobbyId}/br/players/${attackerId}/kills`).transaction(v => (parseInt(v) || 0) + 1).catch(() => {});
     }
 
     // Award team score
-    if (p.team === 'Counter-Terrorists') {
+    if (p.team === 'Counter-Terrorists' || p.team === 'CT') {
         br3D.tScore++;
     } else {
         br3D.ctScore++;
@@ -1937,14 +2348,21 @@ function handle3DPlayerDeath(p, attackerId) {
     }
 }
 
-function handle3DBotDeath(bot, attackerId) {
+function handle3DBotDeath(bot, attackerId, isHeadshot = false) {
+    const killerName = (attackerId === myId) ? (typeof myName !== 'undefined' ? myName : 'Вы') : (bot.team === 'Counter-Terrorists' ? 'Terrorist Bot' : 'CT Bot');
+    const killerTeam = (attackerId === myId) ? br3D.myP?.team : (bot.team === 'Counter-Terrorists' ? 'Terrorists' : 'Counter-Terrorists');
+    const weaponName = (attackerId === myId && br3D.currentWeapon) ? br3D.currentWeapon.name : 'AK-47';
+
+    add3DKillFeed(killerName, bot.name || ('Бот ' + bot.id), killerTeam, bot.team, weaponName, isHeadshot);
+
     if (attackerId === myId) {
         br3D.kills++;
         const killsEl = document.getElementById('br-ui-kills');
         if (killsEl) killsEl.innerText = `Киллы: ${br3D.kills}`;
+        record3DKill(bot.name || ('Бот ' + bot.id), isHeadshot);
     }
 
-    if (bot.team === 'Counter-Terrorists') {
+    if (bot.team === 'Counter-Terrorists' || bot.team === 'CT') {
         br3D.tScore++;
     } else {
         br3D.ctScore++;
@@ -1976,7 +2394,9 @@ function respawn3DPlayer() {
     br3D.myP.alive = true;
     br3D.myP.invulnUntil = Date.now() + 3000;
     br3D.ammo = br3D.maxAmmo;
+    br3D.grenades = 1;
     br3D.isSpectator = false;
+    updateWeaponSlotsUI();
 
     const spec = document.getElementById('br-ui-spectator');
     if (spec) spec.style.display = 'none';
@@ -2498,6 +2918,9 @@ function br3DLoop() {
     // Update Bullets & Ballistics
     update3DBullets(dt);
 
+    // Update Grenades
+    update3DGrenades(dt);
+
     // Update Camera Position & Orbit
     update3DCamera(dt);
 
@@ -2657,9 +3080,16 @@ function initBR() {
     br3D.tScore = 0;
     br3D.ctRounds = 0;
     br3D.tRounds = 0;
-    br3D.currentRound = 1;
-    br3D.roundEnding = false;
+    br3D.currentWeaponSlot = 1;
+    br3D.currentWeapon = WEAPONS_CONFIG[1];
     br3D.ammo = 30;
+    br3D.maxAmmo = 30;
+    br3D.damagePerHit = 28;
+    br3D.fireRate = 0.11;
+    br3D.grenades = 1;
+    br3D.killstreak = 0;
+    br3D.lastKillTime = 0;
+    br3D.grenadesList = [];
     br3D.isReloading = false;
     br3D.spawningBotsStarted = false;
     br3D.myP = null;
@@ -2674,6 +3104,7 @@ function initBR() {
     init3DEngine();
     generate3DMap(submode);
     bind3DControls();
+    updateWeaponSlotsUI();
 
     // Show Scoreboard & HUD Elements
     const scoreboard = document.getElementById('br-scoreboard');
