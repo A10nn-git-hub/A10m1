@@ -537,6 +537,69 @@ class GTAEngine {
             }
         };
 
+        // Клик по подсказке посадки / высадки на экране
+        const vehiclePrompt = document.getElementById('vehicle-prompt');
+        if (vehiclePrompt) {
+            const handlePromptClick = (e) => {
+                e.stopPropagation();
+                if (this.inputController && this.inputController.onToggleVehicle) {
+                    this.inputController.onToggleVehicle();
+                }
+            };
+            vehiclePrompt.addEventListener('click', handlePromptClick);
+            vehiclePrompt.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                handlePromptClick(e);
+            }, { passive: false });
+        }
+
+        // Интерактивные кнопки вертолета на экране (Высадка, Наверх, Вниз)
+        const btnHeliExit = document.getElementById('btn-heli-exit');
+        if (btnHeliExit) {
+            btnHeliExit.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (this.inputController && this.inputController.onToggleVehicle) {
+                    this.inputController.onToggleVehicle();
+                }
+            });
+        }
+
+        const btnHeliUp = document.getElementById('btn-heli-up');
+        if (btnHeliUp) {
+            const startUp = (e) => {
+                e.stopPropagation(); e.preventDefault();
+                if (this.inputController) this.inputController.keys.jump = true;
+                btnHeliUp.classList.add('pressed');
+            };
+            const stopUp = (e) => {
+                e.stopPropagation(); e.preventDefault();
+                if (this.inputController) this.inputController.keys.jump = false;
+                btnHeliUp.classList.remove('pressed');
+            };
+            btnHeliUp.addEventListener('pointerdown', startUp);
+            btnHeliUp.addEventListener('pointerup', stopUp);
+            btnHeliUp.addEventListener('pointercancel', stopUp);
+            btnHeliUp.addEventListener('mouseleave', stopUp);
+        }
+
+        const btnHeliDown = document.getElementById('btn-heli-down');
+        if (btnHeliDown) {
+            const startDown = (e) => {
+                e.stopPropagation(); e.preventDefault();
+                if (this.inputController) this.inputController.keys.sprint = true;
+                btnHeliDown.classList.add('pressed');
+            };
+            const stopDown = (e) => {
+                e.stopPropagation(); e.preventDefault();
+                if (this.inputController) this.inputController.keys.sprint = false;
+                btnHeliDown.classList.remove('pressed');
+            };
+            btnHeliDown.addEventListener('pointerdown', startDown);
+            btnHeliDown.addEventListener('pointerup', stopDown);
+            btnHeliDown.addEventListener('pointercancel', stopDown);
+            btnHeliDown.addEventListener('mouseleave', stopDown);
+        }
+
         if (this.mainMenuManager && this.mainMenuManager.isPowerSavingMode) {
             this.setPowerSavingMode(true, false);
         }
@@ -885,6 +948,12 @@ class GTAEngine {
                     }
                 }
             }
+        }
+
+        // Обновление экранных кнопок вертолета (Высадка, Наверх, Вниз)
+        const heliHud = document.getElementById('heli-hud-controls');
+        if (heliHud) {
+            heliHud.style.display = isFlyingHeli ? 'flex' : 'none';
         }
 
         // Подсказка для лазанья по деревьям

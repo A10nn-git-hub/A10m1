@@ -1,7 +1,7 @@
 /**
  * Сенсорный контроллер для мобильных устройств (GTA 5 Web Engine)
  * Реализует виртуальный аналоговый джойстик, сенсорное вращение камеры,
- * педали газа/тормоза для авто, кнопки прыжка, спринта, лифта и переключения HUD по тапу.
+ * педали газа/тормоза для авто, кнопки вертолета (Высадка, Наверх, Вниз), прыжка, спринта, лифта и переключения HUD по тапу.
  */
 class MobileTouchController {
     constructor(engine) {
@@ -61,7 +61,6 @@ class MobileTouchController {
     }
 
     setupHudTapInteractions() {
-        // 1. При нажатии на любой блок интерфейса (Инфо-панель, Статусы персонажа, Деньги) — скрываем HUD
         const hudElements = [
             document.querySelector('.debug-panel'),
             document.querySelector('.status-bars-container'),
@@ -74,9 +73,7 @@ class MobileTouchController {
             el.title = 'Нажмите, чтобы скрыть интерфейс';
 
             const onHudTap = (e) => {
-                // Если кликнули по радар-кнопке для открытия карты — пропускаем, пусть откроется карта
                 if (el.classList.contains('minimap-radar-wrapper') && !this.isMobile) {
-                    // на ПК радар открывает карту
                     return;
                 }
                 e.preventDefault();
@@ -90,7 +87,6 @@ class MobileTouchController {
             el.addEventListener('touchend', onHudTap);
         });
 
-        // 2. Когда HUD скрыт — нажатие в любое свободное место экрана (не на джойстик/кнопки) восстанавливает HUD
         let touchStartInfo = null;
 
         window.addEventListener('pointerdown', (e) => {
@@ -107,11 +103,9 @@ class MobileTouchController {
             const dt = Date.now() - touchStartInfo.time;
             const dist = Math.hypot(e.clientX - touchStartInfo.x, e.clientY - touchStartInfo.y);
 
-            // Если это был короткий тап/клик (<300 мс, смещение < 15px)
             if (dt < 300 && dist < 15) {
                 if (this.engine && !this.engine.isHudVisible) {
-                    // Проверяем, что нажали не на интерактивные контроллеры (джойстик, педали, верхние кнопки)
-                    const isInsideControls = e.target.closest('#touch-joystick-zone, #mobile-foot-buttons, #mobile-car-buttons, .mobile-top-bar, #mobile-elevator-panel, #main-menu-overlay, .game-modal');
+                    const isInsideControls = e.target.closest('#touch-joystick-zone, #mobile-foot-buttons, #mobile-car-buttons, #mobile-heli-buttons, .mobile-top-bar, #mobile-elevator-panel, #main-menu-overlay, .game-modal');
                     if (!isInsideControls) {
                         e.preventDefault();
                         if (this.input && this.input.onToggleHud) {
@@ -133,14 +127,14 @@ class MobileTouchController {
         layer.className = 'mobile-controls-layer';
 
         layer.innerHTML = `
-            <!-- Левая зона: Виртуальный джойстик (в свободном нижнем левом углу) -->
+            <!-- Левая зона: Виртуальный джойстик -->
             <div id="touch-joystick-zone" class="touch-joystick-zone">
                 <div id="touch-joystick-base" class="touch-joystick-base">
                     <div id="touch-joystick-stick" class="touch-joystick-stick"></div>
                 </div>
             </div>
 
-            <!-- Правая зона: Сенсорный обзор камеры (свайпы) -->
+            <!-- Правая зона: Сенсорный обзор камеры -->
             <div id="touch-camera-zone" class="touch-camera-zone"></div>
 
             <!-- Верхняя панель быстрых кнопок -->
@@ -192,6 +186,24 @@ class MobileTouchController {
                     <button id="btn-touch-gas" class="mobile-pedal-btn gas-pedal">
                         <span class="btn-icon">🔥</span>
                         <span class="btn-label">ГАЗ</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Кнопки управления вертолетом (справа внизу) -->
+            <div id="mobile-heli-buttons" class="mobile-action-group heli-group" style="display:none;">
+                <button id="btn-touch-heli-exit" class="mobile-action-btn vehicle-exit-btn">
+                    <span class="btn-icon">🚪</span>
+                    <span class="btn-label">ВЫСАДКА</span>
+                </button>
+                <div class="mobile-pedals-cluster">
+                    <button id="btn-touch-heli-down" class="mobile-pedal-btn brake-pedal">
+                        <span class="btn-icon">▼</span>
+                        <span class="btn-label">ВНИЗ</span>
+                    </button>
+                    <button id="btn-touch-heli-up" class="mobile-pedal-btn gas-pedal">
+                        <span class="btn-icon">▲</span>
+                        <span class="btn-label">НАВЕРХ</span>
                     </button>
                 </div>
             </div>
@@ -320,6 +332,8 @@ class MobileTouchController {
         this.bindButton('btn-touch-handbrake', 'handbrake', false);
         this.bindButton('btn-touch-gas', 'forward', false);
         this.bindButton('btn-touch-brake', 'backward', false);
+        this.bindButton('btn-touch-heli-up', 'jump', false);
+        this.bindButton('btn-touch-heli-down', 'sprint', false);
 
         // Кнопка спринта (Toggle или Hold)
         const btnSprint = document.getElementById('btn-touch-sprint');
@@ -333,7 +347,7 @@ class MobileTouchController {
             }, { passive: false });
         }
 
-        // Кнопка посадки/высадки из авто
+        // Кнопка посадки/высадки из авто и вертолета
         const bindTrigger = (id, callback) => {
             const btn = document.getElementById(id);
             if (btn) {
@@ -342,6 +356,11 @@ class MobileTouchController {
                     e.stopPropagation();
                     callback();
                 }, { passive: false });
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    callback();
+                });
             }
         };
 
@@ -350,6 +369,10 @@ class MobileTouchController {
         });
 
         bindTrigger('btn-touch-car-exit', () => {
+            if (this.input && this.input.onToggleVehicle) this.input.onToggleVehicle();
+        });
+
+        bindTrigger('btn-touch-heli-exit', () => {
             if (this.input && this.input.onToggleVehicle) this.input.onToggleVehicle();
         });
 
@@ -433,12 +456,13 @@ class MobileTouchController {
 
         if (this.input) {
             const isDriving = this.engine && this.engine.vehicleManager && this.engine.vehicleManager.activeDrivenCar !== null;
+            const isFlyingHeli = !!(this.engine && this.engine.helicopter && (this.engine.helicopter.isPiloted || this.engine.helicopter.isPassenger));
 
-            if (isDriving) {
-                // В автомобиле джойстик управляет рулем (влево/вправо)
+            if (isDriving || isFlyingHeli) {
+                // В автомобиле / вертолете джойстик управляет поворотом курса (влево/вправо)
                 this.input.keys.left = normX < -deadzone;
                 this.input.keys.right = normX > deadzone;
-                // Также можно подруливать вперед/назад, если не нажаты педали
+                // Вперед / Назад
                 if (!document.getElementById('btn-touch-gas')?.classList.contains('pressed')) {
                     this.input.keys.forward = normY < -0.45;
                 }
@@ -479,20 +503,28 @@ class MobileTouchController {
         if (!this.isMobile) return;
 
         const isDriving = this.engine && this.engine.vehicleManager && this.engine.vehicleManager.activeDrivenCar !== null;
+        const isFlyingHeli = !!(this.engine && this.engine.helicopter && (this.engine.helicopter.isPiloted || this.engine.helicopter.isPassenger));
         const footButtons = document.getElementById('mobile-foot-buttons');
         const carButtons = document.getElementById('mobile-car-buttons');
+        const heliButtons = document.getElementById('mobile-heli-buttons');
         const elevatorPanel = document.getElementById('mobile-elevator-panel');
 
-        // Переключение наборов кнопок (Пешком vs В машине)
-        if (isDriving) {
+        // Переключение наборов кнопок (Пешком vs В машине vs В вертолете)
+        if (isFlyingHeli) {
+            if (footButtons) footButtons.style.display = 'none';
+            if (carButtons) carButtons.style.display = 'none';
+            if (heliButtons) heliButtons.style.display = 'flex';
+        } else if (isDriving) {
             if (footButtons) footButtons.style.display = 'none';
             if (carButtons) carButtons.style.display = 'flex';
+            if (heliButtons) heliButtons.style.display = 'none';
         } else {
             if (footButtons) footButtons.style.display = 'flex';
             if (carButtons) carButtons.style.display = 'none';
+            if (heliButtons) heliButtons.style.display = 'none';
         }
 
-        // Показ кнопки посадки около машины
+        // Показ кнопки посадки около машины / вертолета
         const vehicleEnterBtn = document.getElementById('btn-touch-vehicle');
         const vehiclePrompt = document.getElementById('vehicle-prompt');
         if (vehicleEnterBtn) {
@@ -508,3 +540,5 @@ class MobileTouchController {
         }
     }
 }
+
+window.MobileTouchController = MobileTouchController;

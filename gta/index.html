@@ -86,6 +86,25 @@
             <div class="elevator-status" id="elevator-status-text">Текущий: 1 этаж — Вестибюль</div>
         </div>
 
+        <!-- Кнопки управления вертолетом (Высадка, Наверх, Вниз) -->
+        <div class="heli-hud-controls" id="heli-hud-controls" style="display: none;">
+            <div class="heli-hud-badge">🚁 ВЕРТОЛЕТ MAVERICK</div>
+            <div class="heli-hud-btn-row">
+                <button type="button" class="heli-btn exit-btn" id="btn-heli-exit" title="Выйти из вертолета [F]">
+                    <span class="heli-btn-icon">🚪</span>
+                    <span class="heli-btn-text">ВЫСАДКА <kbd>[F]</kbd></span>
+                </button>
+                <button type="button" class="heli-btn up-btn" id="btn-heli-up" title="Набрать высоту [Space]">
+                    <span class="heli-btn-icon">▲</span>
+                    <span class="heli-btn-text">НАВЕРХ <kbd>[Space]</kbd></span>
+                </button>
+                <button type="button" class="heli-btn down-btn" id="btn-heli-down" title="Снизиться [Shift]">
+                    <span class="heli-btn-icon">▼</span>
+                    <span class="heli-btn-text">ВНИЗ <kbd>[Shift]</kbd></span>
+                </button>
+            </div>
+        </div>
+
         <!-- Money Display in top right corner -->
         <div class="money-hud" id="money-hud">
             <span class="money-currency">$</span><span class="money-amount" id="hud-money-val">250,000</span>

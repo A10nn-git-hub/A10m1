@@ -235,30 +235,136 @@
             left: 50%;
             transform: translate(-50%, -50%);
             background: rgba(10, 14, 23, 0.94);
-            border: 1px solid #00bcd4;
+            border: 2px solid #00e5ff;
             padding: 10px 22px;
-            border-radius: 24px;
+            border-radius: 28px;
             font-size: 13px;
             font-weight: 800;
             letter-spacing: 1px;
             color: #ffffff;
-            box-shadow: 0 0 20px rgba(0, 188, 212, 0.4);
+            box-shadow: 0 0 25px rgba(0, 229, 255, 0.5), inset 0 0 10px rgba(0, 229, 255, 0.2);
             display: none;
             text-transform: uppercase;
-            animation: pulsePrompt 1.2s infinite alternate;
+            cursor: pointer;
+            pointer-events: auto;
+            user-select: none;
+            touch-action: manipulation;
+            transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+            z-index: 120;
         }
 
-        @keyframes pulsePrompt {
-            0% { transform: translate(-50%, -50%) scale(1.0); }
-            100% { transform: translate(-50%, -50%) scale(1.05); }
+        .vehicle-prompt:hover {
+            transform: translate(-50%, -50%) scale(1.08);
+            background: rgba(0, 229, 255, 0.28);
+            box-shadow: 0 0 35px rgba(0, 229, 255, 0.85);
+        }
+
+        .vehicle-prompt:active {
+            transform: translate(-50%, -50%) scale(0.95);
         }
 
         .vehicle-prompt kbd {
-            background: #00bcd4;
+            background: #00e5ff;
             color: #050508;
-            padding: 2px 8px;
-            border-radius: 4px;
+            padding: 3px 9px;
+            border-radius: 6px;
             margin-right: 6px;
+            font-weight: 900;
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.6);
+        }
+
+        /* Интерактивная панель вертолета (Высадка, Наверх, Вниз) */
+        .heli-hud-controls {
+            position: absolute;
+            bottom: 25px;
+            right: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            z-index: 110;
+            pointer-events: auto;
+        }
+
+        .heli-hud-badge {
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: #00e5ff;
+            text-transform: uppercase;
+            background: rgba(10, 16, 28, 0.92);
+            padding: 5px 14px;
+            border-radius: 8px;
+            border: 1.5px solid rgba(0, 229, 255, 0.4);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.6);
+        }
+
+        .heli-hud-btn-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .heli-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 12px;
+            background: rgba(10, 16, 28, 0.9);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-size: 13px;
+            font-weight: 800;
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .heli-btn kbd {
+            background: rgba(255, 255, 255, 0.18);
+            color: #ffd700;
+            font-size: 11px;
+            padding: 2px 7px;
+            border-radius: 5px;
+            font-weight: 900;
+        }
+
+        .heli-btn.exit-btn {
+            border-color: #ff4757;
+            background: rgba(255, 71, 87, 0.2);
+        }
+
+        .heli-btn.exit-btn:hover, .heli-btn.exit-btn:active {
+            background: rgba(255, 71, 87, 0.55);
+            box-shadow: 0 0 25px rgba(255, 71, 87, 0.85);
+            transform: translateY(-2px);
+        }
+
+        .heli-btn.up-btn {
+            border-color: #2ed573;
+            background: rgba(46, 213, 115, 0.2);
+        }
+
+        .heli-btn.up-btn:hover, .heli-btn.up-btn:active, .heli-btn.up-btn.pressed {
+            background: rgba(46, 213, 115, 0.6);
+            box-shadow: 0 0 25px rgba(46, 213, 115, 0.9);
+            transform: translateY(-2px);
+        }
+
+        .heli-btn.down-btn {
+            border-color: #ffa502;
+            background: rgba(255, 165, 2, 0.2);
+        }
+
+        .heli-btn.down-btn:hover, .heli-btn.down-btn:active, .heli-btn.down-btn.pressed {
+            background: rgba(255, 165, 2, 0.6);
+            box-shadow: 0 0 25px rgba(255, 165, 2, 0.9);
+            transform: translateY(-2px);
         }
 
         /* STEP 28: Интерактивный HUD лифта небоскреба Maze Bank */
