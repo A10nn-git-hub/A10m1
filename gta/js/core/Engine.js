@@ -47,7 +47,8 @@ class GTAEngine {
         this.frameCount = 0;
         this.lastFpsUpdate = 0;
         this._allCarsCache = [];
-        this.isPowerSavingMode = false;
+        this.isPowerSavingMode = localStorage.getItem('gta_power_saving') === 'true';
+        this.isPoliceEnabled = localStorage.getItem('gta_police_enabled') !== 'false';
 
         this.initAsync();
     }
@@ -150,7 +151,9 @@ class GTAEngine {
             // Инициализация сетевого мультиплеера на базе Firebase Realtime Database
             this.multiplayerManager = new MultiplayerManager(this.scene);
             this.multiplayerHUD = new MultiplayerHUD(this.multiplayerManager);
-            this.multiplayerManager.connect();
+            // Применяем сохраненные настройки полиции и энергосбережения
+            this.setPoliceEnabled(this.isPoliceEnabled, false);
+            this.setPowerSavingMode(this.isPowerSavingMode, false);
 
             clearTimeout(timeoutWatchdog);
             await this.progressTracker.complete();
@@ -779,8 +782,8 @@ class GTAEngine {
             }
         }
 
-        // 3. Очистка полицейских машин
-        if (this.policeManager && this.isPowerSavingMode) {
+        // 3. Очистка полицейских машин (только если полиция выключена)
+        if (this.policeManager && this.isPowerSavingMode && !this.isPoliceEnabled) {
             this.policeManager.clearAllPolice();
         }
 
@@ -866,6 +869,52 @@ class GTAEngine {
             toast.innerHTML = '🔋 <b>Стандартный режим:</b> Боты и трафик включены, стандартная графика';
             toast.style.borderColor = '#00e5ff';
             toast.style.boxShadow = '0 10px 30px rgba(0, 229, 255, 0.4)';
+        }
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
+    }
+
+    setPoliceEnabled(enabled, showToast = true) {
+        this.isPoliceEnabled = !!enabled;
+        localStorage.setItem('gta_police_enabled', this.isPoliceEnabled ? 'true' : 'false');
+
+        if (!this.isPoliceEnabled) {
+            if (this.policeManager) {
+                this.policeManager.clearAllPolice();
+            }
+            if (this.wantedManager) {
+                this.wantedManager.setStars(0);
+            }
+            if (this.missionManager) {
+                this.missionManager.setMissionsVisible(false);
+            }
+        } else {
+            if (this.missionManager) {
+                this.missionManager.setMissionsVisible(true);
+            }
+        }
+
+        if (showToast) {
+            this.showPoliceToast(this.isPoliceEnabled);
+        }
+    }
+
+    showPoliceToast(enabled) {
+        let toast = document.getElementById('opt-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'opt-toast';
+            toast.className = 'opt-toast';
+            document.body.appendChild(toast);
+        }
+        if (enabled) {
+            toast.innerHTML = '🚨 <b>Полиция и задания:</b> ВКЛЮЧЕНЫ (погони LSPD активны даже в ЭКО)';
+            toast.style.borderColor = '#ef4444';
+            toast.style.boxShadow = '0 10px 30px rgba(239, 68, 68, 0.45)';
+        } else {
+            toast.innerHTML = '🛡️ <b>Полиция и задания:</b> ОТКЛЮЧЕНЫ (чистый город без погонь и звезд)';
+            toast.style.borderColor = '#94a3b8';
+            toast.style.boxShadow = '0 10px 30px rgba(148, 163, 184, 0.4)';
         }
         toast.style.display = 'block';
         setTimeout(() => { if (toast) toast.style.display = 'none'; }, 3500);
@@ -1153,16 +1202,17 @@ class GTAEngine {
         }
 
         // Обновление полиции и погони со стелс-механикой укрытия в растительности
-        if (this.policeManager && !this.isPowerSavingMode) {
+        // (Работает, если включена полиция, даже при активном энергосбережении!)
+        if (this.policeManager && this.isPoliceEnabled) {
             const stars = (this.wantedManager) ? this.wantedManager.stars : 0;
             this.policeManager.update(delta, focusPos, stars);
         }
 
-        if (this.wantedManager) {
+        if (this.wantedManager && this.isPoliceEnabled) {
             this.wantedManager.update(delta, focusPos);
         }
 
-        if (this.missionManager) {
+        if (this.missionManager && this.isPoliceEnabled) {
             this.missionManager.update(delta, focusPos);
         }
 

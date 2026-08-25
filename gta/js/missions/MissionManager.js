@@ -89,6 +89,17 @@ class MissionManager {
         });
     }
 
+    setMissionsVisible(visible) {
+        this.markers.forEach(m => {
+            if (m.mesh) m.mesh.visible = visible;
+            if (m.ring) m.ring.visible = visible;
+        });
+        if (!visible) {
+            this.hud.hideStartPrompt();
+            this.hud.hideActiveMission();
+        }
+    }
+
     startMission(missionData) {
         if (this.activeMission) return;
 

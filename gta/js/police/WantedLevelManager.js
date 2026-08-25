@@ -64,6 +64,8 @@ class WantedLevelManager {
     }
 
     reportCrime(type, pos) {
+        if (window.gameEngine && window.gameEngine.isPoliceEnabled === false) return;
+
         let starsToAdd = 0;
         if (type === 'PUNCH' && this.stars === 0) starsToAdd = 1;
         else if (type === 'GUNFIRE') starsToAdd = (this.stars === 0 ? 1 : 0);
@@ -86,6 +88,9 @@ class WantedLevelManager {
     }
 
     setStars(count) {
+        if (window.gameEngine && window.gameEngine.isPoliceEnabled === false && count > 0) {
+            count = 0;
+        }
         const old = this.stars;
         this.stars = Math.max(0, Math.min(this.maxStars, count));
         this.updateHUD();

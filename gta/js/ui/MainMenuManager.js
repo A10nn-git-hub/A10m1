@@ -25,19 +25,22 @@ class MainMenuManager {
                 this.btnCloseAbout = document.getElementById('btn-close-about');
                 this.btnCloseAboutFooter = document.getElementById('btn-close-about-footer');
 
-                this.minimapBtn = document.getElementById('minimap-radar-btn');
                 this.toggleEcoMenu = document.getElementById('toggle-power-saving-menu');
                 this.toggleEcoSettings = document.getElementById('toggle-power-saving-settings');
+                this.togglePoliceMenu = document.getElementById('toggle-police-menu');
+                this.togglePoliceSettings = document.getElementById('toggle-police-settings');
 
                 this.activeRebindAction = null;
                 this.isMenuOpen = true;
                 this.isGameStarted = false;
                 this.isPowerSavingMode = localStorage.getItem('gta_power_saving') === 'true';
+                this.isPoliceEnabled = localStorage.getItem('gta_police_enabled') !== 'false';
 
                 this.tempBindings = JSON.parse(JSON.stringify(this.inputController.bindings));
 
                 this.initUI();
                 this.initEcoToggle();
+                this.initPoliceToggle();
                 if (this.auroraRenderer) {
                     this.auroraRenderer.start();
                 }
@@ -126,6 +129,34 @@ class MainMenuManager {
 
                 if (window.gameEngine && typeof window.gameEngine.setPowerSavingMode === 'function') {
                     window.gameEngine.setPowerSavingMode(enabled, true);
+                }
+            }
+
+            initPoliceToggle() {
+                if (this.togglePoliceMenu) {
+                    this.togglePoliceMenu.checked = this.isPoliceEnabled;
+                    this.togglePoliceMenu.addEventListener('change', (e) => {
+                        e.stopPropagation();
+                        this.handlePoliceChange(e.target.checked);
+                    });
+                }
+                if (this.togglePoliceSettings) {
+                    this.togglePoliceSettings.checked = this.isPoliceEnabled;
+                    this.togglePoliceSettings.addEventListener('change', (e) => {
+                        e.stopPropagation();
+                        this.handlePoliceChange(e.target.checked);
+                    });
+                }
+            }
+
+            handlePoliceChange(enabled) {
+                this.isPoliceEnabled = enabled;
+                localStorage.setItem('gta_police_enabled', enabled ? 'true' : 'false');
+                if (this.togglePoliceMenu) this.togglePoliceMenu.checked = enabled;
+                if (this.togglePoliceSettings) this.togglePoliceSettings.checked = enabled;
+
+                if (window.gameEngine && typeof window.gameEngine.setPoliceEnabled === 'function') {
+                    window.gameEngine.setPoliceEnabled(enabled, true);
                 }
             }
 

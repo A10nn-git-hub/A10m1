@@ -244,6 +244,21 @@
                 </label>
             </div>
 
+            <!-- Ползунок режима ПОЛИЦИЯ в Главном Меню -->
+            <div class="menu-police-panel" id="menu-police-panel">
+                <div class="eco-left">
+                    <span class="police-icon">🚨</span>
+                    <div class="eco-texts">
+                        <span class="eco-title" style="color: #f87171;">ПОЛИЦИЯ И ЗАДАНИЯ</span>
+                        <span class="eco-desc">Погони LSPD, звезды розыска и миссии</span>
+                    </div>
+                </div>
+                <label class="eco-switch" title="Включить/отключить полицию и задания">
+                    <input type="checkbox" id="toggle-police-menu" checked>
+                    <span class="police-slider"></span>
+                </label>
+            </div>
+
             <div class="menu-footer-hint" id="menu-footer-hint">
                 В ИГРЕ НАЖМИТЕ <kbd>ESC</kbd> ДЛЯ ПАУЗЫ | <kbd>M</kbd> — КАРТА ГОРОДА
             </div>
@@ -264,18 +279,32 @@
             </div>
             <div class="modal-body">
                 <!-- Категория: Производительность и Энергосбережение -->
-                <div class="keybind-category-title">⚡ Производительность и Графика</div>
+                <div class="keybind-category-title">⚡ Производительность, Полиция и Графика</div>
                 <div class="settings-eco-row">
                     <div class="eco-left">
                         <span class="eco-icon">⚡</span>
                         <div class="eco-texts">
                             <span class="eco-title">Режим энергосбережения (ЭКО)</span>
-                            <span class="eco-desc">Отключение всех ботов и трафика, отключение теней, максимальный FPS</span>
+                            <span class="eco-desc">Отключение ботов и трафика, отключение теней, максимальный FPS</span>
                         </div>
                     </div>
                     <label class="eco-switch">
                         <input type="checkbox" id="toggle-power-saving-settings">
                         <span class="eco-slider"></span>
+                    </label>
+                </div>
+
+                <div class="settings-police-row">
+                    <div class="eco-left">
+                        <span class="police-icon">🚨</span>
+                        <div class="eco-texts">
+                            <span class="eco-title" style="color: #f87171;">Полиция LSPD и городские миссии</span>
+                            <span class="eco-desc">Активация патрулей, погонь, звезд розыска и контрактов (работает даже в ЭКО-режиме)</span>
+                        </div>
+                    </div>
+                    <label class="eco-switch" title="Включить/отключить полицию и задания">
+                        <input type="checkbox" id="toggle-police-settings" checked>
+                        <span class="police-slider"></span>
                     </label>
                 </div>
 
@@ -527,91 +556,91 @@
 
     <!-- Модули движка и игры -->
     <!-- Шейдеры и процедурные текстуры -->
-    <script src="js/environment/SkyShader.js?v=20260825_v3"></script>
-    <script src="js/textures/ProceduralTextureFactory.js?v=20260825_v3"></script>
+    <script src="js/environment/SkyShader.js?v=20260825_v4"></script>
+    <script src="js/textures/ProceduralTextureFactory.js?v=20260825_v4"></script>
 
     <!-- Мир и процедурный ландшафт -->
-    <script src="js/world/ProceduralNoiseGenerator.js?v=20260825_v3"></script>
-    <script src="js/world/ProceduralTerrainManager.js?v=20260825_v3"></script>
-    <script src="js/world/InfiniteOceanManager.js?v=20260825_v3"></script>
-    <script src="js/world/DistantMountainManager.js?v=20260825_v3"></script>
-    <script src="js/world/VegetationAndCropsManager.js?v=20260825_v3"></script>
-    <script src="js/world/DistrictGenerator.js?v=20260825_v3"></script>
-    <script src="js/world/NeighborhoodDistrictManager.js?v=20260825_v3"></script>
-    <script src="js/world/WorldChunkManager.js?v=20260825_v3"></script>
+    <script src="js/world/ProceduralNoiseGenerator.js?v=20260825_v4"></script>
+    <script src="js/world/ProceduralTerrainManager.js?v=20260825_v4"></script>
+    <script src="js/world/InfiniteOceanManager.js?v=20260825_v4"></script>
+    <script src="js/world/DistantMountainManager.js?v=20260825_v4"></script>
+    <script src="js/world/VegetationAndCropsManager.js?v=20260825_v4"></script>
+    <script src="js/world/DistrictGenerator.js?v=20260825_v4"></script>
+    <script src="js/world/NeighborhoodDistrictManager.js?v=20260825_v4"></script>
+    <script src="js/world/WorldChunkManager.js?v=20260825_v4"></script>
 
     <!-- Окружение и погода -->
-    <script src="js/environment/CalendarAndSeasonSystem.js?v=20260825_v3"></script>
-    <script src="js/environment/DynamicCloudSystem.js?v=20260825_v3"></script>
-    <script src="js/environment/DayNightCycleManager.js?v=20260825_v3"></script>
-    <script src="js/environment/DynamicWeatherManager.js?v=20260825_v3"></script>
+    <script src="js/environment/CalendarAndSeasonSystem.js?v=20260825_v4"></script>
+    <script src="js/environment/DynamicCloudSystem.js?v=20260825_v4"></script>
+    <script src="js/environment/DayNightCycleManager.js?v=20260825_v4"></script>
+    <script src="js/environment/DynamicWeatherManager.js?v=20260825_v4"></script>
 
     <!-- Город и интерактивные строения -->
-    <script src="js/city/CityRoadNetwork.js?v=20260825_v3"></script>
-    <script src="js/city/OrganizationBuildingBuilder.js?v=20260825_v3"></script>
-    <script src="js/city/SuburbanHouseBuilder.js?v=20260825_v3"></script>
-    <script src="js/city/HydrantWaterGeyserSystem.js?v=20260825_v3"></script>
-    <script src="js/city/StreetLampManager.js?v=20260825_v3"></script>
-    <script src="js/city/SkyscraperElevatorSystem.js?v=20260825_v3"></script>
+    <script src="js/city/CityRoadNetwork.js?v=20260825_v4"></script>
+    <script src="js/city/OrganizationBuildingBuilder.js?v=20260825_v4"></script>
+    <script src="js/city/SuburbanHouseBuilder.js?v=20260825_v4"></script>
+    <script src="js/city/HydrantWaterGeyserSystem.js?v=20260825_v4"></script>
+    <script src="js/city/StreetLampManager.js?v=20260825_v4"></script>
+    <script src="js/city/SkyscraperElevatorSystem.js?v=20260825_v4"></script>
 
     <!-- Звуковой движок -->
-    <script src="js/audio/ElevatorAudioSynth.js?v=20260825_v3"></script>
-    <script src="js/audio/VehicleSoundController.js?v=20260825_v3"></script>
-    <script src="js/audio/SpatialSoundEngine.js?v=20260825_v3"></script>
+    <script src="js/audio/ElevatorAudioSynth.js?v=20260825_v4"></script>
+    <script src="js/audio/VehicleSoundController.js?v=20260825_v4"></script>
+    <script src="js/audio/SpatialSoundEngine.js?v=20260825_v4"></script>
 
     <!-- Транспорт, трафик и физические объекты -->
-    <script src="js/vehicles/PhysicalSoccerBall.js?v=20260825_v3"></script>
-    <script src="js/vehicles/CarExhaustSmokeSystem.js?v=20260825_v3"></script>
-    <script src="js/vehicles/DetailedCarModel.js?v=20260825_v3"></script>
-    <script src="js/vehicles/HelicopterVehicle.js?v=20260825_v3"></script>
-    <script src="js/vehicles/TrafficWaypointNetwork.js?v=20260825_v3"></script>
-    <script src="js/vehicles/AITrafficVehicle.js?v=20260825_v3"></script>
-    <script src="js/vehicles/AmbientTrafficManager.js?v=20260825_v3"></script>
-    <script src="js/vehicles/VehicleManager.js?v=20260825_v3"></script>
+    <script src="js/vehicles/PhysicalSoccerBall.js?v=20260825_v4"></script>
+    <script src="js/vehicles/CarExhaustSmokeSystem.js?v=20260825_v4"></script>
+    <script src="js/vehicles/DetailedCarModel.js?v=20260825_v4"></script>
+    <script src="js/vehicles/HelicopterVehicle.js?v=20260825_v4"></script>
+    <script src="js/vehicles/TrafficWaypointNetwork.js?v=20260825_v4"></script>
+    <script src="js/vehicles/AITrafficVehicle.js?v=20260825_v4"></script>
+    <script src="js/vehicles/AmbientTrafficManager.js?v=20260825_v4"></script>
+    <script src="js/vehicles/VehicleManager.js?v=20260825_v4"></script>
 
     <!-- NPC и пешеходы -->
-    <script src="js/npc/HumanoidNPC.js?v=20260825_v3"></script>
-    <script src="js/npc/PedestrianNPCManager.js?v=20260825_v3"></script>
+    <script src="js/npc/HumanoidNPC.js?v=20260825_v4"></script>
+    <script src="js/npc/PedestrianNPCManager.js?v=20260825_v4"></script>
 
     <!-- Персонаж и камера -->
-    <script src="js/player/PlayerAnimationSystem.js?v=20260825_v3"></script>
-    <script src="js/player/PlayerController.js?v=20260825_v3"></script>
-    <script src="js/player/ThirdPersonCameraController.js?v=20260825_v3"></script>
+    <script src="js/player/PlayerAnimationSystem.js?v=20260825_v4"></script>
+    <script src="js/player/PlayerController.js?v=20260825_v4"></script>
+    <script src="js/player/ThirdPersonCameraController.js?v=20260825_v4"></script>
 
     <!-- Управление, интерфейс и меню -->
-    <script src="js/core/InputController.js?v=20260825_v3"></script>
-    <script src="js/core/GamepadController.js?v=20260825_v3"></script>
-    <script src="js/core/MobileTouchController.js?v=20260825_v3"></script>
-    <script src="js/ui/MinimapRenderer.js?v=20260825_v3"></script>
-    <script src="js/ui/FullMapRenderer.js?v=20260825_v3"></script>
-    <script src="js/ui/MenuAuroraRenderer.js?v=20260825_v3"></script>
-    <script src="js/ui/MainMenuManager.js?v=20260825_v3"></script>
-    <script src="js/core/LoadingProgressTracker.js?v=20260825_v3"></script>
+    <script src="js/core/InputController.js?v=20260825_v4"></script>
+    <script src="js/core/GamepadController.js?v=20260825_v4"></script>
+    <script src="js/core/MobileTouchController.js?v=20260825_v4"></script>
+    <script src="js/ui/MinimapRenderer.js?v=20260825_v4"></script>
+    <script src="js/ui/FullMapRenderer.js?v=20260825_v4"></script>
+    <script src="js/ui/MenuAuroraRenderer.js?v=20260825_v4"></script>
+    <script src="js/ui/MainMenuManager.js?v=20260825_v4"></script>
+    <script src="js/core/LoadingProgressTracker.js?v=20260825_v4"></script>
 
     <!-- Боевая система, оружие и взрывы -->
-    <script src="js/combat/CombatVFXManager.js?v=20260825_v3"></script>
-    <script src="js/combat/VehicleExplosionSystem.js?v=20260825_v3"></script>
-    <script src="js/combat/WeaponSystem.js?v=20260825_v3"></script>
+    <script src="js/combat/CombatVFXManager.js?v=20260825_v4"></script>
+    <script src="js/combat/VehicleExplosionSystem.js?v=20260825_v4"></script>
+    <script src="js/combat/WeaponSystem.js?v=20260825_v4"></script>
 
     <!-- Полиция и система розыска -->
-    <script src="js/police/PoliceOfficerNPC.js?v=20260825_v3"></script>
-    <script src="js/police/PoliceVehicle.js?v=20260825_v3"></script>
-    <script src="js/police/PoliceVehicleManager.js?v=20260825_v3"></script>
-    <script src="js/police/WantedLevelManager.js?v=20260825_v3"></script>
+    <script src="js/police/PoliceOfficerNPC.js?v=20260825_v4"></script>
+    <script src="js/police/PoliceVehicle.js?v=20260825_v4"></script>
+    <script src="js/police/PoliceVehicleManager.js?v=20260825_v4"></script>
+    <script src="js/police/WantedLevelManager.js?v=20260825_v4"></script>
 
     <!-- Городские миссии -->
-    <script src="js/missions/MissionMarker3D.js?v=20260825_v3"></script>
-    <script src="js/missions/MissionHUD.js?v=20260825_v3"></script>
-    <script src="js/missions/MissionManager.js?v=20260825_v3"></script>
+    <script src="js/missions/MissionMarker3D.js?v=20260825_v4"></script>
+    <script src="js/missions/MissionHUD.js?v=20260825_v4"></script>
+    <script src="js/missions/MissionManager.js?v=20260825_v4"></script>
 
     <!-- Сетевой мультиплеер (Firebase Realtime Database) -->
-    <script src="js/network/FirebaseConfig.js?v=20260825_v3"></script>
-    <script src="js/network/RemotePlayer.js?v=20260825_v3"></script>
-    <script src="js/network/MultiplayerManager.js?v=20260825_v3"></script>
-    <script src="js/ui/MultiplayerHUD.js?v=20260825_v3"></script>
+    <script src="js/network/FirebaseConfig.js?v=20260825_v4"></script>
+    <script src="js/network/RemotePlayer.js?v=20260825_v4"></script>
+    <script src="js/network/MultiplayerManager.js?v=20260825_v4"></script>
+    <script src="js/ui/MultiplayerHUD.js?v=20260825_v4"></script>
 
     <!-- Главный движок и запуск -->
-    <script src="js/core/Engine.js?v=20260825_v3"></script>
-    <script src="js/main.js?v=20260825_v3"></script>
+    <script src="js/core/Engine.js?v=20260825_v4"></script>
+    <script src="js/main.js?v=20260825_v4"></script>
 </body>
 </html>
