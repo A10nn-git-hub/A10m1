@@ -238,8 +238,9 @@ class MultiplayerManager {
             this.propsRef.on('child_added', (snapshot) => {
                 const propId = parseInt(snapshot.key);
                 const data = snapshot.val();
+                const isRecent = data && data.ts && (Date.now() - data.ts < 4000);
                 if (data && !isNaN(propId) && window.gameEngine && window.gameEngine.streetLampManager) {
-                    window.gameEngine.streetLampManager.receiveNetworkBreakProp(propId, data.vx || 0, data.vy || 4, data.vz || 0);
+                    window.gameEngine.streetLampManager.receiveNetworkBreakProp(propId, data.vx || 0, data.vy || 4, data.vz || 0, !!isRecent);
                 }
             }, (err) => {
                 console.error('[Multiplayer] Firebase propsRef error:', err);
@@ -256,13 +257,15 @@ class MultiplayerManager {
             this.vehiclesRef.on('child_added', handleVehicleSync);
             this.vehiclesRef.on('child_changed', handleVehicleSync);
 
-            // Синхронизация вертолета Maverick
-            this.heliRef.on('value', (snapshot) => {
+            // Синхронизация вертолетов Maverick
+            const handleHeliSync = (snapshot) => {
                 const data = snapshot.val();
                 if (data && data.pilotId !== this.localPlayerId) {
                     this.updateHeliFromNetwork(data);
                 }
-            });
+            };
+            this.heliRef.on('child_added', handleHeliSync);
+            this.heliRef.on('child_changed', handleHeliSync);
 
             // Синхронизация чата
             this.chatRef.limitToLast(25).on('child_added', (snapshot) => {

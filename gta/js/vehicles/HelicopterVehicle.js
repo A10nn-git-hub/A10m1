@@ -608,7 +608,9 @@ class HelicopterVehicle {
             const predictedPos = this.netTargetPos.clone().addScaledVector(this.netVelocity, elapsedSec);
 
             const lerpFactor = 1.0 - Math.exp(-22.0 * dt);
-            this.body.position.lerp(predictedPos, lerpFactor);
+            this.body.position.x += (predictedPos.x - this.body.position.x) * lerpFactor;
+            this.body.position.y += (predictedPos.y - this.body.position.y) * lerpFactor;
+            this.body.position.z += (predictedPos.z - this.body.position.z) * lerpFactor;
             this.body.velocity.copy(this.netVelocity);
             this.group.position.copy(this.body.position);
 

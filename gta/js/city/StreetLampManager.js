@@ -315,7 +315,7 @@
                 });
             }
 
-            breakProp(prop, impactVelocity, broadcast = true) {
+            breakProp(prop, impactVelocity, broadcast = true, playSound = true) {
                 if (!prop || prop.isBroken) return;
                 prop.isBroken = true;
 
@@ -337,7 +337,7 @@
                 this.brokenProps.push(prop);
 
                 const pos = prop.mesh.position;
-                if (window.soundEngine) {
+                if (playSound && window.soundEngine) {
                     window.soundEngine.playPropCrash(prop.soundType, pos.x, pos.y, pos.z);
                 }
 
@@ -355,10 +355,10 @@
                 }
             }
 
-            receiveNetworkBreakProp(propId, vx, vy, vz) {
+            receiveNetworkBreakProp(propId, vx, vy, vz, playSound = false) {
                 if (propId !== undefined && this.props[propId] && !this.props[propId].isBroken) {
                     const vel = new CANNON.Vec3(vx || 0, vy || 4, vz || 0);
-                    this.breakProp(this.props[propId], vel, false);
+                    this.breakProp(this.props[propId], vel, false, playSound);
                 }
             }
 

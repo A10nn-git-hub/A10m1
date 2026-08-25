@@ -292,6 +292,10 @@ class MultiplayerHUD {
 
         this.mp.connect(null, nick, room);
         this.closeSettingsModal();
+
+        if (window.gameEngine && window.gameEngine.mainMenuManager && !window.gameEngine.mainMenuManager.isGameStarted) {
+            window.gameEngine.mainMenuManager.startGame();
+        }
     }
 
     toggleScoreboard() {

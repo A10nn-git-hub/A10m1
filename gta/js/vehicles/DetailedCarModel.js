@@ -510,7 +510,9 @@
                     const predictedPos = this.netTargetPos.clone().addScaledVector(this.netVelocity, elapsedSec);
 
                     const lerpFactor = 1.0 - Math.exp(-22.0 * dt);
-                    this.chassisBody.position.lerp(predictedPos, lerpFactor);
+                    this.chassisBody.position.x += (predictedPos.x - this.chassisBody.position.x) * lerpFactor;
+                    this.chassisBody.position.y += (predictedPos.y - this.chassisBody.position.y) * lerpFactor;
+                    this.chassisBody.position.z += (predictedPos.z - this.chassisBody.position.z) * lerpFactor;
                     this.carGroup.position.copy(this.chassisBody.position);
 
                     let diffRot = this.netTargetRotY - this.carGroup.rotation.y;
