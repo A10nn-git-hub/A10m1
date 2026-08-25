@@ -510,17 +510,17 @@ class HelicopterVehicle {
         }
 
         // 2. Управление курсом (Поворот носа влево / вправо)
-        // Влево (A): headingAngle уменьшается, вертолет плавно кренится влево
-        // Вправо (D): headingAngle увеличивается, вертолет плавно кренится вправо
+        // Влево (A / Джойстик влево): вертолет поворачивает влево и плавно кренится влево
+        // Вправо (D / Джойстик вправо): вертолет поворачивает вправо и плавно кренится вправо
         let yawRate = 0.0;
         let targetRoll = 0.0;
         if (inputKeys.left) {
-            yawRate = -1.75;
-            targetRoll = 0.26;
-        }
-        if (inputKeys.right) {
             yawRate = 1.75;
             targetRoll = -0.26;
+        }
+        if (inputKeys.right) {
+            yawRate = -1.75;
+            targetRoll = 0.26;
         }
         this.headingAngle += yawRate * dt;
 

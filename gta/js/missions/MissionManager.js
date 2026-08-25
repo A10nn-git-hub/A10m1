@@ -65,6 +65,16 @@ class MissionManager {
                 destinationPos: { x: -140.0, y: 0.2, z: -110.0 },
                 duration: 85.0,
                 description: 'Доставьте ценный груз в порт под давлением полиции'
+            },
+            {
+                id: 'POLICE_EVADE',
+                type: 'POLICE',
+                title: 'Побег от Полиции (Погоня)',
+                reward: 60000,
+                startPos: { x: -52.0, y: 0.2, z: 50.0 },
+                destinationPos: { x: 90.0, y: 0.2, z: -90.0 },
+                duration: 80.0,
+                description: 'Сбросьте 3 звезды розыска или доберитесь до убежища!'
             }
         ];
     }
@@ -106,6 +116,13 @@ class MissionManager {
             // Активируем 2 звезды розыска
             if (window.gameEngine && window.gameEngine.wantedManager) {
                 window.gameEngine.wantedManager.setStars(2);
+            }
+        } else if (missionData.type === 'POLICE') {
+            this.activeMission.targetPos = missionData.destinationPos;
+            this.spawnCheckpointMarker(this.activeMission.targetPos);
+            // Активируем 3 звезды розыска (полицейская погоня)
+            if (window.gameEngine && window.gameEngine.wantedManager) {
+                window.gameEngine.wantedManager.setStars(3);
             }
         }
 
@@ -240,6 +257,11 @@ class MissionManager {
                 }
             } else if (m.data.type === 'TAXI' || m.data.type === 'DELIVERY') {
                 if (distToTarget < 6.0) {
+                    this.completeMission(true);
+                }
+            } else if (m.data.type === 'POLICE') {
+                const lostStars = (window.gameEngine && window.gameEngine.wantedManager && window.gameEngine.wantedManager.stars === 0 && (m.data.duration - m.timer > 12.0));
+                if (distToTarget < 6.0 || lostStars) {
                     this.completeMission(true);
                 }
             } else if (m.data.type === 'GANG') {

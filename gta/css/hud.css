@@ -1108,13 +1108,23 @@
     display: flex;
     align-items: center;
     gap: 14px;
-    background: rgba(10, 15, 29, 0.92);
+    background: rgba(10, 15, 29, 0.95);
     backdrop-filter: blur(12px);
     border: 2px solid #00f0ff;
     padding: 12px 24px;
     border-radius: 12px;
-    box-shadow: 0 10px 35px rgba(0, 240, 255, 0.35);
-    z-index: 120;
+    box-shadow: 0 10px 35px rgba(0, 240, 255, 0.45);
+    z-index: 150;
+    cursor: pointer;
+    pointer-events: auto !important;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.mission-start-prompt:active {
+    transform: translateX(-50%) scale(0.96);
+    box-shadow: 0 5px 20px rgba(0, 240, 255, 0.6);
 }
 .mission-start-prompt kbd {
     background: #00f0ff;

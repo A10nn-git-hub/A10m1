@@ -56,6 +56,18 @@ class MissionHUD {
         this.bannerContainer = document.getElementById('mission-banner-container');
         this.bannerTitle = document.getElementById('mission-banner-title');
         this.bannerSubtitle = document.getElementById('mission-banner-subtitle');
+
+        if (this.startPrompt) {
+            const handleAccept = (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                if (window.gameEngine && window.gameEngine.missionManager) {
+                    window.gameEngine.missionManager.interactWithNearbyMarker();
+                }
+            };
+            this.startPrompt.addEventListener('click', handleAccept);
+            this.startPrompt.addEventListener('touchend', handleAccept, { passive: false });
+        }
     }
 
     showStartPrompt(title, reward) {

@@ -332,3 +332,4 @@
                 duration: 45.0
             }
         ];
+        window.INTERIOR_DESTINATIONS = INTERIOR_DESTINATIONS;

@@ -200,11 +200,13 @@ class GTAEngine {
 
         this.sunLight = new THREE.DirectionalLight(0xfffaea, 2.0);
         this.sunLight.castShadow = true;
-        this.sunLight.shadow.mapSize.width = 1024;
-        this.sunLight.shadow.mapSize.height = 1024;
+        const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 820);
+        const shadowRes = isMobile ? 512 : 1024;
+        this.sunLight.shadow.mapSize.width = shadowRes;
+        this.sunLight.shadow.mapSize.height = shadowRes;
         this.sunLight.shadow.camera.near = 10;
         this.sunLight.shadow.camera.far = 200;
-        const shadowExtent = 42;
+        const shadowExtent = isMobile ? 32 : 42;
         this.sunLight.shadow.camera.left = -shadowExtent;
         this.sunLight.shadow.camera.right = shadowExtent;
         this.sunLight.shadow.camera.top = shadowExtent;
@@ -529,6 +531,17 @@ class GTAEngine {
             }
         };
 
+        this.inputController.onInteract = () => {
+            if (this.missionManager && this.missionManager.nearbyMissionMarker) {
+                this.missionManager.interactWithNearbyMarker();
+                return;
+            }
+            if (this.playerController && (this.playerController.isClimbingTree || this.playerController.findNearestTree(4.2))) {
+                this.playerController.toggleClimbTree();
+                return;
+            }
+        };
+
         this.inputController.onToggleHeadlights = () => {
             if (this.vehicleManager && this.vehicleManager.activeDrivenCar) {
                 const state = this.vehicleManager.toggleActiveCarHeadlights();
@@ -681,9 +694,9 @@ class GTAEngine {
 
     updatePhysics(deltaTime) {
         if (this.isPowerSavingMode) {
-            this.world.step(1 / 60, Math.min(deltaTime, 0.04), 1);
+            this.world.step(1 / 60, Math.min(deltaTime, 0.033), 1);
         } else {
-            this.world.step(1 / 60, Math.min(deltaTime, 0.1), 3);
+            this.world.step(1 / 60, Math.min(deltaTime, 0.05), 2);
         }
 
         const isDriving = this.vehicleManager && this.vehicleManager.activeDrivenCar !== null;

@@ -106,7 +106,8 @@ class PedestrianNPCManager {
                                     .map(p => p.interiorMission.id)
                             );
 
-                            const freeSpots = INTERIOR_DESTINATIONS.filter(d => d.building === bKey && !occupiedIds.has(d.id));
+                            const allDest = (typeof window !== 'undefined' && window.INTERIOR_DESTINATIONS) ? window.INTERIOR_DESTINATIONS : [];
+                            const freeSpots = allDest.filter(d => d.building === bKey && !occupiedIds.has(d.id));
                             if (freeSpots.length > 0) {
                                 const dest = freeSpots[Math.floor(Math.random() * freeSpots.length)];
                                 let bestNpc = null;
