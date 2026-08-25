@@ -320,7 +320,7 @@ class SkyscraperElevatorSystem {
                 }
             }
 
-            // Машина состояний дверей и движения
+            // Машина состояний дверей и движения для каждого лифта
             if (elev.state === 'IDLE') {
                 if (isNearOutside && playerTargetFloor === elev.currentFloorIndex) {
                     if (elev.doorProgress < 1.0) elev.state = 'DOORS_OPENING';
@@ -331,34 +331,93 @@ class SkyscraperElevatorSystem {
                         elev.state = 'DOORS_CLOSING';
                     }
                 } else {
-                    }
-                } else if (this.state === 'DOORS_OPENING') {
-                    this.doorProgress = Math.min(1.0, this.doorProgress + dt * 1.8);
-                    this.updateDoors();
-                    if (this.doorProgress >= 1.0) {
-                        this.state = 'IDLE';
-                        if (this.hudStatusElement) {
-                            this.hudStatusElement.innerText = `Текущий: ${this.floors[this.currentFloorIndex].floor} этаж — ${this.floors[this.currentFloorIndex].name}`;
-                        }
-                        this.updateFloorButtonsUI(this.currentFloorIndex);
+                    elev.insideStayTimer = 0.0;
+                    if (elev.doorProgress > 0.0) {
+                        elev.state = 'DOORS_CLOSING';
                     }
                 }
-            }
-
-            updateDoors() {
-                // Створки увеличенных дверей (Slide Progress 0..1)
-                const slideDist = this.doorProgress * 1.95;
-                if (this.cabinDoorLeft && this.cabinDoorRight) {
-                    this.cabinDoorLeft.position.x = -1.0 - slideDist;
-                    this.cabinDoorRight.position.x = 1.0 + slideDist;
-                }
-                // Если двери открыты (> 0.5), убираем коллизию барьера под пол
-                if (this.doorBarrierBody) {
-                    if (this.doorProgress > 0.5 && this.state !== 'MOVING') {
-                        this.doorBarrierBody.position.y = -100.0;
+            } else if (elev.state === 'DOORS_CLOSING') {
+                elev.doorProgress = Math.max(0.0, elev.doorProgress - dt * 1.8);
+                this.updateDoors(elev);
+                if (elev.doorProgress <= 0.0) {
+                    if (elev.targetFloorIndex !== elev.currentFloorIndex) {
+                        elev.state = 'MOVING';
+                        if (elev.isMazeBank && this.audioSynth) this.audioSynth.startHum();
                     } else {
-                        this.doorBarrierBody.position.y = this.currentY + 1.8;
+                        elev.state = 'IDLE';
                     }
+                }
+            } else if (elev.state === 'MOVING') {
+                elev.moveProgress += dt / elev.moveDuration;
+                const t = Math.min(1.0, elev.moveProgress);
+                const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+                elev.currentY = THREE.MathUtils.lerp(elev.startY, elev.destY, ease);
+                elev.cabinGroup.position.y = elev.currentY;
+                elev.cabinBody.position.y = elev.currentY + 0.07;
+
+                // Полная фиксация игрока внутри кабины во время движения
+                if (elev.isPlayerInside && player && player.body) {
+                    player.body.position.x = THREE.MathUtils.clamp(player.body.position.x, elev.shaftX - cW / 2 + 0.9, elev.shaftX + cW / 2 - 0.9);
+                    player.body.position.z = THREE.MathUtils.clamp(player.body.position.z, elev.shaftZ - cD / 2 + 0.9, elev.shaftZ + cD / 2 - 0.9);
+                    player.body.position.y = elev.currentY + 0.88;
+                    player.body.velocity.set(0, 0, 0);
+                    if (player.mesh) {
+                        player.mesh.position.set(player.body.position.x, elev.currentY, player.body.position.z);
+                    }
+                }
+
+                if (elev.isPlayerInside && this.hudStatusElement) {
+                    const targetFl = elev.floors[elev.targetFloorIndex];
+                    this.hudStatusElement.innerText = `В ДВИЖЕНИИ... [На ${targetFl.floor} этаж: ${targetFl.name}]`;
+                }
+
+                if (elev.moveProgress >= 1.0) {
+                    elev.currentY = elev.destY;
+                    elev.cabinGroup.position.y = elev.currentY;
+                    elev.cabinBody.position.y = elev.currentY + 0.07;
+                    elev.currentFloorIndex = elev.targetFloorIndex;
+                    elev.state = 'ARRIVED';
+
+                    if (elev.isMazeBank && this.audioSynth) {
+                        this.audioSynth.stopHum();
+                        this.audioSynth.playDing();
+                    }
+
+                    if (elev.isPlayerInside && this.hudStatusElement) {
+                        this.hudStatusElement.innerText = `Прибыли: ${elev.floors[elev.currentFloorIndex].floor} этаж — ${elev.floors[elev.currentFloorIndex].name}!`;
+                    }
+                    this.updateFloorButtonsUI(elev);
+
+                    setTimeout(() => {
+                        if (elev.state === 'ARRIVED') elev.state = 'DOORS_OPENING';
+                    }, 350);
+                }
+            } else if (elev.state === 'DOORS_OPENING') {
+                elev.doorProgress = Math.min(1.0, elev.doorProgress + dt * 1.8);
+                this.updateDoors(elev);
+                if (elev.doorProgress >= 1.0) {
+                    elev.state = 'IDLE';
+                    if (elev.isPlayerInside && this.hudStatusElement) {
+                        this.hudStatusElement.innerText = `Текущий: ${elev.floors[elev.currentFloorIndex].floor} этаж — ${elev.floors[elev.currentFloorIndex].name}`;
+                    }
+                    this.updateFloorButtonsUI(elev);
                 }
             }
         }
+
+        if (!playerNearAnyElevator && this.hudPromptElement) {
+            this.hudPromptElement.style.display = 'none';
+            this.hudPromptElement.classList.remove('active');
+        }
+    }
+
+    updateDoors(elev) {
+        if (!elev) return;
+        const slideDist = elev.doorProgress * (elev.doorWidth || 1.5);
+        if (elev.doorLeft && elev.doorRight) {
+            elev.doorLeft.position.x = -elev.doorWidth / 2 - slideDist;
+            elev.doorRight.position.x = elev.doorWidth / 2 + slideDist;
+        }
+    }
+}

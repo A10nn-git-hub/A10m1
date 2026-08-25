@@ -49,38 +49,33 @@ class MultiplayerHUD {
             });
         }
 
+        const addTap = (el, fn) => {
+            if (!el) return;
+            el.addEventListener('click', fn);
+            el.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                fn(e);
+            }, { passive: false });
+        };
+
         // Кнопка открытия мультиплеера в главном меню
         const btnMenuMp = document.getElementById('btn-menu-multiplayer');
-        if (btnMenuMp) {
-            btnMenuMp.addEventListener('click', () => {
-                this.openSettingsModal();
-            });
-        }
+        addTap(btnMenuMp, () => this.openSettingsModal());
 
         // Кнопка закрытия модалки мультиплеера
         const btnCloseMp = document.getElementById('btn-close-mp-settings');
-        if (btnCloseMp) {
-            btnCloseMp.addEventListener('click', () => {
-                this.closeSettingsModal();
-            });
-        }
+        addTap(btnCloseMp, () => this.closeSettingsModal());
 
         // Кнопка подключения / смены комнаты
         const btnConnect = document.getElementById('btn-mp-connect');
-        if (btnConnect) {
-            btnConnect.addEventListener('click', () => {
-                this.handleConnectButton();
-            });
-        }
+        addTap(btnConnect, () => this.handleConnectButton());
 
         // Кнопка отключения от сети
         const btnDisconnect = document.getElementById('btn-mp-disconnect');
-        if (btnDisconnect) {
-            btnDisconnect.addEventListener('click', () => {
-                this.mp.disconnect();
-                this.updateSettingsModalState();
-            });
-        }
+        addTap(btnDisconnect, () => {
+            this.mp.disconnect();
+            this.updateSettingsModalState();
+        });
 
         // Пресеты комнат (быстрый выбор)
         const presetBtns = document.querySelectorAll('.mp-preset-btn');

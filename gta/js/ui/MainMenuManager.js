@@ -69,70 +69,29 @@ class MainMenuManager {
             }
 
             initUI() {
-                if (this.btnPlay) {
-                    this.btnPlay.onclick = (e) => {
+                const addBtnAction = (btn, action) => {
+                    if (!btn) return;
+                    btn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        this.startGame();
-                    };
-                }
+                        action();
+                    });
+                    btn.addEventListener('touchend', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        action();
+                    }, { passive: false });
+                };
 
-                if (this.btnSettings) {
-                    this.btnSettings.onclick = (e) => {
-                        e.stopPropagation();
-                        this.openSettings();
-                    };
-                }
-                if (this.btnCloseSettings) {
-                    this.btnCloseSettings.onclick = (e) => {
-                        e.stopPropagation();
-                        this.closeSettings();
-                    };
-                }
-                if (this.btnSaveSettings) {
-                    this.btnSaveSettings.onclick = (e) => {
-                        e.stopPropagation();
-                        this.saveSettingsWithValidation();
-                    };
-                }
-                if (this.btnResetKeybinds) {
-                    this.btnResetKeybinds.onclick = (e) => {
-                        e.stopPropagation();
-                        this.resetKeybinds();
-                    };
-                }
-
-                if (this.btnAbout) {
-                    this.btnAbout.onclick = (e) => {
-                        e.stopPropagation();
-                        this.openAbout();
-                    };
-                }
-                if (this.btnCloseAbout) {
-                    this.btnCloseAbout.onclick = (e) => {
-                        e.stopPropagation();
-                        this.closeAbout();
-                    };
-                }
-                if (this.btnCloseAboutFooter) {
-                    this.btnCloseAboutFooter.onclick = (e) => {
-                        e.stopPropagation();
-                        this.closeAbout();
-                    };
-                }
-
-                if (this.btnExit) {
-                    this.btnExit.onclick = (e) => {
-                        e.stopPropagation();
-                        this.exitToMainMenu();
-                    };
-                }
-
-                if (this.minimapBtn) {
-                    this.minimapBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        this.fullMapRenderer.toggle();
-                    };
-                }
+                addBtnAction(this.btnPlay, () => this.startGame());
+                addBtnAction(this.btnSettings, () => this.openSettings());
+                addBtnAction(this.btnCloseSettings, () => this.closeSettings());
+                addBtnAction(this.btnSaveSettings, () => this.saveSettingsWithValidation());
+                addBtnAction(this.btnResetKeybinds, () => this.resetKeybinds());
+                addBtnAction(this.btnAbout, () => this.openAbout());
+                addBtnAction(this.btnCloseAbout, () => this.closeAbout());
+                addBtnAction(this.btnCloseAboutFooter, () => this.closeAbout());
+                addBtnAction(this.btnExit, () => this.exitToMainMenu());
+                addBtnAction(this.minimapBtn, () => this.fullMapRenderer.toggle());
 
                 this.initKeybindButtons();
 
