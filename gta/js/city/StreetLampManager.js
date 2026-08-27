@@ -429,17 +429,27 @@ class StreetLampManager {
             if (speedSq < 14.0) continue; // Скорость более 13.5 км/ч
 
             const carQuat = car.carGroup ? car.carGroup.quaternion : car.chassisBody.quaternion;
-            const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(carQuat);
-            const rgt = new THREE.Vector3(1, 0, 0).applyQuaternion(carQuat);
+            if (!this._fwd) {
+                this._fwd = new THREE.Vector3();
+                this._rgt = new THREE.Vector3();
+                this._hitPoints = [
+                    new THREE.Vector3(),
+                    new THREE.Vector3(),
+                    new THREE.Vector3(),
+                    new THREE.Vector3(),
+                    new THREE.Vector3()
+                ];
+            }
+            const fwd = this._fwd.set(0, 0, 1).applyQuaternion(carQuat);
+            const rgt = this._rgt.set(1, 0, 0).applyQuaternion(carQuat);
 
             // 5 точек контура (центр переднего бампера, левый и правый углы, капот и центр авто)
-            const hitPoints = [
-                carPos,
-                new THREE.Vector3(carPos.x + fwd.x * 2.3, carPos.y, carPos.z + fwd.z * 2.3),
-                new THREE.Vector3(carPos.x + fwd.x * 2.3 - rgt.x * 0.95, carPos.y, carPos.z + fwd.z * 2.3 - rgt.z * 0.95),
-                new THREE.Vector3(carPos.x + fwd.x * 2.3 + rgt.x * 0.95, carPos.y, carPos.z + fwd.z * 2.3 + rgt.z * 0.95),
-                new THREE.Vector3(carPos.x + fwd.x * 1.2, carPos.y, carPos.z + fwd.z * 1.2)
-            ];
+            this._hitPoints[0].set(carPos.x, carPos.y, carPos.z);
+            this._hitPoints[1].set(carPos.x + fwd.x * 2.3, carPos.y, carPos.z + fwd.z * 2.3);
+            this._hitPoints[2].set(carPos.x + fwd.x * 2.3 - rgt.x * 0.95, carPos.y, carPos.z + fwd.z * 2.3 - rgt.z * 0.95);
+            this._hitPoints[3].set(carPos.x + fwd.x * 2.3 + rgt.x * 0.95, carPos.y, carPos.z + fwd.z * 2.3 + rgt.z * 0.95);
+            this._hitPoints[4].set(carPos.x + fwd.x * 1.2, carPos.y, carPos.z + fwd.z * 1.2);
+            const hitPoints = this._hitPoints;
 
             for (let p = 0; p < this.props.length; p++) {
                 const prop = this.props[p];

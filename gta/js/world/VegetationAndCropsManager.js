@@ -127,14 +127,14 @@ class VegetationAndCropsManager {
         let idx = 0;
 
         const isBuildingZone = (bx, bz) => {
-            if (Math.hypot(bx - 0, bz - 60) < 42.0) return true;
-            if (Math.hypot(bx - 0, bz - 0) < 32.0) return true;
-            if (Math.hypot(bx - 60, bz - 60) < 30.0) return true;
-            if (Math.hypot(bx - (-60), bz - 60) < 30.0) return true;
-            if (Math.hypot(bx - (-60), bz - (-60)) < 26.0) return true;
-            if (Math.hypot(bx - 60, bz - (-60)) < 26.0) return true;
-            if (Math.hypot(bx - (-120), bz - 60) < 28.0) return true;
-            if (Math.hypot(bx - 120, bz - 60) < 28.0) return true;
+            if (Math.hypot(bx - 0, bz - 60) < 45.0) return true; // Maze Bank plaza / lobby
+            if (Math.hypot(bx - 0, bz - 0) < 36.0) return true; // Maze Bank center
+            if (Math.hypot(bx - 60, bz - 60) < 35.0) return true; // Hospital
+            if (Math.hypot(bx - (-60), bz - 60) < 35.0) return true; // Police
+            if (Math.hypot(bx - (-60), bz - (-60)) < 30.0) return true; // House 1
+            if (Math.hypot(bx - 60, bz - (-60)) < 30.0) return true; // House 2
+            if (Math.hypot(bx - (-120), bz - 60) < 35.0) return true; // Downtown West / Warehouse
+            if (Math.hypot(bx - 120, bz - 60) < 35.0) return true; // Downtown East / Factory
             return false;
         };
 
@@ -265,10 +265,10 @@ class VegetationAndCropsManager {
         let idx = 0;
 
         const cityTreePositions = [
-            { x: -38, z: -38 }, { x: 38, z: -38 }, { x: -38, z: 38 }, { x: 38, z: 38 },
-            { x: -75, z: 0 }, { x: 75, z: 0 }, { x: 0, z: -75 }, { x: 0, z: 115 },
-            { x: -95, z: -38 }, { x: 95, z: -38 }, { x: -95, z: 38 }, { x: 95, z: 38 },
-            { x: -38, z: -95 }, { x: 38, z: -95 }, { x: -38, z: 95 }, { x: 38, z: 95 }
+            { x: -38, z: -38 }, { x: 38, z: -38 }, { x: -38, z: 25 }, { x: 38, z: 25 },
+            { x: -75, z: 0 }, { x: 75, z: 0 }, { x: 0, z: -75 }, { x: 0, z: 125 },
+            { x: -95, z: -38 }, { x: 95, z: -38 }, { x: -95, z: 25 }, { x: 95, z: 25 },
+            { x: -38, z: -95 }, { x: 38, z: -95 }, { x: -38, z: 125 }, { x: 38, z: 125 }
         ];
 
         for (let i = 0; i < cityTreePositions.length && idx < count; i++) {

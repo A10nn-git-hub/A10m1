@@ -1493,21 +1493,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Telegram WebApp Integration
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        try {
-            tg.ready();
-            tg.expand();
-            if (typeof tg.requestFullscreen === 'function') {
-                tg.requestFullscreen();
+    try {
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+            if (typeof tg.ready === 'function') tg.ready();
+            if (typeof tg.expand === 'function') tg.expand();
+            if (typeof tg.requestFullscreen === 'function' && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('8.0')) {
+                try { tg.requestFullscreen(); } catch (err) {}
             }
-            if (tg.BackButton) {
-                tg.BackButton.hide();
+            if (tg.BackButton && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('6.1')) {
+                try { tg.BackButton.hide(); } catch (err) {}
             }
-        } catch (e) {
-            console.warn('Telegram WebApp init error:', e);
         }
-    }
+    } catch (e) {}
 
     // Initialize Firebase & Central Lobby
     initHubFirebase();

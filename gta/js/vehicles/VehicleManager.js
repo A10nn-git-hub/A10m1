@@ -25,6 +25,13 @@ class VehicleManager {
         this.hudGear = document.getElementById('hud-gear');
         this.hudSpeed = document.getElementById('hud-speed');
 
+        this._tDoorOffset = new THREE.Vector3();
+        this._tSeatOffset = new THREE.Vector3();
+        this._tExitOffset = new THREE.Vector3();
+        this._tPosA = new THREE.Vector3();
+        this._tPosB = new THREE.Vector3();
+        this._tTargetPos = new THREE.Vector3();
+
         this.spawnShowcaseVehicles();
     }
 
@@ -181,14 +188,13 @@ class VehicleManager {
 
             const carPos = this.transitionCar.chassisBody.position;
             const isLeft = (this.seatIndex % 2 === 0);
-            const doorOffset = new THREE.Vector3(isLeft ? -1.3 : 1.3, 0.0, this.seatIndex > 1 ? -0.7 : 0.1).applyQuaternion(this.transitionCar.carGroup.quaternion);
-            const seatOffset = this.transitionCar.getSeatOffset(this.seatIndex).clone().applyQuaternion(this.transitionCar.carGroup.quaternion);
+            const doorOffset = this._tDoorOffset.set(isLeft ? -1.3 : 1.3, 0.0, this.seatIndex > 1 ? -0.7 : 0.1).applyQuaternion(this.transitionCar.carGroup.quaternion);
+            const rawSeat = this.transitionCar.getSeatOffset(this.seatIndex);
+            const seatOffset = this._tSeatOffset.set(rawSeat.x, rawSeat.y, rawSeat.z).applyQuaternion(this.transitionCar.carGroup.quaternion);
 
-            const targetPos = new THREE.Vector3().lerpVectors(
-                new THREE.Vector3(carPos.x + doorOffset.x, carPos.y, carPos.z + doorOffset.z),
-                new THREE.Vector3(carPos.x + seatOffset.x, carPos.y, carPos.z + seatOffset.z),
-                progress
-            );
+            const posA = this._tPosA.set(carPos.x + doorOffset.x, carPos.y, carPos.z + doorOffset.z);
+            const posB = this._tPosB.set(carPos.x + seatOffset.x, carPos.y, carPos.z + seatOffset.z);
+            const targetPos = this._tTargetPos.lerpVectors(posA, posB, progress);
             player.mesh.position.copy(targetPos);
             player.mesh.quaternion.copy(this.transitionCar.carGroup.quaternion);
 
@@ -257,14 +263,13 @@ class VehicleManager {
             player.mesh.visible = true;
             const carPos = this.transitionCar.chassisBody.position;
             const isLeft = (this.seatIndex % 2 === 0);
-            const seatOffset = this.transitionCar.getSeatOffset(this.seatIndex).clone().applyQuaternion(this.transitionCar.carGroup.quaternion);
-            const exitOffset = new THREE.Vector3(isLeft ? -1.85 : 1.85, 0.0, this.seatIndex > 1 ? -0.7 : 0.0).applyQuaternion(this.transitionCar.carGroup.quaternion);
+            const rawSeat = this.transitionCar.getSeatOffset(this.seatIndex);
+            const seatOffset = this._tSeatOffset.set(rawSeat.x, rawSeat.y, rawSeat.z).applyQuaternion(this.transitionCar.carGroup.quaternion);
+            const exitOffset = this._tExitOffset.set(isLeft ? -1.85 : 1.85, 0.0, this.seatIndex > 1 ? -0.7 : 0.0).applyQuaternion(this.transitionCar.carGroup.quaternion);
 
-            const targetPos = new THREE.Vector3().lerpVectors(
-                new THREE.Vector3(carPos.x + seatOffset.x, carPos.y, carPos.z + seatOffset.z),
-                new THREE.Vector3(carPos.x + exitOffset.x, carPos.y, carPos.z + exitOffset.z),
-                progress
-            );
+            const posA = this._tPosA.set(carPos.x + seatOffset.x, carPos.y, carPos.z + seatOffset.z);
+            const posB = this._tPosB.set(carPos.x + exitOffset.x, carPos.y, carPos.z + exitOffset.z);
+            const targetPos = this._tTargetPos.lerpVectors(posA, posB, progress);
             player.mesh.position.copy(targetPos);
             player.mesh.quaternion.copy(this.transitionCar.carGroup.quaternion);
 

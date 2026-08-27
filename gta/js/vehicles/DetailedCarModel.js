@@ -528,7 +528,8 @@
                     while (diffRot > Math.PI) diffRot -= Math.PI * 2;
                     while (diffRot < -Math.PI) diffRot += Math.PI * 2;
                     this.carGroup.rotation.y += diffRot * lerpFactor;
-                    this.chassisBody.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), this.carGroup.rotation.y);
+                    const upAxis = DetailedCarModel._UP_AXIS || (DetailedCarModel._UP_AXIS = new CANNON.Vec3(0, 1, 0));
+                    this.chassisBody.quaternion.setFromAxisAngle(upAxis, this.carGroup.rotation.y);
 
                     const netSpeed = Math.hypot(this.netVelocity.x, this.netVelocity.z);
                     for (let i = 0; i < this.wheelHubs.length; i++) {
@@ -610,14 +611,15 @@
             }
 
             getSeatOffset(seatIndex = 0) {
-                // Локальные смещения для 4 мест
-                switch (seatIndex) {
-                    case 0: return new THREE.Vector3(-0.42, 0.22, -0.15); // Водитель
-                    case 1: return new THREE.Vector3(0.42, 0.22, -0.15);  // Передний пассажир
-                    case 2: return new THREE.Vector3(-0.42, 0.22, -0.85); // Задний левый
-                    case 3: return new THREE.Vector3(0.42, 0.22, -0.85);  // Задний правый
-                    default: return new THREE.Vector3(-0.42, 0.22, -0.15);
+                if (!DetailedCarModel.SEAT_OFFSETS) {
+                    DetailedCarModel.SEAT_OFFSETS = [
+                        new THREE.Vector3(-0.42, 0.22, -0.15),
+                        new THREE.Vector3(0.42, 0.22, -0.15),
+                        new THREE.Vector3(-0.42, 0.22, -0.85),
+                        new THREE.Vector3(0.42, 0.22, -0.85)
+                    ];
                 }
+                return DetailedCarModel.SEAT_OFFSETS[seatIndex] || DetailedCarModel.SEAT_OFFSETS[0];
             }
 
             getFirstAvailableSeat() {

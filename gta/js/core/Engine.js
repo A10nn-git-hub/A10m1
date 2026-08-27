@@ -40,6 +40,7 @@ class GTAEngine {
         this.multiplayerHUD = null;
         this.gamepadController = null;
         this._allCarsCache = [];
+        this._focusPos = new THREE.Vector3(0, 0, 0);
 
         this.world = null;
         this.physicsMaterials = {};
@@ -99,14 +100,17 @@ class GTAEngine {
             await this.progressTracker.setProgress(76, 'Инициализация автомобильного освещения (Spot Shadows, стоп-сигналы)...');
             this.vehicleManager = new VehicleManager(this.scene, this.world, this.physicsMaterials);
 
-            // Спавн 2-х полноценных управляемых вертолетов:
-            // 1. Вертолет 1: Спавнится в центре вертодрома Maze Bank (10 этаж, Helipad X = 0.0, Y = 92.4м, Z = 60.0м)
-            this.helicopterBank = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 0.0, 92.4, 60.0, 0);
+            // Спавн 3-х полноценных управляемых вертолетов:
+            // 1. Вертолет 1: Спавнится на вертодроме Maze Bank (10 этаж, Helipad X = 5.5м, Y = 92.4м, Z = 60.0м — вне зоны шахты лифта)
+            this.helicopterBank = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 5.5, 92.4, 60.0, 0);
             this.helicopterBank.heliIndex = 0;
             // 2. Вертолет 2: Спавнится на вертолетной площадке Госпиталя Pillbox Hill (X = 60.0, Y = 7.2м, Z = 60.0)
             this.helicopterHospital = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 60.0, 7.2, 60.0, Math.PI / 2);
             this.helicopterHospital.heliIndex = 1;
-            this.helicopters = [this.helicopterBank, this.helicopterHospital];
+            // 3. Вертолет 3: Спавнится на вертолетной площадке западного небоскреба Downtown West Tower (X = -112.0, Y = 57.2м, Z = 60.0 — вне зоны лифта)
+            this.helicopterDowntown = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, -112.0, 57.2, 60.0, 0);
+            this.helicopterDowntown.heliIndex = 2;
+            this.helicopters = [this.helicopterBank, this.helicopterHospital, this.helicopterDowntown];
             this.helicopter = this.helicopterBank;
 
             await this.progressTracker.setProgress(80, 'Инициализация AI-системы автономного ambient-трафика (24 авто)...');
@@ -151,6 +155,7 @@ class GTAEngine {
 
             // Инициализация сетевого мультиплеера при запуске из лобби главного экрана
             this.multiplayerManager = new MultiplayerManager(this.scene);
+            this.multiplayerHUD = (typeof MultiplayerHUD !== 'undefined') ? new MultiplayerHUD(this.multiplayerManager) : null;
             const urlParams = new URLSearchParams(window.location.search);
             const lobbyId = urlParams.get('lobby');
             if (lobbyId) {
@@ -574,7 +579,18 @@ class GTAEngine {
             }
         };
 
+        // Взаимодействие [E] (Скоростные лифты / Миссии / Лазанье по деревьям)
         this.inputController.onInteract = () => {
+            // 1. Проверка скоростных лифтов небоскребов Downtown
+            if (this.districtGenerator && this.districtGenerator.interactElevator(this.player)) {
+                return;
+            }
+            // 2. Проверка интерактивных городских миссий
+            if (this.missionManager && this.missionManager.nearbyMissionMarker) {
+                this.missionManager.interactWithNearbyMarker();
+                return;
+            }
+            // 3. Проверка лазанья по деревьям
             if (this.playerController && (this.playerController.isClimbingTree || this.playerController.findNearestTree(4.2))) {
                 this.playerController.toggleClimbTree();
                 return;
@@ -592,24 +608,15 @@ class GTAEngine {
             }
         };
 
-        // STEP 24: Переключение погоды (Ясно / Морось / Дождь / Ливень) клавишей U
         this.inputController.onToggleWeather = () => {
             if (this.weatherManager) {
                 this.weatherManager.cycleWeather();
             }
         };
 
-        // STEP 28: Обработка клавиш 1-9 и 0 для перемещения лифта Maze Bank
         this.inputController.onSelectFloor = (floorNum) => {
             if (this.elevatorSystem) {
                 this.elevatorSystem.selectFloor(floorNum);
-            }
-        };
-
-        // Взаимодействие [E] (Залезть / слезть с дерева)
-        this.inputController.onInteract = () => {
-            if (this.playerController) {
-                this.playerController.toggleClimbTree();
             }
         };
 
@@ -717,6 +724,10 @@ class GTAEngine {
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(width, height);
 
+            const isMobileOrTablet = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0) || (window.innerWidth <= 1100);
+            const targetRatio = this.isPowerSavingMode ? (isMobileOrTablet ? 0.70 : 0.80) : Math.min(window.devicePixelRatio, isMobileOrTablet ? 0.85 : 1.0);
+            this.renderer.setPixelRatio(targetRatio);
+
             if (this.composer) {
                 this.composer.setSize(width, height);
                 const pixelRatio = this.renderer.getPixelRatio();
@@ -733,7 +744,7 @@ class GTAEngine {
 
     updatePhysics(deltaTime) {
         if (this.isPowerSavingMode) {
-            this.world.step(1 / 40, Math.min(deltaTime, 0.033), 1);
+            this.world.step(1 / 30, Math.min(deltaTime, 0.033), 1);
         } else {
             this.world.step(1 / 60, Math.min(deltaTime, 0.05), 2);
         }
@@ -858,7 +869,12 @@ class GTAEngine {
             if (this.weatherManager.rainLines) this.weatherManager.rainLines.visible = false;
         }
 
-        // 9. Оптимизация рендерера и графики для 30-60+ FPS на слабых устройствах и планшетах
+        // 9. Оптимизация океана
+        if (this.oceanManager && this.oceanManager.oceanMesh) {
+            this.oceanManager.oceanMesh.visible = !this.isPowerSavingMode;
+        }
+
+        // 10. Оптимизация рендерера и графики для стабильных 60 FPS на слабых устройствах и смартфонах
         if (this.renderer) {
             if (this.isPowerSavingMode) {
                 // Отключаем тени (минус 50-60% нагрузки на GPU)
@@ -866,15 +882,15 @@ class GTAEngine {
                 this.renderer.shadowMap.autoUpdate = false;
                 if (this.sunLight) this.sunLight.castShadow = false;
                 // Снижаем разрешение рендеринга для ультра-высокого FPS
-                this.renderer.setPixelRatio(isMobileOrTablet ? 0.75 : 0.85);
-                if (this.camera) this.camera.far = 650;
+                this.renderer.setPixelRatio(isMobileOrTablet ? 0.70 : 0.80);
+                if (this.camera) this.camera.far = 500;
                 if (this.scene && this.scene.fog) {
-                    this.scene.fog.near = 160;
-                    this.scene.fog.far = 600;
+                    this.scene.fog.near = 140;
+                    this.scene.fog.far = 480;
                 }
                 // Быстрый солвер физики
                 if (this.world) {
-                    this.world.solver.iterations = 3;
+                    this.world.solver.iterations = 2;
                     this.world.solver.tolerance = 0.05;
                 }
             } else {
@@ -997,11 +1013,9 @@ class GTAEngine {
         requestAnimationFrame(this.animate);
 
         // Если открыто главное меню — игра полностью на паузе, фоновая симуляция заморожена
-        if (this.mainMenuManager && this.mainMenuManager.isMenuOpen) {
-            return;
-        }
-
-        const delta = this.clock.getDelta();
+        // Ограничиваем delta максимум 40мс (25 FPS), чтобы исключить каскадные микрофризы и зависания физики
+        const rawDelta = this.clock.getDelta();
+        const delta = Math.min(rawDelta, 0.04);
         const elapsedTime = this.clock.getElapsedTime();
 
         // Опрос физического геймпада / контроллера (Gamepad API)
@@ -1026,15 +1040,17 @@ class GTAEngine {
         for (let i = 0; i < ambientCars.length; i++) this._allCarsCache.push(ambientCars[i]);
         const allCars = this._allCarsCache;
 
-        let focusPos = new THREE.Vector3(0, 0, 0);
+        const focusPos = this._focusPos;
         if (isDriving && activeCar && activeCar.chassisBody) {
-            focusPos = activeCar.chassisBody.position;
+            focusPos.copy(activeCar.chassisBody.position);
         } else if (isFlyingHeli && this.helicopter && this.helicopter.group) {
-            focusPos = this.helicopter.group.position;
+            focusPos.copy(this.helicopter.group.position);
         } else if (this.player && this.player.mesh && this.player.mesh.position) {
-            focusPos = this.player.mesh.position;
+            focusPos.copy(this.player.mesh.position);
         } else if (this.player && this.player.body && this.player.body.position) {
-            focusPos = this.player.body.position;
+            focusPos.copy(this.player.body.position);
+        } else {
+            focusPos.set(0, 0, 0);
         }
 
         this.updateSectorHUD(focusPos);
@@ -1044,7 +1060,9 @@ class GTAEngine {
         }
 
         if (this.dayNightCycle) {
-            this.dayNightCycle.update(delta, focusPos);
+            if (!this.isPowerSavingMode || (this.frameCount % 6 === 0)) {
+                this.dayNightCycle.update(delta, focusPos);
+            }
         }
 
         if (this.playerController) {
@@ -1080,9 +1098,9 @@ class GTAEngine {
         }
         this.helicopter = activeHeli || (nearestHeli || this.helicopterBank || helis[0]);
 
-        // Проверка дистанции для объединения вертолетов при полете
+        // Проверка дистанции для объединения вертолетов при полете (Уровни 2 и 3)
         let mergeTargetHeli = null;
-        if (activeHeli && activeHeli.isPiloted && !activeHeli.isMega && activeHeli.mergeState !== 'MERGING') {
+        if (activeHeli && activeHeli.isPiloted && !activeHeli.isTitan && activeHeli.mergeState !== 'MERGING') {
             for (let i = 0; i < helis.length; i++) {
                 const other = helis[i];
                 if (other && other !== activeHeli && !other.isMerged && !other.isBeingMerged) {
@@ -1099,19 +1117,24 @@ class GTAEngine {
             const promptElement = document.getElementById('vehicle-prompt');
             const promptActionText = document.getElementById('prompt-action-text');
             const promptCarName = document.getElementById('prompt-car-name');
+            const isLvl3 = activeHeli.isMega;
             if (promptElement) {
                 promptElement.style.display = 'block';
-                if (promptCarName) promptCarName.innerText = '⚡ СЛИЯНИЕ ВЕРТОЛЕТОВ ⚡';
-                if (promptActionText) promptActionText.innerText = 'Объединить вертолеты в CYBER GHOST X4 [F]';
+                if (promptCarName) promptCarName.innerText = isLvl3 ? '🔴 СВЕРХ-СЛИЯНИЕ 3-ГО УРОВНЯ 🔴' : '⚡ СЛИЯНИЕ ВЕРТОЛЕТОВ ⚡';
+                if (promptActionText) {
+                    promptActionText.innerText = isLvl3
+                        ? 'Трансформация в CYBER CRIMSON TITAN X8 (500 км/ч, 3X размер) [F]'
+                        : 'Объединить вертолеты в CYBER GHOST X4 [F]';
+                }
             }
             const btnHeliExit = document.getElementById('btn-heli-exit');
             if (btnHeliExit) {
                 const textEl = btnHeliExit.querySelector('.heli-btn-text');
                 const iconEl = btnHeliExit.querySelector('.heli-btn-icon');
-                if (textEl) textEl.innerHTML = 'ОБЪЕДИНИТЬ <kbd>[F]</kbd>';
-                if (iconEl) iconEl.innerText = '⚡';
-                btnHeliExit.style.background = 'linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(255, 215, 0, 0.4))';
-                btnHeliExit.style.borderColor = '#00f0ff';
+                if (textEl) textEl.innerHTML = isLvl3 ? 'СВЕРХ-СЛИЯНИЕ <kbd>[F]</kbd>' : 'ОБЪЕДИНИТЬ <kbd>[F]</kbd>';
+                if (iconEl) iconEl.innerText = isLvl3 ? '🔴' : '⚡';
+                btnHeliExit.style.background = isLvl3 ? 'linear-gradient(135deg, rgba(255, 0, 51, 0.6), rgba(213, 0, 0, 0.6))' : 'linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(255, 215, 0, 0.4))';
+                btnHeliExit.style.borderColor = isLvl3 ? '#ff0033' : '#00f0ff';
             }
         } else if (activeHeli && activeHeli.isPiloted) {
             const btnHeliExit = document.getElementById('btn-heli-exit');
@@ -1136,7 +1159,9 @@ class GTAEngine {
                 const seatIdx = nearestHeli.getFirstAvailableSeat();
                 if (promptActionText) {
                     if (seatIdx === 0) {
-                        promptActionText.innerText = nearestHeli.isMega ? 'Сесть за штурвал CYBER GHOST X4 [F]' : 'Сесть за штурвал вертолета (Пилот 1/2) [F]';
+                        promptActionText.innerText = nearestHeli.isTitan
+                            ? 'Сесть за штурвал CYBER CRIMSON TITAN X8 [F]'
+                            : (nearestHeli.isMega ? 'Сесть за штурвал CYBER GHOST X4 [F]' : 'Сесть за штурвал вертолета (Пилот 1/2) [F]');
                     } else if (seatIdx === 1) {
                         promptActionText.innerText = 'Сесть пассажиром в вертолет (Пассажир 2/2) [F]';
                     } else {
@@ -1188,6 +1213,11 @@ class GTAEngine {
 
         this.updatePhysics(delta);
 
+        // STEP 28: Обновление интерактивного лифта небоскреба Maze Bank (10 этажей) - ДО обновления камеры для идеальной вертикальной синхронизации
+        if (this.elevatorSystem) {
+            this.elevatorSystem.update(delta, this.player);
+        }
+
         if (this.thirdPersonCamera) {
             const camTargetCar = activeCar || ((this.vehicleManager && this.vehicleManager.transitionCar) ? this.vehicleManager.transitionCar : null);
             this.thirdPersonCamera.update(delta, isDriving ? camTargetCar : null, this.helicopter);
@@ -1235,23 +1265,18 @@ class GTAEngine {
             this.districtManager.update(delta, focusPos);
         }
 
-        // STEP 26: Обновление интерактивных дверей зданий и жилых домов (плавная кинематика на каждом кадре)
+        // STEP 26: Обновление интерактивных дверей зданий и жилых домов
         const pPos = (this.player && this.player.body) ? this.player.body.position : null;
-        if (this.orgBuildingBuilder) {
+        if (this.orgBuildingBuilder && (!this.isPowerSavingMode || (this.frameCount % 6 === 0))) {
             this.orgBuildingBuilder.update(delta, pPos);
         }
-        if (this.houseBuilder) {
+        if (this.houseBuilder && (!this.isPowerSavingMode || (this.frameCount % 6 === 0))) {
             this.houseBuilder.update(delta, pPos);
         }
 
         // Обновление лифтов и входов районов Downtown/Commercial/Industrial
         if (this.districtGenerator) {
             this.districtGenerator.update(delta, this.player);
-        }
-
-        // STEP 28: Обновление интерактивного лифта небоскреба Maze Bank (10 этажей)
-        if (this.elevatorSystem) {
-            this.elevatorSystem.update(delta, this.player);
         }
 
         // Обновление визуальных эффектов (трассеры, дульные вспышки, взрывы)
@@ -1269,8 +1294,8 @@ class GTAEngine {
             this.weaponSystem.update(delta);
         }
 
-        // STEP 29 & STEP 39: Обновление пространственного звука, дождя, ночных цикад и районного эмбиента (в режиме ЭКО раз в 8 кадров)
-        if (this.soundEngine && (!this.isPowerSavingMode || (this.frameCount % 8 === 0))) {
+        // STEP 29 & STEP 39: Обновление пространственного звука, дождя, ночных цикад и районного эмбиента (в режиме ЭКО раз в 10 кадров)
+        if (this.soundEngine && (!this.isPowerSavingMode || (this.frameCount % 10 === 0))) {
             this.soundEngine.updateListener(this.camera.position);
             const wType = this.weatherManager ? this.weatherManager.currentWeather : 'CLEAR';
             const nFactor = this.dayNightCycle ? this.dayNightCycle.nightFactor : 0.0;
@@ -1281,8 +1306,8 @@ class GTAEngine {
             this.soundEngine.updateDistrictAmbience(delta, curDistId, isIndoor);
         }
 
-        // Обновление навигатора полетов для вертолета (глиссада, кольца, маяк зоны посадки)
-        if (this.flightNavigation) {
+        // Обновление навигатора полетов для вертолета (в режиме ЭКО раз в 3 кадра)
+        if (this.flightNavigation && (!this.isPowerSavingMode || (this.frameCount % 3 === 0))) {
             this.flightNavigation.update(delta, this.helicopter);
         }
 
@@ -1291,9 +1316,9 @@ class GTAEngine {
             this.multiplayerManager.update(delta, this.player, this.playerController, this.vehicleManager);
         }
 
-        // Отрисовка круглой миникарты (в режиме энергосбережения обновляем раз в 3 кадра для экономии CPU)
+        // Отрисовка круглой миникарты (в режиме энергосбережения обновляем раз в 4 кадра для экономии CPU)
         if (this.minimapRenderer) {
-            if (!this.isPowerSavingMode || (this.frameCount % 3 === 0)) {
+            if (!this.isPowerSavingMode || (this.frameCount % 4 === 0)) {
                 let focusPosMini = focusPos;
                 if (isDriving && activeCar && activeCar.chassisBody) {
                     focusPosMini = activeCar.chassisBody.position;

@@ -618,7 +618,8 @@ class RemotePlayer {
         // Синхронизация твердого физического тела сетевого игрока
         if (this.body) {
             this.body.position.set(this.currentPos.x, this.currentPos.y + 0.88, this.currentPos.z);
-            this.body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), this.currentRotY);
+            const upAxis = RemotePlayer._UP_AXIS || (RemotePlayer._UP_AXIS = new CANNON.Vec3(0, 1, 0));
+            this.body.quaternion.setFromAxisAngle(upAxis, this.currentRotY);
             this.body.velocity.set(this.interpVelocity.x, this.interpVelocity.y, this.interpVelocity.z);
         }
 

@@ -42,6 +42,7 @@
                 }
 
                 this.geysers.push({
+                    origin: new THREE.Vector3(posX, posY, posZ),
                     pos: new THREE.Vector3(posX, posY, posZ),
                     particles: particles,
                     active: true,
@@ -68,12 +69,18 @@
                         }
                     }
 
+                    const origin = geyser.origin || geyser.pos;
                     for (let i = 0; i < geyser.particles.length; i++) {
                         const p = geyser.particles[i];
                         p.life += dt;
                         if (p.life >= p.maxLife) {
                             p.life = 0;
-                            p.pos.copy(geyser.origin).add(new THREE.Vector3((Math.random() - 0.5) * 0.2, 0, (Math.random() - 0.5) * 0.2));
+                            const pOrigin = origin || p.origin;
+                            if (pOrigin) {
+                                p.pos.copy(pOrigin);
+                                p.pos.x += (Math.random() - 0.5) * 0.2;
+                                p.pos.z += (Math.random() - 0.5) * 0.2;
+                            }
                             p.vel.set(
                                 (Math.random() - 0.5) * 1.6,
                                 7.5 + Math.random() * 3.2,

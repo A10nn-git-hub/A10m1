@@ -29,10 +29,19 @@ class PlayerController {
             this.player.mesh.rotation.y = Math.PI;
         }
         this.speedElement = document.getElementById('hud-speed');
+        this._lastSpeedStr = '';
         this.healthBarFill = document.getElementById('bar-fill-health');
         this.armorBarFill = document.getElementById('bar-fill-armor');
         this.staminaBarFill = document.getElementById('bar-fill-stamina');
         this.moneyElement = document.getElementById('hud-money-val');
+
+        // Scratch variables for zero-allocation game loop
+        this._rayResult = (typeof CANNON !== 'undefined') ? new CANNON.RaycastResult() : null;
+        this._rayFrom = (typeof CANNON !== 'undefined') ? new CANNON.Vec3() : null;
+        this._rayTo = (typeof CANNON !== 'undefined') ? new CANNON.Vec3() : null;
+        this._forward = new THREE.Vector3();
+        this._right = new THREE.Vector3();
+        this._moveDir = new THREE.Vector3();
 
         this.isClimbingTree = false;
         this.currentTree = null;
@@ -312,7 +321,7 @@ class PlayerController {
         }
 
         // 2. Лучевая проверка под ногами (Raycast Down) для всех этажей зданий, мостов и крыш
-        if (!hasSolidContact && this.world && typeof this.world.raycastClosest === 'function') {
+        if (!hasSolidContact && this.world && typeof this.world.raycastClosest === 'function' && this._rayResult) {
             const rayOffsets = [
                 [0, 0],
                 [0.18, 0.18],
@@ -320,13 +329,15 @@ class PlayerController {
                 [0.18, -0.18],
                 [-0.18, -0.18]
             ];
-            const rayResult = new CANNON.RaycastResult();
+            const rayResult = this._rayResult;
             const rayOptions = { skipBackfaces: true };
+            const from = this._rayFrom;
+            const to = this._rayTo;
 
             for (let i = 0; i < rayOffsets.length; i++) {
                 const [ox, oz] = rayOffsets[i];
-                const from = new CANNON.Vec3(body.position.x + ox, body.position.y, body.position.z + oz);
-                const to = new CANNON.Vec3(body.position.x + ox, body.position.y - 1.05, body.position.z + oz);
+                from.set(body.position.x + ox, body.position.y, body.position.z + oz);
+                to.set(body.position.x + ox, body.position.y - 1.05, body.position.z + oz);
                 rayResult.reset();
                 this.world.raycastClosest(from, to, rayOptions, rayResult);
                 if (rayResult.hasHit && rayResult.body && rayResult.body !== body) {
@@ -411,10 +422,13 @@ class PlayerController {
 
         const isMoving = (moveX !== 0 || moveZ !== 0);
         const cameraYaw = this.cameraController.yaw;
-        const forward = new THREE.Vector3(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw));
-        const right = new THREE.Vector3(Math.cos(cameraYaw), 0, -Math.sin(cameraYaw));
+        const forward = this._forward;
+        forward.set(-Math.sin(cameraYaw), 0, -Math.cos(cameraYaw));
+        const right = this._right;
+        right.set(Math.cos(cameraYaw), 0, -Math.sin(cameraYaw));
 
-        const moveDir = new THREE.Vector3();
+        const moveDir = this._moveDir;
+        moveDir.set(0, 0, 0);
         if (isMoving) {
             moveDir.addScaledVector(forward, -moveZ);
             moveDir.addScaledVector(right, moveX);
@@ -487,7 +501,11 @@ class PlayerController {
         mesh.rotation.set(0, newRotY, 0);
 
         const horizontalSpeed = Math.hypot(body.velocity.x, body.velocity.z);
-        if (this.speedElement) this.speedElement.innerText = (horizontalSpeed * 3.6 * 0.5).toFixed(1);
+        const spdStr = (horizontalSpeed * 3.6 * 0.5).toFixed(1);
+        if (this.speedElement && this._lastSpeedStr !== spdStr) {
+            this._lastSpeedStr = spdStr;
+            this.speedElement.innerText = spdStr;
+        }
 
         this.animSystem.update(deltaTime, horizontalSpeed);
 

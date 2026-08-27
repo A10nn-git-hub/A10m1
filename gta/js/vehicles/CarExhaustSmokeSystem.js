@@ -33,6 +33,12 @@
                         baseOpacity: 0.35
                     });
                 }
+
+                this._backDir = new THREE.Vector3();
+                this._leftPipeLocal = new THREE.Vector3();
+                this._rightPipeLocal = new THREE.Vector3();
+                this._leftPipeWorld = new THREE.Vector3();
+                this._rightPipeWorld = new THREE.Vector3();
             }
 
             emit(origin, carBackDir, speedKmh, isAccelerating) {
@@ -46,11 +52,10 @@
                 p.maxScale = 0.65 + Math.random() * 0.35 + (speedKmh / 160.0) * 0.4;
                 p.baseOpacity = isAccelerating ? 0.45 : 0.24;
 
-                p.pos.copy(origin).add(new THREE.Vector3(
-                    (Math.random() - 0.5) * 0.08,
-                    (Math.random() - 0.5) * 0.06,
-                    (Math.random() - 0.5) * 0.08
-                ));
+                p.pos.copy(origin);
+                p.pos.x += (Math.random() - 0.5) * 0.08;
+                p.pos.y += (Math.random() - 0.5) * 0.06;
+                p.pos.z += (Math.random() - 0.5) * 0.08;
 
                 const speedRatio = Math.min(speedKmh / 60.0, 1.5);
                 p.vel.set(
@@ -84,12 +89,12 @@
                 if (this.spawnTimer >= spawnInterval) {
                     this.spawnTimer = 0.0;
 
-                    const backDir = new THREE.Vector3(0, 0, -1).applyQuaternion(carQuaternion);
-                    const leftPipeLocal = new THREE.Vector3(-0.6, -0.1, -2.25).applyQuaternion(carQuaternion);
-                    const rightPipeLocal = new THREE.Vector3(0.6, -0.1, -2.25).applyQuaternion(carQuaternion);
+                    const backDir = this._backDir.set(0, 0, -1).applyQuaternion(carQuaternion);
+                    const leftPipeLocal = this._leftPipeLocal.set(-0.6, -0.1, -2.25).applyQuaternion(carQuaternion);
+                    const rightPipeLocal = this._rightPipeLocal.set(0.6, -0.1, -2.25).applyQuaternion(carQuaternion);
 
-                    const leftPipeWorld = carWorldPos.clone().add(leftPipeLocal);
-                    const rightPipeWorld = carWorldPos.clone().add(rightPipeLocal);
+                    const leftPipeWorld = this._leftPipeWorld.copy(carWorldPos).add(leftPipeLocal);
+                    const rightPipeWorld = this._rightPipeWorld.copy(carWorldPos).add(rightPipeLocal);
 
                     this.emit(leftPipeWorld, backDir, speedKmh, isAccelerating);
                     this.emit(rightPipeWorld, backDir, speedKmh, isAccelerating);

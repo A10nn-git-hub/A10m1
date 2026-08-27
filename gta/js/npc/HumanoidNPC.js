@@ -434,16 +434,26 @@
                     const cSpeedKmh = cSpeedH * 3.6;
 
                     const carQuat = drivenCar.carGroup ? drivenCar.carGroup.quaternion : drivenCar.chassisBody.quaternion;
-                    const fwd = new THREE.Vector3(0, 0, 1).applyQuaternion(carQuat);
-                    const rgt = new THREE.Vector3(1, 0, 0).applyQuaternion(carQuat);
+                    if (!HumanoidNPC._fwd) {
+                        HumanoidNPC._fwd = new THREE.Vector3();
+                        HumanoidNPC._rgt = new THREE.Vector3();
+                        HumanoidNPC._hitPoints = [
+                            new THREE.Vector3(),
+                            new THREE.Vector3(),
+                            new THREE.Vector3(),
+                            new THREE.Vector3(),
+                            new THREE.Vector3()
+                        ];
+                    }
+                    const fwd = HumanoidNPC._fwd.set(0, 0, 1).applyQuaternion(carQuat);
+                    const rgt = HumanoidNPC._rgt.set(1, 0, 0).applyQuaternion(carQuat);
 
-                    const hitPoints = [
-                        cPos,
-                        new THREE.Vector3(cPos.x + fwd.x * 2.2, cPos.y, cPos.z + fwd.z * 2.2),
-                        new THREE.Vector3(cPos.x + fwd.x * 2.2 - rgt.x * 0.9, cPos.y, cPos.z + fwd.z * 2.2 - rgt.z * 0.9),
-                        new THREE.Vector3(cPos.x + fwd.x * 2.2 + rgt.x * 0.9, cPos.y, cPos.z + fwd.z * 2.2 + rgt.z * 0.9),
-                        new THREE.Vector3(cPos.x + fwd.x * 1.1, cPos.y, cPos.z + fwd.z * 1.1)
-                    ];
+                    HumanoidNPC._hitPoints[0].set(cPos.x, cPos.y, cPos.z);
+                    HumanoidNPC._hitPoints[1].set(cPos.x + fwd.x * 2.2, cPos.y, cPos.z + fwd.z * 2.2);
+                    HumanoidNPC._hitPoints[2].set(cPos.x + fwd.x * 2.2 - rgt.x * 0.9, cPos.y, cPos.z + fwd.z * 2.2 - rgt.z * 0.9);
+                    HumanoidNPC._hitPoints[3].set(cPos.x + fwd.x * 2.2 + rgt.x * 0.9, cPos.y, cPos.z + fwd.z * 2.2 + rgt.z * 0.9);
+                    HumanoidNPC._hitPoints[4].set(cPos.x + fwd.x * 1.1, cPos.y, cPos.z + fwd.z * 1.1);
+                    const hitPoints = HumanoidNPC._hitPoints;
 
                     let isPedHit = false;
                     for (let hp = 0; hp < hitPoints.length; hp++) {

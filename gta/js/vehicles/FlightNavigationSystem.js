@@ -286,13 +286,15 @@ class FlightNavigationSystem {
                 startPos = player.mesh.position;
                 currentSpeedKmh = 0;
             } else {
-                startPos = new THREE.Vector3(0, 1, 0);
+                if (!this._defaultStartPos) this._defaultStartPos = new THREE.Vector3(0, 1, 0);
+                startPos = this._defaultStartPos;
                 currentSpeedKmh = 0;
             }
         }
 
         if (!startPos) {
-            startPos = new THREE.Vector3(0, 1, 0);
+            if (!this._defaultStartPos) this._defaultStartPos = new THREE.Vector3(0, 1, 0);
+            startPos = this._defaultStartPos;
         }
 
         this.currentMode = mode;

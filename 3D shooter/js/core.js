@@ -8,16 +8,22 @@ function returnToHub() {
 }
 window.returnToHub = returnToHub;
 
-const tg = window.Telegram.WebApp; 
-try { 
-    tg.expand(); 
-    if (tg.requestFullscreen) tg.requestFullscreen(); 
-    if (tg.BackButton) {
-        tg.BackButton.show();
-        tg.BackButton.onClick(returnToHub);
+try {
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        if (typeof tg.ready === 'function') tg.ready();
+        if (typeof tg.expand === 'function') tg.expand();
+        if (typeof tg.requestFullscreen === 'function' && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('8.0')) {
+            try { tg.requestFullscreen(); } catch (err) {}
+        }
+        if (tg.BackButton && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('6.1')) {
+            try {
+                tg.BackButton.show();
+                tg.BackButton.onClick(returnToHub);
+            } catch (err) {}
+        }
     }
-} catch (e) { } 
-tg.ready();
+} catch (e) {}
 var currentMode = 'tdm_5v5';
 const APP_VERSION_INFO = {
     label: 'Блок 2: Процедурная генерация стен, коллизии и выбор режимов Выживания',

@@ -66,21 +66,56 @@ class SkyscraperElevatorSystem {
         ];
         this.createBuildingElevator('ЛИФТ PILLBOX HOSPITAL', 52.5, 66.0, hospitalFloors, 4.2, 4.2, 10.0, false);
 
-        // 4. Лифт Западного Небоскреба Downtown West (3 этажа)
+        // 4. Лифт Западного Небоскреба Downtown West (Бронзовый небоскреб, 4 этажа)
         const westTowerFloors = [
-            { floor: 1, name: 'Уличный вестибюль', y: 0.0 },
-            { floor: 2, name: 'Бизнес-центр и Офисы', y: 28.0 },
-            { floor: 3, name: 'Крыша и Вертолетная площадка ("H")', y: 56.0 }
+            { floor: 1, name: 'Главный вестибюль', y: 0.0 },
+            { floor: 2, name: 'Офисный центр и IT-хаб', y: 18.0 },
+            { floor: 3, name: 'Финансовый сектор', y: 36.0 },
+            { floor: 4, name: 'Крыша и Вертолетная площадка ("H")', y: 56.0 }
         ];
-        this.createBuildingElevator('ЛИФТ DOWNTOWN WEST TOWER', -120.0, 60.0, westTowerFloors, 5.0, 5.0, 62.0, false);
+        this.createBuildingElevator('ЛИФТ DOWNTOWN WEST (БРОНЗА)', -120.0, 60.0, westTowerFloors, 5.0, 5.0, 62.0, false);
 
-        // 5. Лифт Восточного Небоскреба Downtown East (3 этажа)
+        // 5. Лифт Центрального Западного Небоскреба (Изумрудный небоскреб 1, 4 этажа)
+        const centralGreenFloors = [
+            { floor: 1, name: 'Парадный вестибюль', y: 0.0 },
+            { floor: 2, name: 'Торговый пассаж', y: 18.0 },
+            { floor: 3, name: 'Бизнес-лаунж и Ресторан', y: 36.0 },
+            { floor: 4, name: 'Панорамная крыша и Сад', y: 54.0 }
+        ];
+        this.createBuildingElevator('ЛИФТ DOWNTOWN CENTRAL (ИЗУМРУД)', -120.0, 0.0, centralGreenFloors, 5.0, 5.0, 60.0, false);
+
+        // 6. Лифт Северо-Западного Небоскреба (Изумрудный небоскреб 2, 4 этажа)
+        const northGreenFloors = [
+            { floor: 1, name: 'Атриум и Ресепшн', y: 0.0 },
+            { floor: 2, name: 'Конференц-залы', y: 20.0 },
+            { floor: 3, name: 'Пентхаус директората', y: 40.0 },
+            { floor: 4, name: 'Смотровая площадка', y: 60.0 }
+        ];
+        this.createBuildingElevator('ЛИФТ DOWNTOWN NORTH (ИЗУМРУД)', -120.0, -60.0, northGreenFloors, 5.0, 5.0, 66.0, false);
+
+        // 7. Лифт Восточного Небоскреба Downtown East (3 этажа)
         const eastTowerFloors = [
             { floor: 1, name: 'Главный вестибюль', y: 0.0 },
             { floor: 2, name: 'Корпоративный лаунж', y: 28.0 },
             { floor: 3, name: 'Панорамная смотровая крыша', y: 56.0 }
         ];
         this.createBuildingElevator('ЛИФТ DOWNTOWN EAST TOWER', 120.0, 60.0, eastTowerFloors, 5.0, 5.0, 62.0, false);
+
+        // 8. Лифт Восточно-Центрального Небоскреба (3 этажа)
+        const eastMidFloors = [
+            { floor: 1, name: 'Вестибюль', y: 0.0 },
+            { floor: 2, name: 'Офисы', y: 26.0 },
+            { floor: 3, name: 'Крыша', y: 52.0 }
+        ];
+        this.createBuildingElevator('ЛИФТ DOWNTOWN EAST-MID', 120.0, 0.0, eastMidFloors, 5.0, 5.0, 58.0, false);
+
+        // 9. Лифт Северо-Восточного Небоскреба (3 этажа)
+        const eastNorthFloors = [
+            { floor: 1, name: 'Вестибюль', y: 0.0 },
+            { floor: 2, name: 'Офисный центр', y: 28.0 },
+            { floor: 3, name: 'Крыша', y: 56.0 }
+        ];
+        this.createBuildingElevator('ЛИФТ DOWNTOWN EAST-NORTH', 120.0, -60.0, eastNorthFloors, 5.0, 5.0, 62.0, false);
 
         this.activeElevator = this.elevators[0];
     }
@@ -342,7 +377,7 @@ class SkyscraperElevatorSystem {
                 if (elev.doorProgress <= 0.0) {
                     if (elev.targetFloorIndex !== elev.currentFloorIndex) {
                         elev.state = 'MOVING';
-                        if (elev.isMazeBank && this.audioSynth) this.audioSynth.startHum();
+                        if (this.audioSynth) this.audioSynth.startHum();
                     } else {
                         elev.state = 'IDLE';
                     }
@@ -358,8 +393,8 @@ class SkyscraperElevatorSystem {
 
                 // Полная фиксация игрока внутри кабины во время движения
                 if (elev.isPlayerInside && player && player.body) {
-                    player.body.position.x = THREE.MathUtils.clamp(player.body.position.x, elev.shaftX - cW / 2 + 0.9, elev.shaftX + cW / 2 - 0.9);
-                    player.body.position.z = THREE.MathUtils.clamp(player.body.position.z, elev.shaftZ - cD / 2 + 0.9, elev.shaftZ + cD / 2 - 0.9);
+                    player.body.position.x = THREE.MathUtils.clamp(player.body.position.x, elev.shaftX - cW / 2 + 0.5, elev.shaftX + cW / 2 - 0.5);
+                    player.body.position.z = THREE.MathUtils.clamp(player.body.position.z, elev.shaftZ - cD / 2 + 0.5, elev.shaftZ + cD / 2 - 0.5);
                     player.body.position.y = elev.currentY + 0.88;
                     player.body.velocity.set(0, 0, 0);
                     if (player.mesh) {
@@ -379,7 +414,7 @@ class SkyscraperElevatorSystem {
                     elev.currentFloorIndex = elev.targetFloorIndex;
                     elev.state = 'ARRIVED';
 
-                    if (elev.isMazeBank && this.audioSynth) {
+                    if (this.audioSynth) {
                         this.audioSynth.stopHum();
                         this.audioSynth.playDing();
                     }
@@ -402,9 +437,10 @@ class SkyscraperElevatorSystem {
                         this.hudStatusElement.innerText = `Текущий: ${elev.floors[elev.currentFloorIndex].floor} этаж — ${elev.floors[elev.currentFloorIndex].name}`;
                     }
                     this.updateFloorButtonsUI(elev);
-                }
-            }
         }
+
+        this.isPlayerInside = this.elevators.some(e => e.isPlayerInside);
+        this.state = this.activeElevator ? this.activeElevator.state : 'IDLE';
 
         if (!playerNearAnyElevator && this.hudPromptElement) {
             this.hudPromptElement.style.display = 'none';

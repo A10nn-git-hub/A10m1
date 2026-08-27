@@ -20,6 +20,9 @@ class ThirdPersonCameraController {
         this.isMouseDown = false;
         this.previousMousePosition = { x: 0, y: 0 };
 
+        this._targetFocus = new THREE.Vector3();
+        this._targetCamPos = new THREE.Vector3();
+
         this.initListeners();
     }
 
@@ -88,9 +91,11 @@ class ThirdPersonCameraController {
     }
 
     update(deltaTime, drivenCar, helicopter) {
-        let targetFocus;
+        const dt = Math.min(deltaTime, 0.05);
+        const targetFocus = this._targetFocus;
+        targetFocus.set(0, 0, 0);
         let isSprinting = false;
-        let currentSpeedKmh = 0;
+        let rawSpeedKmh = 0;
 
         const elevSys = window.gameEngine && window.gameEngine.elevatorSystem;
         const isInsideElevator = !!(elevSys && ((elevSys.activeElevator && elevSys.activeElevator.isPlayerInside) || elevSys.isPlayerInside));
@@ -107,37 +112,42 @@ class ThirdPersonCameraController {
             this.pitch = THREE.MathUtils.clamp(this.pitch, -0.5, 0.65);
         }
 
-        this.currentDistance = THREE.MathUtils.lerp(this.currentDistance, targetBaseDistance, 1.0 - Math.exp(-9.0 * deltaTime));
+        this.currentDistance = THREE.MathUtils.lerp(this.currentDistance, targetBaseDistance, 1.0 - Math.exp(-8.0 * dt));
         this.distance = this.currentDistance;
 
         let desiredDistance = this.distance;
 
         if (helicopter && (helicopter.isPiloted || helicopter.isPassenger)) {
             const heliScale = (helicopter.scaleMultiplier) || (helicopter.group ? helicopter.group.scale.x : 1.0) || 1.0;
-            targetFocus = helicopter.group.position.clone().add(new THREE.Vector3(0, 1.4 * heliScale, 0));
-            const heliSpeed = Math.hypot(helicopter.body.velocity.x, helicopter.body.velocity.y, helicopter.body.velocity.z) * 3.6;
+            const heliPos = (helicopter.group && helicopter.group.position) ? helicopter.group.position : helicopter.body.position;
+            
+            targetFocus.set(heliPos.x, heliPos.y + 1.35 * heliScale, heliPos.z);
+            if (helicopter.body && helicopter.body.velocity) {
+                rawSpeedKmh = Math.hypot(helicopter.body.velocity.x, helicopter.body.velocity.y, helicopter.body.velocity.z) * 3.6;
+            }
+            
+            if (this.smoothSpeedKmh === undefined) this.smoothSpeedKmh = 0;
+            this.smoothSpeedKmh += (rawSpeedKmh - this.smoothSpeedKmh) * (1.0 - Math.exp(-4.0 * dt));
+
             const speedMultiplier = helicopter.speedMultiplier || 1.0;
             desiredDistance = THREE.MathUtils.lerp(
-                this.distance * 1.8 * heliScale,
-                this.distance * 2.4 * heliScale,
-                Math.min(heliSpeed / (120.0 * speedMultiplier), 1.0)
+                this.distance * 1.75 * heliScale,
+                this.distance * 2.35 * heliScale,
+                Math.min(this.smoothSpeedKmh / (130.0 * speedMultiplier), 1.0)
             );
-
-            // Плавное следование камеры за носом/хвостом вертолета (GTA-Style Heli Cam)
-            if (helicopter.headingAngle !== undefined) {
-                const targetCamYaw = helicopter.headingAngle + Math.PI;
-                let diffYaw = targetCamYaw - this.yaw;
-                while (diffYaw > Math.PI) diffYaw -= Math.PI * 2;
-                while (diffYaw < -Math.PI) diffYaw += Math.PI * 2;
-                this.yaw += diffYaw * Math.min(1.0, deltaTime * 3.4);
-            }
         } else if (drivenCar) {
-            targetFocus = drivenCar.carGroup.position.clone().add(new THREE.Vector3(0, 1.2, 0));
-            currentSpeedKmh = drivenCar.getSpeedKmh();
-            desiredDistance = THREE.MathUtils.lerp(this.distance, this.distance * 1.35, Math.min(currentSpeedKmh / 160.0, 1.0));
+            const carPos = (drivenCar.carGroup && drivenCar.carGroup.position) ? drivenCar.carGroup.position : drivenCar.chassisBody.position;
+            targetFocus.set(carPos.x, carPos.y + 1.15, carPos.z);
+            rawSpeedKmh = drivenCar.getSpeedKmh();
+
+            if (this.smoothSpeedKmh === undefined) this.smoothSpeedKmh = 0;
+            this.smoothSpeedKmh += (rawSpeedKmh - this.smoothSpeedKmh) * (1.0 - Math.exp(-5.0 * dt));
+
+            desiredDistance = THREE.MathUtils.lerp(this.distance * 1.05, this.distance * 1.35, Math.min(this.smoothSpeedKmh / 160.0, 1.0));
         } else if (this.targetMesh) {
-            targetFocus = this.targetMesh.position.clone().add(this.targetOffset);
+            targetFocus.copy(this.targetMesh.position).add(this.targetOffset);
             desiredDistance = this.distance;
+            if (this.smoothSpeedKmh !== undefined) this.smoothSpeedKmh *= Math.exp(-4.0 * dt);
 
             if (window.gameEngine && window.gameEngine.playerController) {
                 const pc = window.gameEngine.playerController;
@@ -150,37 +160,65 @@ class ThirdPersonCameraController {
             return;
         }
 
-        // Инициализация или высокочастотное экспоненциальное сглаживание фокуса
+        // Высококачественное кинематографическое сглаживание фокуса камеры (полное устранение тряски подвески и микроколебаний)
         if (!this.hasInitializedFocus) {
             this.currentFocusPoint.copy(targetFocus);
             this.hasInitializedFocus = true;
+        } else if (isInsideElevator) {
+            // В лифте вертикальный фокус синхронизируется строго синхронно с движением кабины без задержек
+            this.currentFocusPoint.y = targetFocus.y;
+            const horizFactor = 1.0 - Math.exp(-22.0 * dt);
+            this.currentFocusPoint.x += (targetFocus.x - this.currentFocusPoint.x) * horizFactor;
+            this.currentFocusPoint.z += (targetFocus.z - this.currentFocusPoint.z) * horizFactor;
         } else {
-            const focusSmoothingFactor = 1.0 - Math.exp(-28.0 * deltaTime);
-            this.currentFocusPoint.lerp(targetFocus, focusSmoothingFactor);
+            // Раздельное сглаживание: по горизонтали быстрый отклик, по вертикали глубокий фильтр вибраций
+            const horizFactor = 1.0 - Math.exp(-18.0 * dt);
+            const vertFactor = drivenCar
+                ? (1.0 - Math.exp(-10.0 * dt))
+                : (1.0 - Math.exp(-16.0 * dt));
+
+            this.currentFocusPoint.x += (targetFocus.x - this.currentFocusPoint.x) * horizFactor;
+            this.currentFocusPoint.y += (targetFocus.y - this.currentFocusPoint.y) * vertFactor;
+            this.currentFocusPoint.z += (targetFocus.z - this.currentFocusPoint.z) * horizFactor;
         }
 
-        // Плавный динамический угол обзора (FOV) для чувства скорости без вибрации экрана
+        // Плавный динамический угол обзора (FOV) без пульсаций экрана
         let targetFov = this.baseFov;
-        if (drivenCar) {
-            targetFov = THREE.MathUtils.lerp(65.0, 76.0, Math.min(currentSpeedKmh / 180.0, 1.0));
+        const currentSmoothSpeed = (this.smoothSpeedKmh !== undefined) ? this.smoothSpeedKmh : rawSpeedKmh;
+        if (drivenCar || helicopter) {
+            targetFov = THREE.MathUtils.lerp(65.0, 74.0, Math.min(currentSmoothSpeed / 180.0, 1.0));
         } else if (isSprinting) {
             targetFov = 71.0;
         }
-        if (Math.abs(this.camera.fov - targetFov) > 0.05) {
-            this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFov, 1.0 - Math.exp(-6.0 * deltaTime));
+        if (Math.abs(this.camera.fov - targetFov) > 0.02) {
+            this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFov, 1.0 - Math.exp(-4.5 * dt));
             this.camera.updateProjectionMatrix();
         }
 
         const hDist = desiredDistance * Math.cos(this.pitch);
         const vDist = desiredDistance * Math.sin(this.pitch);
 
-        const camPos = new THREE.Vector3(
+        const targetCamPos = this._targetCamPos;
+        targetCamPos.set(
             this.currentFocusPoint.x + hDist * Math.sin(this.yaw),
-            Math.max(0.4, this.currentFocusPoint.y + vDist),
+            Math.max(0.45, this.currentFocusPoint.y + vDist),
             this.currentFocusPoint.z + hDist * Math.cos(this.yaw)
         );
 
-        this.camera.position.lerp(camPos, 1.0 - Math.exp(-24.0 * deltaTime));
+        if (!this.hasInitializedCamPos) {
+            this.camera.position.copy(targetCamPos);
+            this.hasInitializedCamPos = true;
+        } else if (isInsideElevator) {
+            // Мгновенное вертикальное следование за кабиной лифта без проваливаний и отставаний
+            this.camera.position.y = targetCamPos.y;
+            const camSmoothingH = 1.0 - Math.exp(-24.0 * dt);
+            this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetCamPos.x, camSmoothingH);
+            this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, targetCamPos.z, camSmoothingH);
+        } else {
+            const camSmoothing = 1.0 - Math.exp(-20.0 * dt);
+            this.camera.position.lerp(targetCamPos, camSmoothing);
+        }
+
         this.camera.lookAt(this.currentFocusPoint);
     }
 }

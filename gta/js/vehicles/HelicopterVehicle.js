@@ -51,6 +51,11 @@ class HelicopterVehicle {
         this.netVelocity = new THREE.Vector3();
         this.netLastPacketTime = 0;
 
+        this._antiGravityForce = (typeof CANNON !== 'undefined') ? new CANNON.Vec3() : null;
+        this._rayFrom = (typeof CANNON !== 'undefined') ? new CANNON.Vec3() : null;
+        this._rayTo = (typeof CANNON !== 'undefined') ? new CANNON.Vec3() : null;
+        this._rayResult = (typeof CANNON !== 'undefined') ? new CANNON.RaycastResult() : null;
+
         this.buildMaterials();
         this.buildMesh(posX, posY, posZ, rotY);
         this.initPhysics(posX, posY, posZ, rotY);
@@ -259,7 +264,7 @@ class HelicopterVehicle {
     }
 
     /**
-     * Создание новой высокотехнологичной 3D модели Cyber Stealth Gunship для объединенного вертолета
+     * Создание великолепной высокотехнологичной 3D модели Cyber Stealth Gunship для объединенного вертолета (Tier 2)
      */
     buildMegaStealthMesh() {
         while (this.group.children.length > 0) {
@@ -267,258 +272,345 @@ class HelicopterVehicle {
             this.group.remove(child);
         }
 
-        const matStealthBody = new THREE.MeshStandardMaterial({
-            color: 0x101726,
-            roughness: 0.22,
-            metalness: 0.88
+        // Высокопроизводительные предварительно скомпилированные материалы (без тяжелых шейдерных лагов)
+        const matStealthCarbon = new THREE.MeshStandardMaterial({
+            color: 0x0c1424,
+            roughness: 0.25,
+            metalness: 0.85
         });
-        const matStealthPanels = new THREE.MeshStandardMaterial({
-            color: 0x1b2438,
+        const matStealthArmor = new THREE.MeshStandardMaterial({
+            color: 0x1a2638,
             roughness: 0.35,
             metalness: 0.75
         });
         const matCyanNeon = new THREE.MeshBasicMaterial({
             color: 0x00f0ff
         });
-        const matCyberGlass = new THREE.MeshPhysicalMaterial({
-            color: 0x00e5ff,
+        const matCockpitGlass = new THREE.MeshStandardMaterial({
+            color: 0x002b3d,
+            roughness: 0.12,
+            metalness: 0.9,
             transparent: true,
-            opacity: 0.55,
-            roughness: 0.08,
-            metalness: 0.25,
-            transmission: 0.5
+            opacity: 0.65
         });
         const matCarbonBlade = new THREE.MeshStandardMaterial({
-            color: 0x141414,
-            roughness: 0.35,
+            color: 0x11161d,
+            roughness: 0.3,
             metalness: 0.8
         });
-        const matGoldIntake = new THREE.MeshStandardMaterial({
-            color: 0xffa000,
-            roughness: 0.25,
-            metalness: 0.75
+        const matGoldTurbine = new THREE.MeshStandardMaterial({
+            color: 0xffb300,
+            roughness: 0.2,
+            metalness: 0.9
         });
-        const matThermalExhaust = new THREE.MeshBasicMaterial({
+        const matPlasmaGlow = new THREE.MeshBasicMaterial({
             color: 0x00e5ff
         });
-        const matStealthSkids = new THREE.MeshStandardMaterial({
-            color: 0x222a36,
+        const matDarkGun = new THREE.MeshStandardMaterial({
+            color: 0x080b10,
+            roughness: 0.2,
+            metalness: 0.95
+        });
+        const matSkids = new THREE.MeshStandardMaterial({
+            color: 0x1f2937,
             roughness: 0.3,
             metalness: 0.85
         });
         const matInterior = new THREE.MeshLambertMaterial({
-            color: 0x18202c
+            color: 0x0f172a
         });
 
-        // 1. Основной граненый стелс-фюзеляж
-        const mainFuselage = new THREE.Mesh(new THREE.BoxGeometry(2.35, 1.65, 4.4), matStealthBody);
+        // 1. Основной аэродинамический стелс-фюзеляж
+        const mainFuselage = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.6, 4.6), matStealthCarbon);
         mainFuselage.position.set(0, 0.85, 0);
         mainFuselage.castShadow = true;
         this.group.add(mainFuselage);
 
-        const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.55, 4.1), matStealthPanels);
-        lowerHull.position.set(0, 0.3, 0);
+        // Нижний бронированный поддон с расширителями
+        const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.55, 4.3), matStealthArmor);
+        lowerHull.position.set(0, 0.28, 0);
         lowerHull.castShadow = true;
         this.group.add(lowerHull);
 
-        const noseCone = new THREE.Mesh(new THREE.ConeGeometry(1.2, 2.0, 4), matStealthBody);
+        // Острый носовой обтекатель (Chiseled Stealth Nose)
+        const noseCone = new THREE.Mesh(new THREE.ConeGeometry(1.25, 2.2, 4), matStealthCarbon);
         noseCone.rotation.x = Math.PI / 2;
         noseCone.rotation.z = Math.PI / 4;
-        noseCone.position.set(0, 0.8, 2.8);
+        noseCone.position.set(0, 0.8, 2.9);
         noseCone.castShadow = true;
         this.group.add(noseCone);
 
-        const sensorTurret = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), matCyanNeon);
-        sensorTurret.position.set(0, 0.35, 3.4);
+        // Оптико-электронная турель с синим лазерным сенсором
+        const sensorTurret = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 14), matDarkGun);
+        sensorTurret.position.set(0, 0.35, 3.6);
         this.group.add(sensorTurret);
 
-        const sideStripeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 4.2), matCyanNeon);
-        sideStripeL.position.set(-1.19, 0.95, 0.1);
+        const sensorEye = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.1, 12), matCyanNeon);
+        sensorEye.rotation.x = Math.PI / 2;
+        sensorEye.position.set(0, 0.35, 3.85);
+        this.group.add(sensorEye);
+
+        // Неоновые линии по бортам фюзеляжа
+        const sideStripeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 4.4), matCyanNeon);
+        sideStripeL.position.set(-1.22, 0.95, 0.1);
         this.group.add(sideStripeL);
 
-        const sideStripeR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 4.2), matCyanNeon);
-        sideStripeR.position.set(1.19, 0.95, 0.1);
+        const sideStripeR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.12, 4.4), matCyanNeon);
+        sideStripeR.position.set(1.22, 0.95, 0.1);
         this.group.add(sideStripeR);
 
-        const canopy = new THREE.Mesh(new THREE.BoxGeometry(2.15, 1.25, 2.7), matCyberGlass);
-        canopy.position.set(0, 1.2, 1.0);
+        // Кабина пилота из тонированного кибер-стекла с обтекаемым фонарем
+        const canopy = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.25, 2.8), matCockpitGlass);
+        canopy.position.set(0, 1.2, 1.1);
         this.group.add(canopy);
 
-        const roofPlatform = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.1, 3.2), matStealthPanels);
+        // Голографический HUD-дисплей приборной панели внутри кабины
+        const hudDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 0.35), matCyanNeon);
+        hudDisplay.rotation.x = -0.35;
+        hudDisplay.position.set(0, 0.95, 1.95);
+        this.group.add(hudDisplay);
+
+        // Верхняя палуба-платформа для стояния
+        const roofPlatform = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.12, 3.4), matStealthArmor);
         roofPlatform.position.set(0, 1.72, 0.1);
         this.group.add(roofPlatform);
 
-        const seatL = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.55, 0.6), matInterior);
-        seatL.position.set(-0.48, 0.45, 0.55);
+        // Сиденья пилота и штурмана
+        const seatL = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.6, 0.65), matInterior);
+        seatL.position.set(-0.5, 0.45, 0.55);
         this.group.add(seatL);
 
-        const seatR = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.55, 0.6), matInterior);
-        seatR.position.set(0.48, 0.45, 0.55);
+        const seatR = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.6, 0.65), matInterior);
+        seatR.position.set(0.5, 0.45, 0.55);
         this.group.add(seatR);
 
-        // 2. Спаренные боковые реактивные турбины
-        const nacelleGeo = new THREE.CylinderGeometry(0.42, 0.46, 3.6, 16);
-        const nacelleL = new THREE.Mesh(nacelleGeo, matStealthPanels);
+        // 2. Спаренные боковые реактивные турбины (Jet Turbofans)
+        const nacelleGeo = new THREE.CylinderGeometry(0.44, 0.48, 3.8, 16);
+        const nacelleL = new THREE.Mesh(nacelleGeo, matStealthArmor);
         nacelleL.rotation.x = Math.PI / 2;
-        nacelleL.position.set(-1.25, 1.55, -0.1);
+        nacelleL.position.set(-1.3, 1.55, -0.1);
         nacelleL.castShadow = true;
         this.group.add(nacelleL);
 
-        const nacelleR = new THREE.Mesh(nacelleGeo, matStealthPanels);
+        const nacelleR = new THREE.Mesh(nacelleGeo, matStealthArmor);
         nacelleR.rotation.x = Math.PI / 2;
-        nacelleR.position.set(1.25, 1.55, -0.1);
+        nacelleR.position.set(1.3, 1.55, -0.1);
         nacelleR.castShadow = true;
         this.group.add(nacelleR);
 
-        const intakeRimGeo = new THREE.TorusGeometry(0.42, 0.06, 8, 16);
-        const intakeRimL = new THREE.Mesh(intakeRimGeo, matGoldIntake);
-        intakeRimL.position.set(-1.25, 1.55, 1.7);
+        // Золотые воздухозаборники турбин
+        const intakeRimGeo = new THREE.TorusGeometry(0.44, 0.07, 8, 18);
+        const intakeRimL = new THREE.Mesh(intakeRimGeo, matGoldTurbine);
+        intakeRimL.position.set(-1.3, 1.55, 1.8);
         this.group.add(intakeRimL);
 
-        const intakeRimR = new THREE.Mesh(intakeRimGeo, matGoldIntake);
-        intakeRimR.position.set(1.25, 1.55, 1.7);
+        const intakeRimR = new THREE.Mesh(intakeRimGeo, matGoldTurbine);
+        intakeRimR.position.set(1.3, 1.55, 1.8);
         this.group.add(intakeRimR);
 
-        const exhaustGeo = new THREE.CylinderGeometry(0.36, 0.4, 0.35, 16);
-        const exhaustL = new THREE.Mesh(exhaustGeo, matThermalExhaust);
+        // Плазменные сопла форсажа
+        const exhaustGeo = new THREE.CylinderGeometry(0.38, 0.42, 0.4, 16);
+        const exhaustL = new THREE.Mesh(exhaustGeo, matPlasmaGlow);
         exhaustL.rotation.x = Math.PI / 2;
-        exhaustL.position.set(-1.25, 1.55, -1.95);
+        exhaustL.position.set(-1.3, 1.55, -2.05);
         this.group.add(exhaustL);
 
-        const exhaustR = new THREE.Mesh(exhaustGeo, matThermalExhaust);
+        const exhaustR = new THREE.Mesh(exhaustGeo, matPlasmaGlow);
         exhaustR.rotation.x = Math.PI / 2;
-        exhaustR.position.set(1.25, 1.55, -1.95);
+        exhaustR.position.set(1.3, 1.55, -2.05);
         this.group.add(exhaustR);
 
-        // 3. Тактические боковые крылья с винглетами
-        const wingGeo = new THREE.BoxGeometry(1.45, 0.12, 0.9);
-        const wingL = new THREE.Mesh(wingGeo, matStealthBody);
-        wingL.position.set(-1.9, 0.85, 0.3);
+        // Неоновые факелы форсажа
+        const flameGeo = new THREE.ConeGeometry(0.32, 0.8, 10);
+        const flameL = new THREE.Mesh(flameGeo, matCyanNeon);
+        flameL.rotation.x = -Math.PI / 2;
+        flameL.position.set(-1.3, 1.55, -2.5);
+        this.group.add(flameL);
+
+        const flameR = new THREE.Mesh(flameGeo, matCyanNeon);
+        flameR.rotation.x = -Math.PI / 2;
+        flameR.position.set(1.3, 1.55, -2.5);
+        this.group.add(flameR);
+
+        // 3. Стреловидные тактические крылья с ракетными пилонами и пушками
+        const wingGeo = new THREE.BoxGeometry(1.55, 0.12, 1.1);
+        const wingL = new THREE.Mesh(wingGeo, matStealthCarbon);
+        wingL.position.set(-2.0, 0.85, 0.3);
         this.group.add(wingL);
 
-        const wingR = new THREE.Mesh(wingGeo, matStealthBody);
-        wingR.position.set(1.9, 0.85, 0.3);
+        const wingR = new THREE.Mesh(wingGeo, matStealthCarbon);
+        wingR.position.set(2.0, 0.85, 0.3);
         this.group.add(wingR);
 
-        const wingletGeo = new THREE.BoxGeometry(0.1, 0.55, 0.85);
+        // Вертикальные винглеты со светящимися стробоскопами
+        const wingletGeo = new THREE.BoxGeometry(0.1, 0.6, 0.95);
         const wingletL = new THREE.Mesh(wingletGeo, matCyanNeon);
-        wingletL.position.set(-2.65, 1.1, 0.3);
+        wingletL.position.set(-2.8, 1.1, 0.3);
         this.group.add(wingletL);
 
         const wingletR = new THREE.Mesh(wingletGeo, matCyanNeon);
-        wingletR.position.set(2.65, 1.1, 0.3);
+        wingletR.position.set(2.8, 1.1, 0.3);
         this.group.add(wingletR);
 
-        const pylonGeo = new THREE.CylinderGeometry(0.16, 0.16, 1.4, 10);
-        const pylonL = new THREE.Mesh(pylonGeo, matStealthPanels);
-        pylonL.rotation.x = Math.PI / 2;
-        pylonL.position.set(-2.1, 0.62, 0.3);
-        this.group.add(pylonL);
+        // Ракетные блоки на крыльях (4 ракеты на каждом крыле)
+        const podGeo = new THREE.CylinderGeometry(0.28, 0.28, 1.4, 12);
+        const podL = new THREE.Mesh(podGeo, matDarkGun);
+        podL.rotation.x = Math.PI / 2;
+        podL.position.set(-2.2, 0.6, 0.3);
+        this.group.add(podL);
 
-        const pylonR = new THREE.Mesh(pylonGeo, matStealthPanels);
-        pylonR.rotation.x = Math.PI / 2;
-        pylonR.position.set(2.1, 0.62, 0.3);
-        this.group.add(pylonR);
+        const podR = new THREE.Mesh(podGeo, matDarkGun);
+        podR.rotation.x = Math.PI / 2;
+        podR.position.set(2.2, 0.6, 0.3);
+        this.group.add(podR);
 
-        // 4. Хвостовая балка и сдвоенное V-образное оперение
-        const tailBoom = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.55, 5.4), matStealthBody);
-        tailBoom.position.set(0, 1.15, -4.2);
+        // Золотые боеголовки ракет
+        for (let ox of [-0.08, 0.08]) {
+            for (let oy of [-0.08, 0.08]) {
+                const warheadL = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.2, 8), matGoldTurbine);
+                warheadL.rotation.x = Math.PI / 2;
+                warheadL.position.set(-2.2 + ox, 0.6 + oy, 1.05);
+                this.group.add(warheadL);
+
+                const warheadR = new THREE.Mesh(new THREE.ConeGeometry(0.07, 0.2, 8), matGoldTurbine);
+                warheadR.rotation.x = Math.PI / 2;
+                warheadR.position.set(2.2 + ox, 0.6 + oy, 1.05);
+                this.group.add(warheadR);
+            }
+        }
+
+        // Подкрыльевые автоматические скорострельные лазерные пушки
+        const cannonGeo = new THREE.CylinderGeometry(0.04, 0.05, 1.8, 8);
+        const cannonL = new THREE.Mesh(cannonGeo, matDarkGun);
+        cannonL.rotation.x = Math.PI / 2;
+        cannonL.position.set(-1.6, 0.52, 0.6);
+        this.group.add(cannonL);
+
+        const cannonR = new THREE.Mesh(cannonGeo, matDarkGun);
+        cannonR.rotation.x = Math.PI / 2;
+        cannonR.position.set(1.6, 0.52, 0.6);
+        this.group.add(cannonR);
+
+        // 4. Удлиненная хвостовая балка и V-образное оперение
+        const tailBoom = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.58, 5.6), matStealthCarbon);
+        tailBoom.position.set(0, 1.15, -4.3);
         tailBoom.castShadow = true;
         this.group.add(tailBoom);
 
-        const dorsalStrip = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 5.0), matCyanNeon);
-        dorsalStrip.position.set(0, 1.45, -4.2);
+        const dorsalStrip = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.08, 5.2), matCyanNeon);
+        dorsalStrip.position.set(0, 1.46, -4.3);
         this.group.add(dorsalStrip);
 
-        const vFinL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.9, 0.9), matStealthPanels);
-        vFinL.position.set(-0.75, 1.9, -6.6);
-        vFinL.rotation.z = -0.45;
+        // Сдвоенное V-образное хвостовое оперение
+        const vFinL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.95, 0.95), matStealthArmor);
+        vFinL.position.set(-0.8, 1.95, -6.7);
+        vFinL.rotation.z = -0.42;
         vFinL.castShadow = true;
         this.group.add(vFinL);
 
-        const vEdgeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.9, 0.12), matCyanNeon);
-        vEdgeL.position.set(-0.75, 1.9, -7.0);
-        vEdgeL.rotation.z = -0.45;
+        const vEdgeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.95, 0.12), matCyanNeon);
+        vEdgeL.position.set(-0.8, 1.95, -7.1);
+        vEdgeL.rotation.z = -0.42;
         this.group.add(vEdgeL);
 
-        const vFinR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.9, 0.9), matStealthPanels);
-        vFinR.position.set(0.75, 1.9, -6.6);
-        vFinR.rotation.z = 0.45;
+        const vFinR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.95, 0.95), matStealthArmor);
+        vFinR.position.set(0.8, 1.95, -6.7);
+        vFinR.rotation.z = 0.42;
         vFinR.castShadow = true;
         this.group.add(vFinR);
 
-        const vEdgeR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.9, 0.12), matCyanNeon);
-        vEdgeR.position.set(0.75, 1.9, -7.0);
-        vEdgeR.rotation.z = 0.45;
+        const vEdgeR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 1.95, 0.12), matCyanNeon);
+        vEdgeR.position.set(0.8, 1.95, -7.1);
+        vEdgeR.rotation.z = 0.42;
         this.group.add(vEdgeR);
 
-        // 5. Кольцевой фенестрон
-        const fenestronRing = new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.14, 8, 20), matStealthPanels);
-        fenestronRing.position.set(0, 1.4, -6.9);
+        // 5. Кольцевой аэродинамический фенестрон (Fenestron Shrouded Tail Rotor)
+        const fenestronRing = new THREE.Mesh(new THREE.TorusGeometry(0.78, 0.14, 8, 20), matStealthArmor);
+        fenestronRing.position.set(0, 1.42, -7.0);
         this.group.add(fenestronRing);
 
         this.tailRotorHub = new THREE.Group();
-        this.tailRotorHub.position.set(0, 1.4, -6.9);
+        this.tailRotorHub.position.set(0, 1.42, -7.0);
 
-        const fenestronBladeGeo = new THREE.BoxGeometry(0.08, 1.25, 0.02);
+        const fenestronBladeGeo = new THREE.BoxGeometry(0.08, 1.3, 0.02);
         const fb1 = new THREE.Mesh(fenestronBladeGeo, matCyanNeon);
         const fb2 = new THREE.Mesh(fenestronBladeGeo, matCyanNeon);
         fb2.rotation.z = Math.PI / 2;
+        const fb3 = new THREE.Mesh(fenestronBladeGeo, matCyanNeon);
+        fb3.rotation.z = Math.PI / 4;
+        const fb4 = new THREE.Mesh(fenestronBladeGeo, matCyanNeon);
+        fb4.rotation.z = -Math.PI / 4;
         this.tailRotorHub.add(fb1);
         this.tailRotorHub.add(fb2);
+        this.tailRotorHub.add(fb3);
+        this.tailRotorHub.add(fb4);
         this.group.add(this.tailRotorHub);
 
-        // 6. Шестилопастной композитный несущий винт
+        // 6. 6-лопастной высокоскоростной карбоновый несущий винт (X4 Gunship Rotor)
         this.mainRotorHub = new THREE.Group();
-        this.mainRotorHub.position.set(0, 2.3, 0.1);
+        this.mainRotorHub.position.set(0, 2.35, 0.1);
 
-        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.55, 16), matStealthSkids);
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.6, 16), matDarkGun);
         mast.position.y = -0.15;
         this.group.add(mast);
 
-        const hubCenter = new THREE.Mesh(new THREE.ConeGeometry(0.38, 0.28, 16), matStealthBody);
-        hubCenter.position.y = 0.1;
+        const hubCenter = new THREE.Mesh(new THREE.ConeGeometry(0.42, 0.32, 16), matStealthCarbon);
+        hubCenter.position.y = 0.12;
         this.mainRotorHub.add(hubCenter);
 
-        const bladeGeo = new THREE.BoxGeometry(0.24, 0.035, 4.4);
-        const tipGeo = new THREE.BoxGeometry(0.24, 0.036, 0.65);
+        const hubRing = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.06, 8, 16), matCyanNeon);
+        hubRing.rotation.x = Math.PI / 2;
+        hubRing.position.y = 0.04;
+        this.mainRotorHub.add(hubRing);
+
+        const bladeGeo = new THREE.BoxGeometry(0.24, 0.035, 4.6);
+        const tipGeo = new THREE.BoxGeometry(0.24, 0.036, 0.7);
         for (let i = 0; i < 6; i++) {
             const bladePivot = new THREE.Group();
             bladePivot.rotation.y = (i * Math.PI) / 3;
 
             const blade = new THREE.Mesh(bladeGeo, matCarbonBlade);
-            blade.position.set(0, 0, 2.2);
+            blade.position.set(0, 0, 2.3);
             bladePivot.add(blade);
 
             const bladeTip = new THREE.Mesh(tipGeo, matCyanNeon);
-            bladeTip.position.set(0, 0, 4.1);
+            bladeTip.position.set(0, 0, 4.3);
             bladePivot.add(bladeTip);
 
             this.mainRotorHub.add(bladePivot);
         }
         this.group.add(this.mainRotorHub);
 
-        // 7. Тактические усиленные полозья шасси
-        const skidGeo = new THREE.CylinderGeometry(0.08, 0.08, 4.8, 12);
-        const skidL = new THREE.Mesh(skidGeo, matStealthSkids);
+        // 7. Тактические усиленные полозья шасси с неоновой подсветкой
+        const skidGeo = new THREE.CylinderGeometry(0.08, 0.08, 5.0, 12);
+        const skidL = new THREE.Mesh(skidGeo, matSkids);
         skidL.rotation.x = Math.PI / 2;
-        skidL.position.set(-1.45, 0.08, 0.1);
+        skidL.position.set(-1.5, 0.08, 0.1);
         this.group.add(skidL);
 
-        const skidR = new THREE.Mesh(skidGeo, matStealthSkids);
+        const skidR = new THREE.Mesh(skidGeo, matSkids);
         skidR.rotation.x = Math.PI / 2;
-        skidR.position.set(1.45, 0.08, 0.1);
+        skidR.position.set(1.5, 0.08, 0.1);
         this.group.add(skidR);
+
+        // Неоновые полосы подсветки на полозьях (Underglow)
+        const underglowL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 4.8), matCyanNeon);
+        underglowL.position.set(-1.5, 0.02, 0.1);
+        this.group.add(underglowL);
+
+        const underglowR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 4.8), matCyanNeon);
+        underglowR.position.set(1.5, 0.02, 0.1);
+        this.group.add(underglowR);
 
         const strutGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.95, 8);
         const stealthStruts = [
-            { x: -1.15, y: 0.45, z: 1.2, rotZ: -0.35 },
-            { x: -1.15, y: 0.45, z: -1.0, rotZ: -0.35 },
-            { x: 1.15, y: 0.45, z: 1.2, rotZ: 0.35 },
-            { x: 1.15, y: 0.45, z: -1.0, rotZ: 0.35 }
+            { x: -1.2, y: 0.45, z: 1.3, rotZ: -0.35 },
+            { x: -1.2, y: 0.45, z: -1.1, rotZ: -0.35 },
+            { x: 1.2, y: 0.45, z: 1.3, rotZ: 0.35 },
+            { x: 1.2, y: 0.45, z: -1.1, rotZ: 0.35 }
         ];
         for (const s of stealthStruts) {
-            const strut = new THREE.Mesh(strutGeo, matStealthSkids);
+            const strut = new THREE.Mesh(strutGeo, matSkids);
             strut.position.set(s.x, s.y, s.z);
             strut.rotation.z = s.rotZ;
             this.group.add(strut);
@@ -655,8 +747,13 @@ class HelicopterVehicle {
 
         this.playQuickMergeSound();
 
+        const isLevel3 = this.isMega;
         if (window.gameEngine && window.gameEngine.multiplayerHUD) {
-            window.gameEngine.multiplayerHUD.addSystemMessage('⚡ СЛИЯНИЕ ВЕРТОЛЕТОВ! ТРАНСФОРМАЦИЯ В CYBER GHOST X4...');
+            if (isLevel3) {
+                window.gameEngine.multiplayerHUD.addSystemMessage('🔴 СВЕРХ-СЛИЯНИЕ 3-ГО УРОВНЯ! ТРАНСФОРМАЦИЯ В CYBER CRIMSON TITAN X8...');
+            } else {
+                window.gameEngine.multiplayerHUD.addSystemMessage('⚡ СЛИЯНИЕ ВЕРТОЛЕТОВ! ТРАНСФОРМАЦИЯ В CYBER GHOST X4...');
+            }
         }
 
         const promptElement = document.getElementById('vehicle-prompt');
@@ -712,13 +809,18 @@ class HelicopterVehicle {
         }
 
         if (progress >= 1.0) {
-            this.upgradeToMegaHelicopter();
+            if (this.isMega) {
+                this.upgradeToCrimsonTitanHelicopter();
+            } else {
+                this.upgradeToMegaHelicopter();
+            }
         }
     }
 
     upgradeToMegaHelicopter() {
         this.mergeState = 'MEGA';
         this.isMega = true;
+        this.tier = 2;
         this.vehicleName = '⚡ CYBER GHOST X4 ⚡';
         this.speedMultiplier = 2.0;
 
@@ -739,41 +841,35 @@ class HelicopterVehicle {
         this.group.scale.setScalar(1.0);
         this.buildMegaStealthMesh();
 
-        // Обновление физических коллизий Cannon под пропорции Gunship
+        // Безопасное обновление физических коллизий Cannon под пропорции Gunship
         if (this.body && this.world) {
-            this.body.shapes.length = 0;
-            this.body.shapeOffsets.length = 0;
-            this.body.shapeOrientations.length = 0;
+            this.world.removeBody(this.body);
+            while (this.body.shapes.length > 0) {
+                this.body.shapes.pop();
+                this.body.shapeOffsets.pop();
+                this.body.shapeOrientations.pop();
+            }
 
             this.body.mass = 3500;
 
             // Фюзеляж
-            const fuselageShape = new CANNON.Box(new CANNON.Vec3(1.3, 0.95, 2.3));
-            this.body.addShape(fuselageShape, new CANNON.Vec3(0, 0.85, 0));
-
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(1.3, 0.95, 2.3)), new CANNON.Vec3(0, 0.85, 0));
             // Нос
-            const noseShape = new CANNON.Box(new CANNON.Vec3(1.15, 0.8, 1.2));
-            this.body.addShape(noseShape, new CANNON.Vec3(0, 0.8, 2.7));
-
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(1.15, 0.8, 1.2)), new CANNON.Vec3(0, 0.8, 2.7));
             // Крыша
-            const roofPlatform = new CANNON.Box(new CANNON.Vec3(1.1, 0.15, 1.7));
-            this.body.addShape(roofPlatform, new CANNON.Vec3(0, 1.72, 0.1));
-
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(1.1, 0.15, 1.7)), new CANNON.Vec3(0, 1.72, 0.1));
             // Хвостовая балка
-            const tailShape = new CANNON.Box(new CANNON.Vec3(0.45, 0.45, 2.4));
-            this.body.addShape(tailShape, new CANNON.Vec3(0, 0.8, -4.2));
-
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(0.45, 0.45, 2.4)), new CANNON.Vec3(0, 0.8, -4.2));
             // Хвостовое оперение и фенестрон
-            const tailFinShape = new CANNON.Box(new CANNON.Vec3(0.85, 0.95, 0.9));
-            this.body.addShape(tailFinShape, new CANNON.Vec3(0, 1.4, -6.8));
-
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(0.85, 0.95, 0.9)), new CANNON.Vec3(0, 1.4, -6.8));
             // Крылья
-            const wingShape = new CANNON.Box(new CANNON.Vec3(2.5, 0.15, 0.6));
-            this.body.addShape(wingShape, new CANNON.Vec3(0, 0.85, 0.3));
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(2.5, 0.15, 0.6)), new CANNON.Vec3(0, 0.85, 0.3));
 
             this.body.updateMassProperties();
             this.body.updateBoundingRadius();
             this.body.aabbNeedsUpdate = true;
+            this.world.addBody(this.body);
+            this.body.wakeUp();
         }
 
         // Всплывающее уведомление
@@ -800,6 +896,289 @@ class HelicopterVehicle {
             titleElem.innerText = '⚡ CYBER GHOST X4 ⚡';
             titleElem.style.color = '#00f0ff';
             titleElem.style.textShadow = '0 0 10px rgba(0, 240, 255, 0.8)';
+        }
+    }
+
+    buildTitanCrimsonMesh() {
+        while (this.group.children.length > 0) {
+            const child = this.group.children[0];
+            this.group.remove(child);
+        }
+
+        const matCrimsonBody = new THREE.MeshStandardMaterial({
+            color: 0x990011,
+            roughness: 0.28,
+            metalness: 0.85
+        });
+        const matCrimsonArmor = new THREE.MeshStandardMaterial({
+            color: 0x59000a,
+            roughness: 0.38,
+            metalness: 0.75
+        });
+        const matRedNeon = new THREE.MeshBasicMaterial({
+            color: 0xff0033
+        });
+        const matCockpitRed = new THREE.MeshStandardMaterial({
+            color: 0x220005,
+            roughness: 0.15,
+            metalness: 0.9,
+            transparent: true,
+            opacity: 0.75
+        });
+        const matCarbonBlade = new THREE.MeshStandardMaterial({
+            color: 0x111111,
+            roughness: 0.25,
+            metalness: 0.85
+        });
+        const matDarkTitanGun = new THREE.MeshStandardMaterial({
+            color: 0x151518,
+            roughness: 0.18,
+            metalness: 0.95
+        });
+        const matPlasmaCrimson = new THREE.MeshBasicMaterial({
+            color: 0xff1744
+        });
+        const matSkids = new THREE.MeshStandardMaterial({
+            color: 0x261417,
+            roughness: 0.3,
+            metalness: 0.85
+        });
+
+        // 1. Тяжелый фюзеляж Титана
+        const mainFuselage = new THREE.Mesh(new THREE.BoxGeometry(2.6, 1.8, 5.0), matCrimsonBody);
+        mainFuselage.position.set(0, 0.95, 0);
+        mainFuselage.castShadow = true;
+        this.group.add(mainFuselage);
+
+        const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 4.6), matCrimsonArmor);
+        lowerHull.position.set(0, 0.32, 0);
+        lowerHull.castShadow = true;
+        this.group.add(lowerHull);
+
+        const noseCone = new THREE.Mesh(new THREE.ConeGeometry(1.35, 2.4, 4), matCrimsonBody);
+        noseCone.rotation.x = Math.PI / 2;
+        noseCone.rotation.z = Math.PI / 4;
+        noseCone.position.set(0, 0.9, 3.2);
+        noseCone.castShadow = true;
+        this.group.add(noseCone);
+
+        // Тяжелая сдвоенная носовая пушка Гатлинга
+        const noseTurret = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.22, 1.6, 12), matDarkTitanGun);
+        noseTurret.rotation.x = Math.PI / 2;
+        noseTurret.position.set(0, 0.35, 3.8);
+        this.group.add(noseTurret);
+
+        // Неоновые полосы Титана
+        const sideStripeL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 4.8), matRedNeon);
+        sideStripeL.position.set(-1.32, 1.05, 0.1);
+        this.group.add(sideStripeL);
+
+        const sideStripeR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 4.8), matRedNeon);
+        sideStripeR.position.set(1.32, 1.05, 0.1);
+        this.group.add(sideStripeR);
+
+        // Бронированный фонарь кабины
+        const canopy = new THREE.Mesh(new THREE.BoxGeometry(2.35, 1.35, 3.0), matCockpitRed);
+        canopy.position.set(0, 1.3, 1.2);
+        this.group.add(canopy);
+
+        // 2. Тройные реактивные турбины Титана
+        const thrusters = [
+            { x: -1.35, y: 1.6, z: -0.2 },
+            { x: 1.35, y: 1.6, z: -0.2 },
+            { x: 0.0, y: 2.15, z: -0.8 }
+        ];
+
+        for (let tp of thrusters) {
+            const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(0.48, 0.52, 3.8, 16), matCrimsonArmor);
+            nacelle.rotation.x = Math.PI / 2;
+            nacelle.position.set(tp.x, tp.y, tp.z);
+            nacelle.castShadow = true;
+            this.group.add(nacelle);
+
+            const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.46, 0.5, 16), matDarkTitanGun);
+            nozzle.rotation.x = Math.PI / 2;
+            nozzle.position.set(tp.x, tp.y, tp.z - 2.1);
+            this.group.add(nozzle);
+
+            const flame = new THREE.Mesh(new THREE.ConeGeometry(0.38, 1.1, 10), matPlasmaCrimson);
+            flame.rotation.x = -Math.PI / 2;
+            flame.position.set(tp.x, tp.y, tp.z - 2.8);
+            this.group.add(flame);
+        }
+
+        // 3. Тяжелые крылья с 4 пушками и 2 тяжелыми блоками РСЗО
+        const wingL = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.16, 1.3), matCrimsonBody);
+        wingL.position.set(-2.25, 0.9, 0.3);
+        this.group.add(wingL);
+
+        const wingR = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.16, 1.3), matCrimsonBody);
+        wingR.position.set(2.25, 0.9, 0.3);
+        this.group.add(wingR);
+
+        const wingletL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.75, 1.1), matRedNeon);
+        wingletL.position.set(-3.25, 1.25, 0.3);
+        this.group.add(wingletL);
+
+        const wingletR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.75, 1.1), matRedNeon);
+        wingletR.position.set(3.25, 1.25, 0.3);
+        this.group.add(wingletR);
+
+        // 4. Сдвоенная балка хвоста Титана
+        const tailBoom = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.65, 6.0), matCrimsonBody);
+        tailBoom.position.set(0, 1.2, -4.6);
+        tailBoom.castShadow = true;
+        this.group.add(tailBoom);
+
+        const vFinL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.2, 1.1), matCrimsonArmor);
+        vFinL.position.set(-0.95, 2.1, -7.2);
+        vFinL.rotation.z = -0.4;
+        this.group.add(vFinL);
+
+        const vFinR = new THREE.Mesh(new THREE.BoxGeometry(0.14, 2.2, 1.1), matCrimsonArmor);
+        vFinR.position.set(0.95, 2.1, -7.2);
+        vFinR.rotation.z = 0.4;
+        this.group.add(vFinR);
+
+        // Фенестрон Титана
+        const fenestronRing = new THREE.Mesh(new THREE.TorusGeometry(0.88, 0.16, 8, 20), matCrimsonArmor);
+        fenestronRing.position.set(0, 1.5, -7.5);
+        this.group.add(fenestronRing);
+
+        this.tailRotorHub = new THREE.Group();
+        this.tailRotorHub.position.set(0, 1.5, -7.5);
+        const fbGeo = new THREE.BoxGeometry(0.1, 1.5, 0.03);
+        const fb1 = new THREE.Mesh(fbGeo, matRedNeon);
+        const fb2 = new THREE.Mesh(fbGeo, matRedNeon); fb2.rotation.z = Math.PI / 2;
+        this.tailRotorHub.add(fb1); this.tailRotorHub.add(fb2);
+        this.group.add(this.tailRotorHub);
+
+        // 5. 8-лопастной несущий винт Титана (X8 Titan Rotor)
+        this.mainRotorHub = new THREE.Group();
+        this.mainRotorHub.position.set(0, 2.5, 0.1);
+
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.7, 16), matDarkTitanGun);
+        mast.position.y = -0.15;
+        this.group.add(mast);
+
+        const hubCenter = new THREE.Mesh(new THREE.ConeGeometry(0.5, 0.4, 16), matCrimsonBody);
+        hubCenter.position.y = 0.15;
+        this.mainRotorHub.add(hubCenter);
+
+        const bladeGeo = new THREE.BoxGeometry(0.28, 0.04, 5.0);
+        const tipGeo = new THREE.BoxGeometry(0.28, 0.042, 0.8);
+        for (let i = 0; i < 8; i++) {
+            const bladePivot = new THREE.Group();
+            bladePivot.rotation.y = (i * Math.PI) / 4;
+
+            const blade = new THREE.Mesh(bladeGeo, matCarbonBlade);
+            blade.position.set(0, 0, 2.5);
+            bladePivot.add(blade);
+
+            const bladeTip = new THREE.Mesh(tipGeo, matRedNeon);
+            bladeTip.position.set(0, 0, 4.6);
+            bladePivot.add(bladeTip);
+
+            this.mainRotorHub.add(bladePivot);
+        }
+        this.group.add(this.mainRotorHub);
+
+        // 6. Шасси Титана
+        const skidL = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 5.4, 12), matSkids);
+        skidL.rotation.x = Math.PI / 2;
+        skidL.position.set(-1.65, 0.1, 0.1);
+        this.group.add(skidL);
+
+        const skidR = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 5.4, 12), matSkids);
+        skidR.rotation.x = Math.PI / 2;
+        skidR.position.set(1.65, 0.1, 0.1);
+        this.group.add(skidR);
+
+        const underglowL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 5.2), matRedNeon);
+        underglowL.position.set(-1.65, 0.03, 0.1);
+        this.group.add(underglowL);
+
+        const underglowR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.05, 5.2), matRedNeon);
+        underglowR.position.set(1.65, 0.03, 0.1);
+        this.group.add(underglowR);
+    }
+
+    upgradeToCrimsonTitanHelicopter() {
+        this.mergeState = 'TITAN';
+        this.isTitan = true;
+        this.tier = 3;
+        this.vehicleName = '🔴 CYBER CRIMSON TITAN X8 🔴';
+        this.speedMultiplier = 4.0;
+        this.scaleMultiplier = 3.0;
+
+        // Удаление и деактивация 3-го поглощенного вертолета
+        if (this.mergePartner) {
+            this.mergePartner.isMerged = true;
+            this.mergePartner.isBeingMerged = false;
+            if (this.mergePartner.group) {
+                this.scene.remove(this.mergePartner.group);
+            }
+            if (this.mergePartner.body && this.world) {
+                this.world.removeBody(this.mergePartner.body);
+            }
+            this.mergePartner = null;
+        }
+
+        // Построение красивой 3D модели Титана
+        this.buildTitanCrimsonMesh();
+        this.group.scale.setScalar(3.0);
+
+        // Безопасное обновление физических коллизий Cannon под пропорции 3X Титана
+        if (this.body && this.world) {
+            this.world.removeBody(this.body);
+            while (this.body.shapes.length > 0) {
+                this.body.shapes.pop();
+                this.body.shapeOffsets.pop();
+                this.body.shapeOrientations.pop();
+            }
+
+            this.body.mass = 8500;
+
+            // Фюзеляж 3X
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(3.9, 2.85, 6.9)), new CANNON.Vec3(0, 2.55, 0));
+            // Нос 3X
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(3.45, 2.4, 3.6)), new CANNON.Vec3(0, 2.4, 8.1));
+            // Крыша 3X
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(3.3, 0.45, 5.1)), new CANNON.Vec3(0, 5.16, 0.3));
+            // Хвостовая балка 3X
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(1.35, 1.35, 7.2)), new CANNON.Vec3(0, 2.4, -12.6));
+
+            this.body.updateMassProperties();
+            this.body.updateBoundingRadius();
+            this.body.aabbNeedsUpdate = true;
+            this.world.addBody(this.body);
+            this.body.wakeUp();
+        }
+
+        // Всплывающее уведомление
+        let toast = document.getElementById('mega-heli-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'mega-heli-toast';
+            toast.className = 'opt-toast';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = '🔴 <b>СВЕРХ-СЛИЯНИЕ 3-ГО УРОВНЯ!</b> CYBER CRIMSON TITAN X8: СКОРОСТЬ 500 КМ/Ч, ТРОЙНОЙ РАЗМЕР И 8 ЛОПАСТЕЙ! 🚁🔥';
+        toast.style.borderColor = '#ff0033';
+        toast.style.background = 'linear-gradient(135deg, rgba(30, 5, 10, 0.95), rgba(220, 20, 60, 0.6))';
+        toast.style.boxShadow = '0 10px 50px rgba(255, 0, 51, 0.85)';
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 5500);
+
+        if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+            window.gameEngine.multiplayerHUD.addSystemMessage('🔥 CYBER CRIMSON TITAN X8 АКТИВИРОВАН! СКОРОСТЬ 500 КМ/Ч, В 3 РАЗА БОЛЬШЕ, 8 ЛОПАСТЕЙ!');
+        }
+
+        const titleElem = document.getElementById('hud-mode-title');
+        if (titleElem && this.isPiloted) {
+            titleElem.innerText = '🔴 CYBER CRIMSON TITAN X8 🔴';
+            titleElem.style.color = '#ff0033';
+            titleElem.style.textShadow = '0 0 15px rgba(255, 0, 51, 0.9)';
         }
     }
 
@@ -857,53 +1236,42 @@ class HelicopterVehicle {
 
             player.mesh.scale.set(1, 1, 1);
             player.mesh.visible = true;
-
-            const exitDistance = this.isMega ? 3.0 : 2.2;
-            const exitPos = new THREE.Vector3(-exitDistance, 0, 0).applyQuaternion(this.group.quaternion).add(this.group.position);
-
-            // Безопасное ограничение выхода на крыше Maze Bank (предотвращает спавн в воздухе за краем 92м небоскреба)
-            if (this.group.position.y > 80.0 && Math.hypot(this.group.position.x, this.group.position.z - 60.0) < 18.0) {
-                const distToCenter = Math.hypot(exitPos.x, exitPos.z - 60.0);
-                if (distToCenter > 11.5) {
-                    const angle = Math.atan2(exitPos.z - 60.0, exitPos.x);
-                    exitPos.x = Math.cos(angle) * 10.5;
-                    exitPos.z = 60.0 + Math.sin(angle) * 10.5;
-                }
-            }
-
+            const exitPos = new THREE.Vector3(-2.4 * this.scaleMultiplier, 0, 0).applyQuaternion(this.group.quaternion).add(this.group.position);
             const groundY = (window.gameEngine && window.gameEngine.terrainManager)
                 ? window.gameEngine.terrainManager.getTerrainHeight(exitPos.x, exitPos.z)
                 : 0.0;
             const spawnY = Math.max(groundY + 0.82, this.group.position.y - 0.15);
 
             player.mesh.position.set(exitPos.x, spawnY - 0.815, exitPos.z);
-
-            // Игроку и вертолету задаем реалистичный импульс падения с быстрым затуханием горизонтальной тяги
             if (player.body) {
                 player.body.position.set(exitPos.x, spawnY, exitPos.z);
-                player.body.velocity.set(curHeliVel.x * 0.3, Math.min(curHeliVel.y, -2.2), curHeliVel.z * 0.3);
-                player.body.linearDamping = 0.05;
+                player.body.velocity.set(0, 0, 0);
                 player.body.wakeUp();
             }
 
-            // Вертолет теряет тягу двигателей и падает вниз
-            this.body.velocity.set(curHeliVel.x * 0.25, Math.min(curHeliVel.y, -2.5), curHeliVel.z * 0.25);
-            this.body.angularVelocity.set((Math.random() - 0.5) * 0.2, (Math.random() - 0.5) * 0.15, (Math.random() - 0.5) * 0.2);
-            this.body.linearDamping = 0.2;
-            this.body.angularDamping = 0.45;
-            this.body.wakeUp();
+            // Физика падения вертолета быстрее человека при выходе в воздухе
+            const isAirExit = (this.group.position.y > groundY + 3.0);
+            if (isAirExit) {
+                this.body.linearDamping = 0.01;
+                this.body.angularDamping = 0.15;
+                const curVy = this.body.velocity.y;
+                this.body.velocity.y = Math.min(curVy - 12.0, -18.0);
+                this.pitchAngle = -0.55; // нос вертолета наклоняется вниз в пике
+                this.body.quaternion.setFromEuler(this.pitchAngle, this.headingAngle || 0, this.rollAngle || 0, 'YXZ');
+                this.targetRotorRPM = 0.0;
+                this.body.wakeUp();
+            } else {
+                this.body.linearDamping = 0.45;
+                this.body.angularDamping = 0.75;
+            }
 
             const modeElem = document.getElementById('stat-player-mode');
             const titleElem = document.getElementById('hud-mode-title');
             if (modeElem) modeElem.innerText = 'Пешком';
-            if (titleElem) {
-                titleElem.innerText = 'ПРОТАГОНИСТ';
-                titleElem.style.color = '';
-                titleElem.style.textShadow = '';
-            }
+            if (titleElem) titleElem.innerText = 'ПРОТАГОНИСТ';
 
             if (window.gameEngine && window.gameEngine.multiplayerHUD) {
-                window.gameEngine.multiplayerHUD.addSystemMessage(this.isMega ? '🚁 Вы покинули Cyber Ghost X4' : '🚁 Вы покинули вертолет Maverick');
+                window.gameEngine.multiplayerHUD.addSystemMessage(`🚁 Вы покинули вертолет ${this.vehicleName}`);
             }
             if (window.gameEngine && window.gameEngine.multiplayerManager) {
                 window.gameEngine.multiplayerManager.sendLocalStateNow();
@@ -920,9 +1288,7 @@ class HelicopterVehicle {
                 }
             }
         } else {
-            // =========================================================================
-            // ПОСАДКА В ВЕРТОЛЕТ
-            // =========================================================================
+            // Посадка в вертолет (Пилот или Пассажир)
             const seatIdx = this.getFirstAvailableSeat();
             if (seatIdx === -1) {
                 if (window.gameEngine && window.gameEngine.multiplayerHUD) {
@@ -936,7 +1302,7 @@ class HelicopterVehicle {
             this.isPassenger = (seatIdx === 1);
             this.setOccupant(seatIdx, 'local');
 
-            // Восстанавливаем стабильное демпфирование для управляемого полета
+            // Восстановление нормального демпфирования при посадке
             this.body.linearDamping = 0.45;
             this.body.angularDamping = 0.75;
 
@@ -962,23 +1328,14 @@ class HelicopterVehicle {
 
             const modeElem = document.getElementById('stat-player-mode');
             const titleElem = document.getElementById('hud-mode-title');
-            if (modeElem) modeElem.innerText = this.isMega ? 'Пилот CYBER GHOST X4 ⚡' : (this.isPiloted ? 'Пилот вертолета' : 'Пассажир вертолета');
-            if (titleElem) {
-                titleElem.innerText = this.isMega ? '⚡ CYBER GHOST X4 ⚡' : (this.isPiloted ? 'MAVERICK HELI' : 'ПАССАЖИР (MAVERICK)');
-                if (this.isMega) {
-                    titleElem.style.color = '#00f0ff';
-                    titleElem.style.textShadow = '0 0 10px rgba(0, 240, 255, 0.8)';
-                }
-            }
+            if (modeElem) modeElem.innerText = this.isPiloted ? `Пилот (${this.vehicleName})` : `Пассажир (${this.vehicleName})`;
+            if (titleElem) titleElem.innerText = this.vehicleName.toUpperCase();
 
             if (window.gameEngine && window.gameEngine.multiplayerHUD) {
                 if (this.isPiloted) {
-                    const hintMsg = this.isMega
-                        ? '⚡ Вы за штурвалом CYBER GHOST X4! Скорость и пикирование x2! [Space] Взлет | [Shift] Спуск | [W/S] Полет | [A/D] Поворот'
-                        : '🚁 Вы сели за штурвал Maverick! [Space] Взлет | [Shift] Спуск | [W] Вперед | [S] Назад | [A/D] Поворот';
-                    window.gameEngine.multiplayerHUD.addSystemMessage(hintMsg);
+                    window.gameEngine.multiplayerHUD.addSystemMessage(`🚁 Вы сели за штурвал ${this.vehicleName}! [Space] Взлет | [Shift] Спуск | [W] Вперед | [S] Назад | [A/D] Поворот`);
                 } else {
-                    window.gameEngine.multiplayerHUD.addSystemMessage('🚁 Вы сели на пассажирское место вертолета! [F] Выйти');
+                    window.gameEngine.multiplayerHUD.addSystemMessage(`🚁 Вы сели на пассажирское место ${this.vehicleName}! [F] Выйти`);
                 }
             }
             if (window.gameEngine && window.gameEngine.multiplayerManager) {
@@ -995,58 +1352,68 @@ class HelicopterVehicle {
             this.headingAngle = 0;
         }
 
-        const sm = this.speedMultiplier || 1.0;
-        const curScale = this.scaleMultiplier || 1.0;
-
         const groundY = (window.gameEngine && window.gameEngine.terrainManager)
             ? window.gameEngine.terrainManager.getTerrainHeight(this.body.position.x, this.body.position.z)
             : 0.0;
-        const isGrounded = (this.body.position.y <= groundY + 1.05 * curScale);
+        const isGrounded = (this.body.position.y <= groundY + 1.05 * this.scaleMultiplier);
 
-        // 1. Вертикальный подъем, зависание и спуск (Умножаем на speedMultiplier x2)
-        const isAscending = !!(inputKeys.jump || (window.inputManager && window.inputManager.keys && window.inputManager.keys.jump));
-        const isDescending = !!(inputKeys.sprint || (window.inputManager && window.inputManager.keys && window.inputManager.keys.sprint));
+        // 1. Вертикальный подъем, зависание и спуск
+        const isAscending = !!(inputKeys.jump || (window.gameEngine && window.gameEngine.inputController && window.gameEngine.inputController.keys && window.gameEngine.inputController.keys.jump));
+        const isDescending = !!(inputKeys.sprint || (window.gameEngine && window.gameEngine.inputController && window.gameEngine.inputController.keys && window.gameEngine.inputController.keys.sprint));
 
-        // Определение угла обзора камеры от третьего лица (взгляд сверху на крышу вертолета и землю)
-        const camCtrl = (window.gameEngine && window.gameEngine.thirdPersonCamera) ? window.gameEngine.thirdPersonCamera : null;
-        const isCamLookingDown = (camCtrl && camCtrl.pitch > 0.45);
-        const altitudeAboveGround = this.body.position.y - groundY;
+        // Скорости масштабируются в зависимости от уровня слияния (Tier 3 = до 500 км/ч)
+        let maxAscend = 16.0;
+        let maxDescend = -7.5;
+        let baseForward = 35.0; // ~125 км/ч
+        let baseBackward = -18.0;
+        let yawRateCoeff = 1.75;
 
-        // Маневр скоростного пикирования (Nose-Dive x2: 100 км/ч = -27.78 м/с при sm=2):
-        this.isNoseDiving = (isDescending && isCamLookingDown && altitudeAboveGround > (4.5 * curScale));
+        if (this.tier === 2) {
+            maxAscend = 26.0;
+            maxDescend = -12.0;
+            baseForward = 70.0; // ~250 км/ч
+            baseBackward = -32.0;
+            yawRateCoeff = 2.4;
+        } else if (this.tier === 3) {
+            maxAscend = 42.0;
+            maxDescend = -18.0;
+            baseForward = 139.0; // ~500 км/ч (CYBER CRIMSON TITAN X8)
+            baseBackward = -55.0;
+            yawRateCoeff = 3.2;
+        }
+
+        const sm = this.speedMultiplier || 1.0;
+        const curScale = this.scaleMultiplier || 1.0;
 
         if (isAscending) {
-            const targetVelY = 16.0 * sm;
-            this.body.velocity.y += (targetVelY - this.body.velocity.y) * Math.min(1.0, dt * 7.0 * sm);
-        } else if (this.isNoseDiving) {
-            // Скоростное пикирование со скоростью ровно 50.0 км/ч (-13.89 м/с) или 100.0 км/ч (-27.78 м/с)
-            const targetVelY = -13.89 * sm;
-            this.body.velocity.y += (targetVelY - this.body.velocity.y) * Math.min(1.0, dt * 8.5 * sm);
+            this.body.velocity.y += (maxAscend - this.body.velocity.y) * Math.min(1.0, dt * 8.0);
         } else if (isDescending) {
-            const targetVelY = -7.5 * sm;
-            this.body.velocity.y += (targetVelY - this.body.velocity.y) * Math.min(1.0, dt * 7.0 * sm);
+            this.body.velocity.y += (maxDescend - this.body.velocity.y) * Math.min(1.0, dt * 8.0);
         } else if (isGrounded) {
             this.body.velocity.y = 0;
         } else {
             // Идеальное зависание на текущей высоте с компенсацией гравитации
             this.body.velocity.y += (0.0 - this.body.velocity.y) * Math.min(1.0, dt * 6.0);
-            this.body.applyForce(new CANNON.Vec3(0, this.body.mass * 9.82, 0), this.body.position);
+            if (this._antiGravityForce) {
+                this._antiGravityForce.set(0, this.body.mass * 9.82, 0);
+                this.body.applyForce(this._antiGravityForce, this.body.position);
+            }
         }
 
-        // 2. Управление курсом (Поворот носа влево / вправо, x2 скорость вращения)
+        // 2. Управление курсом (Поворот носа влево / вправо)
         let yawRate = 0.0;
         let targetRoll = 0.0;
         if (inputKeys.left) {
-            yawRate = 1.75 * sm;
+            yawRate = yawRateCoeff;
             targetRoll = -0.26;
         }
         if (inputKeys.right) {
-            yawRate = -1.75 * sm;
+            yawRate = -yawRateCoeff;
             targetRoll = 0.26;
         }
         this.headingAngle += yawRate * dt;
 
-        // 3. Тангаж (Pitch / Вперед-Назад / Пикирование носом вниз, x2 скорость полета)
+        // 3. Тангаж (Pitch / Вперед-Назад / Пикирование носом вниз)
         let targetForwardVel = 0.0;
         let targetPitch = 0.0;
 
@@ -1059,15 +1426,15 @@ class HelicopterVehicle {
                 targetForwardVel = 1.0 * sm;
             }
         } else if (inputKeys.forward) {
-            targetForwardVel = 35.0 * sm; // Вперед ~125 км/ч (x1) или ~250 км/ч (x2)
+            targetForwardVel = baseForward; // Вперед (в зависимости от уровня вертолета)
             targetPitch = 0.24;
         } else if (inputKeys.backward) {
-            targetForwardVel = -18.0 * sm; // Назад / торможение
+            targetForwardVel = baseBackward; // Назад / торможение
             targetPitch = -0.22;
         }
 
-        this.pitchAngle = THREE.MathUtils.lerp(this.pitchAngle, targetPitch, Math.min(1.0, dt * 5.5 * sm));
-        this.rollAngle = THREE.MathUtils.lerp(this.rollAngle, targetRoll, Math.min(1.0, dt * 5.5 * sm));
+        this.pitchAngle = THREE.MathUtils.lerp(this.pitchAngle, targetPitch, Math.min(1.0, dt * 5.5));
+        this.rollAngle = THREE.MathUtils.lerp(this.rollAngle, targetRoll, Math.min(1.0, dt * 5.5));
 
         // 4. Стабилизированная аэродинамика движения (без заносов и рывков)
         const fwdX = Math.sin(this.headingAngle);
@@ -1076,16 +1443,17 @@ class HelicopterVehicle {
         const rightZ = -Math.sin(this.headingAngle);
 
         // Упреждающая лучевая защита от туннелирования сквозь стены и фасады зданий на высоких скоростях
-        if (this.world && typeof this.world.raycastClosest === 'function' && Math.abs(targetForwardVel) > 0.1) {
+        if (this.world && typeof this.world.raycastClosest === 'function' && Math.abs(targetForwardVel) > 0.1 && this._rayResult) {
             const raySign = targetForwardVel > 0 ? 1 : -1;
             const rayDist = (this.isMega ? 4.8 : 3.8) * curScale;
-            const from = new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z);
-            const to = new CANNON.Vec3(
+            const from = this._rayFrom.set(this.body.position.x, this.body.position.y, this.body.position.z);
+            const to = this._rayTo.set(
                 this.body.position.x + fwdX * rayDist * raySign,
                 this.body.position.y,
                 this.body.position.z + fwdZ * rayDist * raySign
             );
-            const rayResult = new CANNON.RaycastResult();
+            const rayResult = this._rayResult;
+            rayResult.reset();
             this.world.raycastClosest(from, to, { skipBackfaces: true }, rayResult);
             if (rayResult.hasHit && rayResult.body && rayResult.body !== this.body) {
                 const safeDist = (this.isMega ? 3.6 : 2.9) * curScale;

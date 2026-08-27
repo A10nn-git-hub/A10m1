@@ -520,12 +520,12 @@
                 this.createStaticBox(x + 19.2, 0.45, z + 2.0, 0.6, 0.9, 42.0);
 
                 // 6. ИНТЕРЬЕР ГЛАВНОГО ВЕСТИБЮЛЯ (GRAND LOBBY INTERIOR)
-                // 4 Величественные мраморные колонны
+                // 4 Величественные мраморные колонны (вынесены за пределы лифтовой шахты)
                 const colCoords = [
-                    { cx: -8.0, cz: -6.5 },
-                    { cx: 8.0, cz: -6.5 },
-                    { cx: -8.0, cz: 6.5 },
-                    { cx: 8.0, cz: 6.5 }
+                    { cx: -10.5, cz: -8.5 },
+                    { cx: 10.5, cz: -8.5 },
+                    { cx: -10.5, cz: 8.5 },
+                    { cx: 10.5, cz: 8.5 }
                 ];
                 const colGeo = new THREE.CylinderGeometry(0.7, 0.7, lobbyHeight, 16);
                 const colCapGeo = new THREE.BoxGeometry(1.8, 0.35, 1.8);
@@ -547,51 +547,51 @@
                     this.createStaticBox(x + cc.cx, lobbyHeight / 2 + 0.2, z + cc.cz, 1.5, lobbyHeight, 1.5);
                 }
 
-                // Парадная стойка ресепшн (Reception Desk) в центре
+                // Парадная стойка ресепшн (Reception Desk) в восточном крыле (полностью освобождает лифтовую шахту)
                 const recDesk = new THREE.Mesh(new THREE.BoxGeometry(5.2, 1.15, 1.6), this.materials.woodCounter);
-                recDesk.position.set(0, 0.75, -2.5);
+                recDesk.position.set(6.5, 0.75, -2.5);
                 group.add(recDesk);
-                this.createStaticBox(x, 0.75, z - 2.5, 5.2, 1.15, 1.6);
+                this.createStaticBox(x + 6.5, 0.75, z - 2.5, 5.2, 1.15, 1.6);
 
                 const recGoldTrim = new THREE.Mesh(new THREE.BoxGeometry(5.3, 0.12, 1.65), this.materials.brushedGold);
-                recGoldTrim.position.set(0, 1.25, -2.5);
+                recGoldTrim.position.set(6.5, 1.25, -2.5);
                 group.add(recGoldTrim);
 
                 // Компьютерные терминалы на стойке
                 const pcMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3 });
-                for (let px of [-1.4, 1.4]) {
+                for (let px of [5.1, 7.9]) {
                     const mon = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.08), pcMat);
                     mon.position.set(px, 1.6, -2.4);
                     group.add(mon);
                 }
 
-                // Задняя панель ресепшн с гербом Maze Bank
+                // Задняя панель ресепшн с гербом Maze Bank (в восточном крыле)
                 const featWall = new THREE.Mesh(new THREE.BoxGeometry(6.4, 4.8, 0.4), this.materials.blackMarble);
-                featWall.position.set(0, 2.6, 2.0);
+                featWall.position.set(6.5, 2.6, 2.0);
                 group.add(featWall);
-                this.createStaticBox(x, 2.6, z + 2.0, 6.4, 4.8, 0.4);
+                this.createStaticBox(x + 6.5, 2.6, z + 2.0, 6.4, 4.8, 0.4);
 
                 const crestMesh = new THREE.Mesh(new THREE.PlaneGeometry(3.2, 3.2), this.materials.mazeCrest);
-                crestMesh.position.set(0, 3.0, 1.78);
+                crestMesh.position.set(6.5, 3.0, 1.78);
                 crestMesh.rotation.y = Math.PI;
                 group.add(crestMesh);
 
-                // Лаунж-зона с кожаными диванами (Западное крыло, X = -8, Z = -1)
+                // Лаунж-зона с кожаными диванами (Юго-запад, X = -10.5, Z = -6.0)
                 const sofaGeo = new THREE.BoxGeometry(3.6, 0.85, 1.2);
                 const sofa = new THREE.Mesh(sofaGeo, this.materials.chairLeatherBlack);
-                sofa.position.set(-8.5, 0.65, -1.0);
+                sofa.position.set(-10.5, 0.65, -6.0);
                 group.add(sofa);
-                this.createStaticBox(x - 8.5, 0.65, z - 1.0, 3.6, 0.85, 1.2);
+                this.createStaticBox(x - 10.5, 0.65, z - 6.0, 3.6, 0.85, 1.2);
 
                 const coffeeTable = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.45, 1.0), this.materials.brushedGold);
-                coffeeTable.position.set(-8.5, 0.45, -2.6);
+                coffeeTable.position.set(-10.5, 0.45, -4.2);
                 group.add(coffeeTable);
 
                 const tableGlass = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.08, 1.1), this.materials.glassDoor);
-                tableGlass.position.set(-8.5, 0.7, -2.6);
+                tableGlass.position.set(-10.5, 0.7, -4.2);
                 group.add(tableGlass);
 
-                // Финансовое табло и электронная биржа (Восточное крыло, X = +8, Z = -1)
+                // Финансовое табло и электронная биржа (Восточное крыло, X = +15, Z = -1)
                 const tickerMesh = new THREE.Mesh(new THREE.PlaneGeometry(6.4, 3.2), this.materials.stockTicker);
                 tickerMesh.position.set(14.65, 4.2, -1.0);
                 tickerMesh.rotation.y = -Math.PI / 2;
@@ -604,7 +604,7 @@
                 group.add(vaultDoor);
 
                 const safeWall = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 3.6), this.materials.safeLockers);
-                safeWall.position.set(-8.5, 2.2, depth / 2 - 0.25);
+                safeWall.position.set(-10.5, 2.2, depth / 2 - 0.25);
                 safeWall.rotation.y = Math.PI;
                 group.add(safeWall);
 
