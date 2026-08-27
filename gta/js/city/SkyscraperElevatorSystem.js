@@ -437,6 +437,8 @@ class SkyscraperElevatorSystem {
                         this.hudStatusElement.innerText = `Текущий: ${elev.floors[elev.currentFloorIndex].floor} этаж — ${elev.floors[elev.currentFloorIndex].name}`;
                     }
                     this.updateFloorButtonsUI(elev);
+                }
+            }
         }
 
         this.isPlayerInside = this.elevators.some(e => e.isPlayerInside);
