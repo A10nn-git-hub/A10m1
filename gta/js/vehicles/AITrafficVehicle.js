@@ -466,3 +466,5 @@ class AITrafficVehicle {
                 }
             }
         }
+
+window.AITrafficVehicle = AITrafficVehicle;

@@ -225,3 +225,5 @@
                 }
             }
         }
+
+window.DynamicWeatherManager = DynamicWeatherManager;

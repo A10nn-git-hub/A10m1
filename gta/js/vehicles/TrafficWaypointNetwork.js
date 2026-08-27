@@ -110,3 +110,5 @@ class TrafficWaypointNetwork {
                 return this.routes[Math.floor(Math.random() * this.routes.length)];
             }
         }
+
+window.TrafficWaypointNetwork = TrafficWaypointNetwork;

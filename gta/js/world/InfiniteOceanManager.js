@@ -9,3 +9,5 @@
 
             update(deltaTime, sunPosition, sunColor, fogColor, nightFactor) {}
         }
+
+window.InfiniteOceanManager = InfiniteOceanManager;

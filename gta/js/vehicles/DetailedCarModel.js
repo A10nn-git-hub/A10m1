@@ -254,13 +254,12 @@
                     mass: 1350,
                     material: this.physicsMaterials.wall,
                     position: new CANNON.Vec3(posX, 1.0, posZ),
-                    linearDamping: 0.05,
-                    angularDamping: 0.4
+                    linearDamping: 0.08,
+                    angularDamping: 0.5
                 });
 
                 const lowerBodyShape = new CANNON.Box(new CANNON.Vec3(0.98, 0.22, 2.15));
                 this.chassisBody.addShape(lowerBodyShape, new CANNON.Vec3(0, 0.05, 0));
-
                 const cabinRoofShape = new CANNON.Box(new CANNON.Vec3(0.74, 0.28, 0.95));
                 this.chassisBody.addShape(cabinRoofShape, new CANNON.Vec3(0, 0.55, -0.2));
 
@@ -277,14 +276,14 @@
                 const wheelOptions = {
                     radius: 0.36,
                     directionLocal: new CANNON.Vec3(0, -1, 0),
-                    suspensionStiffness: 42,
+                    suspensionStiffness: 35,
                     suspensionRestLength: 0.38,
-                    maxSuspensionForce: 150000,
-                    maxSuspensionTravel: 0.28,
-                    dampingCompression: 4.4,
-                    dampingRelaxation: 4.8,
-                    frictionSlip: 3.4,
-                    rollInfluence: 0.15,
+                    maxSuspensionForce: 120000,
+                    maxSuspensionTravel: 0.25,
+                    dampingCompression: 3.2,
+                    dampingRelaxation: 4.0,
+                    frictionSlip: 9.5,
+                    rollInfluence: 0.06,
                     axleLocal: new CANNON.Vec3(-1, 0, 0),
                     chassisConnectionPointLocal: new CANNON.Vec3(),
                     customSlidingRotationalSpeed: -30,
@@ -316,7 +315,6 @@
                 this.vehicle.setBrake(50, 2);
                 this.vehicle.setBrake(50, 3);
 
-                // STEP 37: Звук удара и столкновения автомобиля с препятствиями (Car Crash Sound)
                 let lastCrashTime = 0;
                 this.chassisBody.addEventListener('collide', (e) => {
                     const now = performance.now();
@@ -404,55 +402,65 @@
                     this.isBrakingState = false;
                 }
 
-                // STEP 33: Динамическое определение типа поверхности под колесами (асфальт vs сельский грунт)
+                // Определение режима дрифта (только при явном зажатии ручного тормоза / Space)
+                const isDrifting = !!(keys.handbrake || keys.jump);
+
+                // Определение типа поверхности под колесами (асфальт vs сельский грунт)
                 const cPos = this.chassisBody.position;
                 const isOnDirt = (window.gameEngine && window.gameEngine.roadNetwork)
                     ? window.gameEngine.roadNetwork.isPositionOnDirt(cPos.x, cPos.z)
                     : (Math.hypot(cPos.x, cPos.z) > 480.0);
 
-                const baseRearGrip = isOnDirt ? 1.65 : 3.4;
-                const baseFrontGrip = isOnDirt ? 2.1 : 3.8;
-                const driftRearGrip = isOnDirt ? 0.35 : 0.45;
-                const driftFrontGrip = 5.2;
-
-                const isDrifting = !!keys.jump;
+                const baseFrontGrip = isOnDirt ? 7.5 : 11.5;
+                const baseRearGrip = isOnDirt ? 7.0 : 10.5;
+                const driftFrontGrip = isOnDirt ? 6.5 : 9.0;
+                const driftRearGrip = isOnDirt ? 0.95 : 1.45;
 
                 if (isDrifting) {
-                    // РЕЖИМ ДРИФТА (Ручной тормоз на пробел)
+                    // РЕЖИМ УПРАВЛЯЕМОГО ДРИФТА (Ручной тормоз на Space)
                     this.isBrakingState = true;
                     this.vehicle.wheelInfos[0].frictionSlip = driftFrontGrip;
                     this.vehicle.wheelInfos[1].frictionSlip = driftFrontGrip;
                     this.vehicle.wheelInfos[2].frictionSlip = driftRearGrip;
                     this.vehicle.wheelInfos[3].frictionSlip = driftRearGrip;
 
-                    // Передние колеса свободны для тяги и управления, задние блокируются ручником
                     this.vehicle.setBrake(0, 0);
                     this.vehicle.setBrake(0, 1);
-                    this.vehicle.setBrake(130, 2);
-                    this.vehicle.setBrake(130, 3);
+                    this.vehicle.setBrake(120, 2);
+                    this.vehicle.setBrake(120, 3);
 
-                    // Дополнительный импульс заноса задней оси при вывернутом руле
-                    if (Math.abs(this.steeringValue) > 0.04 && currentSpeedKmh > 10.0) {
-                        this.chassisBody.angularVelocity.y += this.steeringValue * 3.2 * deltaTime;
+                    if (Math.abs(this.steeringValue) > 0.04 && currentSpeedKmh > 12.0) {
+                        this.chassisBody.angularVelocity.y += this.steeringValue * 2.6 * deltaTime;
                     }
                 } else {
+                    // СТАНДАРТНЫЙ РЕЖИМ (Плотное стабильное сцепление с асфальтом без заноса)
                     this.vehicle.wheelInfos[0].frictionSlip = baseFrontGrip;
                     this.vehicle.wheelInfos[1].frictionSlip = baseFrontGrip;
                     this.vehicle.wheelInfos[2].frictionSlip = baseRearGrip;
                     this.vehicle.wheelInfos[3].frictionSlip = baseRearGrip;
 
                     if (brakeForce > 0) {
-                        this.vehicle.setBrake(brakeForce * 0.6, 0);
-                        this.vehicle.setBrake(brakeForce * 0.6, 1);
+                        this.vehicle.setBrake(brakeForce * 0.7, 0);
+                        this.vehicle.setBrake(brakeForce * 0.7, 1);
                         this.vehicle.setBrake(brakeForce * 1.0, 2);
                         this.vehicle.setBrake(brakeForce * 1.0, 3);
                     } else {
-                        // Полный сброс тормозов для мгновенного старта машины
                         this.vehicle.setBrake(0, 0);
                         this.vehicle.setBrake(0, 1);
                         this.vehicle.setBrake(0, 2);
                         this.vehicle.setBrake(0, 3);
                     }
+
+                    // Система курсовой устойчивости (Anti-Spinout ESP): гашение бокового сноса при обычном повороте
+                    const localVel = new CANNON.Vec3();
+                    this.chassisBody.vectorToLocalFrame(this.chassisBody.velocity, localVel);
+                    if (Math.abs(localVel.x) > 0.05) {
+                        localVel.x *= Math.exp(-9.5 * deltaTime);
+                        this.chassisBody.vectorToWorldFrame(localVel, this.chassisBody.velocity);
+                    }
+                    this.chassisBody.angularVelocity.y *= Math.exp(-6.5 * deltaTime);
+                    this.chassisBody.angularVelocity.x *= Math.exp(-8.0 * deltaTime);
+                    this.chassisBody.angularVelocity.z *= Math.exp(-8.0 * deltaTime);
                 }
 
                 if (currentSpeedKmh > effectiveTopSpeed) {
@@ -466,13 +474,14 @@
                 this.vehicle.applyEngineForce(forwardForce * 0.6, 2);
                 this.vehicle.applyEngineForce(forwardForce * 0.6, 3);
 
-                const steerLimit = THREE.MathUtils.lerp(this.maxSteerAngle, 0.18, Math.min(currentSpeedKmh / 160, 1.0));
+                // Динамическое ограничение угла поворота колес на высокой скорости для плавности
+                const steerLimit = THREE.MathUtils.lerp(0.46, 0.08, Math.min(currentSpeedKmh / 140.0, 1.0));
                 let targetSteer = 0;
 
                 if (keys.left) targetSteer += steerLimit;
                 if (keys.right) targetSteer -= steerLimit;
 
-                this.steeringValue += (targetSteer - this.steeringValue) * Math.min(deltaTime * 12, 1.0);
+                this.steeringValue += (targetSteer - this.steeringValue) * Math.min(deltaTime * 8.5, 1.0);
                 this.vehicle.setSteeringValue(this.steeringValue, 0);
                 this.vehicle.setSteeringValue(this.steeringValue, 1);
             }
@@ -528,11 +537,12 @@
                         }
                     }
                 } else {
+                    // Защита от проваливания под мир без рывков подвески
                     const groundY = (window.gameEngine && window.gameEngine.terrainManager)
                         ? window.gameEngine.terrainManager.getTerrainHeight(this.chassisBody.position.x, this.chassisBody.position.z)
                         : 0.0;
-                    if (this.chassisBody.position.y < groundY + 0.35) {
-                        this.chassisBody.position.y = groundY + 0.35;
+                    if (this.chassisBody.position.y < groundY - 0.5) {
+                        this.chassisBody.position.y = groundY + 0.65;
                         if (this.chassisBody.velocity.y < 0) this.chassisBody.velocity.y = 0;
                     }
 
@@ -657,3 +667,5 @@
                 }
             }
         }
+
+window.DetailedCarModel = DetailedCarModel;

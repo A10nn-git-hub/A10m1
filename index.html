@@ -5,7 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Игровой Портал | Главное Лобби</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="css/style.css?v=20260824_v2">
+    <!-- Firebase SDKs for Realtime Multiplayer & Social Lobby -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <link rel="stylesheet" href="css/style.css?v=20260826_v2">
 </head>
 <body>
     <!-- Фоновый интерактивный холст -->
@@ -15,113 +19,77 @@
     <div class="ambient-glow glow-1"></div>
     <div class="ambient-glow glow-2"></div>
 
+    <!-- Верхняя панель: Профиль и Социальные функции -->
+    <div class="top-bar">
+        <div class="profile-chip" id="profile-chip" onclick="openProfileModal()" title="Нажмите для настройки аватара и имени">
+            <div class="profile-avatar-mini" id="my-avatar">😎</div>
+            <div class="profile-meta">
+                <div class="profile-name" id="my-name">Игрок ✏️</div>
+                <div class="profile-id-badge" id="my-id">ID: ...</div>
+            </div>
+        </div>
+        <div class="top-bar-actions">
+            <button class="action-chip-btn" id="btn-open-friends" onclick="openFriendsModal()">
+                <span>👥 Друзья</span>
+                <span class="badge-count" id="fr-badge" style="display:none;">0</span>
+            </button>
+        </div>
+    </div>
+
     <!-- Заголовок страницы -->
     <header class="header">
         <div class="title-container">
             <div class="subtitle">GAME HUB</div>
-            <h1 class="main-title">ВЫБЕРИТЕ ИГРУ</h1>
-            <p class="hint-text" id="platform-hint-text">Нажмите на карточку или используйте клавиши [1] и [2]</p>
+            <h1 class="main-title">ИГРОВОЕ ЛОББИ</h1>
+            <p class="hint-text" id="platform-hint-text">Приглашайте друзей в лобби и выбирайте игру</p>
         </div>
     </header>
 
-    <!-- Центрированный блок с играми -->
-    <main class="main-content">
-        <div class="games-grid">
-            
-            <!-- Игра 1: GTA 5 HTML -->
-            <a href="gta/index.html" class="game-card gta-card" id="btn-gta">
-                <div class="card-badge">3D Open World</div>
-                <div class="card-icon-wrapper">
-                    <!-- Иконка спорткара / города в стиле GTA -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2 10.9 2 11 2 11.2V16c0 .6.4 1 1 1h2"></path>
-                        <circle cx="7" cy="17" r="2"></circle>
-                        <path d="M9 17h6"></path>
-                        <circle cx="17" cy="17" r="2"></circle>
-                        <path d="M5 11l1.5-2.5h5.5l2 2.5"></path>
-                    </svg>
-                </div>
-                <h2 class="card-title">GTA 5 HTML</h2>
-                <p class="card-description">
-                    3D открытый мир на Three.js с физикой Cannon.js, транспортом, стрельбой и реалистичным освещением.
-                </p>
-                <div class="card-features">
-                    <span class="feature-tag">🚗 Физика авто</span>
-                    <span class="feature-tag">🏙️ 3D Город</span>
-                    <span class="feature-tag">💥 Shaders / SSAO</span>
-                </div>
-                <button class="launch-button" tabindex="-1">
-                    <span>Играть</span>
-                    <svg viewBox="0 0 24 24">
-                        <path d="M5 3l14 9-14 9V3z"/>
-                    </svg>
+    <!-- Центральное Мультиплеерное Лобби -->
+    <section class="lobby-hub-panel" id="lobby-panel">
+        <div class="lobby-header-row">
+            <div class="lobby-title-wrap">
+                <span class="lobby-badge-status" id="lobby-badge-status">ОДИНОЧНЫЙ</span>
+                <span class="lobby-title" id="lobby-title-text">ВАШЕ ЛОББИ</span>
+            </div>
+            <div class="lobby-header-actions">
+                <button class="lobby-find-btn" id="btn-find-lobby" onclick="promptFindLobby()" title="Найти лобби по номеру хоста">
+                    <span>🔍 НАЙТИ ЛОББИ</span>
                 </button>
-            </a>
-
-            <!-- Игра 2: 3D Shooter (Three.js WebGL) -->
-            <a href="3D shooter/index.html" class="game-card shooter-card" id="btn-3d-shooter" style="border-color: #32ade6; box-shadow: 0 10px 30px rgba(50, 173, 230, 0.25);">
-                <div class="card-badge" style="background: linear-gradient(135deg, #32ade6, #007aff);">3D Tactical Shooter</div>
-                <div class="card-icon-wrapper" style="background: rgba(50, 173, 230, 0.15); border-color: rgba(50, 173, 230, 0.4);">
-                    <!-- Иконка 3D прицела / тактического шутера -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#32ade6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <line x1="12" y1="3" x2="12" y2="7"></line>
-                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                        <line x1="3" y1="12" x2="7" y2="12"></line>
-                        <line x1="17" y1="12" x2="21" y2="12"></line>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                </div>
-                <h2 class="card-title">3D Shooter</h2>
-                <p class="card-description">
-                    Тактический соревновательный 3D-шутер на Three.js (Standoff 2 / CS) с 3D-моделями, ботами, трассерами и мультиплеером.
-                </p>
-                <div class="card-features">
-                    <span class="feature-tag" style="border-color: rgba(50, 173, 230, 0.3); color: #32ade6;">⚔️ 5v5 / Дуэли</span>
-                    <span class="feature-tag" style="border-color: rgba(50, 173, 230, 0.3); color: #32ade6;">🤖 3D Боты</span>
-                    <span class="feature-tag" style="border-color: rgba(50, 173, 230, 0.3); color: #32ade6;">💥 3D Баллистика</span>
-                </div>
-                <button class="launch-button" tabindex="-1" style="background: linear-gradient(135deg, #32ade6, #007aff);">
-                    <span>Играть</span>
-                    <svg viewBox="0 0 24 24">
-                        <path d="M5 3l14 9-14 9V3z"/>
-                    </svg>
+                <button class="lobby-share-btn" id="btn-share-lobby" onclick="copyLobbyInviteLink()" title="Скопировать ссылку на лобби">
+                    <span>🔗 ССЫЛКА</span>
                 </button>
-            </a>
-
-            <!-- Игра 3: 2D Shooter -->
-            <a href="shooter/index.html" class="game-card shooter-card" id="btn-shooter">
-                <div class="card-badge">2D Tactical Shooter</div>
-                <div class="card-icon-wrapper">
-                    <!-- Иконка прицела / тактического шутера -->
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#ff0055" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="9"></circle>
-                        <line x1="12" y1="3" x2="12" y2="7"></line>
-                        <line x1="12" y1="17" x2="12" y2="21"></line>
-                        <line x1="3" y1="12" x2="7" y2="12"></line>
-                        <line x1="17" y1="12" x2="21" y2="12"></line>
-                        <circle cx="12" cy="12" r="3"></circle>
-                    </svg>
-                </div>
-                <h2 class="card-title">2D Shooter</h2>
-                <p class="card-description">
-                    Динамичный 2D экшен-шутер с волнами противников, богатым арсеналом оружия и прокачкой.
-                </p>
-                <div class="card-features">
-                    <span class="feature-tag">🎯 Экшен</span>
-                    <span class="feature-tag">🔫 Арсенал</span>
-                    <span class="feature-tag">⚔️ Выживание</span>
-                </div>
-                <button class="launch-button" tabindex="-1">
-                    <span>Играть</span>
-                    <svg viewBox="0 0 24 24">
-                        <path d="M5 3l14 9-14 9V3z"/>
-                    </svg>
-                </button>
-            </a>
-
+                <button class="lobby-leave-btn" id="btn-leave-lobby" style="display:none;" onclick="leavePartyLobby()">ВЫЙТИ</button>
+            </div>
         </div>
-    </main>
+
+        <!-- Слоты участников лобби (ровно 5 мест) -->
+        <div class="lobby-slots-grid" id="lobby-slots-grid">
+            <!-- Динамически заполняется через JS (всегда 5 мест) -->
+        </div>
+
+        <!-- Нижняя панель лобби с выбранной игрой, кнопкой ВЫБРАТЬ и кнопкой запуска -->
+        <div class="lobby-bottom-bar">
+            <div class="selected-game-indicator">
+                <div class="selected-game-icon" id="sel-game-icon">🎯</div>
+                <div class="selected-game-text">
+                    <span class="selected-game-label">Выбранная игра:</span>
+                    <span class="selected-game-name" id="sel-game-name">3D Shooter <span class="selected-game-mode-badge" id="sel-game-mode">(Командный бой 5х5)</span></span>
+                </div>
+            </div>
+            <div class="lobby-actions-group">
+                <button class="lobby-select-btn" id="btn-select-game" onclick="openGameSelectModal()" title="Выбрать игру и режим">
+                    <span>ВЫБРАТЬ 🎮</span>
+                </button>
+                <button class="lobby-ready-btn" id="btn-toggle-ready" onclick="togglePlayerReady()" style="display:none;" title="Изменить статус готовности">
+                    <span id="ready-btn-text">ГОТОВ ✓</span>
+                </button>
+                <button class="lobby-launch-btn" id="btn-launch-game" onclick="launchActiveLobbyGame()">
+                    <span>ИГРАТЬ ▶</span>
+                </button>
+            </div>
+        </div>
+    </section>
 
     <!-- Подвал страницы -->
     <footer class="footer">
@@ -133,7 +101,141 @@
         <button id="sound-toggle" class="sound-toggle-btn">🔊 Звук: Вкл</button>
     </footer>
 
-    <!-- Модальное окно выбора платформы при запуске -->
+    <!-- Модальное окно выбора игры и режима (ВЫБРАТЬ) -->
+    <div id="game-select-modal" class="modal-overlay" onclick="closeGameSelectModal()">
+        <div class="game-select-modal-window" onclick="event.stopPropagation()">
+            <div class="modal-header-flex">
+                <div>
+                    <h2 class="game-select-title">ВЫБОР ИГРЫ</h2>
+                    <p class="game-select-sub">Выберите игровой проект и режим сражения для вашего лобби</p>
+                </div>
+                <button class="modal-close-icon-btn" onclick="closeGameSelectModal()">✖</button>
+            </div>
+            
+            <div class="games-select-grid">
+                <!-- Игра 1: GTA 5 HTML -->
+                <div class="game-card gta-card" id="card-modal-gta" onclick="selectGameModal('gta')">
+                    <div class="card-badge">3D Open World</div>
+                    <div class="card-icon-wrapper">
+                        <!-- Иконка спорткара / города в стиле GTA -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#00f0ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2 10.9 2 11 2 11.2V16c0 .6.4 1 1 1h2"></path>
+                            <circle cx="7" cy="17" r="2"></circle>
+                            <path d="M9 17h6"></path>
+                            <circle cx="17" cy="17" r="2"></circle>
+                            <path d="M5 11l1.5-2.5h5.5l2 2.5"></path>
+                        </svg>
+                    </div>
+                    <h3 class="card-title">GTA 5 HTML</h3>
+                    <p class="card-description">
+                        3D открытый мир на Three.js с физикой Cannon.js, транспортом, вертолетом, лифтами и полицией.
+                    </p>
+                    <div class="card-features">
+                        <span class="feature-tag">🚗 Физика авто</span>
+                        <span class="feature-tag">🏙️ 3D Город</span>
+                        <span class="feature-tag">🚁 Вертолет</span>
+                    </div>
+                    <div class="card-select-indicator">Выбрать GTA 5 ▶</div>
+                </div>
+
+                <!-- Игра 2: 3D Shooter -->
+                <div class="game-card shooter-card" id="card-modal-3d" onclick="selectGameModal('br_3d')">
+                    <div class="card-badge" style="background: linear-gradient(135deg, #32ade6, #007aff);">3D Tactical Shooter</div>
+                    <div class="card-icon-wrapper" style="background: rgba(50, 173, 230, 0.15); border-color: rgba(50, 173, 230, 0.4);">
+                        <!-- Иконка 3D прицела / тактического шутера -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#32ade6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="9"></circle>
+                            <line x1="12" y1="3" x2="12" y2="7"></line>
+                            <line x1="12" y1="17" x2="12" y2="21"></line>
+                            <line x1="3" y1="12" x2="7" y2="12"></line>
+                            <line x1="17" y1="12" x2="21" y2="12"></line>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+                    </div>
+                    <h3 class="card-title">3D Shooter</h3>
+                    <p class="card-description">
+                        Тактический соревновательный 3D-шутер на Three.js (Standoff 2 / CS) с ботами, трассерами и мультиплеером.
+                    </p>
+                    
+                    <!-- Переключатель подрежимов для 3D Shooter -->
+                    <div class="shooter-submodes-wrap" onclick="event.stopPropagation()">
+                        <div class="submode-pill active" id="submode-tdm_5v5" onclick="selectSubModeModal('tdm_5v5', event)">⚔️ 5v5</div>
+                        <div class="submode-pill" id="submode-duel_1v1" onclick="selectSubModeModal('duel_1v1', event)">🎯 1v1 Дуэль</div>
+                        <div class="submode-pill" id="submode-duel_2v2" onclick="selectSubModeModal('duel_2v2', event)">👥 2v2 Дуэль</div>
+                    </div>
+
+                    <div class="card-select-indicator" style="background: linear-gradient(135deg, #32ade6, #007aff);">Выбрать 3D Shooter ▶</div>
+                </div>
+            </div>
+
+            <div class="modal-btn-row" style="margin-top: 24px;">
+                <button class="modal-btn secondary" onclick="closeGameSelectModal()">Отмена</button>
+                <button class="modal-btn primary" onclick="confirmGameSelectModal()">Подтвердить выбор ▶</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно Друзей и Приглашений в Лобби -->
+    <div id="friends-modal" class="modal-overlay" onclick="closeFriendsModal()">
+        <div class="friends-modal-window" onclick="event.stopPropagation()">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h2 style="font-size:1.4rem; font-weight:800; color:#fff;">👥 ДРУЗЬЯ И ПРИГЛАШЕНИЯ</h2>
+                <button class="modal-close-icon-btn" onclick="closeFriendsModal()">✖</button>
+            </div>
+            
+            <div class="friends-search-row">
+                <input type="text" id="friend-id-input" class="styled-id-input" placeholder="Введите 4-значный ID друга" maxlength="10">
+                <button class="modal-btn primary" style="padding:10px 18px;" onclick="addFriendOrInviteById()">Позвать</button>
+            </div>
+
+            <h4 style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; margin-bottom:10px;">Список друзей</h4>
+            <div class="friends-list-scroll" id="friends-list-container">
+                <!-- Заполняется динамически -->
+            </div>
+
+            <div class="modal-btn-row" style="margin-top:auto;">
+                <button class="modal-btn secondary" style="width:100%;" onclick="closeFriendsModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Модальное окно профиля игрока (Смена Аватара + Смена Имени + Пасхалка 1512) -->
+    <div id="profile-modal" class="modal-overlay" onclick="closeProfileModal()">
+        <div class="friends-modal-window" style="max-width:440px; text-align:center;" onclick="event.stopPropagation()">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <h2 style="font-size:1.4rem; font-weight:800; color:#fff;">👤 ПРОФИЛЬ ИГРОКА</h2>
+                <button class="modal-close-icon-btn" onclick="closeProfileModal()">✖</button>
+            </div>
+
+            <div class="profile-edit-box">
+                <div class="profile-avatar-large" id="modal-avatar-preview">😎</div>
+                <div class="profile-edit-info">
+                    <div class="profile-name-edit-row">
+                        <input type="text" id="profile-name-input" class="styled-id-input" placeholder="Введите имя..." maxlength="16">
+                        <button class="modal-btn primary" style="padding:8px 14px; font-size:12px;" onclick="saveNameFromInput()">OK</button>
+                    </div>
+                    <div class="profile-id-tag-row">
+                        <span class="profile-id-sub" id="modal-id-preview">ID: ...</span>
+                    </div>
+                </div>
+            </div>
+
+            <h4 style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; margin:16px 0 8px; text-align:left;">Выберите аватар:</h4>
+            <div class="avatar-grid" id="avatar-grid"></div>
+
+            <div class="modal-btn-row" style="margin-top:14px;">
+                <button class="modal-btn secondary" style="width:100%;" onclick="closeProfileModal()">Готово</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Верхнее уведомление о входящем приглашении -->
+    <div id="top-notify" onclick="acceptIncomingInvite()">
+        <span>🎮 <b id="notify-host-name">Игрок</b> зовет вас в лобби!</span>
+        <button class="notify-accept-btn">Принять</button>
+    </div>
+
+    <!-- Модальное окно выбора платформы при первом запуске -->
     <div id="device-modal" class="device-modal-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 99999;">
         <div class="device-modal-window">
             <div class="device-modal-header">
@@ -171,6 +273,25 @@
         </div>
     </div>
 
-    <script src="js/main.js?v=20260824_v2"></script>
+    <!-- Всплывающий стильный Toast для уведомлений лобби -->
+    <div id="lobby-toast" class="lobby-toast">
+        <span class="toast-icon" id="toast-icon">✨</span>
+        <span class="toast-msg" id="toast-msg">Уведомление</span>
+    </div>
+
+    <!-- Полноэкранный неоновый оверлей обратного отсчета (3..2..1..СТАРТ!) -->
+    <div id="lobby-countdown-overlay" class="countdown-overlay">
+        <div class="countdown-card">
+            <div class="countdown-glow-ring"></div>
+            <div class="countdown-badge">МАТЧ НАЧИНАЕТСЯ</div>
+            <div class="countdown-number-box">
+                <span class="countdown-number" id="countdown-timer-num">3</span>
+            </div>
+            <div class="countdown-game-info" id="countdown-game-sub">Приготовьтесь к бою...</div>
+            <button class="countdown-cancel-btn" id="btn-cancel-countdown" onclick="cancelLobbyCountdown()" style="display:none;">Отменить старт</button>
+        </div>
+    </div>
+
+    <script src="js/main.js?v=20260826_v3"></script>
 </body>
 </html>

@@ -3,10 +3,12 @@ window.addEventListener('DOMContentLoaded', () => {
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
         try {
-            tg.ready();
-            tg.expand();
-            if (typeof tg.requestFullscreen === 'function') {
-                tg.requestFullscreen();
+            if (typeof tg.ready === 'function') tg.ready();
+            if (typeof tg.expand === 'function') tg.expand();
+            if (typeof tg.requestFullscreen === 'function' && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('8.0')) {
+                try {
+                    tg.requestFullscreen();
+                } catch (err) {}
             }
             if (tg.BackButton) {
                 tg.BackButton.show();
@@ -14,10 +16,9 @@ window.addEventListener('DOMContentLoaded', () => {
                     window.location.href = '../index.html';
                 });
             }
-        } catch (e) {
-            console.warn('Telegram WebApp init error:', e);
-        }
+        } catch (e) {}
     }
 
     window.gameEngine = new GTAEngine();
 });
+

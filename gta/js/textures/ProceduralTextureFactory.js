@@ -493,7 +493,136 @@
                 const ctx = canvas.getContext('2d');
                 ctx.fillStyle = '#080811'; ctx.fillRect(0, 0, 512, 128);
                 ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 6; ctx.strokeRect(6, 6, 500, 116);
-                ctx.fillStyle = '#ffffff'; ctx.font = '900 52px Arial'; ctx.fillText('MAZE BANK', 120, 82);
+
+                // Логотип Maze Bank (Стилизованная красная буква 'M' со щитом)
+                ctx.fillStyle = '#ff1744';
+                ctx.beginPath();
+                ctx.moveTo(35, 24); ctx.lineTo(85, 24); ctx.lineTo(85, 104); ctx.lineTo(60, 72); ctx.lineTo(35, 104); ctx.closePath();
+                ctx.fill();
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '900 52px "Arial Black", Arial, sans-serif';
+                ctx.fillText('MAZE BANK', 115, 84);
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            static createMazeBankCrestTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#0f141c'; ctx.fillRect(0, 0, 512, 512);
+
+                // Золотой внешний круг и окантовка
+                ctx.strokeStyle = '#d4af37'; ctx.lineWidth = 12;
+                ctx.beginPath(); ctx.arc(256, 256, 220, 0, Math.PI * 2); ctx.stroke();
+                ctx.strokeStyle = '#ff1744'; ctx.lineWidth = 6;
+                ctx.beginPath(); ctx.arc(256, 256, 200, 0, Math.PI * 2); ctx.stroke();
+
+                // Центральная эмблема
+                ctx.fillStyle = '#ff1744';
+                ctx.beginPath();
+                ctx.moveTo(170, 140); ctx.lineTo(342, 140); ctx.lineTo(342, 320); ctx.lineTo(256, 240); ctx.lineTo(170, 320); ctx.closePath();
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '900 42px "Arial Black", Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('MAZE BANK', 256, 380);
+                ctx.font = 'bold 22px Arial, sans-serif';
+                ctx.fillStyle = '#d4af37';
+                ctx.fillText('EST. 1928 // LOS SANTOS', 256, 420);
+                return new THREE.CanvasTexture(canvas);
+            }
+
+            static createLuxuryBlackMarbleTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#1e2530'; ctx.fillRect(0, 0, 512, 512);
+
+                // Плитка с фасками
+                for (let x = 0; x < 512; x += 128) {
+                    for (let y = 0; y < 512; y += 128) {
+                        ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 3;
+                        ctx.strokeRect(x, y, 128, 128);
+                    }
+                }
+
+                // Золотистые и белые мраморные прожилки
+                ctx.strokeStyle = 'rgba(234, 179, 8, 0.65)';
+                ctx.lineWidth = 3.5;
+                ctx.beginPath();
+                ctx.moveTo(20, 10); ctx.bezierCurveTo(120, 180, 340, 120, 490, 480);
+                ctx.moveTo(400, 20); ctx.bezierCurveTo(280, 200, 200, 350, 50, 490);
+                ctx.stroke();
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+                ctx.lineWidth = 2.0;
+                ctx.beginPath();
+                ctx.moveTo(80, 0); ctx.bezierCurveTo(180, 250, 320, 280, 450, 512);
+                ctx.stroke();
+
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(2, 2);
+                return texture;
+            }
+
+            static createMazeBankGlassFacadeTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 512;
+                const ctx = canvas.getContext('2d');
+                // Насыщенный зеркальный сапфировый градиент
+                const grad = ctx.createLinearGradient(0, 0, 0, 512);
+                grad.addColorStop(0.0, '#153258');
+                grad.addColorStop(0.5, '#1e4b82');
+                grad.addColorStop(1.0, '#102847');
+                ctx.fillStyle = grad; ctx.fillRect(0, 0, 512, 512);
+
+                // Оконные панели и алюминиевые шпросы (мюллионы)
+                for (let x = 0; x < 8; x++) {
+                    for (let y = 0; y < 16; y++) {
+                        const isLit = Math.sin(x * 15.3 + y * 28.7) > 0.25;
+                        ctx.fillStyle = isLit ? 'rgba(254, 240, 138, 0.92)' : (Math.random() > 0.5 ? 'rgba(56, 189, 248, 0.55)' : 'rgba(30, 64, 110, 0.45)');
+                        ctx.fillRect(x * 64 + 4, y * 32 + 4, 56, 24);
+                        ctx.strokeStyle = '#0b192c'; ctx.lineWidth = 2.5;
+                        ctx.strokeRect(x * 64 + 2, y * 32 + 2, 60, 28);
+                    }
+                }
+                const texture = new THREE.CanvasTexture(canvas);
+                texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+                texture.repeat.set(4, 8);
+                return texture;
+            }
+
+            static createStockTickerTexture() {
+                const canvas = document.createElement('canvas');
+                canvas.width = 512; canvas.height = 256;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#050a14'; ctx.fillRect(0, 0, 512, 256);
+                ctx.strokeStyle = '#00f0ff'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, 504, 248);
+
+                ctx.fillStyle = '#00f0ff';
+                ctx.font = 'bold 20px "Courier New", monospace';
+                ctx.fillText('LOS SANTOS FINANCIAL EXCHANGE // LIVE', 18, 34);
+
+                const stocks = [
+                    { name: 'MAZE BANK (MAZ)', price: '$482.50', change: '+3.8%', up: true },
+                    { name: 'FLYUS AIR (FLY)', price: '$128.15', change: '+1.2%', up: true },
+                    { name: 'AMMU-NATION (AMU)', price: '$310.90', change: '-0.6%', up: false },
+                    { name: 'VANGELICO (VNG)', price: '$785.40', change: '+5.4%', up: true },
+                    { name: 'FLEECE BANK (FLC)', price: '$94.20', change: '-2.1%', up: false }
+                ];
+
+                for (let i = 0; i < stocks.length; i++) {
+                    const s = stocks[i];
+                    const y = 72 + i * 36;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '16px "Courier New", monospace';
+                    ctx.fillText(s.name, 18, y);
+                    ctx.fillText(s.price, 280, y);
+                    ctx.fillStyle = s.up ? '#22c55e' : '#ef4444';
+                    ctx.fillText(s.change, 420, y);
+                }
                 return new THREE.CanvasTexture(canvas);
             }
 
@@ -1183,3 +1312,5 @@
                 return tex;
             }
         }
+
+window.ProceduralTextureFactory = ProceduralTextureFactory;

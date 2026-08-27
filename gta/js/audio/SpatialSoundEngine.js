@@ -126,10 +126,19 @@
             }
 
             /**
-             * Асинхронная загрузка и распаковка 5 MP3 файлов
+             * Асинхронная загрузка и распаковка MP3 файлов (с бесшовным переключением на Web Audio API синтез при открытии через file://)
              */
             async loadAudioSamples() {
                 if (!this.audioCtx) return;
+
+                // При открытии игры напрямую через протокол file:// (без локального веб-сервера)
+                // браузеры на базе Chromium блокируют вызовы fetch() политикой CORS (Origin: null).
+                // В этом режиме движок использует встроенный богатый процедурный синтез Web Audio API без ошибок.
+                if (typeof window !== 'undefined' && window.location && window.location.protocol === 'file:') {
+                    this.isSamplesLoaded = true;
+                    return;
+                }
+
                 const audioFiles = [
                     {
                         key: 'engine_start_drive',
@@ -171,16 +180,10 @@
                         const dur = decodedBuffer.duration;
 
                         if (item.key === 'engine_start_drive') {
-                            // Файл 1: 10.58 сек -> содержит 2 звука:
-                            // Звук 1. Завод двигателя (стартер, раскрутка ~0-3.3 сек)
-                            // Звук 2. Звук машины во время поездки (бесшовный луп ~3.3-10.58 сек)
                             const splitPoint = Math.min(3.3, dur * 0.35);
                             this.samples.car_start = this.createSubBuffer(decodedBuffer, 0, splitPoint);
                             this.samples.car_drive_loop = this.createSubBuffer(decodedBuffer, splitPoint, dur);
                         } else if (item.key === 'brake_crash') {
-                            // Файл 2: 9.09 сек -> содержит 2 звука:
-                            // Звук 1. Торможение / визг шин (~0-4.4 сек)
-                            // Звук 2. Врезание / сокрушительный удар в препятствие (~4.4-9.09 сек)
                             const splitPoint = Math.min(4.4, dur * 0.48);
                             this.samples.car_skid_brake = this.createSubBuffer(decodedBuffer, 0, splitPoint);
                             this.samples.car_crash = this.createSubBuffer(decodedBuffer, splitPoint, dur);
@@ -192,7 +195,7 @@
                             this.samples.footstep_grass = decodedBuffer;
                         }
                     } catch (e) {
-                        console.warn(`Ошибка загрузки аудиосэмпла [${item.key}]:`, e);
+                        // Тихий перехват для сохранения чистоты консоли
                     }
                 }
                 this.isSamplesLoaded = true;
@@ -348,6 +351,11 @@
             playFootstep(posX, posY, posZ, isIndoor = false, volumeScale = 1.0, surfaceType = 'default') {
                 if (!this.audioCtx || !this.isInitialized) return;
 
+                const isRoofHeli = (posY > 88.0);
+                if (isRoofHeli) {
+                    surfaceType = 'metal';
+                }
+
                 // 1. Шаги по траве и грунту
                 if (surfaceType === 'grass' && this.samples.footstep_grass) {
                     const dur = this.samples.footstep_grass.duration;
@@ -367,10 +375,10 @@
                     return;
                 }
 
-                // 2. Шаги по асфальту/плитке по умолчанию
+                // 2. Шаги по асфальту/плитке или металлическому вертодрому
                 if (surfaceType !== 'grass' && this.samples.footstep_default) {
                     const dur = this.samples.footstep_default.duration;
-                    const stepDuration = isIndoor ? 0.30 : 0.36;
+                    const stepDuration = isIndoor ? 0.30 : (isRoofHeli ? 0.28 : 0.36);
                     const numSteps = Math.floor(dur / stepDuration) || 1;
                     const offset = (this.footstepDefaultIdx % numSteps) * stepDuration;
                     this.footstepDefaultIdx++;
@@ -378,9 +386,9 @@
                     this.playSample(this.samples.footstep_default, posX, posY, posZ, {
                         offset: offset,
                         duration: stepDuration,
-                        volumeScale: volumeScale * (isIndoor ? 0.75 : 0.90),
+                        volumeScale: volumeScale * (isIndoor ? 0.75 : (isRoofHeli ? 1.05 : 0.90)),
                         pitchVariation: 0.06,
-                        playbackRate: isIndoor ? 1.12 : 1.0,
+                        playbackRate: isRoofHeli ? 1.35 : (isIndoor ? 1.12 : 1.0),
                         maxDistance: 28.0,
                         bus: 'foley'
                     });
@@ -933,62 +941,6 @@
                 } catch (e) {}
             }
 
-            setPoliceSirenState(active) {
-                if (!this.audioCtx || !this.isInitialized) return;
-                try {
-                    if (active) {
-                        if (!this.sirenOsc) {
-                            const now = this.audioCtx.currentTime;
-                            this.sirenOsc = this.audioCtx.createOscillator();
-                            this.sirenLfo = this.audioCtx.createOscillator();
-                            this.sirenLfoGain = this.audioCtx.createGain();
-                            this.sirenGain = this.audioCtx.createGain();
-
-                            this.sirenOsc.type = 'sawtooth';
-                            this.sirenOsc.frequency.setValueAtTime(750, now);
-
-                            this.sirenLfo.type = 'triangle';
-                            this.sirenLfo.frequency.setValueAtTime(0.45, now);
-                            this.sirenLfoGain.gain.setValueAtTime(280, now);
-
-                            this.sirenLfo.connect(this.sirenOsc.frequency);
-
-                            const filter = this.audioCtx.createBiquadFilter();
-                            filter.type = 'lowpass';
-                            filter.frequency.setValueAtTime(1600, now);
-
-                            this.sirenGain.gain.setValueAtTime(0.001, now);
-                            this.sirenGain.gain.linearRampToValueAtTime(0.22, now + 0.5);
-
-                            this.sirenOsc.connect(filter);
-                            filter.connect(this.sirenGain);
-                            this.sirenGain.connect(this.masterGain);
-
-                            this.sirenOsc.start(now);
-                            this.sirenLfo.start(now);
-                        }
-                    } else {
-                        if (this.sirenOsc && this.sirenGain) {
-                            const now = this.audioCtx.currentTime;
-                            this.sirenGain.gain.linearRampToValueAtTime(0.0001, now + 0.6);
-                            setTimeout(() => {
-                                try {
-                                    if (this.sirenOsc) {
-                                        this.sirenOsc.stop();
-                                        this.sirenLfo.stop();
-                                        this.sirenOsc.disconnect();
-                                        this.sirenLfo.disconnect();
-                                        this.sirenOsc = null;
-                                        this.sirenLfo = null;
-                                        this.sirenGain = null;
-                                    }
-                                } catch (e) {}
-                            }, 700);
-                        }
-                    }
-                } catch (e) {}
-            }
-
             playCashPickup() {
                 if (!this.audioCtx || !this.isInitialized) return;
                 try {
@@ -1018,32 +970,6 @@
                     osc2.stop(now + 0.45);
                 } catch (e) {}
             }
-
-            playMissionJingle(passed = true) {
-                if (!this.audioCtx || !this.isInitialized) return;
-                try {
-                    const now = this.audioCtx.currentTime;
-                    const notes = passed 
-                        ? [523.25, 659.25, 783.99, 1046.50]
-                        : [392.00, 369.99, 349.23, 311.13];
-
-                    notes.forEach((freq, idx) => {
-                        const osc = this.audioCtx.createOscillator();
-                        const g = this.audioCtx.createGain();
-                        const startTime = now + idx * 0.12;
-
-                        osc.type = passed ? 'triangle' : 'sawtooth';
-                        osc.frequency.setValueAtTime(freq, startTime);
-
-                        g.gain.setValueAtTime(0.32, startTime);
-                        g.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
-
-                        osc.connect(g);
-                        g.connect(this.masterGain);
-
-                        osc.start(startTime);
-                        osc.stop(startTime + 0.5);
-                    });
-                } catch (e) {}
-            }
         }
+
+window.SpatialSoundEngine = SpatialSoundEngine;

@@ -108,19 +108,13 @@
                 const sunH = this.sunPosition.y;
 
                 if (this.sunLight) {
-                    // Компактные, мягкие и аккуратные короткие тени прямо под персонажем, NPC и авто (без длинных растянутых полос)
-                    const lightElevation = 140.0;
-                    const lightDistH = 10.0;
+                    const lightElevation = 110.0;
+                    const lightDistH = 55.0;
                     const normH = Math.hypot(this.sunPosition.x, this.sunPosition.z) || 1;
                     const normX = this.sunPosition.x / normH;
                     const normZ = this.sunPosition.z / normH;
 
-                    // Строго вертикальный зенитный угол: свет падает строго перпендикулярно сверху вниз (0° наклона, тени строго под ногами и машинами)
-                    this.sunLight.position.set(pX, pY + 140.0, pZ);
-                    if (this.sunLight.target) {
-                        this.sunLight.target.position.set(pX, pY, pZ);
-                        this.sunLight.target.updateMatrixWorld();
-                    }
+                    this.sunLight.position.set(pX + normX * lightDistH, pY + lightElevation, pZ + normZ * lightDistH);
                     if (this.sunLight.target) {
                         this.sunLight.target.position.set(pX, pY, pZ);
                         this.sunLight.target.updateMatrixWorld();
@@ -181,3 +175,5 @@
                 if (this.timeElement) this.timeElement.innerText = `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')} (Сутки)`;
             }
         }
+
+window.DayNightCycleManager = DayNightCycleManager;

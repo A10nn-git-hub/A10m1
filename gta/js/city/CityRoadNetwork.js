@@ -471,3 +471,5 @@
                 }
             }
         }
+
+window.CityRoadNetwork = CityRoadNetwork;

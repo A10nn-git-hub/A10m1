@@ -10,3 +10,5 @@
                 // Чистый атмосферный рендеринг через Sky Shader
             }
         }
+
+window.DynamicCloudSystem = DynamicCloudSystem;

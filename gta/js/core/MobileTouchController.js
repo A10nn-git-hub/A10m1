@@ -120,7 +120,8 @@ class MobileTouchController {
 
     createTouchUI() {
         const existing = document.getElementById('mobile-controls-layer');
-        if (existing) existing.remove();
+        if (existing && typeof existing.remove === 'function') existing.remove();
+        else if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 
         const layer = document.createElement('div');
         layer.id = 'mobile-controls-layer';

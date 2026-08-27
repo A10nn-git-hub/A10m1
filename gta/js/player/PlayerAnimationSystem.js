@@ -39,3 +39,5 @@
         /**
          * Контроллер ввода (с поддержкой переключения погоды U / P)
          */
+
+window.PlayerAnimationSystem = PlayerAnimationSystem;

@@ -11,7 +11,7 @@ class SkyscraperElevatorSystem {
         this.world = world;
         this.physicsMaterials = physicsMaterials;
 
-        this.audioSynth = new ElevatorAudioSynth();
+        this.audioSynth = (typeof ElevatorAudioSynth !== 'undefined') ? new ElevatorAudioSynth() : (window.ElevatorAudioSynth ? new window.ElevatorAudioSynth() : null);
 
         this.materials = {
             titaniumWall: new THREE.MeshLambertMaterial({ color: 0x475569 }),
@@ -35,18 +35,18 @@ class SkyscraperElevatorSystem {
     }
 
     initAllBuildingElevators() {
-        // 1. Лифт Небоскреба Maze Bank (10 этажей)
+        // 1. Лифт Небоскреба Maze Bank (10 этажей - точное совпадение с перекрытиями башни)
         const mazeFloors = [
             { floor: 1, name: 'Вестибюль (Grand Lobby)', y: 0.0 },
-            { floor: 2, name: 'Служба Безопасности', y: 8.5 },
-            { floor: 3, name: 'Финансовая Аналитика', y: 17.0 },
-            { floor: 4, name: 'Зал Заседаний (Boardroom)', y: 25.5 },
-            { floor: 5, name: 'VIP Лаунж и Бар', y: 34.0 },
-            { floor: 6, name: 'Торговая Биржа', y: 42.5 },
-            { floor: 7, name: 'Офис Руководства', y: 51.0 },
-            { floor: 8, name: 'Пентхаус Директората', y: 59.5 },
-            { floor: 9, name: 'Панорамная Смотровая (Sky Deck)', y: 74.0 },
-            { floor: 10, name: 'Крыша и Вертолетная Площадка (Helipad)', y: 92.05 }
+            { floor: 2, name: 'Служба Безопасности', y: 9.0 },
+            { floor: 3, name: 'Финансовая Аналитика', y: 18.0 },
+            { floor: 4, name: 'Зал Заседаний (Boardroom)', y: 27.0 },
+            { floor: 5, name: 'VIP Лаунж и Бар', y: 36.0 },
+            { floor: 6, name: 'Торговая Биржа', y: 45.0 },
+            { floor: 7, name: 'Офис Руководства', y: 54.0 },
+            { floor: 8, name: 'Пентхаус Директората', y: 63.0 },
+            { floor: 9, name: 'Панорамная Смотровая (Sky Deck)', y: 72.0 },
+            { floor: 10, name: 'Крыша и Вертолетная Площадка (Helipad)', y: 92.0 }
         ];
         this.createBuildingElevator('ЛИФТ MAZE BANK TOWER', -3.5, 60.0, mazeFloors, 7.5, 7.5, 96.0, true);
 

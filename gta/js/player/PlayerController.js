@@ -83,7 +83,7 @@ class PlayerController {
         } else {
             // Залезть на дерево
             const tree = this.findNearestTree(3.2);
-            if (tree) {
+            if (tree && !tree.isFallen) {
                 this.isClimbingTree = true;
                 this.currentTree = tree;
                 this.player.body.position.set(tree.x, tree.perchY, tree.z);
@@ -93,6 +93,45 @@ class PlayerController {
                     window.gameEngine.multiplayerHUD.addSystemMessage('🌿 Вы залезли на дерево и спрятались в густой листве! [E] Слезть | [Space] Спрыгнуть');
                 }
             }
+        }
+    }
+
+    ejectFromFallenTree(treeX, treeY, treeZ, fallDirX = 1, fallDirZ = 0) {
+        if (!this.player || !this.player.body) return;
+        this.isClimbingTree = false;
+        this.currentTree = null;
+        const body = this.player.body;
+        const mesh = this.player.mesh;
+
+        // Встать на ноги рядом с упавшим деревом (перпендикулярно направлению падения)
+        const sideX = -fallDirZ;
+        const sideZ = fallDirX;
+        const dropX = treeX + sideX * 1.8;
+        const dropZ = treeZ + sideZ * 1.8;
+        const groundY = (window.gameEngine && window.gameEngine.terrainManager)
+            ? window.gameEngine.terrainManager.getTerrainHeight(dropX, dropZ)
+            : treeY;
+
+        body.position.set(dropX, groundY + 0.82, dropZ);
+        body.velocity.set(0, 0, 0);
+        body.angularVelocity.set(0, 0, 0);
+        if (mesh) {
+            mesh.position.set(dropX, groundY, dropZ);
+        }
+
+        const l = this.player.limbs;
+        if (l && l.torso) {
+            l.torso.position.y = 0.82;
+            l.leftLeg.pivot.rotation.set(0, 0, 0);
+            l.rightLeg.pivot.rotation.set(0, 0, 0);
+            l.leftLeg.knee.rotation.set(0, 0, 0);
+            l.rightLeg.knee.rotation.set(0, 0, 0);
+            l.leftArm.pivot.rotation.set(0, 0, 0);
+            l.rightArm.pivot.rotation.set(0, 0, 0);
+        }
+
+        if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+            window.gameEngine.multiplayerHUD.addSystemMessage('💥 Дерево сбито! Вы спрыгнули на ноги рядом!');
         }
     }
 
@@ -143,10 +182,6 @@ class PlayerController {
             document.body.appendChild(wasted);
         }
         wasted.style.display = 'block';
-
-        if (window.soundEngine && typeof window.soundEngine.playMissionJingle === 'function') {
-            window.soundEngine.playMissionJingle(false);
-        }
     }
 
     respawn() {
@@ -159,11 +194,6 @@ class PlayerController {
         if (this.player.body) {
             this.player.body.position.set(0, 2.5, 25.0);
             this.player.body.velocity.set(0, 0, 0);
-        }
-
-        // Сброс розыска
-        if (window.gameEngine && window.gameEngine.wantedManager) {
-            window.gameEngine.wantedManager.setStars(0);
         }
 
         // Снятие оплаты за лечение $2,000
@@ -323,15 +353,50 @@ class PlayerController {
             }
         }
 
-        const onGroundTerrain = (!isInsideElevator && !isStandingOnHeliRoof && body.position.y <= groundY + 0.83);
+        // 4. Проверка запрыгивания и устойчивого стояния на другом игроке (Human Stacking / Прыжки друг с друга)
+        let isStandingOnOtherPlayer = false;
+        const mp = window.gameEngine && window.gameEngine.multiplayerManager;
+        if (mp && mp.remotePlayers && mp.remotePlayers.size > 0) {
+            for (const [rId, remote] of mp.remotePlayers.entries()) {
+                if (!remote || remote.isDriving || remote.isFlyingHeli) continue;
+
+                const rPos = remote.currentPos;
+                const distH = Math.hypot(body.position.x - rPos.x, body.position.z - rPos.z);
+                // Поверхность головы/плеч напарника на высоте rPos.y + 1.70м
+                const headTopY = rPos.y + 1.70;
+                const currentFeetY = body.position.y - 0.815;
+                const diffY = currentFeetY - headTopY;
+
+                // Если игрок сверху напарника в радиусе 0.58м и подошвы находятся на уровне головы
+                if (distH < 0.58 && diffY >= -0.38 && diffY <= 0.85) {
+                    isStandingOnOtherPlayer = true;
+                    hasSolidContact = true;
+
+                    // Устойчивая фиксация на голове/плечах напарника
+                    body.position.y = headTopY + 0.815;
+                    if (body.velocity.y < 0) {
+                        body.velocity.y = 0;
+                    }
+
+                    // Следование за перемещением напарника в реальном времени
+                    if (remote.interpVelocity) {
+                        body.position.x += remote.interpVelocity.x * deltaTime;
+                        body.position.z += remote.interpVelocity.z * deltaTime;
+                    }
+                    break;
+                }
+            }
+        }
+
+        const onGroundTerrain = (!isInsideElevator && !isStandingOnHeliRoof && !isStandingOnOtherPlayer && body.position.y <= groundY + 0.83);
         if (onGroundTerrain) {
             body.position.y = groundY + 0.815;
             if (body.velocity.y < 0) body.velocity.y = 0;
         }
 
-        const physicallyGrounded = (onGroundTerrain || hasSolidContact || isInsideElevator || isStandingOnHeliRoof);
+        const physicallyGrounded = (onGroundTerrain || hasSolidContact || isInsideElevator || isStandingOnHeliRoof || isStandingOnOtherPlayer);
         if (physicallyGrounded && Math.abs(body.velocity.y) < 0.6) {
-            this.coyoteTimer = 0.15; // Буфер Coyote-Time для мгновенного прыжка на любых этажах
+            this.coyoteTimer = 0.15; // Буфер Coyote-Time для мгновенного прыжка на любых этажах и с игроков
         }
 
         this.isGrounded = (this.jumpCooldown <= 0) && (physicallyGrounded || this.coyoteTimer > 0);
@@ -404,7 +469,7 @@ class PlayerController {
             this.isGrounded = false;
             this.coyoteTimer = 0.0;
             this.jumpCooldown = 0.32;
-        } else if (this.isGrounded && !isInsideElevator && body.position.y <= groundY + 0.85) {
+        } else if (this.isGrounded && !isInsideElevator && !isStandingOnOtherPlayer && !isStandingOnHeliRoof && body.position.y <= groundY + 0.85) {
             body.position.y = groundY + 0.815;
             if (body.velocity.y < 0) body.velocity.y = 0;
         }

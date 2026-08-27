@@ -48,3 +48,5 @@
                 }
             }
         }
+
+window.PhysicalSoccerBall = PhysicalSoccerBall;

@@ -109,11 +109,6 @@ class VehicleExplosionSystem {
 
         // 6. Урон по близлежащим объектам и людям
         this.applyAreaDamage(blastPos, 7.5, 90);
-
-        // 7. Оповещение системы розыска о взрыве
-        if (window.gameEngine && window.gameEngine.wantedManager) {
-            window.gameEngine.wantedManager.reportCrime('CAR_EXPLOSION', blastPos);
-        }
     }
 
     applyAreaDamage(center, radius, maxDamage) {

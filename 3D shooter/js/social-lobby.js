@@ -9,25 +9,22 @@
 
             async function checkGitHubVersionAndUpdate() {
                 try {
-                    const response = await fetch('https://api.github.com/repos/A10nn-git-hub/A10m1/commits?per_page=1');
-                    if (!response.ok) {
-                        console.warn('GitHub API request failed:', response.status);
-                        return;
-                    }
-                    const commits = await response.json();
+                    const response = await fetch('https://api.github.com/repos/A10nn-git-hub/A10m1/commits?per_page=1').catch(() => null);
+                    if (!response || !response.ok) return;
+                    const commits = await response.json().catch(() => null);
                     if (!commits || commits.length === 0) return;
                     
                     const latestCommit = commits[0];
                     const sha = latestCommit.sha;
                     const commitMsg = latestCommit.commit.message || '';
                     
-                    const snap = await db.ref('app_version').once('value');
+                    const snap = await db.ref('app_version').once('value').catch(() => null);
+                    if (!snap) return;
                     const currentData = snap.exists() ? snap.val() : {};
                     const currentSha = currentData.sha || '';
                     
                     if (sha && sha !== currentSha) {
                         const currentVer = currentData.version || '1.0';
-                        // Check for feature keywords
                         const featureKeywords = ['feat', 'feature', 'major', 'release', 'breaking', 'add', 'implement'];
                         const isFeature = featureKeywords.some(keyword => commitMsg.toLowerCase().includes(keyword));
                         
@@ -42,12 +39,9 @@
                             sha: sha,
                             commitMsg: commitMsg,
                             updatedAt: firebase.database.ServerValue.TIMESTAMP
-                        });
-                        console.log(`Updated app version to ${nextVer} based on GitHub commit ${sha}`);
+                        }).catch(() => {});
                     }
-                } catch (err) {
-                    console.error('Error in checkGitHubVersionAndUpdate:', err);
-                }
+                } catch (e) {}
             }
 
              function getFriendGroup(id, profile = {}) {
@@ -879,7 +873,7 @@
                         });
                     }
                     const assignedTeam = team1Count <= team2Count ? 'Counter-Terrorists' : 'Terrorists';
-                    const spawn = typeof brSpawnForId === 'function' ? brSpawnForId(myId, assignedTeam) : {x: 1000, y: 1000};
+                    const spawn = typeof get3DSpawnPos === 'function' ? get3DSpawnPos(assignedTeam, 'tdm_5v5') : {x: (assignedTeam === 'Counter-Terrorists' ? -60 : 60), z: 0};
                     const now = Date.now();
                     updateDbPaths({
                         [`lobbies/${lobbyId}/players/${myId}`]: payload,
@@ -888,23 +882,22 @@
                             name: myName,
                             avatar: myAvatar,
                             eqName: myEqName,
-                            x: Math.round(spawn.x),
-                            y: Math.round(spawn.y),
+                            x: Number((spawn.x || 0).toFixed(2)),
+                            z: Number((spawn.z || 0).toFixed(2)),
+                            y: 0,
                             vx: 0,
-                            vy: 0,
-                            hp: 200,
-                            maxHp: 200,
+                            vz: 0,
+                            rotY: (assignedTeam === 'Counter-Terrorists') ? Math.PI / 2 : -Math.PI / 2,
+                            pitch: 0,
+                            hp: 100,
+                            maxHp: 100,
                             team: assignedTeam,
-                            speed: 3,
-                            damageTaken: 0,
-                            a: 0,
                             kills: 0,
                             shotSeq: 0,
                             alive: true,
-                            invulnUntil: now + 5000,
+                            invulnUntil: now + 4000,
                             updatedAt: firebase.database.ServerValue.TIMESTAMP
-                        },
-                        [`lobbies/${lobbyId}/br/damage/${myId}`]: 0
+                        }
                     }, 'join playing br lobby').then(() => {
                         db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
                         db.ref(`lobbies/${lobbyId}/br/players/${myId}`).onDisconnect().update({alive: false, hp: 0});

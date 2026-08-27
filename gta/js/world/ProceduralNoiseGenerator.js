@@ -69,3 +69,5 @@
                 return total / maxValue;
             }
         }
+
+window.ProceduralNoiseGenerator = ProceduralNoiseGenerator;

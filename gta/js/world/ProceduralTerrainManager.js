@@ -61,3 +61,5 @@
                 }
             }
         }
+
+window.ProceduralTerrainManager = ProceduralTerrainManager;

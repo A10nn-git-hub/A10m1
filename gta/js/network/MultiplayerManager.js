@@ -57,6 +57,29 @@ class MultiplayerManager {
     init() {
         this.status = 'OFFLINE';
         this.statusMessage = 'Готов к подключению (Автономный режим)';
+        this.updateOnlineHud();
+    }
+
+    updateOnlineHud() {
+        const elCount = document.getElementById('hud-online-count');
+        const elRoom = document.getElementById('hud-online-room');
+        if (!elCount) return;
+
+        const count = 1 + (this.remotePlayers ? this.remotePlayers.size : 0);
+        if (count === 1) {
+            elCount.textContent = '1 онлайн (Вы)';
+        } else {
+            elCount.textContent = `${count} в сети`;
+        }
+
+        if (elRoom) {
+            if (this.roomId && this.roomId !== 'public_free_roam') {
+                const cleanRoom = this.roomId.replace(/^lobby_/, '');
+                elRoom.textContent = `• Лобби #${cleanRoom}`;
+            } else {
+                elRoom.textContent = '';
+            }
+        }
     }
 
     /**
@@ -71,6 +94,8 @@ class MultiplayerManager {
             this.roomId = FirebaseConfig.sanitizeRoomId(roomId);
             FirebaseConfig.saveRoomId(this.roomId);
         }
+
+        this.updateOnlineHud();
 
         // Полное отключение от предыдущей комнаты
         this.disconnect();
@@ -246,6 +271,38 @@ class MultiplayerManager {
                 console.error('[Multiplayer] Firebase propsRef error:', err);
             });
 
+            // Синхронизация сбитых деревьев
+            this.treesRef = this.database.ref(`${rootPath}/trees`);
+            this.treesRef.on('child_added', (snapshot) => {
+                const treeId = parseInt(snapshot.key);
+                const data = snapshot.val();
+                if (data && !isNaN(treeId) && data.topplerId !== this.localPlayerId && window.gameEngine && window.gameEngine.vegetationManager) {
+                    const vm = window.gameEngine.vegetationManager;
+                    const tree = vm.treePositions ? vm.treePositions[treeId] : null;
+                    if (tree && !tree.isFallen) {
+                        vm.toppleTree(tree, { x: data.dirX || 0, z: data.dirZ || 1 }, true);
+                    }
+                }
+            }, (err) => {
+                console.error('[Multiplayer] Firebase treesRef error:', err);
+            });
+
+            // Синхронизация слияния вертолетов
+            this.heliMergeRef = this.database.ref(`${rootPath}/heli_merge`);
+            this.heliMergeRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data && data.mergerId !== this.localPlayerId && window.gameEngine && window.gameEngine.helicopters) {
+                    const helis = window.gameEngine.helicopters;
+                    const masterHeli = helis[data.masterHeliIndex !== undefined ? data.masterHeliIndex : 0];
+                    const partnerHeli = helis[data.partnerHeliIndex !== undefined ? data.partnerHeliIndex : 1];
+                    if (masterHeli && partnerHeli && !masterHeli.isMerged && !partnerHeli.isMerged && masterHeli.mergeState !== 'MEGA') {
+                        masterHeli.startMergeWith(partnerHeli, true);
+                    }
+                }
+            }, (err) => {
+                console.error('[Multiplayer] Firebase heliMergeRef error:', err);
+            });
+
             // Синхронизация местоположения автомобилей автопарка
             const handleVehicleSync = (snapshot) => {
                 const carIndex = parseInt(snapshot.key);
@@ -326,6 +383,46 @@ class MultiplayerManager {
         if (this.propsRef) {
             try {
                 this.propsRef.child(String(propId)).set(data).catch(() => {});
+            } catch (e) {}
+        }
+    }
+
+    broadcastTreeTopple(treeId, dirX, dirZ) {
+        if (treeId === undefined) return;
+        const data = {
+            treeId,
+            dirX: Math.round((dirX || 0) * 100) / 100,
+            dirZ: Math.round((dirZ || 1) * 100) / 100,
+            topplerId: this.localPlayerId,
+            ts: Date.now()
+        };
+        this.broadcastPacket({
+            type: 'TREE_TOPPLE',
+            pid: this.localPlayerId,
+            data
+        });
+        if (this.treesRef) {
+            try {
+                this.treesRef.child(String(treeId)).set(data).catch(() => {});
+            } catch (e) {}
+        }
+    }
+
+    broadcastHeliMerge(masterHeliIndex, partnerHeliIndex) {
+        const data = {
+            masterHeliIndex: masterHeliIndex !== undefined ? masterHeliIndex : 0,
+            partnerHeliIndex: partnerHeliIndex !== undefined ? partnerHeliIndex : 1,
+            mergerId: this.localPlayerId,
+            ts: Date.now()
+        };
+        this.broadcastPacket({
+            type: 'HELI_MERGE',
+            pid: this.localPlayerId,
+            data
+        });
+        if (this.heliMergeRef) {
+            try {
+                this.heliMergeRef.set(data).catch(() => {});
             } catch (e) {}
         }
     }
@@ -456,6 +553,23 @@ class MultiplayerManager {
             if (data && data.propId !== undefined && window.gameEngine && window.gameEngine.streetLampManager) {
                 window.gameEngine.streetLampManager.receiveNetworkBreakProp(data.propId, data.vx, data.vy, data.vz);
             }
+        } else if (type === 'TREE_TOPPLE') {
+            if (data && data.treeId !== undefined && window.gameEngine && window.gameEngine.vegetationManager) {
+                const vm = window.gameEngine.vegetationManager;
+                const tree = vm.treePositions ? vm.treePositions[data.treeId] : null;
+                if (tree && !tree.isFallen) {
+                    vm.toppleTree(tree, { x: data.dirX || 0, z: data.dirZ || 1 }, true);
+                }
+            }
+        } else if (type === 'HELI_MERGE') {
+            if (data && window.gameEngine && window.gameEngine.helicopters) {
+                const helis = window.gameEngine.helicopters;
+                const masterHeli = helis[data.masterHeliIndex !== undefined ? data.masterHeliIndex : 0];
+                const partnerHeli = helis[data.partnerHeliIndex !== undefined ? data.partnerHeliIndex : 1];
+                if (masterHeli && partnerHeli && !masterHeli.isMerged && !partnerHeli.isMerged && masterHeli.mergeState !== 'MEGA') {
+                    masterHeli.startMergeWith(partnerHeli, true);
+                }
+            }
         } else if (type === 'VEHICLE_SYNC') {
             if (data && data.carIndex !== undefined && pid !== this.localPlayerId) {
                 this.updateCarFromNetwork(data.carIndex, data);
@@ -489,6 +603,7 @@ class MultiplayerManager {
                 // Запоминаем локальное время получения пакета (исключает проблему рассинхронизации часов между устройствами)
                 remote.lastReceiveTime = now;
                 this.remotePlayers.set(pid, remote);
+                this.updateOnlineHud();
                 if (this.onPlayersUpdated) this.onPlayersUpdated(this.getRemotePlayersArray());
                 if (window.gameEngine && window.gameEngine.multiplayerHUD) {
                     window.gameEngine.multiplayerHUD.addSystemMessage(`👋 Игрок "${remote.nickname}" присоединился к сессии!`);
@@ -510,6 +625,7 @@ class MultiplayerManager {
                 remote.destroy();
             } catch (e) {}
             this.remotePlayers.delete(pid);
+            this.updateOnlineHud();
             if (this.onPlayersUpdated) this.onPlayersUpdated(this.getRemotePlayersArray());
             if (window.gameEngine && window.gameEngine.multiplayerHUD) {
                 window.gameEngine.multiplayerHUD.addSystemMessage(`🚪 Игрок "${name}" покинул сессию.`);
@@ -626,6 +742,8 @@ class MultiplayerManager {
             carVz: Math.round(cVz * 100) / 100,
             vehicleId: (isDriving && activeCar && activeCar.carName) ? activeCar.carName : '',
             isFlyingHeli: isFlyingHeli,
+            isMegaHeli: (isFlyingHeli && activeHeli && !!activeHeli.isMega) ? true : false,
+            isClimbingTree: playerController ? !!playerController.isClimbingTree : false,
             heliIndex: activeHeliIndex,
             heliSeat: heliSeat,
             heliX: (isHeliPilot && activeHeli && activeHeli.body) ? Math.round(activeHeli.body.position.x * 100) / 100 : 0,
@@ -725,6 +843,7 @@ class MultiplayerManager {
         this.remotePlayers.clear();
 
         this.updateStatus('OFFLINE', 'Отключено (Автономный режим)');
+        this.updateOnlineHud();
         if (this.onPlayersUpdated) this.onPlayersUpdated([]);
     }
 

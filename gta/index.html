@@ -75,7 +75,6 @@
             <span>В меню</span>
         </a>
 
-        <div id="crosshair"></div>
         <div class="vehicle-prompt" id="vehicle-prompt"><kbd>F</kbd> <span id="prompt-action-text">Сесть за руль</span> (<span id="prompt-car-name">Comet S2</span>)</div>
 
         <!-- STEP 28: Interactive Elevator Prompt UI -->
@@ -105,48 +104,17 @@
             </div>
         </div>
 
+        <!-- Lobby Online Counter in top right corner -->
+        <div class="lobby-online-hud" id="lobby-online-hud">
+            <span class="lobby-online-dot"></span>
+            <span class="lobby-online-icon">👥</span>
+            <span class="lobby-online-count" id="hud-online-count">1 онлайн</span>
+            <span class="lobby-online-room" id="hud-online-room"></span>
+        </div>
+
         <!-- Money Display in top right corner -->
         <div class="money-hud" id="money-hud">
             <span class="money-currency">$</span><span class="money-amount" id="hud-money-val">250,000</span>
-        </div>
-
-        <!-- Wanted Stars Display (1–5 Stars) -->
-        <div class="wanted-stars" id="wanted-stars">
-            <span class="wanted-star" id="wanted-star-1">★</span>
-            <span class="wanted-star" id="wanted-star-2">★</span>
-            <span class="wanted-star" id="wanted-star-3">★</span>
-            <span class="wanted-star" id="wanted-star-4">★</span>
-            <span class="wanted-star" id="wanted-star-5">★</span>
-        </div>
-
-        <!-- Stealth & Foliage Hiding Indicator -->
-        <div class="stealth-hud-badge" id="stealth-hud-badge">
-            <span class="stealth-icon">🌿</span> <span id="stealth-hud-text">В УКРЫТИИ (НЕ ЗАМЕЧЕН)</span>
-        </div>
-
-        <!-- Weapon HUD -->
-        <div class="weapon-hud" id="weapon-hud">
-            <div class="weapon-icon" id="weapon-icon">🔫</div>
-            <div class="weapon-info">
-                <div class="weapon-name" id="weapon-name">Pistol 9mm</div>
-                <div class="weapon-ammo" id="weapon-ammo">120</div>
-            </div>
-        </div>
-
-        <!-- Multiplayer Network Status Badge (Click to open Scoreboard) -->
-        <div class="mp-status-badge offline" id="mp-status-badge" title="Нажмите для открытия списка игроков (F2)">
-            <span class="mp-dot offline"></span> ОФФЛАЙН (ОДИН)
-        </div>
-
-        <!-- In-Game Multiplayer Chat Overlay (Отображается только в онлайн режиме) -->
-        <div class="mp-chat-container" id="mp-chat-container" style="display: none;">
-            <div class="mp-chat-messages" id="mp-chat-messages">
-                <div class="mp-chat-row system"><span class="mp-chat-system-text">⚡ Нажмите [T] или [Enter] для ввода сообщения в чат</span></div>
-            </div>
-            <form class="mp-chat-form" id="mp-chat-form">
-                <input type="text" id="mp-chat-input" class="mp-chat-input" placeholder="Сообщение в чат... [Enter]" maxlength="140" autocomplete="off">
-                <button type="submit" class="mp-chat-send-btn">➔</button>
-            </form>
         </div>
 
         <!-- Динамическая панель статуса (Только полезные данные реального времени) -->
@@ -211,10 +179,6 @@
                     <span class="btn-icon">▶</span>
                     <span class="btn-text" id="btn-play-text">НАЧАТЬ ИГРУ</span>
                 </button>
-                <button class="menu-btn online-pulse-btn" id="btn-menu-multiplayer">
-                    <span class="btn-icon">🌐</span>
-                    <span class="btn-text">МУЛЬТИПЛЕЕР (ОНЛАЙН)</span>
-                </button>
                 <button class="menu-btn" id="btn-menu-settings">
                     <span class="btn-icon">⚙</span>
                     <span class="btn-text">НАСТРОЙКИ</span>
@@ -223,9 +187,9 @@
                     <span class="btn-icon">ℹ</span>
                     <span class="btn-text">ОБ ИГРЕ</span>
                 </button>
-                <button class="menu-btn danger" id="btn-menu-exit" style="display:none;">
+                <button class="menu-btn danger" id="btn-menu-exit">
                     <span class="btn-icon">🚪</span>
-                    <span class="btn-text">ВЫХОД В ГЛАВНОЕ МЕНЮ</span>
+                    <span class="btn-text">ВЫХОД В ГЛАВНОЕ ЛОББИ</span>
                 </button>
             </div>
 
@@ -241,21 +205,6 @@
                 <label class="eco-switch" title="Включить режим энергосбережения">
                     <input type="checkbox" id="toggle-power-saving-menu">
                     <span class="eco-slider"></span>
-                </label>
-            </div>
-
-            <!-- Ползунок режима ПОЛИЦИЯ в Главном Меню -->
-            <div class="menu-police-panel" id="menu-police-panel">
-                <div class="eco-left">
-                    <span class="police-icon">🚨</span>
-                    <div class="eco-texts">
-                        <span class="eco-title" style="color: #f87171;">ПОЛИЦИЯ И ЗАДАНИЯ</span>
-                        <span class="eco-desc">Погони LSPD, звезды розыска и миссии</span>
-                    </div>
-                </div>
-                <label class="eco-switch" title="Включить/отключить полицию и задания">
-                    <input type="checkbox" id="toggle-police-menu" checked>
-                    <span class="police-slider"></span>
                 </label>
             </div>
 
@@ -279,7 +228,7 @@
             </div>
             <div class="modal-body">
                 <!-- Категория: Производительность и Энергосбережение -->
-                <div class="keybind-category-title">⚡ Производительность, Полиция и Графика</div>
+                <div class="keybind-category-title">⚡ Производительность и Графика</div>
                 <div class="settings-eco-row">
                     <div class="eco-left">
                         <span class="eco-icon">⚡</span>
@@ -291,20 +240,6 @@
                     <label class="eco-switch">
                         <input type="checkbox" id="toggle-power-saving-settings">
                         <span class="eco-slider"></span>
-                    </label>
-                </div>
-
-                <div class="settings-police-row">
-                    <div class="eco-left">
-                        <span class="police-icon">🚨</span>
-                        <div class="eco-texts">
-                            <span class="eco-title" style="color: #f87171;">Полиция LSPD и городские миссии</span>
-                            <span class="eco-desc">Активация патрулей, погонь, звезд розыска и контрактов (работает даже в ЭКО-режиме)</span>
-                        </div>
-                    </div>
-                    <label class="eco-switch" title="Включить/отключить полицию и задания">
-                        <input type="checkbox" id="toggle-police-settings" checked>
-                        <span class="police-slider"></span>
                     </label>
                 </div>
 
@@ -384,48 +319,15 @@
                     <div class="about-card" style="grid-column: 1 / -1; border: 1px solid rgba(0, 240, 255, 0.4); background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(6, 182, 212, 0.15));">
                         <div class="about-card-title" style="color: #00f0ff; font-size: 16px;">🎮 СУТЬ И ГЛАВНАЯ ЦЕЛЬ ИГРЫ</div>
                         <div class="about-card-desc" style="font-size: 13px; line-height: 1.6;">
-                            <b>Los Santos 3D</b> — это масштабный трехмерный симулятор с открытым миром и сетевым мультиплеером. Вы можете свободно исследовать мегаполис, водить спорткары, летать на боевых вертолетах, подниматься на скоростных лифтах на крыши небоскребов, выполнять прибыльные миссии, прятаться на деревьях и играть с друзьями онлайн в реальном времени!
-                        </div>
-                    </div>
-
-                    <div class="about-card" style="border-left: 4px solid #ef4444;">
-                        <div class="about-card-title" style="color: #ef4444;">🚨 ПОЛИЦИЯ И ЗВЕЗДЫ РОЗЫСКА (1–5 ★)</div>
-                        <div class="about-card-desc">
-                            Любое правонарушение (стрельба, кража авто, взрывы или наезд) привлекает полицию LSPD:
-                            <br>• <b>★ (1 звезда):</b> Офицеры начинают пеший поиск в районе.
-                            <br>• <b>★★ (2 звезды):</b> Патрульные крузеры включают сирены и бросаются в погоню.
-                            <br>• <b>★★★ (3 звезды):</b> Агрессивный перехват, огонь на поражение и подкрепления.
-                            <br>• <b>★★★★–★★★★★ (4–5 звезд):</b> Максимальный розыск и перекрытие дорог.
-                        </div>
-                    </div>
-
-                    <div class="about-card" style="border-left: 4px solid #22c55e;">
-                        <div class="about-card-title" style="color: #22c55e;">🌿 СТЕЛС В ДЕРЕВЬЯХ И КАК УБЕГАТЬ</div>
-                        <div class="about-card-desc">
-                            <b>3 лучших способа сбросить розыск:</b>
-                            <br>1. <b>Прятки на дереве:</b> подойдите к любому дереву и нажмите <kbd>E</kbd> (или кнопку <b>«ПРЯТАТЬСЯ»</b> на смартфоне). В кроне вы скрыты от полиции — если они не видели, как вы лезли, звезды начнут мигать и через 14 сек розыск снимется!
-                            <br>2. <b>Оторваться на скорости:</b> разгонитесь и уйдите за пределы 60м от крузеров.
-                            <br>3. <b>Эвакуация по воздуху:</b> поднимитесь на лифте на крышу Maze Bank и улетайте на вертолете Maverick.
-                        </div>
-                    </div>
-
-                    <div class="about-card" style="border-left: 4px solid #f59e0b;">
-                        <div class="about-card-title" style="color: #f59e0b;">🎯 ГОРОДСКИЕ МИССИИ И ЗАРАБОТОК</div>
-                        <div class="about-card-desc">
-                            По городу расставлены светящиеся 3D-маркеры заданий:
-                            <br>• 🚕 <b>Таксист ($15,000):</b> Доставка пассажира за отведенное время.
-                            <br>• 🏁 <b>Уличный Спринт ($30,000):</b> Чекпоинт-гонка по скоростным трассам.
-                            <br>• 💥 <b>Зачистка Банды ($50,000):</b> Перестрелка с группировкой складов.
-                            <br>• 📦 <b>Контрабанда ($75,000):</b> Доставка ценного груза в порт под погоней.
-                            <br>• 🚓 <b>Побег от Полиции ($60,000):</b> Уход от 3 звезд розыска до убежища!
-                            <br><i>Для старта подойдите к маркеру и нажмите <kbd>E</kbd> или кликните по баннеру.</i>
+                            <b>Los Santos 3D</b> — это масштабный трехмерный симулятор с открытым миром и сетевым мультиплеером. Вы можете свободно исследовать мегаполис, водить спорткары, летать на боевых вертолетах, подниматься на скоростных лифтах на крыши небоскребов, исследовать интерьеры зданий и играть с друзьями онлайн в реальном времени!
                         </div>
                     </div>
 
                     <div class="about-card" style="border-left: 4px solid #38bdf8;">
-                        <div class="about-card-title" style="color: #38bdf8;">🚁 ВЕРТОЛЕТЫ И ЛИФТЫ НЕБОСКРЕБОВ</div>
+                        <div class="about-card-title" style="color: #38bdf8;">🚁 ВЕРТОЛЕТЫ И СЛИЯНИЕ В CYBER GHOST X4</div>
                         <div class="about-card-desc">
-                            • <b>Вертолеты Maverick:</b> Расположены на вертодроме крыши Maze Bank (10 этаж) и крыше госпиталя Pillbox Hill. 2 посадочных места (пилот + пассажир), реалистичная физика и навигационные огни.
+                            • <b>Вертолеты Maverick:</b> Расположены на крыше Maze Bank (10 этаж) и крыше госпиталя Pillbox Hill. При высадке в воздухе вертолет и игрок моментально начинают падать синхронно.
+                            <br>• <b>⚡ Слияние вертолетов (Cyber Stealth):</b> Подлетите на одном вертолете ко второму вертолету и нажмите <kbd>F</kbd> — вертолеты плавно объединятся без лагов в сверхбыстрый <b>Cyber Ghost X4</b> в стиле Stealth Gunship (6-лопастной винт, V-образный хвост, реактивные сопла), который летает и пикирует <b>в 2 раза быстрее</b>!
                             <br>• <b>Лифты:</b> Заходите в кабину в Maze Bank, полицейском участке или госпитале и выбирайте любой этаж.
                         </div>
                     </div>
@@ -433,96 +335,14 @@
                     <div class="about-card" style="border-left: 4px solid #a855f7;">
                         <div class="about-card-title" style="color: #a855f7;">🎮 УПРАВЛЕНИЕ (ПК И СМАРТФОНЫ)</div>
                         <div class="about-card-desc">
-                            • <b>ПК:</b> <kbd>WASD</kbd> — движение/поворот, <kbd>Space</kbd> — прыжок/взлет, <kbd>Shift</kbd> — бег/спуск вертолета, <kbd>F</kbd> — сесть/выйти из авто и вертолета, <kbd>E</kbd> — миссии/деревья, <kbd>Tab</kbd> — скрытие HUD, <kbd>M</kbd> — карта, <kbd>Esc</kbd> — меню/пауза.
-                            <br>• <b>Телефон / Планшет:</b> Сенсорный джойстик, наэкранные кнопки действий (Вход/Выход, Взлет, Спуск, Стелс, Газ/Тормоз).
+                            • <b>ПК:</b> <kbd>WASD</kbd> — движение/поворот, <kbd>Space</kbd> — прыжок/взлет, <kbd>Shift</kbd> — бег/спуск вертолета, <kbd>F</kbd> — сесть/выйти из авто и вертолета, <kbd>Tab</kbd> — скрытие HUD, <kbd>M</kbd> — карта, <kbd>Esc</kbd> — меню/пауза.
+                            <br>• <b>Телефон / Планшет:</b> Сенсорный джойстик, наэкранные кнопки действий (Вход/Выход, Взлет, Спуск, Газ/Тормоз).
                         </div>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button class="menu-btn primary" style="padding:10px 22px; font-size:13px;" id="btn-close-about-footer">ЗАКРЫТЬ</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- =========================================================================
-         МОДАЛЬНОЕ ОКНО: НАСТРОЙКИ СЕТЕВОГО МУЛЬТИПЛЕЕРА
-         ========================================================================= -->
-    <div id="mp-settings-modal" class="game-modal">
-        <div class="modal-window mp-modal-window">
-            <div class="modal-header">
-                <div class="modal-title-group">
-                    <div class="modal-title">🌐 СЕТЕВОЙ МУЛЬТИПЛЕЕР</div>
-                    <div class="modal-subtitle">ИГРАЙТЕ С ДРУЗЬЯМИ В РЕАЛЬНОМ ВРЕМЕНИ ПО ВСЕМУ ЛОС-САНТОСУ</div>
-                </div>
-                <button class="modal-close-btn" id="btn-close-mp-settings">✕</button>
-            </div>
-            <div class="modal-body">
-                <div class="mp-status-banner">
-                    <span>Текущий статус:</span>
-                    <span id="mp-modal-status-text" class="mp-status-text offline">Автономный режим</span>
-                </div>
-
-                <div class="mp-form-grid">
-                    <div class="mp-field-group">
-                        <label for="mp-input-nickname">Ваш никнейм в игре:</label>
-                        <input type="text" id="mp-input-nickname" class="mp-input" placeholder="Player_1" maxlength="18">
-                    </div>
-                    <div class="mp-field-group">
-                        <label for="mp-input-room">Имя комнаты (Session Room):</label>
-                        <input type="text" id="mp-input-room" class="mp-input" placeholder="los_santos_main" maxlength="24">
-                    </div>
-                </div>
-
-                <div class="mp-room-presets-section">
-                    <div class="mp-presets-label">⚡ БЫСТРЫЙ ВЫБОР КОМНАТЫ:</div>
-                    <div class="mp-room-presets">
-                        <button type="button" class="mp-preset-btn active" data-room="los_santos_main">🌆 Главный Город (los_santos_main)</button>
-                        <button type="button" class="mp-preset-btn" data-room="drift_city">🏎️ Дрифт & Гонки (drift_city)</button>
-                        <button type="button" class="mp-preset-btn" data-room="police_chase">🚓 Погони & Спецоперации (police_chase)</button>
-                    </div>
-                </div>
-
-                <div class="mp-info-box">
-                    <div class="mp-info-icon">💡</div>
-                    <div class="mp-info-text">
-                        Подключение и синхронизация мира происходят автоматически. Игроки в одной комнате видят перемещения, анимации, транспорт и сообщения в чате в реальном времени.
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer mp-modal-footer">
-                <button class="menu-btn primary" id="btn-mp-connect">ПОДКЛЮЧИТЬСЯ К СЕССИИ</button>
-                <button class="menu-btn danger" id="btn-mp-disconnect" style="display: none;">ОТКЛЮЧИТЬСЯ</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- =========================================================================
-         МОДАЛЬНОЕ ОКНО: ТАБЛИЦА ИГРОКОВ ОНЛАЙН (SCOREBOARD / F2)
-         ========================================================================= -->
-    <div id="mp-scoreboard-modal" class="game-modal">
-        <div class="modal-window scoreboard-window">
-            <div class="modal-header">
-                <div class="modal-title-group">
-                    <div class="modal-title">СЕТЕВАЯ СЕССИЯ: ИГРОКИ ОНЛАЙН</div>
-                    <div class="modal-subtitle">АКТИВНЫЕ ИГРОКИ В КОМНАТЕ (<span id="mp-players-count">1</span> ЧЕЛ.)</div>
-                </div>
-                <button class="modal-close-btn" id="btn-close-scoreboard">✕</button>
-            </div>
-            <div class="modal-body scoreboard-body">
-                <table class="mp-scoreboard-table">
-                    <thead>
-                        <tr>
-                            <th>ИГРОК</th>
-                            <th>РЕЖИМ</th>
-                            <th>ЗДОРОВЬЕ</th>
-                            <th>СТАТУС</th>
-                        </tr>
-                    </thead>
-                    <tbody id="mp-scoreboard-body">
-                        <!-- Заполняется динамически -->
-                    </tbody>
-                </table>
             </div>
         </div>
     </div>
@@ -545,7 +365,6 @@
                     <div class="legend-item"><span class="legend-icon player-icon">▲</span> ВЫ ЗДЕСЬ</div>
                     <div class="legend-item"><span class="legend-icon bank-icon">$</span> МЕЙЗ-БАНК</div>
                     <div class="legend-item"><span class="legend-icon hosp-icon">✚</span> ГОСПИТАЛЬ</div>
-                    <div class="legend-item"><span class="legend-icon police-icon">★</span> ПОЛИЦИЯ LSPD</div>
                     <div class="legend-item"><span class="legend-icon car-icon">■</span> МАШИНЫ</div>
                     <div class="legend-item"><span class="legend-icon tree-icon">●</span> ДЕРЕВЬЯ</div>
                     <div class="legend-item"><span class="legend-icon rock-icon">◆</span> ВАЛУНЫ</div>
@@ -556,91 +375,79 @@
 
     <!-- Модули движка и игры -->
     <!-- Шейдеры и процедурные текстуры -->
-    <script src="js/environment/SkyShader.js?v=20260825_v4"></script>
-    <script src="js/textures/ProceduralTextureFactory.js?v=20260825_v4"></script>
+    <script src="js/environment/SkyShader.js?v=20260826_v7"></script>
+    <script src="js/textures/ProceduralTextureFactory.js?v=20260826_v7"></script>
 
     <!-- Мир и процедурный ландшафт -->
-    <script src="js/world/ProceduralNoiseGenerator.js?v=20260825_v4"></script>
-    <script src="js/world/ProceduralTerrainManager.js?v=20260825_v4"></script>
-    <script src="js/world/InfiniteOceanManager.js?v=20260825_v4"></script>
-    <script src="js/world/DistantMountainManager.js?v=20260825_v4"></script>
-    <script src="js/world/VegetationAndCropsManager.js?v=20260825_v4"></script>
-    <script src="js/world/DistrictGenerator.js?v=20260825_v4"></script>
-    <script src="js/world/NeighborhoodDistrictManager.js?v=20260825_v4"></script>
-    <script src="js/world/WorldChunkManager.js?v=20260825_v4"></script>
+    <script src="js/world/ProceduralNoiseGenerator.js?v=20260826_v7"></script>
+    <script src="js/world/ProceduralTerrainManager.js?v=20260826_v7"></script>
+    <script src="js/world/InfiniteOceanManager.js?v=20260826_v7"></script>
+    <script src="js/world/DistantMountainManager.js?v=20260826_v7"></script>
+    <script src="js/world/VegetationAndCropsManager.js?v=20260826_v7"></script>
+    <script src="js/world/DistrictGenerator.js?v=20260826_v7"></script>
+    <script src="js/world/NeighborhoodDistrictManager.js?v=20260826_v7"></script>
 
     <!-- Окружение и погода -->
-    <script src="js/environment/CalendarAndSeasonSystem.js?v=20260825_v4"></script>
-    <script src="js/environment/DynamicCloudSystem.js?v=20260825_v4"></script>
-    <script src="js/environment/DayNightCycleManager.js?v=20260825_v4"></script>
-    <script src="js/environment/DynamicWeatherManager.js?v=20260825_v4"></script>
-
-    <!-- Город и интерактивные строения -->
-    <script src="js/city/CityRoadNetwork.js?v=20260825_v4"></script>
-    <script src="js/city/OrganizationBuildingBuilder.js?v=20260825_v4"></script>
-    <script src="js/city/SuburbanHouseBuilder.js?v=20260825_v4"></script>
-    <script src="js/city/HydrantWaterGeyserSystem.js?v=20260825_v4"></script>
-    <script src="js/city/StreetLampManager.js?v=20260825_v4"></script>
-    <script src="js/city/SkyscraperElevatorSystem.js?v=20260825_v4"></script>
+    <script src="js/environment/CalendarAndSeasonSystem.js?v=20260826_v7"></script>
+    <script src="js/environment/DynamicCloudSystem.js?v=20260826_v7"></script>
+    <script src="js/environment/DayNightCycleManager.js?v=20260826_v7"></script>
+    <script src="js/environment/DynamicWeatherManager.js?v=20260826_v7"></script>
 
     <!-- Звуковой движок -->
-    <script src="js/audio/ElevatorAudioSynth.js?v=20260825_v4"></script>
-    <script src="js/audio/VehicleSoundController.js?v=20260825_v4"></script>
-    <script src="js/audio/SpatialSoundEngine.js?v=20260825_v4"></script>
+    <script src="js/audio/ElevatorAudioSynth.js?v=20260826_v7"></script>
+    <script src="js/audio/VehicleSoundController.js?v=20260826_v7"></script>
+    <script src="js/audio/SpatialSoundEngine.js?v=20260826_v7"></script>
+
+    <!-- Город и интерактивные строения -->
+    <script src="js/city/CityRoadNetwork.js?v=20260826_v7"></script>
+    <script src="js/city/OrganizationBuildingBuilder.js?v=20260826_v7"></script>
+    <script src="js/city/SuburbanHouseBuilder.js?v=20260826_v7"></script>
+    <script src="js/city/HydrantWaterGeyserSystem.js?v=20260826_v7"></script>
+    <script src="js/city/StreetLampManager.js?v=20260826_v7"></script>
+    <script src="js/city/SkyscraperElevatorSystem.js?v=20260826_v7"></script>
 
     <!-- Транспорт, трафик и физические объекты -->
-    <script src="js/vehicles/PhysicalSoccerBall.js?v=20260825_v4"></script>
-    <script src="js/vehicles/CarExhaustSmokeSystem.js?v=20260825_v4"></script>
-    <script src="js/vehicles/DetailedCarModel.js?v=20260825_v4"></script>
-    <script src="js/vehicles/HelicopterVehicle.js?v=20260825_v4"></script>
-    <script src="js/vehicles/TrafficWaypointNetwork.js?v=20260825_v4"></script>
-    <script src="js/vehicles/AITrafficVehicle.js?v=20260825_v4"></script>
-    <script src="js/vehicles/AmbientTrafficManager.js?v=20260825_v4"></script>
-    <script src="js/vehicles/VehicleManager.js?v=20260825_v4"></script>
+    <script src="js/vehicles/PhysicalSoccerBall.js?v=20260826_v8"></script>
+    <script src="js/vehicles/CarExhaustSmokeSystem.js?v=20260826_v8"></script>
+    <script src="js/vehicles/DetailedCarModel.js?v=20260826_v8"></script>
+    <script src="js/vehicles/FlightNavigationSystem.js?v=20260826_v8"></script>
+    <script src="js/vehicles/HelicopterVehicle.js?v=20260826_v8"></script>
+    <script src="js/vehicles/TrafficWaypointNetwork.js?v=20260826_v8"></script>
+    <script src="js/vehicles/AITrafficVehicle.js?v=20260826_v8"></script>
+    <script src="js/vehicles/AmbientTrafficManager.js?v=20260826_v8"></script>
+    <script src="js/vehicles/VehicleManager.js?v=20260826_v8"></script>
 
     <!-- NPC и пешеходы -->
-    <script src="js/npc/HumanoidNPC.js?v=20260825_v4"></script>
-    <script src="js/npc/PedestrianNPCManager.js?v=20260825_v4"></script>
+    <script src="js/npc/HumanoidNPC.js?v=20260826_v8"></script>
+    <script src="js/npc/PedestrianNPCManager.js?v=20260826_v8"></script>
 
     <!-- Персонаж и камера -->
-    <script src="js/player/PlayerAnimationSystem.js?v=20260825_v4"></script>
-    <script src="js/player/PlayerController.js?v=20260825_v4"></script>
-    <script src="js/player/ThirdPersonCameraController.js?v=20260825_v4"></script>
+    <script src="js/player/PlayerAnimationSystem.js?v=20260826_v8"></script>
+    <script src="js/player/PlayerController.js?v=20260826_v8"></script>
+    <script src="js/player/ThirdPersonCameraController.js?v=20260826_v8"></script>
 
     <!-- Управление, интерфейс и меню -->
-    <script src="js/core/InputController.js?v=20260825_v4"></script>
-    <script src="js/core/GamepadController.js?v=20260825_v4"></script>
-    <script src="js/core/MobileTouchController.js?v=20260825_v4"></script>
-    <script src="js/ui/MinimapRenderer.js?v=20260825_v4"></script>
-    <script src="js/ui/FullMapRenderer.js?v=20260825_v4"></script>
-    <script src="js/ui/MenuAuroraRenderer.js?v=20260825_v4"></script>
-    <script src="js/ui/MainMenuManager.js?v=20260825_v4"></script>
-    <script src="js/core/LoadingProgressTracker.js?v=20260825_v4"></script>
+    <script src="js/core/InputController.js?v=20260826_v8"></script>
+    <script src="js/core/GamepadController.js?v=20260826_v8"></script>
+    <script src="js/core/MobileTouchController.js?v=20260826_v8"></script>
+    <script src="js/ui/MinimapRenderer.js?v=20260826_v8"></script>
+    <script src="js/ui/FullMapRenderer.js?v=20260826_v8"></script>
+    <script src="js/ui/MenuAuroraRenderer.js?v=20260826_v8"></script>
+    <script src="js/ui/MainMenuManager.js?v=20260826_v8"></script>
+    <script src="js/core/LoadingProgressTracker.js?v=20260826_v8"></script>
 
     <!-- Боевая система, оружие и взрывы -->
-    <script src="js/combat/CombatVFXManager.js?v=20260825_v4"></script>
-    <script src="js/combat/VehicleExplosionSystem.js?v=20260825_v4"></script>
-    <script src="js/combat/WeaponSystem.js?v=20260825_v4"></script>
+    <script src="js/combat/CombatVFXManager.js?v=20260826_v8"></script>
+    <script src="js/combat/VehicleExplosionSystem.js?v=20260826_v8"></script>
+    <script src="js/combat/WeaponSystem.js?v=20260826_v8"></script>
 
-    <!-- Полиция и система розыска -->
-    <script src="js/police/PoliceOfficerNPC.js?v=20260825_v4"></script>
-    <script src="js/police/PoliceVehicle.js?v=20260825_v4"></script>
-    <script src="js/police/PoliceVehicleManager.js?v=20260825_v4"></script>
-    <script src="js/police/WantedLevelManager.js?v=20260825_v4"></script>
-
-    <!-- Городские миссии -->
-    <script src="js/missions/MissionMarker3D.js?v=20260825_v4"></script>
-    <script src="js/missions/MissionHUD.js?v=20260825_v4"></script>
-    <script src="js/missions/MissionManager.js?v=20260825_v4"></script>
-
-    <!-- Сетевой мультиплеер (Firebase Realtime Database) -->
-    <script src="js/network/FirebaseConfig.js?v=20260825_v4"></script>
-    <script src="js/network/RemotePlayer.js?v=20260825_v4"></script>
-    <script src="js/network/MultiplayerManager.js?v=20260825_v4"></script>
-    <script src="js/ui/MultiplayerHUD.js?v=20260825_v4"></script>
+    <!-- Сетевой мультиплеер (Подключение через лобби главного экрана) -->
+    <script src="js/network/FirebaseConfig.js?v=20260826_v8"></script>
+    <script src="js/network/RemotePlayer.js?v=20260826_v8"></script>
+    <script src="js/network/MultiplayerManager.js?v=20260826_v8"></script>
 
     <!-- Главный движок и запуск -->
-    <script src="js/core/Engine.js?v=20260825_v4"></script>
-    <script src="js/main.js?v=20260825_v4"></script>
+    <script src="js/core/Engine.js?v=20260826_v8"></script>
+    <script src="js/main.js?v=20260826_v8"></script>
 </body>
 </html>

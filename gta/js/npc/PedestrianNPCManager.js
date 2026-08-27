@@ -162,3 +162,5 @@ class PedestrianNPCManager {
                 }
             }
         }
+
+window.PedestrianNPCManager = PedestrianNPCManager;

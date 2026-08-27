@@ -335,9 +335,6 @@
                 this.knockedDownTimer = 3.8;
 
                 if (this.hp <= 0) {
-                    if (window.gameEngine && window.gameEngine.wantedManager) {
-                        window.gameEngine.wantedManager.reportCrime('KILL_CIVILIAN');
-                    }
                     if (window.gameEngine && window.gameEngine.playerController) {
                         const loot = 200 + Math.floor(Math.random() * 350);
                         window.gameEngine.playerController.addMoney(loot);
@@ -846,18 +843,10 @@
                 this.state = 'KNOCKED_DOWN';
                 this.knockedDownTimer = 4.5;
 
-                // Оповещение полиции об атаке / убийстве гражданина
                 if (this.health <= 0) {
                     this.isDead = true;
-                    if (window.gameEngine && window.gameEngine.wantedManager) {
-                        window.gameEngine.wantedManager.reportCrime('KILL_CIVILIAN', this.body ? this.body.position : null);
-                    }
                     if (window.gameEngine && window.gameEngine.playerController) {
                         window.gameEngine.playerController.addMoney(150 + Math.floor(Math.random() * 200));
-                    }
-                } else {
-                    if (window.gameEngine && window.gameEngine.wantedManager) {
-                        window.gameEngine.wantedManager.reportCrime('PUNCH', this.body ? this.body.position : null);
                     }
                 }
             }

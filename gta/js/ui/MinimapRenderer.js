@@ -133,82 +133,7 @@ class MinimapRenderer {
             }
         }
 
-        // 8. Полицейские патрули (мигающие сине-красные значки)
-        if (window.gameEngine && window.gameEngine.policeManager) {
-            const pCars = window.gameEngine.policeManager.policeCars;
-            const pOfficers = window.gameEngine.policeManager.officers;
-            const isRed = Math.sin(this.blipPulseTimer * 8.0) > 0;
-
-            for (let i = 0; i < pCars.length; i++) {
-                const pc = pCars[i];
-                if (!pc.chassisBody) continue;
-                const pp = pc.chassisBody.position;
-                ctx.fillStyle = isRed ? '#ef4444' : '#3b82f6';
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1.2;
-                ctx.beginPath();
-                ctx.arc(pp.x * this.scale, pp.z * this.scale, 4.2, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-            }
-
-            for (let i = 0; i < pOfficers.length; i++) {
-                const off = pOfficers[i];
-                if (!off.body || off.isDead) continue;
-                const op = off.body.position;
-                ctx.fillStyle = isRed ? '#3b82f6' : '#ef4444';
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1.0;
-                ctx.beginPath();
-                ctx.arc(op.x * this.scale, op.z * this.scale, 3.0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-            }
-        }
-
-        // 9. Маркеры миссий и чекпоинтов
-        if (window.gameEngine && window.gameEngine.missionManager) {
-            const mMgr = window.gameEngine.missionManager;
-            if (mMgr.activeMission && mMgr.activeMission.targetPos) {
-                // Активный чекпоинт
-                const cp = mMgr.activeMission.targetPos;
-                const pulse = 4.5 + Math.sin(this.blipPulseTimer * 6.0) * 1.5;
-                ctx.fillStyle = '#facc15';
-                ctx.strokeStyle = '#ffffff';
-                ctx.lineWidth = 1.5;
-                ctx.beginPath();
-                ctx.arc(cp.x * this.scale, cp.z * this.scale, pulse, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-            } else {
-                // Доступные миссии в мире
-                mMgr.missions.forEach(m => {
-                    const mp = m.startPos;
-                    let bColor = '#00f0ff';
-                    let label = 'M';
-                    if (m.type === 'TAXI') { bColor = '#ffd700'; label = 'T'; }
-                    else if (m.type === 'RACE') { bColor = '#00f0ff'; label = 'R'; }
-                    else if (m.type === 'GANG') { bColor = '#ef4444'; label = 'G'; }
-                    else if (m.type === 'DELIVERY') { bColor = '#22c55e'; label = 'D'; }
-
-                    ctx.fillStyle = bColor;
-                    ctx.strokeStyle = '#000000';
-                    ctx.lineWidth = 1.2;
-                    ctx.beginPath();
-                    ctx.arc(mp.x * this.scale, mp.z * this.scale, 4.0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-
-                    ctx.fillStyle = '#000000';
-                    ctx.font = 'bold 6px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(label, mp.x * this.scale, mp.z * this.scale);
-                });
-            }
-        }
-
-        // 10. Сетевые игроки (Голубые светящиеся ромбы)
+        // 8. Сетевые игроки (Голубые светящиеся ромбы)
         if (remotePlayers && remotePlayers.length > 0) {
             for (let i = 0; i < remotePlayers.length; i++) {
                 const rp = remotePlayers[i];
@@ -239,11 +164,11 @@ class MinimapRenderer {
             const helis = window.gameEngine.helicopters;
             for (let i = 0; i < helis.length; i++) {
                 const h = helis[i];
-                if (h && h.group && !h.isPiloted) {
+                if (h && h.group && !h.isPiloted && !h.isPassenger && !h.isMerged) {
                     const hx = h.group.position.x * this.scale;
                     const hz = h.group.position.z * this.scale;
 
-                    ctx.fillStyle = '#fbbf24';
+                    ctx.fillStyle = h.isMega ? '#00f0ff' : '#fbbf24';
                     ctx.strokeStyle = '#000000';
                     ctx.lineWidth = 1.2;
                     ctx.beginPath();
@@ -255,8 +180,59 @@ class MinimapRenderer {
                     ctx.font = 'bold 6px Arial';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText('H', hx, hz);
+                    ctx.fillText(h.isMega ? '⚡' : 'H', hx, hz);
                 }
+            }
+        }
+
+        // 12. Универсальный GPS-Навигатор (Route & Beacon на миникарте)
+        if (window.gameEngine && window.gameEngine.flightNavigation && window.gameEngine.flightNavigation.hasActiveTarget()) {
+            const target = window.gameEngine.flightNavigation.getTargetPosition();
+            if (target && playerPos) {
+                const px = playerPos.x * this.scale;
+                const pz = playerPos.z * this.scale;
+                const tx = target.x * this.scale;
+                const tz = target.z * this.scale;
+                const navMode = window.gameEngine.flightNavigation.currentMode || 'FOOT';
+                const isMegaHeli = !!(window.gameEngine.helicopter && window.gameEngine.helicopter.isMega && (window.gameEngine.helicopter.isPiloted || window.gameEngine.helicopter.isPassenger));
+
+                // Линия курса
+                ctx.save();
+                const routeColor = (navMode === 'FOOT') ? 'rgba(0, 240, 255, 0.45)' : ((navMode === 'CAR') ? 'rgba(56, 189, 248, 0.5)' : (isMegaHeli ? 'rgba(0, 240, 255, 0.55)' : 'rgba(34, 197, 94, 0.5)'));
+                ctx.strokeStyle = routeColor;
+                ctx.lineWidth = 4.0;
+                ctx.beginPath();
+                ctx.moveTo(px, pz);
+                ctx.lineTo(tx, tz);
+                ctx.stroke();
+
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                ctx.moveTo(px, pz);
+                ctx.lineTo(tx, tz);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                // Пульсирующая иконка целевой локации
+                const pPulse = (Math.sin(this.blipPulseTimer * 2.5) + 1.0) * 0.5;
+                const blipCol = (navMode === 'FOOT') ? '#00f0ff' : ((navMode === 'CAR') ? '#38bdf8' : (isMegaHeli ? '#00f0ff' : '#22c55e'));
+                ctx.fillStyle = blipCol;
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.4;
+                ctx.beginPath();
+                ctx.arc(tx, tz, 5.5 + pPulse * 2.0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#000000';
+                ctx.font = 'bold 7px Arial Black, Arial, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const blipSymbol = (navMode === 'HELI') ? (isMegaHeli ? '⚡' : 'H') : '★';
+                ctx.fillText(blipSymbol, tx, tz);
+                ctx.restore();
             }
         }
 
@@ -278,8 +254,11 @@ class MinimapRenderer {
 
         // 11. Белая стрелка игрока
         const isDriving = (window.gameEngine && window.gameEngine.vehicleManager && window.gameEngine.vehicleManager.activeDrivenCar !== null);
+        const isFlyingHeli = !!(window.gameEngine && window.gameEngine.helicopter && (window.gameEngine.helicopter.isPiloted || window.gameEngine.helicopter.isPassenger));
         let playerYawWorld = 0;
-        if (isDriving) {
+        if (isFlyingHeli && window.gameEngine.helicopter) {
+            playerYawWorld = window.gameEngine.helicopter.headingAngle || 0;
+        } else if (isDriving) {
             const car = window.gameEngine.vehicleManager.activeDrivenCar;
             playerYawWorld = car.carGroup ? car.carGroup.rotation.y : 0;
         } else if (window.gameEngine && window.gameEngine.player && window.gameEngine.player.mesh) {
@@ -303,6 +282,25 @@ class MinimapRenderer {
         ctx.fill();
         ctx.stroke();
         ctx.restore();
+
+        // Отображение текущей высоты (Altitude HUD), если игрок на этажах небоскреба или в воздухе
+        if (playerPos && playerPos.y > 5.0) {
+            ctx.save();
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.6)';
+            ctx.lineWidth = 1.0;
+            ctx.beginPath();
+            ctx.roundRect(this.centerX - 24, this.height - 24, 48, 14, 4);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#00f0ff';
+            ctx.font = 'bold 9px monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(`▲ ${Math.round(playerPos.y)}m`, this.centerX, this.height - 17);
+            ctx.restore();
+        }
 
         // 12. Компас 'N'
         const compassAngle = cameraYaw - Math.PI / 2;

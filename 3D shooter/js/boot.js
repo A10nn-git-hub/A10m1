@@ -89,3 +89,8 @@ document.getElementById('chat-input')?.addEventListener('keydown', (event) => {
         sendChatMessage();
     }
 });
+
+if (!window.mainMenuManager && typeof MainMenuManager === 'function') {
+    window.mainMenuManager = new MainMenuManager();
+}
+

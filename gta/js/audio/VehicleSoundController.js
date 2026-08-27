@@ -216,3 +216,5 @@ class VehicleSoundController {
         } catch (e) {}
     }
 }
+
+window.VehicleSoundController = VehicleSoundController;

@@ -333,3 +333,5 @@
             }
         ];
         window.INTERIOR_DESTINATIONS = INTERIOR_DESTINATIONS;
+
+window.AmbientTrafficManager = AmbientTrafficManager;

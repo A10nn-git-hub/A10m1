@@ -110,3 +110,5 @@
                 }
             }
         }
+
+window.ElevatorAudioSynth = ElevatorAudioSynth;

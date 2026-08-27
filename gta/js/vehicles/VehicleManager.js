@@ -154,11 +154,6 @@ class VehicleManager {
                         window.gameEngine.multiplayerManager.sendLocalStateNow();
                     }
 
-                    // Оповещение системы розыска об угоне авто
-                    if (window.gameEngine && window.gameEngine.wantedManager && !this.isPassenger) {
-                        window.gameEngine.wantedManager.reportCrime('STEAL_CAR', nearest.chassisBody ? nearest.chassisBody.position : null);
-                    }
-
                     if (this.hudModeTitle) {
                         this.hudModeTitle.innerText = this.isPassenger ? `ПОСАДКА (ПАССАЖИР [Место ${seatIdx + 1}])...` : 'ПОСАДКА ЗА РУЛЬ...';
                     }

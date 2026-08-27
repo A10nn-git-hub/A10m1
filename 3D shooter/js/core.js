@@ -1,12 +1,20 @@
+function returnToHub() {
+    try {
+        if (typeof isHost !== 'undefined' && isHost && typeof lobbyId !== 'undefined' && lobbyId && typeof db !== 'undefined' && db) {
+            db.ref(`lobbies/${lobbyId}`).update({ status: 'waiting' }).catch(() => {});
+        }
+    } catch (e) {}
+    window.location.href = '../index.html';
+}
+window.returnToHub = returnToHub;
+
 const tg = window.Telegram.WebApp; 
 try { 
     tg.expand(); 
     if (tg.requestFullscreen) tg.requestFullscreen(); 
     if (tg.BackButton) {
         tg.BackButton.show();
-        tg.BackButton.onClick(() => {
-            window.location.href = '../index.html';
-        });
+        tg.BackButton.onClick(returnToHub);
     }
 } catch (e) { } 
 tg.ready();
@@ -248,10 +256,12 @@ async function fetchGeminiAPI(promptStr) {
 let currentAiAudio = null;
 
 async function fetchAndPlayTTS(text, voiceName, onComplete, onReadyToSync) {
+    const activeKey = localStorage.getItem('gemini_api_key') || apiKey || "";
+    if (!activeKey) return;
     let retries = 5, delay = 1000;
     while (retries > 0) {
         try {
-            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`, {
+            const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${activeKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -1348,7 +1358,7 @@ function defaultSettingsForGame(gameId, players = lobbySettingsPlayers()) {
         const perPlayer = {};
         players.forEach(p => {
             perPlayer[p.id] = {
-                lives: isAiFriendId(p.id) ? 150 : 200,
+                lives: isAiFriendId(p.id) ? 100 : 100,
                 ammoPerSec: 1,
                 team: '',
                 speed: 3,
@@ -1388,7 +1398,7 @@ function mergedSettingsForGame(gameId) {
             merged.players[p.id].color = merged.players[p.id].color || TTT_SETTING_COLORS[i % TTT_SETTING_COLORS.length].id;
         }
         if (effectiveId === 'br_2d') {
-            merged.players[p.id].lives = Math.max(1, parseInt(merged.players[p.id].lives) || (isAiFriendId(p.id) ? 150 : 200));
+            merged.players[p.id].lives = Math.max(1, parseInt(merged.players[p.id].lives) || (isAiFriendId(p.id) ? 100 : 100));
             merged.players[p.id].ammoPerSec = Math.max(1, Math.min(10, parseInt(merged.players[p.id].ammoPerSec) || 1));
             merged.players[p.id].team = ['1', '2', '3', '4', '5'].includes(String(merged.players[p.id].team || '')) ? String(merged.players[p.id].team) : '';
             merged.players[p.id].speed = Math.max(1, Math.min(15, parseInt(merged.players[p.id].speed) || 3));
@@ -1500,7 +1510,7 @@ function applyPreset(presetType) {
 
         if (presetType === 'winning') {
             if (isBot) {
-                if (livesInput) livesInput.value = 150;
+                if (livesInput) livesInput.value = 100;
                 if (ammoInput) ammoInput.value = 1;
                 if (speedInput) speedInput.value = 3;
             } else {
@@ -1510,9 +1520,9 @@ function applyPreset(presetType) {
             }
         } else if (presetType === 'speedy') {
             if (isBot) {
-                if (livesInput) livesInput.value = 150;
+                if (livesInput) livesInput.value = 100;
             } else {
-                if (livesInput) livesInput.value = 200;
+                if (livesInput) livesInput.value = 100;
             }
             if (ammoInput) ammoInput.value = 10;
             if (speedInput) speedInput.value = 15;
@@ -1549,7 +1559,7 @@ function renderBrSettingsTable(settings) {
         return `<tr>
                         <td><div class="game-settings-player"><span>${getAvatarHTML(p.avatar)}</span><span>${getNameHTML(p.name, p.eqName)}</span></div></td>
                         <td><input class="game-settings-input" type="number" min="1" max="10" value="${parseInt(ps.ammoPerSec) || 1}" data-setting-player="${p.id}" data-setting-field="ammoPerSec" ${readonly}></td>
-                        <td><input class="game-settings-input" type="number" min="1" max="9999" value="${parseInt(ps.lives) || 200}" data-setting-player="${p.id}" data-setting-field="lives" ${readonly}></td>
+                        <td><input class="game-settings-input" type="number" min="1" max="9999" value="${parseInt(ps.lives) || 100}" data-setting-player="${p.id}" data-setting-field="lives" ${readonly}></td>
                         <td><input class="game-settings-input" type="number" min="1" max="15" value="${parseInt(ps.speed) || 3}" data-setting-player="${p.id}" data-setting-field="speed" ${readonly}></td>
                         <td>${aiCell}</td>
                     </tr>`;
@@ -1912,7 +1922,8 @@ function initApp() {
         if (vals['dev_mode']) myId = '0000';
         else if (savedId) myId = savedId;
         else { myId = Math.floor(1000 + Math.random() * 9000).toString(); try { tg.CloudStorage.setItem('my_id', myId); } catch (e) { } localStorage.setItem('my_id', myId); }
-        document.getElementById('my-id-display').innerText = `ID: ${myId}`;
+        const myIdDisplay = document.getElementById('my-id-display');
+        if (myIdDisplay) myIdDisplay.innerText = `ID: ${myId}`;
 
         await ensureFirebaseAccess();
 
@@ -1930,9 +1941,11 @@ function initApp() {
                 if (!isDev) {
                     readDbOnce('admins/' + myId, null, 'admins access').then(adminValue => {
                         if (!adminValue && (bans[myId] || bans['all'])) {
-                            document.getElementById('beta-ban-overlay').style.display = 'flex';
+                            const banEl = document.getElementById('beta-ban-overlay');
+                            if (banEl) banEl.style.display = 'flex';
                         } else {
-                            document.getElementById('beta-ban-overlay').style.display = 'none';
+                            const banEl = document.getElementById('beta-ban-overlay');
+                            if (banEl) banEl.style.display = 'none';
                         }
                     });
                 }
@@ -1954,23 +1967,17 @@ function initApp() {
                 aiStats = d.aiStats || { math: { w: 0, l: 0, d: 0 }, letters: { w: 0, l: 0, d: 0 }, acc: { w: 0, l: 0, d: 0 }, ttt: { w: 0, l: 0, d: 0 }, hidden: { w: 0, l: 0, d: 0 }, clk: { w: 0, l: 0, d: 0 }, react: { w: 0, l: 0, d: 0 } };
                 pvpStats = d.pvpStats || {};
 
-                if (localStorage.getItem('eq_bg') === 'bg_stars') document.body.classList.add('star-bg');
-                if (localStorage.getItem('eq_bg') === 'bg_balloons') spawnBalloons();
-
-                // Синхронизируем профиль только после успешного чтения Firebase,
-                // иначе локальный fallback может затереть реальные данные игрока.
                 profileLoaded = true;
-                updateCoinsUI(); checkAdminAccess(); updateMyProfileUI(); syncDBProfile(); bindPresence(); ensureEquippedItemsInInventory();
-                db.ref('users/' + myId + '/coins').on('value', s => { if (s.exists() && s.val() !== globalCoins) { globalCoins = s.val(); updateCoinsUI(); try { tg.CloudStorage.setItem('player_coins', globalCoins.toString()); } catch (e) { } } }, err => handleFirebaseError(err, 'coins listener', null));
-                bindMessagesUnreadBadge();
-                db.ref(`users/${myId}/friends`).on('value', s => { friendsIds = [SYSTEM_BOT.id]; if (s.exists()) { Object.keys(s.val()).forEach(k => { if (!isAiFriendId(k)) friendsIds.push(k); }); } renderFriends(); renderMessagesTab(); });
-                if (vals['friendsIds']) { try { let localF = JSON.parse(vals['friendsIds']); localF.forEach(fid => { if (!isAiFriendId(fid)) { db.ref(`users/${myId}/friends/${fid}`).set(true); db.ref(`users/${fid}/friends/${myId}`).set(true); } }); tg.CloudStorage.removeItem('friendsIds'); } catch (e) { } }
-                db.ref(`users/${myId}/friend_reqs`).on('value', s => { let c = s.exists() ? Object.keys(s.val()).length : 0; let b = document.getElementById('fr-badge'); b.style.display = c > 0 ? 'inline-block' : 'none'; b.innerText = c; renderFrReqs(s.val()); });
-                db.ref(`users/${myId}/invite`).on('value', s => { if (s.exists()) { pendingInvite = s.val(); let n = document.getElementById('top-notify'); n.innerHTML = `🎮 ${pendingInvite.host} зовет в игру!`; n.style.top = '20px'; setTimeout(() => { n.style.top = '-100px'; }, 3000); renderMessagesTab(); } });
-                ensureHomeLobby();
+                bindPresence();
+
+                // Direct start into 3D Match
+                document.getElementById('screen-game-br')?.classList.add('active');
+                if (typeof initBR === 'function') initBR();
                 if (typeof hideSplashScreen === 'function') hideSplashScreen();
             }).catch(() => {
-                showNegativeAlert(getFirebaseFriendlyMessage("Не удалось загрузить профиль из Firebase."));
+                // Direct start into 3D Match fallback
+                document.getElementById('screen-game-br')?.classList.add('active');
+                if (typeof initBR === 'function') initBR();
                 if (typeof hideSplashScreen === 'function') hideSplashScreen();
             });
         });
@@ -2098,10 +2105,26 @@ window.showNegativeAlert = showNegativeAlert;
 window.showCustomConfirm = showCustomConfirm;
 
 window.addEventListener('error', (event) => {
-    showNegativeAlert(event.message || event.error || 'Произошла ошибка');
+    const msg = (event && (event.message || event.error)) || '';
+    const strMsg = typeof msg === 'object' ? (msg.message || '') : String(msg);
+    const lower = strMsg.toLowerCase();
+    if (!strMsg || lower.includes('script error') || lower.includes('resizeobserver') || lower.includes('pointer lock') || lower.includes('user gesture')) {
+        console.warn('Suppressed benign script error:', event);
+        return;
+    }
+    console.error('Unhandled error:', event);
+    showNegativeAlert(strMsg);
 });
 window.addEventListener('unhandledrejection', (event) => {
-    showNegativeAlert(event.reason || 'Ошибка обещания');
+    const reason = (event && event.reason) || '';
+    const strReason = typeof reason === 'object' ? (reason.message || '') : String(reason);
+    const lower = strReason.toLowerCase();
+    if (!strReason || lower.includes('script error') || lower.includes('pointer lock') || lower.includes('user gesture')) {
+        console.warn('Suppressed benign promise rejection:', event);
+        return;
+    }
+    console.error('Unhandled promise rejection:', event);
+    showNegativeAlert(strReason);
 });
 
 function spawnBalloons() {
@@ -2116,10 +2139,50 @@ function spawnBalloons() {
 }
 
 function updateMyStatsTab() {
-    let totalS = buildTotalStats(pvpStats);
     let tabAll = document.getElementById('my-stats-all');
     let tabAi = document.getElementById('my-stats-ai');
-    if (tabAll) tabAll.innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px; color:var(--coin-col);">Время в игре: ${formatPlayTime(playTimeMs)}</div>` + generateKDHTML(totalS);
+    if (!tabAll) return;
+
+    if (typeof db !== 'undefined' && db && myId) {
+        db.ref(`users/${myId}/stats_3d`).once('value').then(snap => {
+            const s3d = snap.exists() ? snap.val() : { kills: 0, deaths: 0, wins: 0, losses: 0, damage: 0 };
+            const kills = s3d.kills || 0;
+            const deaths = s3d.deaths || 0;
+            const kd = deaths > 0 ? (kills / deaths).toFixed(2) : kills;
+            const wins = s3d.wins || 0;
+            const losses = s3d.losses || 0;
+            const wr = (wins + losses) > 0 ? Math.round((wins / (wins + losses)) * 100) : 0;
+            const damage = s3d.damage || 0;
+
+            tabAll.innerHTML = `
+                <div style="text-align:center; font-weight:bold; margin-bottom:12px; color:var(--coin-col);">Время в игре: ${formatPlayTime(playTimeMs)}</div>
+                <div class="stats-3d-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:15px;">
+                    <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
+                        <div style="font-size:11px; color:#888;">ФРАГИ (KILLS)</div>
+                        <div style="font-size:22px; font-weight:bold; color:#00ffcc;">${kills}</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
+                        <div style="font-size:11px; color:#888;">K/D RATIO</div>
+                        <div style="font-size:22px; font-weight:bold; color:#ffcc00;">${kd}</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
+                        <div style="font-size:11px; color:#888;">ПОБЕДЫ / ПОРАЖЕНИЯ</div>
+                        <div style="font-size:16px; font-weight:bold; color:#fff;">${wins}W - ${losses}L (${wr}%)</div>
+                    </div>
+                    <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:10px; text-align:center;">
+                        <div style="font-size:11px; color:#888;">НАНЕСЕННЫЙ УРОН</div>
+                        <div style="font-size:18px; font-weight:bold; color:#ff3b30;">${damage}</div>
+                    </div>
+                </div>
+            `;
+        }).catch(() => {
+            let totalS = buildTotalStats(pvpStats);
+            tabAll.innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px; color:var(--coin-col);">Время в игре: ${formatPlayTime(playTimeMs)}</div>` + generateKDHTML(totalS);
+        });
+    } else {
+        let totalS = buildTotalStats(pvpStats);
+        tabAll.innerHTML = `<div style="text-align:center; font-weight:bold; margin-bottom:10px; color:var(--coin-col);">Время в игре: ${formatPlayTime(playTimeMs)}</div>` + generateKDHTML(totalS);
+    }
     if (tabAi) tabAi.innerHTML = generateKDHTML(aiStats);
 }
 
@@ -2293,7 +2356,8 @@ function renderShop() {
             let inspectBtnHTML = (item.type === 'box' || item.type === 'case') ? '' : `<button class="btn btn-dark" style="font-size:12px; padding:10px; margin-top:10px;" onclick="inspectItem('${item.id}','${item.type}')">ОСМОТРЕТЬ</button>`;
             shopHTML += `<div class="shop-item-card ${cardClass}"><div style="margin-bottom:10px; display:flex; justify-content:center; align-items:center; height:60px;">${topDisp}</div>${item.type === 'name' ? '' : `<b class="shop-card-name">${escapeHTML(item.name)}</b>`}<span style="font-size:11px; color:gray; margin-top:5px;">${escapeHTML(item.desc)}</span>${rBar}<span style="color:var(--coin-col); font-weight:bold; font-size:16px; margin-bottom:10px;">${item.price} 🪙</span>${btnHTML}${inspectBtnHTML}</div>`;
         });
-        document.getElementById('inv-shop').innerHTML = shopHTML;
+        const shopEl = document.getElementById('inv-shop');
+        if (shopEl) shopEl.innerHTML = shopHTML;
     };
 
     if (inventoryLoaded) {
@@ -2305,8 +2369,10 @@ function renderShop() {
 
 function renderInventory() {
     const drawInventory = (inv) => {
+        const bagEl = document.getElementById('inv-bag');
+        if (!bagEl) return;
         let hasAny = SHOP_ITEMS.some(i => inv[i.id]);
-        if (!hasAny) { document.getElementById('inv-bag').innerHTML = '<div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2>'; return; }
+        if (!hasAny) { bagEl.innerHTML = '<div style="font-size:60px;margin-top:50px;">🎒</div><h2 style="color:gray;">Пусто</h2>'; return; }
 
         let html = '';
         SHOP_ITEMS.forEach(item => {
@@ -2327,8 +2393,9 @@ function renderInventory() {
                 }
             }
         });
-        document.getElementById('inv-bag').innerHTML = '<div class="inv-grid" id="inv-grid-container"></div>';
-        document.getElementById('inv-grid-container').innerHTML = html;
+        bagEl.innerHTML = '<div class="inv-grid" id="inv-grid-container"></div>';
+        const gridEl = document.getElementById('inv-grid-container');
+        if (gridEl) gridEl.innerHTML = html;
     };
 
     if (inventoryLoaded) drawInventory(liveInventory);

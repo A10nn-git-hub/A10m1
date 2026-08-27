@@ -47,6 +47,33 @@ class RemotePlayer {
         this.group.position.copy(this.currentPos);
         this.group.rotation.y = this.currentRotY;
         this.scene.add(this.group);
+
+        // Физический твердый коллайдер сетевого игрока (позволяет стоять на игроке и прыгать с него)
+        this.world = (window.gameEngine && window.gameEngine.world) ? window.gameEngine.world : null;
+        this.body = null;
+        if (this.world) {
+            const playerMat = (window.gameEngine.physicsMaterials && window.gameEngine.physicsMaterials.player) || undefined;
+            this.body = new CANNON.Body({
+                mass: 0,
+                type: CANNON.Body.KINEMATIC,
+                material: playerMat,
+                position: new CANNON.Vec3(this.currentPos.x, this.currentPos.y + 0.88, this.currentPos.z)
+            });
+            const capsuleRadius = 0.36;
+            const capsuleHeight = 0.96;
+            const cylinderShape = new CANNON.Cylinder(capsuleRadius, capsuleRadius, capsuleHeight, 16);
+            const qCyl = new CANNON.Quaternion();
+            qCyl.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+            this.body.addShape(cylinderShape, new CANNON.Vec3(0, 0, 0), qCyl);
+            this.body.addShape(new CANNON.Sphere(capsuleRadius), new CANNON.Vec3(0, capsuleHeight / 2, 0));
+            this.body.addShape(new CANNON.Sphere(capsuleRadius), new CANNON.Vec3(0, -capsuleHeight / 2, 0));
+
+            // Плоская горизонтальная платформа на уровне головы/плеч для надежной опоры
+            const headPlatform = new CANNON.Box(new CANNON.Vec3(0.35, 0.08, 0.35));
+            this.body.addShape(headPlatform, new CANNON.Vec3(0, 0.82, 0));
+
+            this.world.addBody(this.body);
+        }
     }
 
     hashString(str) {
@@ -425,6 +452,7 @@ class RemotePlayer {
         if (data.isFlyingHeli !== undefined) this.isFlyingHeli = !!data.isFlyingHeli;
         if (data.heliSeat !== undefined) this.heliSeat = data.heliSeat;
         if (data.heliIndex !== undefined) this.heliIndex = data.heliIndex;
+        if (data.isClimbingTree !== undefined) this.isClimbingTree = !!data.isClimbingTree;
 
         const helis = window.gameEngine?.helicopters;
         const hIdx = (this.heliIndex !== undefined && !isNaN(this.heliIndex)) ? this.heliIndex : 0;
@@ -488,6 +516,10 @@ class RemotePlayer {
                     this.limbs.leftArm.pivot.rotation.set(-0.55, 0.15, 0.2);
                     this.limbs.rightArm.pivot.rotation.set(-0.55, -0.15, -0.2);
                 }
+                if (this.body) {
+                    this.body.position.set(0, -999, 0);
+                    this.body.velocity.set(0, 0, 0);
+                }
                 return;
             }
         }
@@ -524,11 +556,48 @@ class RemotePlayer {
                         this.limbs.rightArm.pivot.rotation.set(-0.4, -0.1, -0.1);
                     }
                 }
+                if (this.body) {
+                    this.body.position.set(0, -999, 0);
+                    this.body.velocity.set(0, 0, 0);
+                }
                 return;
             }
         }
 
         this.characterGroup.scale.set(1, 1, 1);
+
+        // 2.5. Нахождение в листве дерева (режим маскировки/засады)
+        if (this.isClimbingTree) {
+            this.group.position.copy(this.currentPos);
+            this.group.rotation.set(0, this.currentRotY, 0);
+
+            // Скрываем светящуюся плашку с ником над листвой, чтобы союзника/врага не выдавало
+            if (this.nameplateSprite) {
+                this.nameplateSprite.visible = false;
+            }
+
+            // Сидячая поза притаившегося в ветках персонажа
+            if (this.limbs.torso) this.limbs.torso.position.y = 0.45;
+            if (this.limbs.leftLeg && this.limbs.rightLeg) {
+                this.limbs.leftLeg.pivot.rotation.x = -1.45;
+                this.limbs.rightLeg.pivot.rotation.x = -1.45;
+                this.limbs.leftLeg.knee.rotation.x = 1.45;
+                this.limbs.rightLeg.knee.rotation.x = 1.45;
+            }
+            if (this.limbs.leftArm && this.limbs.rightArm) {
+                this.limbs.leftArm.pivot.rotation.set(-0.65, 0.2, 0.25);
+                this.limbs.rightArm.pivot.rotation.set(-0.65, -0.2, -0.25);
+            }
+            if (this.body) {
+                this.body.position.set(this.currentPos.x, this.currentPos.y + 0.45, this.currentPos.z);
+                this.body.velocity.set(0, 0, 0);
+            }
+            return;
+        }
+
+        if (this.nameplateSprite && !this.isClimbingTree) {
+            this.nameplateSprite.visible = true;
+        }
 
         // 3. Пешком: Плавная интерполяция с непрерывной экстраполяцией скорости (Standoff 2 Dead Reckoning)
         const elapsedSec = Math.min(0.2, (performance.now() - (this.lastPacketTimestamp || performance.now())) / 1000);
@@ -545,6 +614,13 @@ class RemotePlayer {
         this.group.position.copy(this.currentPos);
         this.group.rotation.set(0, this.currentRotY, 0);
         if (this.nameplateSprite) this.nameplateSprite.position.set(0, 2.25, 0);
+
+        // Синхронизация твердого физического тела сетевого игрока
+        if (this.body) {
+            this.body.position.set(this.currentPos.x, this.currentPos.y + 0.88, this.currentPos.z);
+            this.body.quaternion.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), this.currentRotY);
+            this.body.velocity.set(this.interpVelocity.x, this.interpVelocity.y, this.interpVelocity.z);
+        }
 
         // 4. Таймер показа сообщения чата
         if (this.chatMessageTimer > 0) {
@@ -603,6 +679,12 @@ class RemotePlayer {
         }
         if (this.isFlyingHeli && window.gameEngine && window.gameEngine.helicopter) {
             window.gameEngine.helicopter.removeOccupant(this.playerId);
+        }
+        if (this.body && this.world) {
+            try {
+                this.world.removeBody(this.body);
+            } catch (e) {}
+            this.body = null;
         }
         if (this.group && this.scene) {
             this.scene.remove(this.group);

@@ -20,3 +20,5 @@
                 return new THREE.Vector3(x, y, z).normalize();
             }
         }
+
+window.CalendarAndSeasonSystem = CalendarAndSeasonSystem;

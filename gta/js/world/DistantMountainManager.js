@@ -83,4 +83,12 @@
                 this.mountainMesh.receiveShadow = true;
                 this.scene.add(this.mountainMesh);
             }
+
+            setEcoMode(isEco) {
+                if (this.mountainMesh) {
+                    this.mountainMesh.visible = !isEco;
+                }
+            }
         }
+
+window.DistantMountainManager = DistantMountainManager;

@@ -66,6 +66,16 @@
             }
 
             update(deltaTime, carWorldPos, carQuaternion, speedKmh, isAccelerating) {
+                if (window.gameEngine && window.gameEngine.isPowerSavingMode) {
+                    for (let i = 0; i < this.pool.length; i++) {
+                        if (this.pool[i].active) {
+                            this.pool[i].active = false;
+                            this.pool[i].sprite.visible = false;
+                        }
+                    }
+                    return;
+                }
+
                 const dt = Math.min(deltaTime, 0.1);
 
                 // Генерация клубов дыма из левой и правой выхлопных труб
@@ -111,3 +121,5 @@
                 }
             }
         }
+
+window.CarExhaustSmokeSystem = CarExhaustSmokeSystem;

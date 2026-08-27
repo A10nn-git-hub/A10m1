@@ -43,3 +43,5 @@
                 this.hideLoader();
             }
         }
+
+window.LoadingProgressTracker = LoadingProgressTracker;

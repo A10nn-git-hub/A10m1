@@ -4,7 +4,7 @@
         class MenuAuroraRenderer {
             constructor() {
                 this.canvas = document.getElementById('menu-aurora-canvas');
-                this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
+                this.ctx = (this.canvas && typeof this.canvas.getContext === 'function') ? this.canvas.getContext('2d') : null;
                 this.isRunning = false;
                 this.time = 0;
                 this.particles = [];
@@ -135,3 +135,5 @@
                 ctx.restore();
             }
         }
+
+window.MenuAuroraRenderer = MenuAuroraRenderer;
