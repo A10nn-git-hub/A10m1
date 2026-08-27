@@ -24,25 +24,30 @@
             }
 
             generateFlatGround() {
-                // 1. Общий природный настил карты (600м х 600м)
+                // 1. Общий природный настил карты (600м х 600м, опущен вниз на 15см для устранения Z-fighting)
                 const worldGroundGeo = new THREE.PlaneGeometry(600, 600);
                 const worldGroundMat = new THREE.MeshLambertMaterial({
-                    map: ProceduralTextureFactory.createGrassTexture()
+                    map: ProceduralTextureFactory.createGrassTexture(),
+                    depthWrite: true
                 });
                 this.mesh = new THREE.Mesh(worldGroundGeo, worldGroundMat);
                 this.mesh.rotation.x = -Math.PI / 2;
-                this.mesh.position.set(0, -0.02, 0);
+                this.mesh.position.set(0, -0.15, 0);
                 this.mesh.receiveShadow = true;
                 this.scene.add(this.mesh);
 
-                // 2. Городской плоский асфальтово-плиточный настил (300м х 300м)
+                // 2. Городской плоский асфальтово-плиточный настил (300м х 300м) с гарантированным приоритетом глубины
                 const cityGroundGeo = new THREE.PlaneGeometry(300, 300);
                 const cityGroundMat = new THREE.MeshLambertMaterial({
-                    map: ProceduralTextureFactory.createCityGroundTexture()
+                    map: ProceduralTextureFactory.createCityGroundTexture(),
+                    polygonOffset: true,
+                    polygonOffsetFactor: -1,
+                    polygonOffsetUnits: -1,
+                    depthWrite: true
                 });
                 this.cityGroundMesh = new THREE.Mesh(cityGroundGeo, cityGroundMat);
                 this.cityGroundMesh.rotation.x = -Math.PI / 2;
-                this.cityGroundMesh.position.set(0, 0.005, 0);
+                this.cityGroundMesh.position.set(0, 0.0, 0);
                 this.cityGroundMesh.receiveShadow = true;
                 this.scene.add(this.cityGroundMesh);
 

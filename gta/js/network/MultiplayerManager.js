@@ -73,11 +73,12 @@ class MultiplayerManager {
         }
 
         if (elRoom) {
-            if (this.roomId && this.roomId !== 'public_free_roam') {
-                const cleanRoom = this.roomId.replace(/^lobby_/, '');
+            const cleanRoom = this.roomId ? this.roomId.replace(/^lobby_/, '').replace(/^room_/, '') : '';
+            if (cleanRoom && cleanRoom !== 'public_free_roam' && cleanRoom !== 'los_santos_main' && !cleanRoom.startsWith('police_')) {
                 elRoom.textContent = `• Лобби #${cleanRoom}`;
             } else {
-                elRoom.textContent = '';
+                const hubId = localStorage.getItem('my_id');
+                elRoom.textContent = hubId ? `• Лобби #${hubId}` : '';
             }
         }
     }
@@ -202,6 +203,30 @@ class MultiplayerManager {
             this.vehiclesRef = this.database.ref(`${rootPath}/vehicles`);
             this.heliRef = this.database.ref(`${rootPath}/helicopter`);
             this.connectedRef = this.database.ref('.info/connected');
+
+            // Поддержание глобального присутствия в центральном хабе
+            const myHubId = localStorage.getItem('my_id');
+            const cleanLobby = this.roomId ? this.roomId.replace(/^lobby_/, '') : (myHubId || 'los_santos_main');
+            if (myHubId) {
+                const hubPresRef = this.database.ref(`users/${myHubId}/presence`);
+                const hubLobbyRef = this.database.ref(`lobbies/${myHubId}`);
+                hubPresRef.set({
+                    state: 'online',
+                    game: 'gta',
+                    lobbyId: cleanLobby,
+                    lastSeenAt: firebase.database.ServerValue.TIMESTAMP
+                }).catch(() => {});
+                hubPresRef.onDisconnect().set({
+                    state: 'offline',
+                    lastSeenAt: firebase.database.ServerValue.TIMESTAMP
+                }).catch(() => {});
+                hubLobbyRef.update({
+                    status: 'playing',
+                    game: 'gta',
+                    host: myHubId,
+                    startedAt: firebase.database.ServerValue.TIMESTAMP
+                }).catch(() => {});
+            }
 
             // Обработка статуса подключения
             this.connectedRef.on('value', (snap) => {

@@ -157,13 +157,12 @@ class GTAEngine {
             this.multiplayerManager = new MultiplayerManager(this.scene);
             this.multiplayerHUD = (typeof MultiplayerHUD !== 'undefined') ? new MultiplayerHUD(this.multiplayerManager) : null;
             const urlParams = new URLSearchParams(window.location.search);
-            const lobbyId = urlParams.get('lobby');
-            if (lobbyId) {
-                const myName = localStorage.getItem('my_name') || 'Player_' + Math.floor(Math.random() * 1000);
-                this.multiplayerManager.connect(null, myName, 'lobby_' + lobbyId);
-            } else {
-                this.multiplayerManager.updateOnlineHud();
+            let lobbyId = urlParams.get('lobby') || urlParams.get('join') || urlParams.get('room');
+            if (!lobbyId || lobbyId === 'undefined' || lobbyId === 'null') {
+                lobbyId = localStorage.getItem('my_id') || 'los_santos_main';
             }
+            const myName = localStorage.getItem('my_name') || FirebaseConfig.getNickname();
+            this.multiplayerManager.connect(null, myName, 'lobby_' + lobbyId);
 
             // Применяем сохраненные настройки энергосбережения
             this.setPowerSavingMode(this.isPowerSavingMode, false);
@@ -188,7 +187,7 @@ class GTAEngine {
 
     initCamera() {
         const aspect = window.innerWidth / window.innerHeight;
-        this.camera = new THREE.PerspectiveCamera(65, aspect, 0.2, 1400);
+        this.camera = new THREE.PerspectiveCamera(65, aspect, 0.35, 1400);
         this.camera.position.set(0, 3.2, 19.5);
         this.camera.lookAt(0, 1.5, 15.0);
     }
@@ -202,7 +201,7 @@ class GTAEngine {
             precision: isMobileOrTablet ? "mediump" : "highp"
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(this.isPowerSavingMode ? (isMobileOrTablet ? 0.50 : 0.60) : Math.min(window.devicePixelRatio, isMobileOrTablet ? 0.85 : 1.0));
+        this.renderer.setPixelRatio(this.isPowerSavingMode ? (isMobileOrTablet ? 0.70 : 0.80) : Math.min(window.devicePixelRatio, isMobileOrTablet ? 0.85 : 1.0));
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         this.renderer.toneMappingExposure = 1.05;
         this.renderer.outputEncoding = THREE.sRGBEncoding;

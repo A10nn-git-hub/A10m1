@@ -60,9 +60,12 @@ class FirebaseConfig {
      */
     static sanitizeRoomId(roomId) {
         if (!roomId || typeof roomId !== 'string') return 'los_santos_main';
-        // Разрешаем русские и английские буквы, цифры, дефис и подчеркивание, заменяя спецсимволы Firebase
-        const clean = roomId.trim().toLowerCase().replace(/[.#$\[\]\/\s]+/g, '_').substring(0, 32);
-        return clean || 'los_santos_main';
+        const clean = roomId.trim().replace(/^lobby_/, '').replace(/^room_/, '').replace(/[.#$\[\]\/\s]+/g, '_').substring(0, 32);
+        if (!clean || clean === 'null' || clean === 'undefined' || clean.startsWith('police_')) {
+            const hubId = localStorage.getItem('my_id');
+            return hubId ? `lobby_${hubId}` : 'los_santos_main';
+        }
+        return `lobby_${clean}`;
     }
 
     /**
@@ -70,8 +73,19 @@ class FirebaseConfig {
      */
     static getRoomId() {
         try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlLobby = urlParams.get('lobby') || urlParams.get('join') || urlParams.get('room');
+            if (urlLobby && urlLobby.trim().length > 0 && urlLobby !== 'null' && urlLobby !== 'undefined') {
+                return FirebaseConfig.sanitizeRoomId(urlLobby.trim());
+            }
+            const savedHubId = localStorage.getItem('my_id');
+            if (savedHubId && savedHubId.trim().length > 0) {
+                return FirebaseConfig.sanitizeRoomId(savedHubId.trim());
+            }
             const room = localStorage.getItem(FirebaseConfig.ROOM_KEY);
-            if (room && room.trim().length > 0) return FirebaseConfig.sanitizeRoomId(room);
+            if (room && room.trim().length > 0 && !room.includes('police')) {
+                return FirebaseConfig.sanitizeRoomId(room);
+            }
         } catch (e) {
             console.warn(e);
         }

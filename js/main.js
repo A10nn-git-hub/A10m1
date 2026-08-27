@@ -939,11 +939,12 @@ function joinLobbyByHostId(targetHostId, isSilent = false) {
         const data = snap.val() || {};
         const pres = presSnap.exists() ? presSnap.val() : null;
 
-        // Check if host is online (either presence is online in last 90s, or host is actively in players map)
-        const isPresOnline = pres && pres.state === 'online' && (Date.now() - (pres.lastSeenAt || 0) < 90000);
-        const isHostInPlayers = Boolean(data.players && data.players[cleanHostId]);
+        // Check if host is online (presence is online/in-game, host in players, or active playing lobby)
+        const isPresOnline = pres && (pres.state === 'online' || pres.state === 'in-game') && (Date.now() - (pres.lastSeenAt || 0) < 300000);
+        const isHostInPlayers = Boolean(data.players && data.players[cleanHostId]) || (data.host === cleanHostId);
+        const isLobbyActive = snap.exists() && (data.status === 'playing' || data.status === 'waiting' || data.status === 'countdown');
 
-        if (!isPresOnline && !isHostInPlayers) {
+        if (!isPresOnline && !isHostInPlayers && !isLobbyActive) {
             if (!isSilent) alert(`❌ Игрок #${cleanHostId} сейчас не в сети.`);
             return;
         }
@@ -956,10 +957,10 @@ function joinLobbyByHostId(targetHostId, isSilent = false) {
 
             if (game === 'gta') {
                 // GTA 5 HTML - join directly without questions
-                showLobbyToast('Игроки в GTA 5! Загрузка города...', '🚗');
+                showLobbyToast('Игрок в GTA 5! Загрузка города...', '🚗');
                 setTimeout(() => {
                     window.location.href = `gta/index.html?lobby=${cleanHostId}&mode=${deviceMode}`;
-                }, 400);
+                }, 300);
                 return;
             } else {
                 // 3D Shooter
@@ -1177,10 +1178,20 @@ function launchActiveLobbyGame() {
         // Solo Launch: trigger local countdown sequence, then navigate
         triggerCountdownSequence(3, () => {
             const deviceMode = localStorage.getItem('gamehub_device_mode') || 'pc';
+            const targetLobby = lobbyId || myId;
+            if (db && targetLobby) {
+                db.ref(`lobbies/${targetLobby}`).update({
+                    status: 'playing',
+                    game: selectedGame,
+                    currentMode: selected3DMode,
+                    host: myId,
+                    startedAt: firebase.database.ServerValue.TIMESTAMP
+                }).catch(() => {});
+            }
             if (selectedGame === 'gta') {
-                window.location.href = `gta/index.html?mode=${deviceMode}`;
+                window.location.href = `gta/index.html?lobby=${targetLobby}&mode=${deviceMode}`;
             } else {
-                window.location.href = `3D shooter/index.html?mode=${selected3DMode}&device=${deviceMode}`;
+                window.location.href = `3D shooter/index.html?lobby=${targetLobby}&mode=${selected3DMode}&device=${deviceMode}`;
             }
         });
     }

@@ -23,12 +23,12 @@
                 this.dirtRoadSegments = [];
 
                 this.materials = {
-                    roadH: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createHorizontalRoadTexture() }),
-                    roadV: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createVerticalRoadTexture() }),
-                    intersection: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createIntersectionTexture() }),
-                    highwayRoad: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createHighwayRoadTexture() }),
+                    roadH: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createHorizontalRoadTexture(), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, depthWrite: true }),
+                    roadV: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createVerticalRoadTexture(), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, depthWrite: true }),
+                    intersection: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createIntersectionTexture(), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, depthWrite: true }),
+                    highwayRoad: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createHighwayRoadTexture(), polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, depthWrite: true }),
                     highwayBridge: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createHighwayBridgeTexture() }),
-                    dirtRoad: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createDirtRoadTexture() }),
+                    dirtRoad: new THREE.MeshLambertMaterial({ map: ProceduralTextureFactory.createDirtRoadTexture(), polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -1.5, depthWrite: true }),
                     concretePillar: new THREE.MeshLambertMaterial({ color: 0x475569 }),
                     jerseyBarrier: new THREE.MeshLambertMaterial({ color: 0x64748b }),
                     guardRail: new THREE.MeshLambertMaterial({ color: 0x94a3b8 }),
