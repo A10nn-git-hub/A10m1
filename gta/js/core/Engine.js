@@ -602,6 +602,16 @@ class GTAEngine {
             }
             // 4. Автомобили
             if (this.vehicleManager && this.player && this.player.body) {
+                const activeCar = this.vehicleManager.activeDrivenCar;
+                // 4.1 Проверка слияния автомобилей, если игрок за рулем
+                if (activeCar && !this.vehicleManager.isPassenger && activeCar.mergeState !== 'MERGING') {
+                    const mergeTargetCar = this.vehicleManager.findNearestMergeCar(activeCar, 16.0);
+                    if (mergeTargetCar) {
+                        activeCar.startMergeWith(mergeTargetCar);
+                        return;
+                    }
+                }
+
                 const nearestCar = this.vehicleManager.findNearestCar(this.player.body.position, 4.2);
                 if (nearestCar || this.vehicleManager.activeDrivenCar) {
                     this.vehicleManager.toggleEnterExitVehicle(this.player);
@@ -609,7 +619,7 @@ class GTAEngine {
                 }
             }
 
-            // 4. Дерево (если рядом нет транспорта, но есть дерево)
+            // 5. Дерево (если рядом нет транспорта, но есть дерево)
             if (this.playerController && this.playerController.findNearestTree(3.8)) {
                 this.playerController.toggleClimbTree();
             }
@@ -1238,6 +1248,42 @@ class GTAEngine {
         const heliHud = document.getElementById('heli-hud-controls');
         if (heliHud) {
             heliHud.style.display = isFlyingHeli ? 'flex' : 'none';
+        }
+
+        // Подсказка на слияние автомобилей при вождении
+        if (isDriving && activeCar && !this.vehicleManager.isPassenger) {
+            if (activeCar.mergeState === 'MERGING') {
+                const hudGear = document.getElementById('hud-gear');
+                if (hudGear) {
+                    hudGear.innerText = `⚡ СЛИЯНИЕ: ${Math.round(activeCar.mergeTimer / activeCar.mergeDuration * 100)}%`;
+                }
+            } else {
+                const mergeTargetCar = this.vehicleManager.findNearestMergeCar(activeCar, 16.0);
+                if (mergeTargetCar) {
+                    const promptElement = document.getElementById('vehicle-prompt');
+                    const promptActionText = document.getElementById('prompt-action-text');
+                    const promptCarName = document.getElementById('prompt-car-name');
+                    const curTier = activeCar.tier || 1;
+                    const nextTier = curTier + 1;
+
+                    if (promptElement) {
+                        promptElement.style.display = 'block';
+                        if (nextTier === 5) {
+                            if (promptCarName) promptCarName.innerText = '👑 ФИНАЛЬНАЯ ТРАНСФОРМАЦИЯ В 5-Й ВЕРТОЛЕТ 👑';
+                            if (promptActionText) promptActionText.innerText = 'Трансформация в CELESTIAL SOLAR LEVIATHAN X16 (2000 км/ч, 16 лопастей) [F]';
+                        } else if (nextTier === 4) {
+                            if (promptCarName) promptCarName.innerText = '🟢 КВАНТОВОЕ СЛИЯНИЕ 4-ГО УРОВНЯ 🟢';
+                            if (promptActionText) promptActionText.innerText = 'Трансформация в QUANTUM EMERALD APEX ASSAULT X12 (1400 км/ч, 3X размер) [F]';
+                        } else if (nextTier === 3) {
+                            if (promptCarName) promptCarName.innerText = '🔴 СВЕРХ-СЛИЯНИЕ 3-ГО УРОВНЯ 🔴';
+                            if (promptActionText) promptActionText.innerText = 'Трансформация в CYBER CRIMSON TITAN GT X8 (800 км/ч, 2X размер) [F]';
+                        } else {
+                            if (promptCarName) promptCarName.innerText = '⚡ СЛИЯНИЕ АВТОМОБИЛЕЙ ⚡';
+                            if (promptActionText) promptActionText.innerText = 'Объединить авто в CYBER PULSE GT X4 (450 км/ч) [F]';
+                        }
+                    }
+                }
+            }
         }
 
         // Подсказка для лазанья по деревьям

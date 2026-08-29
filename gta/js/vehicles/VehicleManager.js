@@ -441,6 +441,140 @@ class VehicleManager {
         }
     }
 
+    findNearestMergeCar(activeCar, maxDist = 16.0) {
+        if (!activeCar || !activeCar.chassisBody) return null;
+        let nearest = null;
+        let minDist = maxDist;
+        const posA = activeCar.chassisBody.position;
+
+        // 1. Поиск среди автомобилей автопарка
+        for (let i = 0; i < this.cars.length; i++) {
+            const other = this.cars[i];
+            if (!other || other === activeCar || other.isMerged || other.isBeingMerged || !other.chassisBody) continue;
+            const dist = posA.distanceTo(other.chassisBody.position);
+            if (dist < minDist) {
+                minDist = dist;
+                nearest = other;
+            }
+        }
+
+        // 2. Поиск среди автономного трафика (если есть)
+        if (!nearest && window.gameEngine && window.gameEngine.ambientTrafficManager && window.gameEngine.ambientTrafficManager.vehicles) {
+            const traffic = window.gameEngine.ambientTrafficManager.vehicles;
+            for (let i = 0; i < traffic.length; i++) {
+                const tCar = traffic[i];
+                if (!tCar || tCar === activeCar || tCar.isMerged || tCar.isBeingMerged) continue;
+                const tPos = tCar.chassisBody ? tCar.chassisBody.position : (tCar.group ? tCar.group.position : null);
+                if (tPos) {
+                    const dist = posA.distanceTo(tPos);
+                    if (dist < minDist) {
+                        minDist = dist;
+                        nearest = tCar;
+                    }
+                }
+            }
+        }
+
+        return nearest;
+    }
+
+    transformCarToSolarHelicopter(car, player, partnerCar) {
+        if (!car || !player) return;
+
+        const posX = car.chassisBody.position.x;
+        const posY = Math.max(car.chassisBody.position.y, 1.5);
+        const posZ = car.chassisBody.position.z;
+        const rotY = car.carGroup ? car.carGroup.rotation.y : 0;
+
+        // Останавливаем мотор машины
+        if (car.soundController) {
+            try { car.soundController.stopEngine(); } catch (e) {}
+        }
+        car.removeOccupant('local');
+
+        // Удаляем машины слияния
+        if (partnerCar) {
+            partnerCar.isMerged = true;
+            partnerCar.isBeingMerged = false;
+            if (partnerCar.carGroup) this.scene.remove(partnerCar.carGroup);
+            if (partnerCar.chassisBody && this.world) this.world.removeBody(partnerCar.chassisBody);
+        }
+
+        car.isMerged = true;
+        car.isBeingMerged = false;
+        if (car.carGroup) this.scene.remove(car.carGroup);
+        if (car.chassisBody && this.world) this.world.removeBody(car.chassisBody);
+
+        this.activeDrivenCar = null;
+        this.isPassenger = false;
+        this.transitionState = 'ON_FOOT';
+
+        // Спавн и апгрейд 5-го вертолета прямо на месте автомобиля
+        const solarHeli = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, posX, posY + 2.5, posZ, rotY);
+        solarHeli.upgradeToSolarLeviathanHelicopter();
+        solarHeli.isPiloted = true;
+        solarHeli.occupants = [player, null];
+
+        // Добавляем в общий список вертолетов движка
+        if (window.gameEngine) {
+            if (!window.gameEngine.helicopters) window.gameEngine.helicopters = [];
+            solarHeli.heliIndex = window.gameEngine.helicopters.length;
+            window.gameEngine.helicopters.push(solarHeli);
+            window.gameEngine.helicopter = solarHeli;
+        }
+
+        // Плавный взлет в воздух при трансформации
+        if (solarHeli.body) {
+            solarHeli.body.position.set(posX, posY + 3.0, posZ);
+            solarHeli.body.velocity.set(0, 22.0, 0);
+            solarHeli.body.wakeUp();
+        }
+
+        // Обновление посадки игрока
+        player.mesh.visible = true;
+        const l = player.limbs;
+        if (l && l.torso) {
+            l.torso.position.y = 0.38;
+            l.leftLeg.pivot.rotation.x = -1.45;
+            l.rightLeg.pivot.rotation.x = -1.45;
+            l.leftLeg.knee.rotation.x = 1.45;
+            l.rightLeg.knee.rotation.x = 1.45;
+            l.leftArm.pivot.rotation.set(-0.55, 0.15, 0.2);
+            l.rightArm.pivot.rotation.set(-0.55, -0.15, -0.2);
+        }
+
+        let toast = document.getElementById('mega-heli-toast') || document.getElementById('opt-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'opt-toast';
+            toast.className = 'opt-toast';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = '👑 <b>ЛЕГЕНДАРНАЯ КВАНТОВАЯ ТРАНСФОРМАЦИЯ!</b> АВТОМОБИЛЬ ПРЕОБРАЗОВАН В CELESTIAL SOLAR LEVIATHAN X16 (2000 КМ/Ч, 16 ЛОПАСТЕЙ)! 🚁☀️';
+        toast.style.borderColor = '#ffd700';
+        toast.style.background = 'linear-gradient(135deg, rgba(69, 26, 3, 0.95), rgba(255, 183, 3, 0.75))';
+        toast.style.boxShadow = '0 10px 60px rgba(255, 215, 0, 0.95)';
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 7000);
+
+        if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+            window.gameEngine.multiplayerHUD.addSystemMessage('👑 АВТОМОБИЛЬ ТРАНСФОРМИРОВАН В 5-Й ВЕРТОЛЕТ LEVIATHAN X16! [Space] Взлет | [W] Полет 2000 км/ч');
+        }
+
+        const modeElem = document.getElementById('stat-player-mode');
+        const titleElem = document.getElementById('hud-mode-title');
+        if (modeElem) modeElem.innerText = 'Пилот (👑 CELESTIAL SOLAR LEVIATHAN X16 👑)';
+        if (titleElem) {
+            titleElem.innerText = '👑 CELESTIAL SOLAR LEVIATHAN X16 👑';
+            titleElem.style.color = '#ffd700';
+            titleElem.style.textShadow = '0 0 15px rgba(255, 215, 0, 0.95)';
+        }
+
+        if (window.soundEngine && typeof window.soundEngine.playHelicopterTakeoff === 'function') {
+            window.soundEngine.playHelicopterTakeoff(posX, posY, posZ);
+        }
+    }
+
     setPowerSavingMode(isEco) {
         for (let i = 0; i < this.cars.length; i++) {
             const car = this.cars[i];

@@ -29,6 +29,16 @@
                 this.isBrakingState = false;
                 this.isReversingState = false;
 
+                // Свойства слияния (Car Fusion Tiers 1-5)
+                this.tier = 1;
+                this.scaleMultiplier = 1.0;
+                this.mergeState = 'IDLE'; // IDLE, MERGING, CYBER, CRIMSON, EMERALD
+                this.mergeTimer = 0.0;
+                this.mergeDuration = 2.4;
+                this.mergePartner = null;
+                this.isMerged = false;
+                this.isBeingMerged = false;
+
                 // Сетевая интерполяция и экстраполяция (Standoff-2 style entity smoothing)
                 this.isRemotelyDriven = false;
                 this.netTargetPos = new THREE.Vector3();
@@ -247,6 +257,448 @@
                 createWheelMesh(false);
                 createWheelMesh(true);
                 createWheelMesh(false);
+            }
+
+            buildCyberPulseMesh() {
+                if (this.chassisGroup) {
+                    while (this.chassisGroup.children.length > 0) {
+                        this.chassisGroup.remove(this.chassisGroup.children[0]);
+                    }
+                }
+
+                const matStealth = new THREE.MeshStandardMaterial({ color: 0x090b10, roughness: 0.2, metalness: 0.85 });
+                const matCyanNeon = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+                const matCyanGlass = new THREE.MeshStandardMaterial({ color: 0x002b36, roughness: 0.1, metalness: 0.9, transparent: true, opacity: 0.8 });
+                const matCarbon = new THREE.MeshStandardMaterial({ color: 0x14171f, roughness: 0.35, metalness: 0.7 });
+                const matChrome = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.1, metalness: 0.95 });
+
+                // 1. Аэродинамический расширенный корпус Cyber Pulse
+                const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.48, 4.4), matStealth);
+                baseMesh.position.set(0, 0.14, 0); baseMesh.castShadow = true;
+                this.chassisGroup.add(baseMesh);
+
+                const cabinMesh = new THREE.Mesh(new THREE.BoxGeometry(1.55, 0.54, 2.05), matCyanGlass);
+                cabinMesh.position.set(0, 0.58, -0.2); cabinMesh.castShadow = true;
+                this.chassisGroup.add(cabinMesh);
+
+                const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(1.48, 0.06, 1.5), matStealth);
+                roofMesh.position.set(0, 0.86, -0.26);
+                this.chassisGroup.add(roofMesh);
+
+                // Неоновые линии по бокам
+                const stripeL = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 4.2), matCyanNeon);
+                stripeL.position.set(-1.06, 0.18, 0); this.chassisGroup.add(stripeL);
+                const stripeR = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 4.2), matCyanNeon);
+                stripeR.position.set(1.06, 0.18, 0); this.chassisGroup.add(stripeR);
+
+                // Агрессивный сплиттер и диффузор
+                const splitter = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.06, 0.5), matCarbon);
+                splitter.position.set(0, -0.15, 2.25); this.chassisGroup.add(splitter);
+
+                const diffuser = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.16, 0.45), matCarbon);
+                diffuser.position.set(0, -0.1, -2.25); this.chassisGroup.add(diffuser);
+
+                // Двойное спортивное антикрыло с неоновой кромкой
+                const spoiler = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.05, 0.4), matCarbon);
+                spoiler.position.set(0, 0.65, -2.1); this.chassisGroup.add(spoiler);
+                const spoilerGlow = new THREE.Mesh(new THREE.BoxGeometry(2.02, 0.03, 0.04), matCyanNeon);
+                spoilerGlow.position.set(0, 0.67, -2.3); this.chassisGroup.add(spoilerGlow);
+
+                // Неоновый андеглоу
+                const underglowL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 3.8), matCyanNeon);
+                underglowL.position.set(-1.0, -0.2, 0); this.chassisGroup.add(underglowL);
+                const underglowR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.04, 3.8), matCyanNeon);
+                underglowR.position.set(1.0, -0.2, 0); this.chassisGroup.add(underglowR);
+
+                // Фары
+                this.matHeadlightLens = matCyanNeon;
+                const headL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.1), matCyanNeon);
+                headL.position.set(-0.75, 0.18, 2.22); this.chassisGroup.add(headL);
+                const headR = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.12, 0.1), matCyanNeon);
+                headR.position.set(0.75, 0.18, 2.22); this.chassisGroup.add(headR);
+
+                // Задняя сплошная кибер-полоса
+                this.matTaillight = new THREE.MeshBasicMaterial({ color: 0x00f0ff });
+                const tailBar = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.08, 0.06), this.matTaillight);
+                tailBar.position.set(0, 0.25, -2.23); this.chassisGroup.add(tailBar);
+
+                // Выхлопные титановые насадки
+                const exL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 12), matChrome);
+                exL.rotation.x = Math.PI / 2; exL.position.set(-0.65, -0.08, -2.3); this.chassisGroup.add(exL);
+                const exR = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.3, 12), matChrome);
+                exR.rotation.x = Math.PI / 2; exR.position.set(0.65, -0.08, -2.3); this.chassisGroup.add(exR);
+            }
+
+            upgradeToCyberPulseCar() {
+                this.mergeState = 'CYBER';
+                this.tier = 2;
+                this.carName = '⚡ CYBER PULSE GT X4 ⚡';
+                this.scaleMultiplier = 1.4;
+                this.topSpeedKmh = 450;
+                this.maxEngineForce = 26000;
+                this.maxReverseForce = 12000;
+                this.maxBrakeForce = 250;
+
+                if (this.mergePartner) {
+                    this.mergePartner.isMerged = true;
+                    this.mergePartner.isBeingMerged = false;
+                    if (this.mergePartner.carGroup) this.scene.remove(this.mergePartner.carGroup);
+                    if (this.mergePartner.chassisBody && this.world) this.world.removeBody(this.mergePartner.chassisBody);
+                    this.mergePartner = null;
+                }
+
+                this.buildCyberPulseMesh();
+                this.carGroup.scale.setScalar(1.4);
+
+                if (this.chassisBody && this.world) {
+                    this.chassisBody.mass = 2200;
+                    this.chassisBody.updateMassProperties();
+                }
+
+                let toast = document.getElementById('mega-heli-toast') || document.getElementById('opt-toast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'opt-toast';
+                    toast.className = 'opt-toast';
+                    document.body.appendChild(toast);
+                }
+                toast.innerHTML = '⚡ <b>СЛИЯНИЕ АВТОМОБИЛЕЙ 2-ГО УРОВНЯ!</b> CYBER PULSE GT X4: СКОРОСТЬ 450 КМ/Ч, НЕОНОВЫЙ ОБВЕС И АНДЕГЛОУ! 🏎️⚡';
+                toast.style.borderColor = '#00f0ff';
+                toast.style.background = 'linear-gradient(135deg, rgba(0, 30, 45, 0.95), rgba(0, 240, 255, 0.6))';
+                toast.style.boxShadow = '0 10px 45px rgba(0, 240, 255, 0.8)';
+                toast.style.display = 'block';
+                setTimeout(() => { if (toast) toast.style.display = 'none'; }, 5000);
+
+                if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+                    window.gameEngine.multiplayerHUD.addSystemMessage('🔥 CYBER PULSE GT X4 АКТИВИРОВАН! СКОРОСТЬ 450 КМ/Ч!');
+                }
+
+                const titleElem = document.getElementById('hud-mode-title');
+                if (titleElem) {
+                    titleElem.innerText = '⚡ CYBER PULSE GT X4 ⚡';
+                    titleElem.style.color = '#00f0ff';
+                    titleElem.style.textShadow = '0 0 15px rgba(0, 240, 255, 0.9)';
+                }
+            }
+
+            buildCrimsonTitanMesh() {
+                if (this.chassisGroup) {
+                    while (this.chassisGroup.children.length > 0) {
+                        this.chassisGroup.remove(this.chassisGroup.children[0]);
+                    }
+                }
+
+                const matCrimson = new THREE.MeshStandardMaterial({ color: 0xdc143c, roughness: 0.15, metalness: 0.9 });
+                const matObsidian = new THREE.MeshStandardMaterial({ color: 0x0d0305, roughness: 0.25, metalness: 0.85 });
+                const matRedNeon = new THREE.MeshBasicMaterial({ color: 0xff0033 });
+                const matGlassDark = new THREE.MeshStandardMaterial({ color: 0x1a0508, roughness: 0.1, metalness: 0.95, transparent: true, opacity: 0.85 });
+                const matThruster = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.1, metalness: 0.95 });
+                const matFire = new THREE.MeshBasicMaterial({ color: 0xff3d00 });
+
+                // 1. Массивный монстр-кар корпус Crimson Titan
+                const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.55, 4.6), matCrimson);
+                baseMesh.position.set(0, 0.16, 0); baseMesh.castShadow = true;
+                this.chassisGroup.add(baseMesh);
+
+                const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.2, 4.5), matObsidian);
+                lowerHull.position.set(0, -0.1, 0); this.chassisGroup.add(lowerHull);
+
+                const cabinMesh = new THREE.Mesh(new THREE.BoxGeometry(1.65, 0.6, 2.2), matGlassDark);
+                cabinMesh.position.set(0, 0.62, -0.2); cabinMesh.castShadow = true;
+                this.chassisGroup.add(cabinMesh);
+
+                const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.08, 1.6), matCrimson);
+                roofMesh.position.set(0, 0.94, -0.26); this.chassisGroup.add(roofMesh);
+
+                // Двойные реактивные форсажные турбины сзади
+                const thrusterL = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.2, 16), matThruster);
+                thrusterL.rotation.x = Math.PI / 2; thrusterL.position.set(-0.75, 0.35, -2.3);
+                this.chassisGroup.add(thrusterL);
+
+                const flameL = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.9, 12), matFire);
+                flameL.rotation.x = -Math.PI / 2; flameL.position.set(-0.75, 0.35, -3.1);
+                this.chassisGroup.add(flameL);
+
+                const thrusterR = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.2, 16), matThruster);
+                thrusterR.rotation.x = Math.PI / 2; thrusterR.position.set(0.75, 0.35, -2.3);
+                this.chassisGroup.add(thrusterR);
+
+                const flameR = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.9, 12), matFire);
+                flameR.rotation.x = -Math.PI / 2; flameR.position.set(0.75, 0.35, -3.1);
+                this.chassisGroup.add(flameR);
+
+                // Огромное гоночное GT антикрыло
+                const spoiler = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.08, 0.55), matObsidian);
+                spoiler.position.set(0, 0.82, -2.15); this.chassisGroup.add(spoiler);
+
+                const spoilerEdge = new THREE.Mesh(new THREE.BoxGeometry(2.44, 0.04, 0.05), matRedNeon);
+                spoilerEdge.position.set(0, 0.84, -2.42); this.chassisGroup.add(spoilerEdge);
+
+                // Алый андеглоу
+                const underglowL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 4.2), matRedNeon);
+                underglowL.position.set(-1.15, -0.22, 0); this.chassisGroup.add(underglowL);
+                const underglowR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.05, 4.2), matRedNeon);
+                underglowR.position.set(1.15, -0.22, 0); this.chassisGroup.add(underglowR);
+
+                // Передний таранный сплиттер
+                const ramSplitter = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.12, 0.6), matObsidian);
+                ramSplitter.position.set(0, -0.14, 2.35); this.chassisGroup.add(ramSplitter);
+
+                this.matHeadlightLens = matRedNeon;
+                const headL = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.12), matRedNeon);
+                headL.position.set(-0.85, 0.22, 2.32); this.chassisGroup.add(headL);
+                const headR = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.15, 0.12), matRedNeon);
+                headR.position.set(0.85, 0.22, 2.32); this.chassisGroup.add(headR);
+            }
+
+            upgradeToCrimsonTitanCar() {
+                this.mergeState = 'CRIMSON';
+                this.tier = 3;
+                this.carName = '🔴 CYBER CRIMSON TITAN GT X8 🔴';
+                this.scaleMultiplier = 2.2;
+                this.topSpeedKmh = 800;
+                this.maxEngineForce = 65000;
+                this.maxReverseForce = 28000;
+                this.maxBrakeForce = 450;
+
+                if (this.mergePartner) {
+                    this.mergePartner.isMerged = true;
+                    this.mergePartner.isBeingMerged = false;
+                    if (this.mergePartner.carGroup) this.scene.remove(this.mergePartner.carGroup);
+                    if (this.mergePartner.chassisBody && this.world) this.world.removeBody(this.mergePartner.chassisBody);
+                    this.mergePartner = null;
+                }
+
+                this.buildCrimsonTitanMesh();
+                this.carGroup.scale.setScalar(2.2);
+
+                if (this.chassisBody && this.world) {
+                    this.chassisBody.mass = 4500;
+                    this.chassisBody.updateMassProperties();
+                }
+
+                let toast = document.getElementById('mega-heli-toast') || document.getElementById('opt-toast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'opt-toast';
+                    toast.className = 'opt-toast';
+                    document.body.appendChild(toast);
+                }
+                toast.innerHTML = '🔴 <b>СВЕРХ-СЛИЯНИЕ 3-ГО УРОВНЯ!</b> CYBER CRIMSON TITAN GT X8: СКОРОСТЬ 800 КМ/Ч, РЕАКТИВНЫЕ ТУРБИНЫ И 2X РАЗМЕР! 🏎️🔥';
+                toast.style.borderColor = '#ff0033';
+                toast.style.background = 'linear-gradient(135deg, rgba(35, 5, 10, 0.95), rgba(220, 20, 60, 0.65))';
+                toast.style.boxShadow = '0 10px 50px rgba(255, 0, 51, 0.85)';
+                toast.style.display = 'block';
+                setTimeout(() => { if (toast) toast.style.display = 'none'; }, 5500);
+
+                if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+                    window.gameEngine.multiplayerHUD.addSystemMessage('🔥 CYBER CRIMSON TITAN GT X8 АКТИВИРОВАН! СКОРОСТЬ 800 КМ/Ч!');
+                }
+
+                const titleElem = document.getElementById('hud-mode-title');
+                if (titleElem) {
+                    titleElem.innerText = '🔴 CYBER CRIMSON TITAN GT X8 🔴';
+                    titleElem.style.color = '#ff0033';
+                    titleElem.style.textShadow = '0 0 15px rgba(255, 0, 51, 0.9)';
+                }
+            }
+
+            buildEmeraldApexMesh() {
+                if (this.chassisGroup) {
+                    while (this.chassisGroup.children.length > 0) {
+                        this.chassisGroup.remove(this.chassisGroup.children[0]);
+                    }
+                }
+
+                const matEmerald = new THREE.MeshStandardMaterial({ color: 0x004d40, roughness: 0.18, metalness: 0.92 });
+                const matJadeArmor = new THREE.MeshStandardMaterial({ color: 0x052e16, roughness: 0.3, metalness: 0.8 });
+                const matEmeraldNeon = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
+                const matGlassEmerald = new THREE.MeshStandardMaterial({ color: 0x00241b, roughness: 0.1, metalness: 0.95, transparent: true, opacity: 0.85 });
+                const matDarkGun = new THREE.MeshStandardMaterial({ color: 0x0d1f18, roughness: 0.12, metalness: 0.96 });
+                const matPlasma = new THREE.MeshBasicMaterial({ color: 0x00e676 });
+
+                // 1. Колоссальный штурмовой дредноут-кар Emerald Apex
+                const baseMesh = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.65, 5.2), matEmerald);
+                baseMesh.position.set(0, 0.18, 0); baseMesh.castShadow = true;
+                this.chassisGroup.add(baseMesh);
+
+                const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.25, 5.0), matJadeArmor);
+                lowerHull.position.set(0, -0.12, 0); this.chassisGroup.add(lowerHull);
+
+                const cabinMesh = new THREE.Mesh(new THREE.BoxGeometry(1.85, 0.7, 2.5), matGlassEmerald);
+                cabinMesh.position.set(0, 0.72, -0.2); cabinMesh.castShadow = true;
+                this.chassisGroup.add(cabinMesh);
+
+                const roofMesh = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.1, 1.8), matEmerald);
+                roofMesh.position.set(0, 1.1, -0.26); this.chassisGroup.add(roofMesh);
+
+                // Счетверенные квантовые плазменные двигатели
+                const thrusters = [
+                    { x: -0.9, y: 0.45, z: -2.6 },
+                    { x: 0.9, y: 0.45, z: -2.6 },
+                    { x: -0.45, y: 0.65, z: -2.8 },
+                    { x: 0.45, y: 0.65, z: -2.8 }
+                ];
+
+                for (let tp of thrusters) {
+                    const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 1.4, 16), matDarkGun);
+                    nacelle.rotation.x = Math.PI / 2; nacelle.position.set(tp.x, tp.y, tp.z);
+                    this.chassisGroup.add(nacelle);
+
+                    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.2, 1.1, 12), matPlasma);
+                    flame.rotation.x = -Math.PI / 2; flame.position.set(tp.x, tp.y, tp.z - 1.0);
+                    this.chassisGroup.add(flame);
+                }
+
+                // Трехярусное тяжелое штурмовое антикрыло
+                const wing1 = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.08, 0.6), matJadeArmor);
+                wing1.position.set(0, 0.95, -2.4); this.chassisGroup.add(wing1);
+
+                const wing2 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.06, 0.45), matEmeraldNeon);
+                wing2.position.set(0, 1.25, -2.55); this.chassisGroup.add(wing2);
+
+                // Бронированный штурмовой таран в носу
+                const frontRam = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.2, 0.8), matDarkGun);
+                frontRam.position.set(0, -0.12, 2.7); this.chassisGroup.add(frontRam);
+
+                // Плазменные орудия в капоте
+                const gunL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 1.5, 12), matDarkGun);
+                gunL.rotation.x = Math.PI / 2; gunL.position.set(-0.8, 0.45, 1.8); this.chassisGroup.add(gunL);
+                const gunR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 1.5, 12), matDarkGun);
+                gunR.rotation.x = Math.PI / 2; gunR.position.set(0.8, 0.45, 1.8); this.chassisGroup.add(gunR);
+
+                // Изумрудный андеглоу
+                const underglowL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 4.8), matEmeraldNeon);
+                underglowL.position.set(-1.35, -0.24, 0); this.chassisGroup.add(underglowL);
+                const underglowR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 4.8), matEmeraldNeon);
+                underglowR.position.set(1.35, -0.24, 0); this.chassisGroup.add(underglowR);
+
+                this.matHeadlightLens = matEmeraldNeon;
+                const headL = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.16, 0.14), matEmeraldNeon);
+                headL.position.set(-1.0, 0.25, 2.65); this.chassisGroup.add(headL);
+                const headR = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.16, 0.14), matEmeraldNeon);
+                headR.position.set(1.0, 0.25, 2.65); this.chassisGroup.add(headR);
+            }
+
+            upgradeToEmeraldApexCar() {
+                this.mergeState = 'EMERALD';
+                this.tier = 4;
+                this.carName = '🟢 QUANTUM EMERALD APEX ASSAULT X12 🟢';
+                this.scaleMultiplier = 3.2;
+                this.topSpeedKmh = 1400;
+                this.maxEngineForce = 140000;
+                this.maxReverseForce = 60000;
+                this.maxBrakeForce = 900;
+
+                if (this.mergePartner) {
+                    this.mergePartner.isMerged = true;
+                    this.mergePartner.isBeingMerged = false;
+                    if (this.mergePartner.carGroup) this.scene.remove(this.mergePartner.carGroup);
+                    if (this.mergePartner.chassisBody && this.world) this.world.removeBody(this.mergePartner.chassisBody);
+                    this.mergePartner = null;
+                }
+
+                this.buildEmeraldApexMesh();
+                this.carGroup.scale.setScalar(3.2);
+
+                if (this.chassisBody && this.world) {
+                    this.chassisBody.mass = 9500;
+                    this.chassisBody.updateMassProperties();
+                }
+
+                let toast = document.getElementById('mega-heli-toast') || document.getElementById('opt-toast');
+                if (!toast) {
+                    toast = document.createElement('div');
+                    toast.id = 'opt-toast';
+                    toast.className = 'opt-toast';
+                    document.body.appendChild(toast);
+                }
+                toast.innerHTML = '🟢 <b>КВАНТОВОЕ СЛИЯНИЕ 4-ГО УРОВНЯ!</b> QUANTUM EMERALD APEX X12: СКОРОСТЬ 1400 КМ/Ч, ПЛАЗМЕННЫЕ ДВИГАТЕЛИ И 3X РАЗМЕР! 🏎️⚡';
+                toast.style.borderColor = '#00ff88';
+                toast.style.background = 'linear-gradient(135deg, rgba(2, 44, 34, 0.95), rgba(0, 230, 118, 0.65))';
+                toast.style.boxShadow = '0 10px 55px rgba(0, 255, 136, 0.9)';
+                toast.style.display = 'block';
+                setTimeout(() => { if (toast) toast.style.display = 'none'; }, 6000);
+
+                if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+                    window.gameEngine.multiplayerHUD.addSystemMessage('🔥 QUANTUM EMERALD APEX X12 АКТИВИРОВАН! СКОРОСТЬ 1400 КМ/Ч!');
+                }
+
+                const titleElem = document.getElementById('hud-mode-title');
+                if (titleElem) {
+                    titleElem.innerText = '🟢 QUANTUM EMERALD APEX ASSAULT X12 🟢';
+                    titleElem.style.color = '#00ff88';
+                    titleElem.style.textShadow = '0 0 15px rgba(0, 255, 136, 0.9)';
+                }
+            }
+
+            startMergeWith(targetCar, isRemote = false) {
+                if (!targetCar || targetCar === this || this.isMerged || targetCar.isMerged) return;
+                if (this.mergeState === 'MERGING') return;
+
+                this.mergeState = 'MERGING';
+                this.mergeTimer = 0.0;
+                this.mergeDuration = 2.4;
+                this.mergePartner = targetCar;
+                targetCar.isBeingMerged = true;
+
+                const curTier = this.tier || 1;
+                const nextTier = curTier + 1;
+
+                if (window.soundEngine && typeof window.soundEngine.playHelicopterTakeoff === 'function') {
+                    window.soundEngine.playHelicopterTakeoff(this.chassisBody.position.x, this.chassisBody.position.y, this.chassisBody.position.z);
+                }
+
+                if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+                    if (nextTier === 5) {
+                        window.gameEngine.multiplayerHUD.addSystemMessage('⚡ НАЧАЛО ФИНАЛЬНОЙ ТРАНСФОРМАЦИИ: АВТОМОБИЛЬ ПРЕОБРАЗУЕТСЯ В 5-Й ВЕРТОЛЕТ LEVIATHAN X16!');
+                    } else {
+                        window.gameEngine.multiplayerHUD.addSystemMessage(`⚡ НАЧАЛО СЛИЯНИЯ АВТОМОБИЛЕЙ УРОВНЯ ${nextTier}/5!`);
+                    }
+                }
+            }
+
+            updateMerge(dt) {
+                if (this.mergeState !== 'MERGING' || !this.mergePartner) return;
+                this.mergeTimer += dt;
+                const progress = Math.min(1.0, this.mergeTimer / this.mergeDuration);
+
+                // Плавное притягивание и вращение партнерского автомобиля к активному
+                if (this.mergePartner.chassisBody) {
+                    const posA = this.chassisBody.position;
+                    const posB = this.mergePartner.chassisBody.position;
+                    posB.x += (posA.x - posB.x) * Math.min(1.0, dt * 5.0);
+                    posB.y += (posA.y - posB.y) * Math.min(1.0, dt * 5.0);
+                    posB.z += (posA.z - posB.z) * Math.min(1.0, dt * 5.0);
+                    this.mergePartner.chassisBody.velocity.set(0, 0, 0);
+
+                    if (this.mergePartner.carGroup) {
+                        this.mergePartner.carGroup.position.copy(posB);
+                        const shrink = Math.max(0.01, 1.0 - progress);
+                        this.mergePartner.carGroup.scale.setScalar(shrink * (this.mergePartner.scaleMultiplier || 1.0));
+                    }
+                }
+
+                const pulse = 1.0 + Math.sin(progress * Math.PI * 6.0) * 0.2 * (1.0 - progress);
+                this.carGroup.scale.setScalar((this.scaleMultiplier || 1.0) * pulse);
+
+                if (progress >= 1.0) {
+                    const curTier = this.tier || 1;
+                    const nextTier = curTier + 1;
+
+                    if (nextTier === 5) {
+                        // ФИНАЛ: Трансформация в 5-й вертолет (CELESTIAL SOLAR LEVIATHAN X16)
+                        if (window.gameEngine && window.gameEngine.vehicleManager) {
+                            window.gameEngine.vehicleManager.transformCarToSolarHelicopter(this, window.gameEngine.player, this.mergePartner);
+                        }
+                    } else if (nextTier === 4) {
+                        this.upgradeToEmeraldApexCar();
+                    } else if (nextTier === 3) {
+                        this.upgradeToCrimsonTitanCar();
+                    } else {
+                        this.upgradeToCyberPulseCar();
+                    }
+                }
             }
 
             initRaycastPhysics(posX, posZ, rotY) {
@@ -512,6 +964,10 @@
 
             update(deltaTime) {
                 const dt = Math.min(deltaTime, 0.1);
+
+                if (this.mergeState === 'MERGING') {
+                    this.updateMerge(dt);
+                }
 
                 // Если автомобиль управляется союзником по сети — плавная интерполяция 60 FPS
                 if (this.isRemotelyDriven) {

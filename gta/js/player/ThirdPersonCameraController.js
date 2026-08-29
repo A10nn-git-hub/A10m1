@@ -140,13 +140,19 @@ class ThirdPersonCameraController {
             );
         } else if (drivenCar) {
             const carPos = (drivenCar.carGroup && drivenCar.carGroup.position) ? drivenCar.carGroup.position : drivenCar.chassisBody.position;
-            targetFocus.set(carPos.x, carPos.y + 1.15, carPos.z);
+            const carScale = drivenCar.scaleMultiplier || 1.0;
+            targetFocus.set(carPos.x, carPos.y + 1.15 * carScale, carPos.z);
             rawSpeedKmh = drivenCar.getSpeedKmh();
 
             if (this.smoothSpeedKmh === undefined) this.smoothSpeedKmh = 0;
             this.smoothSpeedKmh += (rawSpeedKmh - this.smoothSpeedKmh) * (1.0 - Math.exp(-4.5 * dt));
 
-            desiredDistance = THREE.MathUtils.lerp(this.distance * 1.05, this.distance * 1.35, Math.min(this.smoothSpeedKmh / 160.0, 1.0));
+            const dynamicCarScaleDist = Math.max(1.0, Math.pow(carScale, 0.85));
+            desiredDistance = THREE.MathUtils.lerp(
+                this.distance * 1.05 * dynamicCarScaleDist,
+                this.distance * 1.35 * dynamicCarScaleDist,
+                Math.min(this.smoothSpeedKmh / 220.0, 1.0)
+            );
         } else if (this.targetMesh) {
             targetFocus.copy(this.targetMesh.position).add(this.targetOffset);
             desiredDistance = this.distance;
