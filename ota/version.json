@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "description": "GTA 5 Open World + 4 Helicopters + Maze Bank 10-Floor Elevator + HTML HUD",
+  "updatedFiles": [
+    "GTA_OpenWorld_3D",
+    "MazeBank_Tower",
+    "Maverick_Helicopters",
+    "HTML_Overlay_HUD"
+  ]
+}
