@@ -4126,7 +4126,7 @@ function initBR() {
     const urlMode = urlParams.get('mode');
     const urlLobby = urlParams.get('lobby');
     if (urlLobby) {
-        lobbyId = urlLobby;
+        lobbyId = urlLobby.startsWith('lobby_') ? urlLobby : (`lobby_${urlLobby}`);
     }
 
     const submode = urlMode 

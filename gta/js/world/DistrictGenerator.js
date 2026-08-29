@@ -166,20 +166,24 @@ class DistrictGenerator {
         if (cx === -2 && cz === 1) themeIdx = 2; // Bronze Corporate
         if (cx === -2 && cz === 0) themeIdx = 1; // Emerald Green
         if (cx === -2 && cz === -1) themeIdx = 1; // Emerald Green
+        if (cx === 2 && cz === 1) themeIdx = 0; // Sapphire Blue East Tower
+        if (cx === 2 && cz === -1) themeIdx = 3; // Obsidian Black East Tower
 
         const isBrownWestTower = (cx === -2 && cz === 1);
-        const isGreenTower = (cx === -2 && (cz === 0 || cz === -1));
+        const isEastTower1 = (cx === 2 && cz === 1);
+        const isEastTower2 = (cx === 2 && cz === -1);
+        const isHelipadTower = isBrownWestTower || isEastTower1 || isEastTower2;
 
-        const bW = isBrownWestTower ? 28.0 : (24.0 + (Math.floor(hash * 7) % 10));
-        const bD = isBrownWestTower ? 28.0 : (24.0 + (Math.floor(hash * 13) % 10));
-        const bH = isBrownWestTower ? 56.0 : (45.0 + (Math.floor(hash * 23) % 65));
-        const roofType = isBrownWestTower ? 0 : (Math.floor(hash * 17) % 4);
+        const bW = isHelipadTower ? 28.0 : (24.0 + (Math.floor(hash * 7) % 10));
+        const bD = isHelipadTower ? 28.0 : (24.0 + (Math.floor(hash * 13) % 10));
+        const bH = isBrownWestTower ? 56.0 : (isEastTower1 ? 58.0 : (isEastTower2 ? 64.0 : (45.0 + (Math.floor(hash * 23) % 65))));
+        const roofType = isHelipadTower ? 0 : (Math.floor(hash * 17) % 4);
         const lobbyH = 5.2;
         const doorW = 6.0;
         const wallThick = 0.5;
 
-        // Направление входа: у коричневого здания вход напротив (на юг Z = -bD/2 к главной улице)
-        const isEntranceSouth = isBrownWestTower || (cz >= 0);
+        // Направление входа: у коричневого и восточных зданий вход обращен к центральному проспекту
+        const isEntranceSouth = isBrownWestTower || isEastTower1 || (cz >= 0);
 
         const highGroup = new THREE.Group();
         highGroup.position.set(px, 0, pz);

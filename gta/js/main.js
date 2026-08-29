@@ -1,3 +1,18 @@
+window.exitToLobby = function(e) {
+    if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (window.gameEngine) {
+        if (typeof window.gameEngine.resetEntireMap === 'function') {
+            window.gameEngine.resetEntireMap();
+        }
+        if (window.gameEngine.multiplayerManager && typeof window.gameEngine.multiplayerManager.disconnect === 'function') {
+            window.gameEngine.multiplayerManager.disconnect();
+        }
+    }
+    const urlParams = new URLSearchParams(window.location.search);
+    const lobbyNum = urlParams.get('lobby') || urlParams.get('room') || '1';
+    window.location.href = `../index.html?lobby=${lobbyNum}`;
+};
+
 window.addEventListener('DOMContentLoaded', () => {
     // Telegram WebApp Integration
     try {
@@ -12,7 +27,7 @@ window.addEventListener('DOMContentLoaded', () => {
                 try {
                     tg.BackButton.show();
                     tg.BackButton.onClick(() => {
-                        window.location.href = '../index.html';
+                        window.exitToLobby();
                     });
                 } catch (err) {}
             }

@@ -306,6 +306,7 @@ class VegetationAndCropsManager {
                 body: treeBody,
                 instancedMeshes: allInst,
                 instIdx: idx,
+                origMatrix: dummy.matrix.clone(),
                 isFallen: false,
                 fallProgress: 0.0
             });
@@ -412,6 +413,7 @@ class VegetationAndCropsManager {
                 body: treeBody,
                 instancedMeshes: allInst,
                 instIdx: idx,
+                origMatrix: dummy.matrix.clone(),
                 isFallen: false,
                 fallProgress: 0.0
             });
@@ -498,6 +500,7 @@ class VegetationAndCropsManager {
                 body: treeBody,
                 instancedMeshes: allInst,
                 instIdx: idx,
+                origMatrix: dummy.matrix.clone(),
                 isFallen: false,
                 fallProgress: 0.0
             });
@@ -511,6 +514,77 @@ class VegetationAndCropsManager {
             m.instanceMatrix.needsUpdate = true;
             this.scene.add(m);
         }
+    }
+
+    /**
+     * Восстановить все поваленные деревья в первоначальное вертикальное состояние
+     */
+    resetAllTrees() {
+        if (!this.treePositions) return;
+        for (let i = 0; i < this.treePositions.length; i++) {
+            const tree = this.treePositions[i];
+            if (tree.isFallen) {
+                tree.isFallen = false;
+                tree.fallProgress = 0.0;
+
+                // Удаляем временную падающую 3D-группу
+                if (tree.group) {
+                    this.scene.remove(tree.group);
+                    tree.group = null;
+                }
+
+                // Восстанавливаем оригинальную матрицу инстанса
+                if (tree.instancedMeshes && tree.instIdx !== undefined && tree.origMatrix) {
+                    for (let j = 0; j < tree.instancedMeshes.length; j++) {
+                        const inst = tree.instancedMeshes[j];
+                        inst.setMatrixAt(tree.instIdx, tree.origMatrix);
+                        inst.instanceMatrix.needsUpdate = true;
+                    }
+                }
+
+                // Восстанавливаем статическое физическое тело ствола
+                if (!tree.body && this.world) {
+                    const s = tree.s || 1.0;
+                    if (tree.type === 'city_tree') {
+                        const b = new CANNON.Body({
+                            mass: 0,
+                            material: this.physicsMaterials.wall,
+                            position: new CANNON.Vec3(tree.x, 3.4, tree.z)
+                        });
+                        b.allowSleep = true;
+                        b.sleep();
+                        const qCyl = new CANNON.Quaternion();
+                        qCyl.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), Math.PI / 2);
+                        b.addShape(new CANNON.Cylinder(0.65, 0.85, 6.8, 10), new CANNON.Vec3(0, 0, 0), qCyl);
+                        this.world.addBody(b);
+                        tree.body = b;
+                    } else if (tree.type === 'oak') {
+                        const b = new CANNON.Body({
+                            mass: 0,
+                            material: this.physicsMaterials.wall,
+                            position: new CANNON.Vec3(tree.x, tree.y + 3.75, tree.z)
+                        });
+                        b.allowSleep = true;
+                        b.sleep();
+                        b.addShape(new CANNON.Cylinder(0.55 * s, 0.85 * s, 7.5 * s, 8));
+                        this.world.addBody(b);
+                        tree.body = b;
+                    } else {
+                        const b = new CANNON.Body({
+                            mass: 0,
+                            material: this.physicsMaterials.wall,
+                            position: new CANNON.Vec3(tree.x, tree.y + 8.0, tree.z)
+                        });
+                        b.allowSleep = true;
+                        b.sleep();
+                        b.addShape(new CANNON.Cylinder(0.4 * s, 0.65 * s, 16.0 * s, 8));
+                        this.world.addBody(b);
+                        tree.body = b;
+                    }
+                }
+            }
+        }
+        this.fallingTrees = [];
     }
 
     toppleTree(tree, impactVelocity, isRemote = false) {
@@ -599,15 +673,29 @@ class VegetationAndCropsManager {
         }
     }
 
+    setEcoMode(isEco) {
+        this.isEcoMode = !!isEco;
+        if (this.bushInstMesh) {
+            this.bushInstMesh.visible = !this.isEcoMode;
+        }
+        if (this.rockInstMesh) {
+            this.rockInstMesh.visible = !this.isEcoMode;
+        }
+    }
+
     update(deltaTime, activeCar = null, allCars = null, helicopter = null) {
-        this.windUniform.value += deltaTime;
+        // В режиме энергосбережения пропускаем анимацию ветра и проверку падений для экономии CPU
+        if (this.isEcoMode) return;
+
+        const dt = Math.min(deltaTime, 0.1);
+        this.windUniform.value += dt;
 
         // 1. Плавная анимация опрокидывания сбитых деревьев на землю
         if (this.fallingTrees && this.fallingTrees.length > 0) {
             for (let i = this.fallingTrees.length - 1; i >= 0; i--) {
                 const t = this.fallingTrees[i];
                 if (t.fallProgress < 1.0) {
-                    t.fallProgress = Math.min(1.0, t.fallProgress + deltaTime * 1.6);
+                    t.fallProgress = Math.min(1.0, t.fallProgress + dt * 1.6);
                     const fallAngle = t.fallProgress * (Math.PI / 2);
 
                     // Поворот ствола вокруг точки основания на земле

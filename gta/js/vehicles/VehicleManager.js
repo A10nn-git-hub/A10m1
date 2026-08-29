@@ -51,7 +51,50 @@ class VehicleManager {
                 this.scene, this.world, this.physicsMaterials, c.x, c.z, c.rot, c.color, c.name, c.topSpeed
             );
             car.carIndex = i;
+            car.initialSpawnX = c.x;
+            car.initialSpawnZ = c.z;
+            car.initialSpawnRot = c.rot;
             this.cars.push(car);
+        }
+    }
+
+    /**
+     * Сброс всех автомобилей автопарка в исходные парковочные места при выходе из карты
+     */
+    resetAllCars() {
+        this.activeDrivenCar = null;
+        this.isPassenger = false;
+        this.transitionState = 'ON_FOOT';
+        this.transitionTimer = 0.0;
+        this.transitionCar = null;
+
+        for (let i = 0; i < this.cars.length; i++) {
+            const car = this.cars[i];
+            const sx = car.initialSpawnX !== undefined ? car.initialSpawnX : 0;
+            const sz = car.initialSpawnZ !== undefined ? car.initialSpawnZ : 0;
+            const sRot = car.initialSpawnRot !== undefined ? car.initialSpawnRot : 0;
+
+            if (car.soundController) {
+                try { car.soundController.stopEngine(); } catch (e) {}
+            }
+            car.occupants = {};
+            if (car.chassisBody) {
+                car.chassisBody.position.set(sx, 0.8, sz);
+                car.chassisBody.velocity.set(0, 0, 0);
+                car.chassisBody.angularVelocity.set(0, 0, 0);
+                if (typeof CANNON !== 'undefined') {
+                    const q = new CANNON.Quaternion();
+                    q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), sRot);
+                    car.chassisBody.quaternion.copy(q);
+                }
+            }
+            if (car.carGroup) {
+                car.carGroup.position.set(sx, 0.8, sz);
+                car.carGroup.rotation.set(0, sRot, 0);
+            }
+            if (typeof car.resetToWheels === 'function') {
+                car.resetToWheels();
+            }
         }
     }
 

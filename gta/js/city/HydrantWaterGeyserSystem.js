@@ -101,6 +101,21 @@
                     }
                 }
             }
+
+            clearAllGeysers() {
+                for (let g = 0; g < this.geysers.length; g++) {
+                    const geyser = this.geysers[g];
+                    if (geyser.particles) {
+                        for (let i = 0; i < geyser.particles.length; i++) {
+                            const p = geyser.particles[i];
+                            if (p.sprite && this.scene) {
+                                this.scene.remove(p.sprite);
+                            }
+                        }
+                    }
+                }
+                this.geysers = [];
+            }
         }
 
 window.HydrantWaterGeyserSystem = HydrantWaterGeyserSystem;

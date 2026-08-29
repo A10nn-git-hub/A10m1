@@ -130,6 +130,8 @@ class StreetLampManager {
             type: 'STREETLIGHT',
             mesh: group,
             body: body,
+            origPos: new THREE.Vector3(x, centerY, z),
+            origQuat: group.quaternion.clone(),
             isBroken: false,
             dynamicMass: 95,
             soundType: 'metal',
@@ -188,6 +190,8 @@ class StreetLampManager {
             type: 'FIRE_HYDRANT',
             mesh: group,
             body: body,
+            origPos: new THREE.Vector3(x, centerY, z),
+            origQuat: group.quaternion.clone(),
             isBroken: false,
             dynamicMass: 45,
             soundType: 'metal',
@@ -238,6 +242,8 @@ class StreetLampManager {
             type: 'WOODEN_FENCE',
             mesh: group,
             body: body,
+            origPos: new THREE.Vector3(x, centerY, z),
+            origQuat: group.quaternion.clone(),
             isBroken: false,
             dynamicMass: 25,
             soundType: 'wood',
@@ -277,6 +283,8 @@ class StreetLampManager {
             type: 'TRASH_CAN',
             mesh: group,
             body: body,
+            origPos: new THREE.Vector3(x, centerY, z),
+            origQuat: group.quaternion.clone(),
             isBroken: false,
             dynamicMass: 18,
             soundType: 'metal',
@@ -330,11 +338,43 @@ class StreetLampManager {
             type: 'PARK_BENCH',
             mesh: group,
             body: body,
+            origPos: new THREE.Vector3(x, centerY, z),
+            origQuat: group.quaternion.clone(),
             isBroken: false,
             dynamicMass: 35,
             soundType: 'wood',
             radius: 1.2
         });
+    }
+
+    /**
+     * Восстановление всех сбитых фонарей, гидрантов, урн, заборов и скамеек в исходное вертикальное положение
+     */
+    resetAllProps() {
+        for (let i = 0; i < this.props.length; i++) {
+            const prop = this.props[i];
+            if (prop.isBroken) {
+                prop.isBroken = false;
+                if (prop.body) {
+                    prop.body.mass = 0;
+                    prop.body.type = (typeof CANNON !== 'undefined') ? CANNON.Body.STATIC : 1;
+                    prop.body.updateMassProperties();
+                    prop.body.velocity.set(0, 0, 0);
+                    prop.body.angularVelocity.set(0, 0, 0);
+                    if (prop.origPos) prop.body.position.copy(prop.origPos);
+                    if (prop.origQuat) prop.body.quaternion.copy(prop.origQuat);
+                    prop.body.sleep();
+                }
+                if (prop.mesh) {
+                    if (prop.origPos) prop.mesh.position.copy(prop.origPos);
+                    if (prop.origQuat) prop.mesh.quaternion.copy(prop.origQuat);
+                }
+            }
+        }
+        this.brokenProps = [];
+        if (this.geyserSystem && typeof this.geyserSystem.clearAllGeysers === 'function') {
+            this.geyserSystem.clearAllGeysers();
+        }
     }
 
     breakProp(prop, impactVelocity, broadcast = true, playSound = true) {

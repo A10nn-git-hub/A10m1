@@ -368,15 +368,15 @@ class DeviceModeManager {
 }
 
 // =========================================================================
-// CENTRAL MULTIPLAYER LOBBY STATE & FIREBASE SYNC
+// CENTRAL MULTIPLAYER LOBBY STATE & FIREBASE SYNC (3 GLOBAL LOBBIES)
 // =========================================================================
 
 let db = null;
 let myId = '';
 let myName = 'Игрок';
 let myAvatar = '😎';
-let lobbyId = '';
-let isHost = true;
+
+let currentGlobalLobby = '1'; // '1', '2', '3'
 let isPlayerReady = false;
 let myPing = 0;
 let pingInterval = null;
@@ -384,14 +384,15 @@ let currentLobbyData = null;
 let friendsList = [];
 let pendingInvite = null;
 let lobbyListenerRef = null;
+let lobbyCountListeners = {};
+let hasLaunched = false;
 
 let toastTimeout = null;
-let activeCountdownInterval = null;
-let isCountingDown = false;
 
 let selectedGame = 'br_3d'; // 'br_3d' or 'gta'
 let selected3DMode = 'tdm_5v5'; // 'tdm_5v5', 'duel_1v1', 'duel_2v2'
-let pending3DMode = 'tdm_5v5';
+let pendingModalGame = 'br_3d';
+let pendingModal3DMode = 'tdm_5v5';
 
 const MODE_NAMES = {
     'tdm_5v5': 'Командный бой 5х5',
@@ -413,44 +414,10 @@ function showLobbyToast(msg, icon = '✨') {
     if (toastTimeout) clearTimeout(toastTimeout);
     toastTimeout = setTimeout(() => {
         toast.classList.remove('show');
-    }, 3200);
+    }, 3000);
 }
 
-// 0.1 Share / Copy Invite Link
-function copyLobbyInviteLink() {
-    sfx.click();
-    const currentLId = lobbyId || myId;
-    const url = `${window.location.origin}${window.location.pathname}?join=${currentLId}`;
-
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(() => {
-            sfx.copy();
-            showLobbyToast('Ссылка на лобби скопирована!', '🔗');
-        }).catch(() => fallbackCopyText(url));
-    } else {
-        fallbackCopyText(url);
-    }
-}
-
-function fallbackCopyText(text) {
-    const textArea = document.createElement('textarea');
-    textArea.value = text;
-    textArea.style.position = 'fixed';
-    textArea.style.top = '-9999px';
-    document.body.appendChild(textArea);
-    textArea.focus();
-    textArea.select();
-    try {
-        document.execCommand('copy');
-        sfx.copy();
-        showLobbyToast('Ссылка на лобби скопирована!', '🔗');
-    } catch (err) {
-        showLobbyToast('Код лобби: #' + (lobbyId || myId), '📋');
-    }
-    document.body.removeChild(textArea);
-}
-
-// 0.2 Ping Monitor
+// 0.1 Ping Monitor
 function startPingMonitor() {
     if (pingInterval) clearInterval(pingInterval);
     pingInterval = setInterval(measurePing, 3500);
@@ -462,8 +429,8 @@ function measurePing() {
     const t0 = Date.now();
     db.ref(`users/${myId}/_pingCheck`).set(t0).then(() => {
         myPing = Math.max(12, Math.round(Date.now() - t0));
-        if (lobbyId && db) {
-            db.ref(`lobbies/${lobbyId}/players/${myId}/ping`).set(myPing).catch(() => {});
+        if (currentGlobalLobby && db) {
+            db.ref(`lobbies/lobby_${currentGlobalLobby}/players/${myId}/ping`).set(myPing).catch(() => {});
         }
     }).catch(() => {});
 }
@@ -546,27 +513,16 @@ function initHubFirebase() {
     bindHubPresence();
     startPingMonitor();
 
-    // Check URL parameters for Quick Join (?join=XXXX or ?lobby=XXXX)
+    // Determine starting Global Lobby from URL or Saved Preference
     const urlParams = new URLSearchParams(window.location.search);
-    const targetJoinId = urlParams.get('join') || urlParams.get('lobby');
+    const targetLobby = urlParams.get('lobby') || urlParams.get('room') || localStorage.getItem('selected_global_lobby') || '1';
+    const cleanNum = ['1', '2', '3'].includes(String(targetLobby).replace(/^lobby_/, '')) ? String(targetLobby).replace(/^lobby_/, '') : '1';
 
-    if (targetJoinId && targetJoinId.trim().length > 0 && targetJoinId.trim() !== myId) {
-        joinLobbyByHostId(targetJoinId.trim(), true);
-        try {
-            window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {}
-    } else {
-        // Start with home lobby
-        lobbyId = myId;
-        isHost = true;
-        if (db) {
-            db.ref(`lobbies/${myId}`).update({
-                status: 'waiting',
-                host: myId
-            }).catch(() => {});
-        }
-        listenToLobby(lobbyId);
-    }
+    // Start listening to all 3 global lobbies' player counts for tab badges
+    initGlobalLobbyCountListeners();
+
+    // Connect to chosen Global Lobby
+    switchGlobalLobby(cleanNum, false);
 }
 
 function bindHubPresence() {
@@ -581,9 +537,31 @@ function bindHubPresence() {
         }).then(() => {
             userStatusRef.set({
                 state: 'online',
+                lobbyId: currentGlobalLobby,
                 lastSeenAt: firebase.database.ServerValue.TIMESTAMP
             });
         });
+    });
+}
+
+function initGlobalLobbyCountListeners() {
+    ['1', '2', '3'].forEach(num => {
+        const ref = db.ref(`lobbies/lobby_${num}/players`);
+        ref.on('value', snap => {
+            const count = snap.exists() ? Object.keys(snap.val()).length : 0;
+            const badge = document.getElementById(`badge-lobby-${num}`);
+            if (badge) {
+                badge.innerText = `${count}/5`;
+                if (count >= 5) {
+                    badge.style.color = '#ff453a';
+                } else if (count > 0) {
+                    badge.style.color = '#34d399';
+                } else {
+                    badge.style.color = 'var(--accent-cyan)';
+                }
+            }
+        });
+        lobbyCountListeners[num] = ref;
     });
 }
 
@@ -607,55 +585,79 @@ function escapeHtml(str) {
     }[ch]));
 }
 
-// 2. Lobby Management & Firebase Sync
-function listenToLobby(lId) {
+// 2. Global Lobby Management & Switching
+function switchGlobalLobby(lobbyNum, playSound = true) {
+    const num = String(lobbyNum || '1');
+    if (!['1', '2', '3'].includes(num)) return;
+
+    if (playSound) sfx.click();
+
+    // 1. Remove from previous global lobby
+    if (currentGlobalLobby && currentGlobalLobby !== num && db) {
+        db.ref(`lobbies/lobby_${currentGlobalLobby}/players/${myId}`).remove().catch(() => {});
+    }
+
+    currentGlobalLobby = num;
+    localStorage.setItem('selected_global_lobby', num);
+    isPlayerReady = false;
+    hasLaunched = false;
+
+    // 2. Update UI Tab states
+    ['1', '2', '3'].forEach(n => {
+        const tab = document.getElementById(`tab-lobby-${n}`);
+        if (tab) tab.classList.toggle('active', n === num);
+    });
+
+    const titleText = document.getElementById('lobby-title-text');
+    if (titleText) titleText.innerText = `ЛОББИ #${num}`;
+
+    // 3. Connect to Firebase room
+    listenToGlobalLobby(currentGlobalLobby);
+
+    // 4. Update presence
+    if (db) {
+        db.ref(`users/${myId}/presence/lobbyId`).set(currentGlobalLobby).catch(() => {});
+    }
+
+    if (playSound) {
+        showLobbyToast(`Вы перешли в Лобби #${num}`, '🌐');
+    }
+}
+
+function listenToGlobalLobby(lobbyNum) {
     if (lobbyListenerRef) {
         lobbyListenerRef.off();
     }
 
-    lobbyId = lId;
-    isPlayerReady = false;
-    updateReadyButtonUI();
+    const roomKey = `lobby_${lobbyNum}`;
+    lobbyListenerRef = db.ref(`lobbies/${roomKey}`);
 
-    lobbyListenerRef = db.ref(`lobbies/${lobbyId}`);
-
-    // If in my own lobby, reset status to waiting
-    if (lobbyId === myId) {
-        db.ref(`lobbies/${lobbyId}`).update({
-            status: 'waiting',
-            host: myId
-        }).catch(() => {});
-    }
-
-    // Ensure my player presence in lobby & remove from pending invites
-    db.ref(`lobbies/${lobbyId}/players/${myId}`).set({
+    // Register my presence in this global lobby
+    const myPlayerRef = db.ref(`lobbies/${roomKey}/players/${myId}`);
+    myPlayerRef.set({
         name: myName,
         avatar: myAvatar,
-        ready: isHost ? true : isPlayerReady,
+        ready: isPlayerReady,
         ping: myPing,
         joinedAt: firebase.database.ServerValue.TIMESTAMP
     }).catch(() => {});
 
-    db.ref(`lobbies/${lobbyId}/invites/${myId}`).remove().catch(() => {});
+    myPlayerRef.onDisconnect().remove();
 
-    // On disconnect remove from lobby
-    db.ref(`lobbies/${lobbyId}/players/${myId}`).onDisconnect().remove();
-
-    const lobbyConnectedAt = Date.now();
-
+    // Listen for room updates
     lobbyListenerRef.on('value', snap => {
         if (!snap.exists()) {
-            // Lobby closed, return to my own lobby
-            if (lobbyId !== myId) {
-                showLobbyToast('Лобби было закрыто хостом', '⚠️');
-                listenToLobby(myId);
-            }
+            // Initialize empty room
+            db.ref(`lobbies/${roomKey}`).update({
+                status: 'waiting',
+                game: selectedGame,
+                currentMode: selected3DMode
+            }).catch(() => {});
             return;
         }
 
-        const data = snap.val();
+        const data = snap.val() || {};
         currentLobbyData = data;
-        isHost = (data.host === myId || !data.host);
 
         // Synchronize selected game & mode
         if (data.game) selectedGame = data.game;
@@ -663,47 +665,32 @@ function listenToLobby(lId) {
 
         updateLobbyUI(data);
 
-        // Handle Countdown status
-        if (data.status === 'countdown') {
-            if (!isCountingDown) {
-                triggerCountdownSequence(3, () => {
-                    launchGameDirectly(data);
-                });
-            }
-        } else if (data.status === 'playing') {
-            if (isCountingDown) {
-                stopCountdownVisuals();
-            }
+        // Check if game was launched
+        if (data.status === 'playing' && !hasLaunched) {
             const startedAt = typeof data.startedAt === 'number' ? data.startedAt : 0;
-            const isFreshLaunch = startedAt && (Date.now() - startedAt < 45000);
+            const isFreshLaunch = startedAt && (Date.now() - startedAt < 20000);
             if (isFreshLaunch) {
+                hasLaunched = true;
                 launchGameDirectly(data);
-            } else if (isHost) {
-                // Stale playing status cleanup after 45+ seconds
-                db.ref(`lobbies/${lobbyId}`).update({ status: 'waiting' }).catch(() => {});
-            }
-        } else if (data.status === 'waiting') {
-            if (isCountingDown && data.countdownCancelled) {
-                stopCountdownVisuals();
             }
         }
     });
 }
 
-// Ready toggle for guest players
+// Ready toggle for player
 function togglePlayerReady() {
-    if (isHost) return;
+    sfx.click();
     isPlayerReady = !isPlayerReady;
     if (isPlayerReady) {
         sfx.ready();
-        showLobbyToast('Вы готовы к бою!', '✅');
+        showLobbyToast('Вы готовы!', '✅');
     } else {
         sfx.unready();
         showLobbyToast('Готовность снята', '⏳');
     }
     updateReadyButtonUI();
-    if (db && lobbyId) {
-        db.ref(`lobbies/${lobbyId}/players/${myId}/ready`).set(isPlayerReady).catch(() => {});
+    if (db && currentGlobalLobby) {
+        db.ref(`lobbies/lobby_${currentGlobalLobby}/players/${myId}/ready`).set(isPlayerReady).catch(() => {});
     }
 }
 
@@ -712,65 +699,44 @@ function updateReadyButtonUI() {
     const readyText = document.getElementById('ready-btn-text');
     if (!readyBtn) return;
 
-    if (isHost) {
-        readyBtn.style.display = 'none';
-    } else {
-        readyBtn.style.display = 'flex';
-        readyBtn.classList.toggle('active', isPlayerReady);
-        if (readyText) {
-            readyText.innerHTML = isPlayerReady ? 'ГОТОВ ✓' : 'НЕ ГОТОВ ⏳';
-        }
+    readyBtn.classList.toggle('active', isPlayerReady);
+    if (readyText) {
+        readyText.innerHTML = isPlayerReady ? 'ГОТОВ ✓' : 'НЕ ГОТОВ ⏳';
     }
 }
 
 function updateLobbyUI(data) {
     const players = data.players || {};
     const playerIds = Object.keys(players);
-    const invites = data.invites || {};
-    const inviteIds = Object.keys(invites).filter(id => !players[id]);
-    const isParty = playerIds.length > 1 || inviteIds.length > 0;
+    const playerCount = playerIds.length;
 
     // Ready button update
     updateReadyButtonUI();
 
-    // Badge status
-    const badge = document.getElementById('lobby-badge-status');
+    // Badge and title
     const titleText = document.getElementById('lobby-title-text');
-    const leaveBtn = document.getElementById('btn-leave-lobby');
-
-    if (badge) badge.innerText = isParty ? 'В ГРУППЕ' : 'ОДИНОЧНЫЙ';
     if (titleText) {
-        if (lobbyId === myId) {
-            titleText.innerText = `ВАШЕ ЛОББИ (#${myId})`;
-        } else {
-            titleText.innerText = `ЛОББИ ХОСТА #${lobbyId} (${playerIds.length}/5)`;
-        }
+        titleText.innerText = `ЛОББИ #${currentGlobalLobby} (${playerCount}/5)`;
     }
-    if (leaveBtn) leaveBtn.style.display = (lobbyId !== myId) ? 'block' : 'none';
 
-    // Slots Grid (Always strictly 5 slots)
+    // Slots Grid (Strictly 5 slots)
     const grid = document.getElementById('lobby-slots-grid');
     let readyCount = 0;
-    let nonHostCount = 0;
 
     if (grid) {
         grid.innerHTML = '';
         const MAX_SLOTS = 5;
         let renderedSlots = 0;
 
-        // 1. Render Connected Players
-        playerIds.forEach(id => {
+        // 1. Render Connected Players in this Global Lobby
+        playerIds.forEach((id, idx) => {
             if (renderedSlots >= MAX_SLOTS) return;
             const p = players[id] || {};
-            const isPlayerHost = (id === data.host || id === lobbyId);
-            const isReady = isPlayerHost || Boolean(p.ready);
+            const isMe = (id === myId);
+            const isReady = Boolean(p.ready);
+            if (isReady) readyCount++;
 
-            if (!isPlayerHost) {
-                nonHostCount++;
-                if (isReady) readyCount++;
-            }
-
-            const pingVal = typeof p.ping === 'number' && p.ping > 0 ? p.ping : (id === myId ? myPing : 0);
+            const pingVal = typeof p.ping === 'number' && p.ping > 0 ? p.ping : (isMe ? myPing : 0);
             const pingClass = pingVal < 60 ? 'good' : (pingVal < 150 ? 'med' : 'bad');
             const pingHtml = pingVal > 0 ? `
                 <div class="slot-ping ${pingClass}" title="Задержка: ${pingVal} мс">
@@ -779,73 +745,35 @@ function updateLobbyUI(data) {
                 </div>
             ` : '';
 
-            const isKickable = isHost && id !== myId;
             const slot = document.createElement('div');
-            slot.className = `lobby-slot-card filled ${isPlayerHost ? 'is-host' : (isReady ? 'is-ready' : 'not-ready')} ${isKickable ? 'host-kickable' : ''}`;
-            if (isKickable) {
-                slot.title = `Нажмите, чтобы исключить игрока ${p.name || 'Игрок'}`;
-                slot.onclick = (e) => {
-                    e.stopPropagation();
-                    confirmKickPlayer(id, p.name);
-                };
-            }
+            slot.className = `lobby-slot-card filled ${isReady ? 'is-ready' : 'not-ready'} ${isMe ? 'is-host' : ''}`;
             slot.innerHTML = `
                 ${pingHtml}
                 <div class="slot-avatar">${p.avatar || '👤'}</div>
-                <div class="slot-name">${escapeHtml(p.name || 'Игрок')}</div>
-                <div class="slot-host-tag">${isPlayerHost ? '👑 ХОСТ' : (isReady ? '<span class="slot-ready-tag ready">✅ ГОТОВ</span>' : '<span class="slot-ready-tag not-ready">⏳ НЕ ГОТОВ</span>')}</div>
-                ${isKickable ? `<button class="slot-kick-btn" onclick="event.stopPropagation(); confirmKickPlayer('${id}', '${escapeHtml(p.name || '')}')" title="Исключить игрока">✖</button>` : ''}
+                <div class="slot-name">${escapeHtml(p.name || 'Игрок')}${isMe ? ' (Вы)' : ''}</div>
+                <div class="slot-host-tag">${isReady ? '<span class="slot-ready-tag ready">✅ ГОТОВ</span>' : '<span class="slot-ready-tag not-ready">⏳ НЕ ГОТОВ</span>'}</div>
             `;
             grid.appendChild(slot);
             renderedSlots++;
         });
 
-        // 2. Render Invited Players
-        inviteIds.forEach(id => {
-            if (renderedSlots >= MAX_SLOTS) return;
-            const inv = invites[id] || {};
-            const slot = document.createElement('div');
-            slot.className = `lobby-slot-card is-invited ${isHost ? 'host-kickable' : ''}`;
-            if (isHost) {
-                slot.title = `Нажмите, чтобы отменить приглашение игрока ${inv.name || 'Игрок'}`;
-                slot.onclick = (e) => {
-                    e.stopPropagation();
-                    cancelLobbyInvite(id);
-                };
-            }
-            slot.innerHTML = `
-                <div class="slot-avatar-invited">${inv.avatar || '👤'}</div>
-                <div class="slot-name-invited">${escapeHtml(inv.name || 'Игрок')}</div>
-                <div class="slot-invited-tag">⏳ ВХОДИТ...</div>
-                ${isHost ? `<button class="slot-kick-btn" onclick="event.stopPropagation(); cancelLobbyInvite('${id}')" title="Отменить приглашение">✖</button>` : ''}
-            `;
-            grid.appendChild(slot);
-            renderedSlots++;
-        });
-
-        // 3. Render Empty / Add Slots up to exactly 5 slots
+        // 2. Render Empty Slots up to 5
         while (renderedSlots < MAX_SLOTS) {
             const addSlot = document.createElement('div');
             addSlot.className = 'lobby-slot-card is-add';
             addSlot.onclick = openFriendsModal;
             addSlot.innerHTML = `
                 <div class="slot-add-icon">➕</div>
-                <div class="slot-add-label">Пригласить</div>
+                <div class="slot-add-label">Свободно</div>
             `;
             grid.appendChild(addSlot);
             renderedSlots++;
         }
     }
 
-    // Update Bottom Bar Info
+    // Update Selected Game Info on Bottom Bar
     const selIcon = document.getElementById('sel-game-icon');
     const selName = document.getElementById('sel-game-name');
-    const selectBtn = document.getElementById('btn-select-game');
-    const launchBtn = document.getElementById('btn-launch-game');
-
-    if (selectBtn) {
-        selectBtn.style.display = isHost ? 'flex' : 'none';
-    }
 
     if (selectedGame === 'gta') {
         if (selIcon) selIcon.innerText = '🚗';
@@ -856,161 +784,18 @@ function updateLobbyUI(data) {
         if (selName) selName.innerHTML = `3D Shooter <span class="selected-game-mode-badge">(${modeLabel})</span>`;
     }
 
+    const launchBtn = document.getElementById('btn-launch-game');
     if (launchBtn) {
-        if (isHost) {
-            launchBtn.disabled = false;
-            if (nonHostCount > 0) {
-                launchBtn.innerHTML = `<span>ИГРАТЬ ▶ (${readyCount}/${nonHostCount} готовы)</span>`;
-            } else {
-                launchBtn.innerHTML = `<span>ИГРАТЬ ▶</span>`;
-            }
+        if (playerCount > 1) {
+            launchBtn.innerHTML = `<span>ИГРАТЬ ▶ (${readyCount}/${playerCount} готовы)</span>`;
         } else {
-            launchBtn.disabled = true;
-            launchBtn.innerHTML = `<span>Ожидание хоста...</span>`;
+            launchBtn.innerHTML = `<span>ИГРАТЬ ▶</span>`;
         }
     }
 }
 
-function leavePartyLobby() {
-    sfx.click();
-    if (lobbyId && lobbyId !== myId) {
-        const oldLobbyId = lobbyId;
-        db.ref(`lobbies/${oldLobbyId}/players/${myId}`).remove().catch(() => {});
-        showLobbyToast('Вы вернулись в свое личное лобби', '🚪');
-    }
-    lobbyId = myId;
-    isHost = true;
-    listenToLobby(myId);
-}
-
-function kickPlayerFromLobby(targetId) {
-    sfx.click();
-    if (isHost && lobbyId) {
-        db.ref(`lobbies/${lobbyId}/players/${targetId}`).remove().then(() => {
-            showLobbyToast('Игрок исключен из лобби', '🚫');
-        });
-    }
-}
-
-function confirmKickPlayer(targetId, targetName = '') {
-    if (!isHost || targetId === myId) return;
-    sfx.click();
-    const pName = targetName ? `«${targetName}»` : `#${targetId}`;
-    const proceed = confirm(`❓ Исключить игрока ${pName} из вашего лобби?`);
-    if (proceed) {
-        kickPlayerFromLobby(targetId);
-    }
-}
-
-// 2.2 Direct Find and Join Lobby by Host ID
-function promptFindLobby() {
-    sfx.click();
-    const target = prompt('🔍 Поиск лобби:\nВведите ID хоста (или номер комнаты):');
-    if (!target) return;
-    const cleanId = target.trim().replace(/^#/, '');
-    if (!cleanId) return;
-    if (cleanId === myId) {
-        showLobbyToast('Вы уже находитесь в своем лобби', 'ℹ️');
-        return;
-    }
-    joinLobbyByHostId(cleanId, false);
-}
-
-function joinLobbyByHostId(targetHostId, isSilent = false) {
-    if (!db) {
-        if (!isSilent) alert('Ошибка подключения к базе данных');
-        return;
-    }
-
-    const cleanHostId = String(targetHostId || '').trim().replace(/^#/, '');
-    if (!cleanHostId || cleanHostId === myId) return;
-
-    if (!isSilent) showLobbyToast(`Поиск лобби #${cleanHostId}...`, '🔎');
-
-    Promise.all([
-        db.ref(`lobbies/${cleanHostId}`).once('value'),
-        db.ref(`users/${cleanHostId}/presence`).once('value')
-    ]).then(([snap, presSnap]) => {
-        if (!snap.exists()) {
-            if (!isSilent) alert(`❌ Лобби с ID #${cleanHostId} не найдено или закрыто.`);
-            return;
-        }
-
-        const data = snap.val() || {};
-        const pres = presSnap.exists() ? presSnap.val() : null;
-
-        // Check if host is online (presence is online/in-game, host in players, or active playing lobby)
-        const isPresOnline = pres && (pres.state === 'online' || pres.state === 'in-game') && (Date.now() - (pres.lastSeenAt || 0) < 300000);
-        const isHostInPlayers = Boolean(data.players && data.players[cleanHostId]) || (data.host === cleanHostId);
-        const isLobbyActive = snap.exists() && (data.status === 'playing' || data.status === 'waiting' || data.status === 'countdown');
-
-        if (!isPresOnline && !isHostInPlayers && !isLobbyActive) {
-            if (!isSilent) alert(`❌ Игрок #${cleanHostId} сейчас не в сети.`);
-            return;
-        }
-
-        const deviceMode = localStorage.getItem('gamehub_device_mode') || 'pc';
-
-        // 1. If lobby is already playing
-        if (data.status === 'playing' || data.status === 'countdown') {
-            const game = data.game || 'gta';
-
-            if (game === 'gta') {
-                // GTA 5 HTML - join directly without questions
-                showLobbyToast('Игрок в GTA 5! Загрузка города...', '🚗');
-                setTimeout(() => {
-                    window.location.href = `gta/index.html?lobby=${cleanHostId}&mode=${deviceMode}`;
-                }, 300);
-                return;
-            } else {
-                // 3D Shooter
-                const mode = data.currentMode || 'tdm_5v5';
-                let maxPlayers = 10;
-                if (mode === 'duel_1v1') maxPlayers = 2;
-                else if (mode === 'duel_2v2') maxPlayers = 4;
-                else if (mode === 'tdm_5v5') maxPlayers = 10;
-
-                const brPlayers = (data.br && data.br.players) ? data.br.players : (data.players || {});
-                const activeCount = Object.keys(brPlayers).length;
-
-                if (activeCount >= maxPlayers) {
-                    alert(`⚠️ Лобби заполнено (${activeCount}/${maxPlayers}).\nВ режиме ${mode === 'duel_1v1' ? '1х1 (2 игрока)' : (mode === 'duel_2v2' ? '2х2 (4 игрока)' : '5х5 (10 игроков)')} все места заняты!`);
-                    return;
-                }
-
-                // Slot available - directly enter 3D shooter!
-                showLobbyToast(`Свободное место найдено (${activeCount + 1}/${maxPlayers})! Вход в 3D Shooter...`, '🎯');
-                setTimeout(() => {
-                    window.location.href = `3D shooter/index.html?lobby=${cleanHostId}&mode=${mode}&device=${deviceMode}`;
-                }, 400);
-                return;
-            }
-        }
-
-        // 2. If lobby is in waiting state
-        const waitingPlayers = data.players || {};
-        const count = Object.keys(waitingPlayers).length;
-        if (count >= 5 && !waitingPlayers[myId]) {
-            alert('⚠️ Лобби заполнено (5/5 мест). Вход невозможен.');
-            return;
-        }
-
-        lobbyId = cleanHostId;
-        isHost = false;
-        listenToLobby(lobbyId);
-        showLobbyToast(`Вы успешно вошли в лобби #${lobbyId}`, '🚀');
-    }).catch(err => {
-        console.error('Join lobby error:', err);
-        if (!isSilent) alert('Ошибка при поиске лобби');
-    });
-}
-
-// 3. Game Selection & Modal (ВЫБРАТЬ ИГРУ)
-let pendingModalGame = 'br_3d';
-let pendingModal3DMode = 'tdm_5v5';
-
+// 3. Game Selection Modal (ВЫБРАТЬ ИГРУ)
 function openGameSelectModal() {
-    if (!isHost) return;
     sfx.click();
     pendingModalGame = selectedGame || 'br_3d';
     pendingModal3DMode = selected3DMode || 'tdm_5v5';
@@ -1057,165 +842,46 @@ function confirmGameSelectModal() {
     selectedGame = pendingModalGame;
     selected3DMode = pendingModal3DMode;
 
-    if (isHost && lobbyId && db) {
-        db.ref(`lobbies/${lobbyId}`).update({
+    if (currentGlobalLobby && db) {
+        db.ref(`lobbies/lobby_${currentGlobalLobby}`).update({
             game: selectedGame,
             currentMode: selected3DMode
         });
     }
 
     closeGameSelectModal();
-    updateLobbyUI(currentLobbyData || { host: myId, players: { [myId]: { name: myName, avatar: myAvatar } } });
+    updateLobbyUI(currentLobbyData || { players: { [myId]: { name: myName, avatar: myAvatar, ready: isPlayerReady } } });
 }
 
-// 4. Launching the Game (Countdown sequence & Routing)
-function triggerCountdownSequence(durationSec = 3, onComplete) {
-    if (isCountingDown) return;
-    isCountingDown = true;
-
-    const overlay = document.getElementById('lobby-countdown-overlay');
-    const numEl = document.getElementById('countdown-timer-num');
-    const subEl = document.getElementById('countdown-game-sub');
-    const cancelBtn = document.getElementById('btn-cancel-countdown');
-
-    if (overlay) overlay.classList.add('active');
-    if (cancelBtn) cancelBtn.style.display = isHost ? 'block' : 'none';
-
-    const gameTitle = selectedGame === 'gta' ? 'GTA 5 HTML' : `3D Shooter (${MODE_NAMES[selected3DMode] || '5v5'})`;
-    if (subEl) subEl.innerText = `${gameTitle} — запуск матча...`;
-
-    let currentCount = durationSec;
-
-    const updateNumber = (val, isGo = false) => {
-        if (!numEl) return;
-        numEl.innerText = val;
-        numEl.classList.remove('animate-pop');
-        void numEl.offsetWidth; // trigger CSS animation reflow
-        numEl.classList.add('animate-pop');
-
-        if (isGo) {
-            sfx.countdownGo();
-            numEl.style.color = '#30d158';
-            numEl.style.textShadow = '0 0 35px #30d158, 0 0 70px #00f0ff';
-        } else {
-            sfx.countdownTick();
-            numEl.style.color = '#fff';
-            numEl.style.textShadow = '0 0 30px #00f0ff, 0 0 60px #007aff';
-        }
-    };
-
-    updateNumber(currentCount, false);
-
-    if (activeCountdownInterval) clearInterval(activeCountdownInterval);
-    activeCountdownInterval = setInterval(() => {
-        currentCount--;
-        if (currentCount > 0) {
-            updateNumber(currentCount, false);
-        } else if (currentCount === 0) {
-            updateNumber('В БОЙ!', true);
-            if (subEl) subEl.innerText = 'Загрузка игрового мира...';
-            
-            // Execute launch callback smoothly upon reaching "В БОЙ!"
-            if (activeCountdownInterval) {
-                clearInterval(activeCountdownInterval);
-                activeCountdownInterval = null;
-            }
-            setTimeout(() => {
-                isCountingDown = false;
-                if (typeof onComplete === 'function') onComplete();
-            }, 350);
-        }
-    }, 850);
-}
-
-function cancelLobbyCountdown() {
-    sfx.click();
-    if (!isHost || !lobbyId || !db) return;
-    db.ref(`lobbies/${lobbyId}`).update({
-        status: 'waiting',
-        countdownCancelled: true,
-        startedAt: 0
-    }).then(() => {
-        stopCountdownVisuals();
-        showLobbyToast('Старт матча отменен хостом', '🛑');
-    });
-}
-
-function stopCountdownVisuals() {
-    if (activeCountdownInterval) {
-        clearInterval(activeCountdownInterval);
-        activeCountdownInterval = null;
-    }
-    isCountingDown = false;
-    const overlay = document.getElementById('lobby-countdown-overlay');
-    if (overlay) overlay.classList.remove('active');
-}
-
+// 4. Instant Launching (NO 3..2..1.. COUNTDOWN - INSTANT START)
 function launchActiveLobbyGame() {
     sfx.click();
-    if (!isHost) return;
+    hasLaunched = true;
 
-    const players = (currentLobbyData && currentLobbyData.players) || {};
-    const playerIds = Object.keys(players);
-    const unreadyPlayers = playerIds.filter(id => id !== myId && !players[id]?.ready);
-
-    if (playerIds.length > 1 && unreadyPlayers.length > 0) {
-        const unreadyNames = unreadyPlayers.map(id => players[id]?.name || `Игрок #${id}`).join(', ');
-        const proceed = confirm(`⚠️ Не все игроки подтвердили готовность (${unreadyNames}).\nЗапустить игру прямо сейчас?`);
-        if (!proceed) return;
-    }
-
-    if (playerIds.length > 1) {
-        // Multiplayer Launch: start synchronized countdown in DB
-        db.ref(`lobbies/${lobbyId}`).update({
-            status: 'countdown',
-            countdownCancelled: false,
+    // Update lobby in Firebase so all other connected players in this global lobby launch immediately too!
+    if (db && currentGlobalLobby) {
+        db.ref(`lobbies/lobby_${currentGlobalLobby}`).update({
+            status: 'playing',
             game: selectedGame,
             currentMode: selected3DMode,
             startedAt: firebase.database.ServerValue.TIMESTAMP
-        });
-    } else {
-        // Solo Launch: trigger local countdown sequence, then navigate
-        triggerCountdownSequence(3, () => {
-            const deviceMode = localStorage.getItem('gamehub_device_mode') || 'pc';
-            const targetLobby = lobbyId || myId;
-            if (db && targetLobby) {
-                db.ref(`lobbies/${targetLobby}`).update({
-                    status: 'playing',
-                    game: selectedGame,
-                    currentMode: selected3DMode,
-                    host: myId,
-                    startedAt: firebase.database.ServerValue.TIMESTAMP
-                }).catch(() => {});
-            }
-            if (selectedGame === 'gta') {
-                window.location.href = `gta/index.html?lobby=${targetLobby}&mode=${deviceMode}`;
-            } else {
-                window.location.href = `3D shooter/index.html?lobby=${targetLobby}&mode=${selected3DMode}&device=${deviceMode}`;
-            }
-        });
+        }).catch(() => {});
     }
+
+    // Instantly launch local client
+    launchGameDirectly({ game: selectedGame, currentMode: selected3DMode });
 }
 
 function launchGameDirectly(data) {
     const deviceMode = localStorage.getItem('gamehub_device_mode') || 'pc';
     const g = data?.game || selectedGame;
     const m = data?.currentMode || selected3DMode;
-    const targetLobby = lobbyId || myId;
-
-    if (isHost && db && lobbyId) {
-        db.ref(`lobbies/${lobbyId}`).update({
-            status: 'playing',
-            game: g,
-            currentMode: m,
-            startedAt: firebase.database.ServerValue.TIMESTAMP
-        }).catch(() => {});
-    }
+    const lobbyNum = currentGlobalLobby || '1';
 
     if (g === 'gta') {
-        window.location.href = `gta/index.html?lobby=${targetLobby}&mode=${deviceMode}`;
+        window.location.href = `gta/index.html?lobby=${lobbyNum}&mode=${deviceMode}`;
     } else {
-        window.location.href = `3D shooter/index.html?lobby=${targetLobby}&mode=${m}&device=${deviceMode}`;
+        window.location.href = `3D shooter/index.html?lobby=${lobbyNum}&mode=${m}&device=${deviceMode}`;
     }
 }
 
@@ -1480,7 +1146,7 @@ window.cancelLobbyCountdown = cancelLobbyCountdown;
 window.showLobbyToast = showLobbyToast;
 window.leavePartyLobby = leavePartyLobby;
 window.kickPlayerFromLobby = kickPlayerFromLobby;
-window.confirmKickPlayer = confirmKickPlayer;
+window.switchGlobalLobby = switchGlobalLobby;
 window.launchActiveLobbyGame = launchActiveLobbyGame;
 window.openFriendsModal = openFriendsModal;
 window.closeFriendsModal = closeFriendsModal;

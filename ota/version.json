@@ -1,15 +1,10 @@
 {
-  "version": 2,
-  "description": "HTML5 Lobby Hub + 4 Firebase Rooms + 4 Helicopters + Weapons + Weather + Street Lamps",
+  "version": 4,
+  "description": "OTA Hotfix v4 (3D Мир, Небоскребы, 4 Вертолета, Лифт)",
   "updatedFiles": [
-    "MainMenu_2D_LobbyHub",
-    "Firebase_Multiplayer_Rooms",
-    "GTA_OpenWorld_3D_Complete",
-    "Maverick_Helidrop_x4",
-    "Weapons_System",
-    "Dynamic_Weather_U",
-    "Full_City_Map_M",
-    "Street_Lamps_Palms_NPC"
-  ],
-  "timestamp": 1724948880
+    "GTA_OpenWorld_3D",
+    "MazeBank_Tower",
+    "Maverick_Helicopters",
+    "HTML_Overlay_HUD"
+  ]
 }

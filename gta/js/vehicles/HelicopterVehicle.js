@@ -56,10 +56,78 @@ class HelicopterVehicle {
         this._rayTo = (typeof CANNON !== 'undefined') ? new CANNON.Vec3() : null;
         this._rayResult = (typeof CANNON !== 'undefined') ? new CANNON.RaycastResult() : null;
 
+        this.initialSpawnX = posX;
+        this.initialSpawnY = posY;
+        this.initialSpawnZ = posZ;
+        this.initialSpawnRot = rotY;
+
         this.buildMaterials();
         this.buildMesh(posX, posY, posZ, rotY);
         this.initPhysics(posX, posY, posZ, rotY);
         this.initAudioSynth();
+    }
+
+    /**
+     * Сброс вертолета в исходное состояние при выходе из карты
+     * (Разъединение слияний, возврат на свой вертодром, сброс винтов и звуков)
+     */
+    resetToDefault() {
+        this.isPiloted = false;
+        this.pilot = null;
+        this.isMega = false;
+        this.isBeingMerged = false;
+        this.isMerged = false;
+        this.mergeState = 'IDLE';
+        this.mergeTimer = 0.0;
+        this.tier = 1;
+        this.vehicleName = 'Maverick Helidrop';
+        this.speedMultiplier = 1.0;
+        this.scaleMultiplier = 1.0;
+        this.rotorRPM = 0.0;
+        this.targetRotorRPM = 0.0;
+        this.currentLift = 0.0;
+        this.pitchAngle = 0.0;
+        this.rollAngle = 0.0;
+        this.pitchVelocity = 0.0;
+        this.rollVelocity = 0.0;
+        this.yawVelocity = 0.0;
+        this.yawAngle = this.initialSpawnRot || 0.0;
+        this.isRemotelyPiloted = false;
+
+        const sx = this.initialSpawnX !== undefined ? this.initialSpawnX : -3.5;
+        const sy = this.initialSpawnY !== undefined ? this.initialSpawnY : 93.0;
+        const sz = this.initialSpawnZ !== undefined ? this.initialSpawnZ : 0;
+        const sRot = this.initialSpawnRot !== undefined ? this.initialSpawnRot : 0;
+
+        // Восстановление 3D-модели
+        if (this.group) {
+            this.group.scale.set(1.0, 1.0, 1.0);
+            this.group.visible = true;
+            if (!this.group.parent && this.scene) {
+                this.scene.add(this.group);
+            }
+            this.group.position.set(sx, sy, sz);
+            this.group.rotation.set(0, sRot, 0);
+        }
+
+        // Восстановление физического тела Cannon
+        if (this.body) {
+            if (this.world && !this.world.bodies.includes(this.body)) {
+                this.world.addBody(this.body);
+            }
+            this.body.position.set(sx, sy, sz);
+            this.body.velocity.set(0, 0, 0);
+            this.body.angularVelocity.set(0, 0, 0);
+            if (typeof CANNON !== 'undefined') {
+                const q = new CANNON.Quaternion();
+                q.setFromAxisAngle(new CANNON.Vec3(0, 1, 0), sRot);
+                this.body.quaternion.copy(q);
+            }
+        }
+
+        if (this.synth) {
+            try { this.synth.stop(); } catch (e) {}
+        }
     }
 
     applyNetworkTransform(x, y, z, rotY, pitch = 0, roll = 0, vx = 0, vy = 0, vz = 0, isPiloted = true) {
@@ -747,9 +815,15 @@ class HelicopterVehicle {
 
         this.playQuickMergeSound();
 
-        const isLevel3 = this.isMega;
+        const currentTier = this.tier || (this.isTitan ? 3 : (this.isMega ? 2 : 1));
+        const nextTier = Math.min(5, currentTier + 1);
+
         if (window.gameEngine && window.gameEngine.multiplayerHUD) {
-            if (isLevel3) {
+            if (nextTier === 5) {
+                window.gameEngine.multiplayerHUD.addSystemMessage('👑 ГИПЕР-СЛИЯНИЕ 5-ГО УРОВНЯ! ТРАНСФОРМАЦИЯ В CELESTIAL SOLAR LEVIATHAN X16...');
+            } else if (nextTier === 4) {
+                window.gameEngine.multiplayerHUD.addSystemMessage('🟢 КВАНТОВОЕ СЛИЯНИЕ 4-ГО УРОВНЯ! ТРАНСФОРМАЦИЯ В QUANTUM EMERALD APEX X12...');
+            } else if (nextTier === 3) {
                 window.gameEngine.multiplayerHUD.addSystemMessage('🔴 СВЕРХ-СЛИЯНИЕ 3-ГО УРОВНЯ! ТРАНСФОРМАЦИЯ В CYBER CRIMSON TITAN X8...');
             } else {
                 window.gameEngine.multiplayerHUD.addSystemMessage('⚡ СЛИЯНИЕ ВЕРТОЛЕТОВ! ТРАНСФОРМАЦИЯ В CYBER GHOST X4...');
@@ -763,7 +837,7 @@ class HelicopterVehicle {
         if (!isRemote && window.gameEngine && window.gameEngine.multiplayerManager) {
             const masterIdx = (this.heliIndex !== undefined && !isNaN(this.heliIndex)) ? this.heliIndex : 0;
             const partnerIdx = (otherHeli.heliIndex !== undefined && !isNaN(otherHeli.heliIndex)) ? otherHeli.heliIndex : 1;
-            window.gameEngine.multiplayerManager.broadcastHeliMerge(masterIdx, partnerIdx);
+            window.gameEngine.multiplayerManager.broadcastHeliMerge(masterIdx, partnerIdx, nextTier);
         }
     }
 
@@ -809,7 +883,12 @@ class HelicopterVehicle {
         }
 
         if (progress >= 1.0) {
-            if (this.isMega) {
+            const curTier = this.tier || (this.isSolar ? 5 : (this.isEmerald ? 4 : (this.isTitan ? 3 : (this.isMega ? 2 : 1))));
+            if (curTier >= 4 || this.isEmerald) {
+                this.upgradeToSolarLeviathanHelicopter();
+            } else if (curTier === 3 || this.isTitan) {
+                this.upgradeToEmeraldApexHelicopter();
+            } else if (curTier === 2 || this.isMega) {
                 this.upgradeToCrimsonTitanHelicopter();
             } else {
                 this.upgradeToMegaHelicopter();
@@ -1182,6 +1261,568 @@ class HelicopterVehicle {
         }
     }
 
+    buildEmeraldApexMesh() {
+        while (this.group.children.length > 0) {
+            const child = this.group.children[0];
+            this.group.remove(child);
+        }
+
+        const matEmeraldBody = new THREE.MeshStandardMaterial({
+            color: 0x004d40,
+            roughness: 0.22,
+            metalness: 0.85
+        });
+        const matJadeArmor = new THREE.MeshStandardMaterial({
+            color: 0x052e16,
+            roughness: 0.35,
+            metalness: 0.75
+        });
+        const matEmeraldNeon = new THREE.MeshBasicMaterial({
+            color: 0x00ff88
+        });
+        const matCockpitEmerald = new THREE.MeshStandardMaterial({
+            color: 0x00241b,
+            roughness: 0.12,
+            metalness: 0.92,
+            transparent: true,
+            opacity: 0.75
+        });
+        const matCarbonBlade = new THREE.MeshStandardMaterial({
+            color: 0x0a1410,
+            roughness: 0.2,
+            metalness: 0.88
+        });
+        const matDarkGun = new THREE.MeshStandardMaterial({
+            color: 0x0d1f18,
+            roughness: 0.15,
+            metalness: 0.95
+        });
+        const matPlasmaEmerald = new THREE.MeshBasicMaterial({
+            color: 0x00e676
+        });
+        const matSkids = new THREE.MeshStandardMaterial({
+            color: 0x061a12,
+            roughness: 0.3,
+            metalness: 0.85
+        });
+
+        // 1. Сверхтяжелый фюзеляж Изумрудного Апекса
+        const mainFuselage = new THREE.Mesh(new THREE.BoxGeometry(3.0, 2.1, 5.8), matEmeraldBody);
+        mainFuselage.position.set(0, 1.1, 0);
+        mainFuselage.castShadow = true;
+        this.group.add(mainFuselage);
+
+        const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.7, 5.4), matJadeArmor);
+        lowerHull.position.set(0, 0.35, 0);
+        lowerHull.castShadow = true;
+        this.group.add(lowerHull);
+
+        const noseCone = new THREE.Mesh(new THREE.ConeGeometry(1.55, 2.8, 6), matEmeraldBody);
+        noseCone.rotation.x = Math.PI / 2;
+        noseCone.rotation.z = Math.PI / 6;
+        noseCone.position.set(0, 1.05, 3.8);
+        noseCone.castShadow = true;
+        this.group.add(noseCone);
+
+        // Квантовая плазменная турель в носу
+        const noseTurret = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 2.0, 12), matDarkGun);
+        noseTurret.rotation.x = Math.PI / 2;
+        noseTurret.position.set(0, 0.45, 4.5);
+        this.group.add(noseTurret);
+
+        // Неоновые изумрудные полосы
+        const sideStripeL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.2, 5.6), matEmeraldNeon);
+        sideStripeL.position.set(-1.52, 1.2, 0.1);
+        this.group.add(sideStripeL);
+
+        const sideStripeR = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.2, 5.6), matEmeraldNeon);
+        sideStripeR.position.set(1.52, 1.2, 0.1);
+        this.group.add(sideStripeR);
+
+        // Панорамный фонарь кабины
+        const canopy = new THREE.Mesh(new THREE.BoxGeometry(2.7, 1.5, 3.5), matCockpitEmerald);
+        canopy.position.set(0, 1.5, 1.4);
+        this.group.add(canopy);
+
+        // 2. Счетверенные плазменные турбины
+        const thrusters = [
+            { x: -1.65, y: 1.85, z: -0.3 },
+            { x: 1.65, y: 1.85, z: -0.3 },
+            { x: -0.85, y: 2.45, z: -0.9 },
+            { x: 0.85, y: 2.45, z: -0.9 }
+        ];
+
+        for (let tp of thrusters) {
+            const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.58, 4.2, 16), matJadeArmor);
+            nacelle.rotation.x = Math.PI / 2;
+            nacelle.position.set(tp.x, tp.y, tp.z);
+            nacelle.castShadow = true;
+            this.group.add(nacelle);
+
+            const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.52, 0.6, 16), matDarkGun);
+            nozzle.rotation.x = Math.PI / 2;
+            nozzle.position.set(tp.x, tp.y, tp.z - 2.3);
+            this.group.add(nozzle);
+
+            const flame = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.5, 12), matPlasmaEmerald);
+            flame.rotation.x = -Math.PI / 2;
+            flame.position.set(tp.x, tp.y, tp.z - 3.2);
+            this.group.add(flame);
+        }
+
+        // 3. Стреловидные тяжелые крылья с квантовыми батареями
+        const wingL = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.2, 1.6), matEmeraldBody);
+        wingL.position.set(-2.8, 1.05, 0.4);
+        this.group.add(wingL);
+
+        const wingR = new THREE.Mesh(new THREE.BoxGeometry(2.6, 0.2, 1.6), matEmeraldBody);
+        wingR.position.set(2.8, 1.05, 0.4);
+        this.group.add(wingR);
+
+        const wingletL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.95, 1.4), matEmeraldNeon);
+        wingletL.position.set(-4.1, 1.45, 0.4);
+        this.group.add(wingletL);
+
+        const wingletR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.95, 1.4), matEmeraldNeon);
+        wingletR.position.set(4.1, 1.45, 0.4);
+        this.group.add(wingletR);
+
+        // 4. Двойной киль и хвостовая балка
+        const tailBoom = new THREE.Mesh(new THREE.BoxGeometry(0.95, 0.75, 7.2), matEmeraldBody);
+        tailBoom.position.set(0, 1.35, -5.2);
+        tailBoom.castShadow = true;
+        this.group.add(tailBoom);
+
+        const vFinL = new THREE.Mesh(new THREE.BoxGeometry(0.16, 2.6, 1.3), matJadeArmor);
+        vFinL.position.set(-1.15, 2.4, -8.2);
+        vFinL.rotation.z = -0.35;
+        this.group.add(vFinL);
+
+        const vFinR = new THREE.Mesh(new THREE.BoxGeometry(0.16, 2.6, 1.3), matJadeArmor);
+        vFinR.position.set(1.15, 2.4, -8.2);
+        vFinR.rotation.z = 0.35;
+        this.group.add(vFinR);
+
+        const fenestronRing = new THREE.Mesh(new THREE.TorusGeometry(1.05, 0.2, 8, 24), matJadeArmor);
+        fenestronRing.position.set(0, 1.7, -8.5);
+        this.group.add(fenestronRing);
+
+        this.tailRotorHub = new THREE.Group();
+        this.tailRotorHub.position.set(0, 1.7, -8.5);
+        const fbGeo = new THREE.BoxGeometry(0.12, 1.8, 0.04);
+        const fb1 = new THREE.Mesh(fbGeo, matEmeraldNeon);
+        const fb2 = new THREE.Mesh(fbGeo, matEmeraldNeon); fb2.rotation.z = Math.PI / 2;
+        this.tailRotorHub.add(fb1); this.tailRotorHub.add(fb2);
+        this.group.add(this.tailRotorHub);
+
+        // 5. 12-лопастной квантовый винт (X12 Emerald Rotor)
+        this.mainRotorHub = new THREE.Group();
+        this.mainRotorHub.position.set(0, 2.9, 0.1);
+
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.28, 0.9, 16), matDarkGun);
+        mast.position.y = -0.2;
+        this.group.add(mast);
+
+        const hubCenter = new THREE.Mesh(new THREE.ConeGeometry(0.65, 0.5, 16), matEmeraldBody);
+        hubCenter.position.y = 0.2;
+        this.mainRotorHub.add(hubCenter);
+
+        const bladeGeo = new THREE.BoxGeometry(0.32, 0.045, 6.0);
+        const tipGeo = new THREE.BoxGeometry(0.32, 0.05, 1.1);
+        for (let i = 0; i < 12; i++) {
+            const bladePivot = new THREE.Group();
+            bladePivot.rotation.y = (i * Math.PI) / 6;
+
+            const blade = new THREE.Mesh(bladeGeo, matCarbonBlade);
+            blade.position.set(0, 0, 3.0);
+            bladePivot.add(blade);
+
+            const bladeTip = new THREE.Mesh(tipGeo, matEmeraldNeon);
+            bladeTip.position.set(0, 0, 5.5);
+            bladePivot.add(bladeTip);
+
+            this.mainRotorHub.add(bladePivot);
+        }
+        this.group.add(this.mainRotorHub);
+
+        // 6. Шасси с изумрудным андеглоу
+        const skidL = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 6.4, 12), matSkids);
+        skidL.rotation.x = Math.PI / 2;
+        skidL.position.set(-1.95, 0.12, 0.1);
+        this.group.add(skidL);
+
+        const skidR = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 6.4, 12), matSkids);
+        skidR.rotation.x = Math.PI / 2;
+        skidR.position.set(1.95, 0.12, 0.1);
+        this.group.add(skidR);
+
+        const underglowL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 6.2), matEmeraldNeon);
+        underglowL.position.set(-1.95, 0.04, 0.1);
+        this.group.add(underglowL);
+
+        const underglowR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 6.2), matEmeraldNeon);
+        underglowR.position.set(1.95, 0.04, 0.1);
+        this.group.add(underglowR);
+    }
+
+    upgradeToEmeraldApexHelicopter() {
+        this.mergeState = 'EMERALD';
+        this.isEmerald = true;
+        this.tier = 4;
+        this.vehicleName = '🟢 QUANTUM EMERALD APEX X12 🟢';
+        this.speedMultiplier = 8.0;
+        this.scaleMultiplier = 3.8;
+
+        if (this.mergePartner) {
+            this.mergePartner.isMerged = true;
+            this.mergePartner.isBeingMerged = false;
+            if (this.mergePartner.group) {
+                this.scene.remove(this.mergePartner.group);
+            }
+            if (this.mergePartner.body && this.world) {
+                this.world.removeBody(this.mergePartner.body);
+            }
+            this.mergePartner = null;
+        }
+
+        this.buildEmeraldApexMesh();
+        this.group.scale.setScalar(3.8);
+
+        if (this.body && this.world) {
+            this.world.removeBody(this.body);
+            while (this.body.shapes.length > 0) {
+                this.body.shapes.pop();
+                this.body.shapeOffsets.pop();
+                this.body.shapeOrientations.pop();
+            }
+
+            this.body.mass = 14000;
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(5.2, 3.8, 9.2)), new CANNON.Vec3(0, 3.4, 0));
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(4.5, 3.0, 5.0)), new CANNON.Vec3(0, 3.2, 10.5));
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(1.8, 1.8, 10.0)), new CANNON.Vec3(0, 3.2, -16.5));
+
+            this.body.updateMassProperties();
+            this.body.updateBoundingRadius();
+            this.body.aabbNeedsUpdate = true;
+            this.world.addBody(this.body);
+            this.body.wakeUp();
+        }
+
+        let toast = document.getElementById('mega-heli-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'mega-heli-toast';
+            toast.className = 'opt-toast';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = '🟢 <b>КВАНТОВОЕ СЛИЯНИЕ 4-ГО УРОВНЯ!</b> QUANTUM EMERALD APEX X12: СКОРОСТЬ 1000 КМ/Ч, 12 ЛОПАСТЕЙ И ИЗУМРУДНАЯ ПЛАЗМА! 🚁⚡';
+        toast.style.borderColor = '#00ff88';
+        toast.style.background = 'linear-gradient(135deg, rgba(2, 44, 34, 0.95), rgba(0, 230, 118, 0.6))';
+        toast.style.boxShadow = '0 10px 55px rgba(0, 255, 136, 0.9)';
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 6000);
+
+        if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+            window.gameEngine.multiplayerHUD.addSystemMessage('🔥 QUANTUM EMERALD APEX X12 АКТИВИРОВАН! СКОРОСТЬ 1000 КМ/Ч, 12 ЛОПАСТЕЙ!');
+        }
+
+        const titleElem = document.getElementById('hud-mode-title');
+        if (titleElem && this.isPiloted) {
+            titleElem.innerText = '🟢 QUANTUM EMERALD APEX X12 🟢';
+            titleElem.style.color = '#00ff88';
+            titleElem.style.textShadow = '0 0 15px rgba(0, 255, 136, 0.9)';
+        }
+    }
+
+    buildSolarLeviathanMesh() {
+        while (this.group.children.length > 0) {
+            const child = this.group.children[0];
+            this.group.remove(child);
+        }
+
+        const matGoldBody = new THREE.MeshStandardMaterial({
+            color: 0xffb703,
+            roughness: 0.18,
+            metalness: 0.95
+        });
+        const matAmberArmor = new THREE.MeshStandardMaterial({
+            color: 0x78350f,
+            roughness: 0.28,
+            metalness: 0.85
+        });
+        const matSolarGlow = new THREE.MeshBasicMaterial({
+            color: 0xffd700
+        });
+        const matCosmicPurple = new THREE.MeshBasicMaterial({
+            color: 0xff00ea
+        });
+        const matCockpitSolar = new THREE.MeshStandardMaterial({
+            color: 0x3d1a00,
+            roughness: 0.1,
+            metalness: 0.95,
+            transparent: true,
+            opacity: 0.8
+        });
+        const matGoldenBlade = new THREE.MeshStandardMaterial({
+            color: 0x1c1917,
+            roughness: 0.15,
+            metalness: 0.95
+        });
+        const matDreadnoughtGun = new THREE.MeshStandardMaterial({
+            color: 0x262626,
+            roughness: 0.12,
+            metalness: 0.98
+        });
+        const matSolarPlasma = new THREE.MeshBasicMaterial({
+            color: 0xff6d00
+        });
+        const matSkids = new THREE.MeshStandardMaterial({
+            color: 0x451a03,
+            roughness: 0.25,
+            metalness: 0.9
+        });
+
+        // 1. Колоссальный корпус Левиафана
+        const mainFuselage = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.5, 6.8), matGoldBody);
+        mainFuselage.position.set(0, 1.3, 0);
+        mainFuselage.castShadow = true;
+        this.group.add(mainFuselage);
+
+        const lowerHull = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.85, 6.4), matAmberArmor);
+        lowerHull.position.set(0, 0.42, 0);
+        lowerHull.castShadow = true;
+        this.group.add(lowerHull);
+
+        const noseCone = new THREE.Mesh(new THREE.ConeGeometry(1.85, 3.4, 8), matGoldBody);
+        noseCone.rotation.x = Math.PI / 2;
+        noseCone.position.set(0, 1.25, 4.6);
+        noseCone.castShadow = true;
+        this.group.add(noseCone);
+
+        // Главный орбитальный фотонный излучатель
+        const noseTurret = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.38, 2.5, 16), matDreadnoughtGun);
+        noseTurret.rotation.x = Math.PI / 2;
+        noseTurret.position.set(0, 0.55, 5.4);
+        this.group.add(noseTurret);
+
+        // Золотые и фиолетовые солнечные неоновые полосы
+        const sideStripeL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 6.6), matSolarGlow);
+        sideStripeL.position.set(-1.82, 1.45, 0.1);
+        this.group.add(sideStripeL);
+
+        const sideStripeR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 6.6), matSolarGlow);
+        sideStripeR.position.set(1.82, 1.45, 0.1);
+        this.group.add(sideStripeR);
+
+        const cosmicStripeL = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 5.8), matCosmicPurple);
+        cosmicStripeL.position.set(-1.84, 0.95, 0.1);
+        this.group.add(cosmicStripeL);
+
+        const cosmicStripeR = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 5.8), matCosmicPurple);
+        cosmicStripeR.position.set(1.84, 0.95, 0.1);
+        this.group.add(cosmicStripeR);
+
+        // Бронированный золотой фонарь
+        const canopy = new THREE.Mesh(new THREE.BoxGeometry(3.2, 1.7, 4.0), matCockpitSolar);
+        canopy.position.set(0, 1.75, 1.6);
+        this.group.add(canopy);
+
+        // 2. 6 реактивных гипер-турбин Левиафана
+        const thrusters = [
+            { x: -2.0, y: 2.1, z: -0.4 },
+            { x: 2.0, y: 2.1, z: -0.4 },
+            { x: -1.1, y: 2.8, z: -1.1 },
+            { x: 1.1, y: 2.8, z: -1.1 },
+            { x: -2.1, y: 0.9, z: -0.8 },
+            { x: 2.1, y: 0.9, z: -0.8 }
+        ];
+
+        for (let tp of thrusters) {
+            const nacelle = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.65, 4.8, 16), matAmberArmor);
+            nacelle.rotation.x = Math.PI / 2;
+            nacelle.position.set(tp.x, tp.y, tp.z);
+            nacelle.castShadow = true;
+            this.group.add(nacelle);
+
+            const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.58, 0.7, 16), matDreadnoughtGun);
+            nozzle.rotation.x = Math.PI / 2;
+            nozzle.position.set(tp.x, tp.y, tp.z - 2.6);
+            this.group.add(nozzle);
+
+            const flame = new THREE.Mesh(new THREE.ConeGeometry(0.48, 1.8, 12), matSolarPlasma);
+            flame.rotation.x = -Math.PI / 2;
+            flame.position.set(tp.x, tp.y, tp.z - 3.7);
+            this.group.add(flame);
+        }
+
+        // 3. Тяжелые крылья Дредноута
+        const wingL = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.25, 2.0), matGoldBody);
+        wingL.position.set(-3.4, 1.25, 0.5);
+        this.group.add(wingL);
+
+        const wingR = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.25, 2.0), matGoldBody);
+        wingR.position.set(3.4, 1.25, 0.5);
+        this.group.add(wingR);
+
+        const wingletL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.2, 1.8), matSolarGlow);
+        wingletL.position.set(-5.0, 1.75, 0.5);
+        this.group.add(wingletL);
+
+        const wingletR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 1.2, 1.8), matSolarGlow);
+        wingletR.position.set(5.0, 1.75, 0.5);
+        this.group.add(wingletR);
+
+        // 4. Тройной киль и гигантская хвостовая балка
+        const tailBoom = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 8.5), matGoldBody);
+        tailBoom.position.set(0, 1.55, -6.0);
+        tailBoom.castShadow = true;
+        this.group.add(tailBoom);
+
+        const vFinC = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.2, 1.6), matSolarGlow);
+        vFinC.position.set(0, 3.0, -9.5);
+        this.group.add(vFinC);
+
+        const vFinL = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.8, 1.5), matAmberArmor);
+        vFinL.position.set(-1.4, 2.6, -9.2);
+        vFinL.rotation.z = -0.35;
+        this.group.add(vFinL);
+
+        const vFinR = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.8, 1.5), matAmberArmor);
+        vFinR.position.set(1.4, 2.6, -9.2);
+        vFinR.rotation.z = 0.35;
+        this.group.add(vFinR);
+
+        const fenestronRing = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.25, 8, 24), matAmberArmor);
+        fenestronRing.position.set(0, 1.9, -9.8);
+        this.group.add(fenestronRing);
+
+        this.tailRotorHub = new THREE.Group();
+        this.tailRotorHub.position.set(0, 1.9, -9.8);
+        const fbGeo = new THREE.BoxGeometry(0.15, 2.2, 0.05);
+        const fb1 = new THREE.Mesh(fbGeo, matSolarGlow);
+        const fb2 = new THREE.Mesh(fbGeo, matSolarGlow); fb2.rotation.z = Math.PI / 2;
+        this.tailRotorHub.add(fb1); this.tailRotorHub.add(fb2);
+        this.group.add(this.tailRotorHub);
+
+        // 5. 16-лопастной гипер-ротор (X16 Solar Leviathan Rotor)
+        this.mainRotorHub = new THREE.Group();
+        this.mainRotorHub.position.set(0, 3.4, 0.1);
+
+        const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.35, 1.1, 16), matDreadnoughtGun);
+        mast.position.y = -0.25;
+        this.group.add(mast);
+
+        const hubCenter = new THREE.Mesh(new THREE.ConeGeometry(0.8, 0.6, 16), matGoldBody);
+        hubCenter.position.y = 0.25;
+        this.mainRotorHub.add(hubCenter);
+
+        const bladeGeo = new THREE.BoxGeometry(0.36, 0.05, 7.5);
+        const tipGeo = new THREE.BoxGeometry(0.36, 0.055, 1.4);
+        for (let i = 0; i < 16; i++) {
+            const bladePivot = new THREE.Group();
+            bladePivot.rotation.y = (i * Math.PI) / 8;
+
+            const blade = new THREE.Mesh(bladeGeo, matGoldenBlade);
+            blade.position.set(0, 0, 3.75);
+            bladePivot.add(blade);
+
+            const bladeTip = new THREE.Mesh(tipGeo, matSolarGlow);
+            bladeTip.position.set(0, 0, 6.8);
+            bladePivot.add(bladeTip);
+
+            this.mainRotorHub.add(bladePivot);
+        }
+        this.group.add(this.mainRotorHub);
+
+        // 6. Тяжелые посадочные опоры
+        const skidL = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 7.5, 12), matSkids);
+        skidL.rotation.x = Math.PI / 2;
+        skidL.position.set(-2.25, 0.15, 0.1);
+        this.group.add(skidL);
+
+        const skidR = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 7.5, 12), matSkids);
+        skidR.rotation.x = Math.PI / 2;
+        skidR.position.set(2.25, 0.15, 0.1);
+        this.group.add(skidR);
+
+        const underglowL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 7.3), matSolarGlow);
+        underglowL.position.set(-2.25, 0.05, 0.1);
+        this.group.add(underglowL);
+
+        const underglowR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.08, 7.3), matSolarGlow);
+        underglowR.position.set(2.25, 0.05, 0.1);
+        this.group.add(underglowR);
+    }
+
+    upgradeToSolarLeviathanHelicopter() {
+        this.mergeState = 'SOLAR';
+        this.isSolar = true;
+        this.tier = 5;
+        this.vehicleName = '👑 CELESTIAL SOLAR LEVIATHAN X16 👑';
+        this.speedMultiplier = 16.0;
+        this.scaleMultiplier = 5.2;
+
+        if (this.mergePartner) {
+            this.mergePartner.isMerged = true;
+            this.mergePartner.isBeingMerged = false;
+            if (this.mergePartner.group) {
+                this.scene.remove(this.mergePartner.group);
+            }
+            if (this.mergePartner.body && this.world) {
+                this.world.removeBody(this.mergePartner.body);
+            }
+            this.mergePartner = null;
+        }
+
+        this.buildSolarLeviathanMesh();
+        this.group.scale.setScalar(5.2);
+
+        if (this.body && this.world) {
+            this.world.removeBody(this.body);
+            while (this.body.shapes.length > 0) {
+                this.body.shapes.pop();
+                this.body.shapeOffsets.pop();
+                this.body.shapeOrientations.pop();
+            }
+
+            this.body.mass = 22000;
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(7.2, 5.0, 13.0)), new CANNON.Vec3(0, 4.6, 0));
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(6.0, 4.0, 7.0)), new CANNON.Vec3(0, 4.2, 14.5));
+            this.body.addShape(new CANNON.Box(new CANNON.Vec3(2.5, 2.5, 14.0)), new CANNON.Vec3(0, 4.2, -22.0));
+
+            this.body.updateMassProperties();
+            this.body.updateBoundingRadius();
+            this.body.aabbNeedsUpdate = true;
+            this.world.addBody(this.body);
+            this.body.wakeUp();
+        }
+
+        let toast = document.getElementById('mega-heli-toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'mega-heli-toast';
+            toast.className = 'opt-toast';
+            document.body.appendChild(toast);
+        }
+        toast.innerHTML = '👑 <b>МАКСИМАЛЬНОЕ ГИПЕР-СЛИЯНИЕ 5-ГО УРОВНЯ!</b> CELESTIAL SOLAR LEVIATHAN X16: СКОРОСТЬ 2000 КМ/Ч, 16 ЛОПАСТЕЙ И ЗОЛОТОЙ КОРПУС! 🚁☀️';
+        toast.style.borderColor = '#ffd700';
+        toast.style.background = 'linear-gradient(135deg, rgba(69, 26, 3, 0.95), rgba(255, 183, 3, 0.65))';
+        toast.style.boxShadow = '0 10px 60px rgba(255, 215, 0, 0.95)';
+        toast.style.display = 'block';
+        setTimeout(() => { if (toast) toast.style.display = 'none'; }, 7000);
+
+        if (window.gameEngine && window.gameEngine.multiplayerHUD) {
+            window.gameEngine.multiplayerHUD.addSystemMessage('👑 CELESTIAL SOLAR LEVIATHAN X16 АКТИВИРОВАН! МАКСИМАЛЬНАЯ СКОРОСТЬ 2000 КМ/Ч, 16 ЛОПАСТЕЙ!');
+        }
+
+        const titleElem = document.getElementById('hud-mode-title');
+        if (titleElem && this.isPiloted) {
+            titleElem.innerText = '👑 CELESTIAL SOLAR LEVIATHAN X16 👑';
+            titleElem.style.color = '#ffd700';
+            titleElem.style.textShadow = '0 0 15px rgba(255, 215, 0, 0.95)';
+        }
+    }
+
     getSeatOffset(seatIndex = 0) {
         if (this.isMega) {
             return (seatIndex === 1)
@@ -1361,7 +2002,7 @@ class HelicopterVehicle {
         const isAscending = !!(inputKeys.jump || (window.gameEngine && window.gameEngine.inputController && window.gameEngine.inputController.keys && window.gameEngine.inputController.keys.jump));
         const isDescending = !!(inputKeys.sprint || (window.gameEngine && window.gameEngine.inputController && window.gameEngine.inputController.keys && window.gameEngine.inputController.keys.sprint));
 
-        // Скорости масштабируются в зависимости от уровня слияния (Tier 3 = до 500 км/ч)
+        // Скорости масштабируются в зависимости от уровня слияния (Tier 3 = 500 км/ч, Tier 4 = 1000 км/ч, Tier 5 = 2000 км/ч)
         let maxAscend = 16.0;
         let maxDescend = -7.5;
         let baseForward = 35.0; // ~125 км/ч
@@ -1369,17 +2010,29 @@ class HelicopterVehicle {
         let yawRateCoeff = 1.75;
 
         if (this.tier === 2) {
-            maxAscend = 26.0;
-            maxDescend = -12.0;
+            maxAscend = 28.0;
+            maxDescend = -14.0;
             baseForward = 70.0; // ~250 км/ч
-            baseBackward = -32.0;
+            baseBackward = -35.0;
             yawRateCoeff = 2.4;
         } else if (this.tier === 3) {
-            maxAscend = 42.0;
-            maxDescend = -18.0;
+            maxAscend = 48.0;
+            maxDescend = -22.0;
             baseForward = 139.0; // ~500 км/ч (CYBER CRIMSON TITAN X8)
-            baseBackward = -55.0;
-            yawRateCoeff = 3.2;
+            baseBackward = -60.0;
+            yawRateCoeff = 3.0;
+        } else if (this.tier === 4) {
+            maxAscend = 92.0;
+            maxDescend = -42.0;
+            baseForward = 278.0; // ~1000 км/ч (QUANTUM EMERALD APEX X12)
+            baseBackward = -110.0;
+            yawRateCoeff = 3.8;
+        } else if (this.tier === 5) {
+            maxAscend = 180.0;
+            maxDescend = -80.0;
+            baseForward = 556.0; // ~2000 км/ч (CELESTIAL SOLAR LEVIATHAN X16)
+            baseBackward = -200.0;
+            yawRateCoeff = 4.6;
         }
 
         const sm = this.speedMultiplier || 1.0;
@@ -1638,10 +2291,14 @@ class HelicopterVehicle {
                     gearElem.innerText = `⚡ СЛИЯНИЕ: ${Math.round(this.mergeTimer / this.mergeDuration * 100)}%`;
                 } else if (this.isPassenger) {
                     gearElem.innerText = `[ПАССАЖИР 2/2]`;
-                } else if (this.isNoseDiving) {
-                    gearElem.innerText = this.isMega ? `⚡ МЕГА-ПИКИРОВАНИЕ: 100 КМ/Ч` : `⚡ ПИКИРОВАНИЕ: 50 КМ/Ч`;
-                } else if (this.isMega) {
-                    gearElem.innerText = `⚡ X4 ALT: ${Math.max(0, Math.round(this.body.position.y))}m`;
+                } else if (this.tier === 5 || this.isSolar) {
+                    gearElem.innerText = `👑 SOLAR X16: ${Math.max(0, Math.round(this.body.position.y))}m`;
+                } else if (this.tier === 4 || this.isEmerald) {
+                    gearElem.innerText = `🟢 EMERALD X12: ${Math.max(0, Math.round(this.body.position.y))}m`;
+                } else if (this.tier === 3 || this.isTitan) {
+                    gearElem.innerText = `🔴 TITAN X8: ${Math.max(0, Math.round(this.body.position.y))}m`;
+                } else if (this.tier === 2 || this.isMega) {
+                    gearElem.innerText = `⚡ GHOST X4: ${Math.max(0, Math.round(this.body.position.y))}m`;
                 } else {
                     gearElem.innerText = `ALT: ${Math.max(0, Math.round(this.body.position.y))}m`;
                 }

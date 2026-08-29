@@ -1,16 +1,21 @@
 function returnToHub() {
     try {
-        if (typeof isHost !== 'undefined' && isHost && typeof lobbyId !== 'undefined' && lobbyId && typeof db !== 'undefined' && db) {
-            db.ref(`lobbies/${lobbyId}`).update({ status: 'waiting' }).catch(() => {});
+        const urlParams = new URLSearchParams(window.location.search);
+        const lNum = urlParams.get('lobby') || '1';
+        const cleanLobbyKey = lNum.startsWith('lobby_') ? lNum : `lobby_${lNum}`;
+        if (typeof db !== 'undefined' && db) {
+            db.ref(`lobbies/${cleanLobbyKey}`).update({ status: 'waiting' }).catch(() => {});
         }
     } catch (e) {}
-    window.location.href = '../index.html';
+    const urlParams = new URLSearchParams(window.location.search);
+    const lNum = (urlParams.get('lobby') || '1').replace(/^lobby_/, '');
+    window.location.href = `../index.html?lobby=${lNum}`;
 }
 window.returnToHub = returnToHub;
 
+var tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
 try {
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
+    if (tg) {
         if (typeof tg.ready === 'function') tg.ready();
         if (typeof tg.expand === 'function') tg.expand();
         if (typeof tg.requestFullscreen === 'function' && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('8.0')) {
@@ -155,7 +160,10 @@ function updateDbPaths(updates, context = 'database update') {
 function ensureFirebaseReady() {
     if (firebaseReadyPromise) return firebaseReadyPromise;
     firebaseReadyPromise = new Promise((resolve) => {
-        if (!firebase.auth) {
+        if (!firebase.auth || window.location.protocol === 'file:') {
+            if (window.location.protocol === 'file:') {
+                firebaseAuthUnavailable = true;
+            }
             resolve();
             return;
         }
@@ -1922,7 +1930,7 @@ function initApp() {
     async function startData(vals) {
         if (isInit) return; isInit = true;
         await ensureFirebaseReady();
-        let tgId = tg.initDataUnsafe?.user?.id ? tg.initDataUnsafe.user.id.toString() : null;
+        let tgId = tg?.initDataUnsafe?.user?.id ? tg.initDataUnsafe.user.id.toString() : null;
         let savedId = localStorage.getItem('my_id') || vals['my_id'] || tgId;
 
         if (vals['dev_mode']) myId = '0000';
@@ -1962,7 +1970,7 @@ function initApp() {
 
             readDbOnceStrict('users/' + myId, 'user profile').then(snap => {
                 const d = snap.exists() ? (snap.val() || {}) : {};
-                let tgName = tg.initDataUnsafe?.user?.first_name;
+                let tgName = tg?.initDataUnsafe?.user?.first_name;
                 myName = d.name || vals['my_name'] || tgName || "Игрок";
                 myAvatar = d.avatar || vals['my_avatar'] || "😎";
                 myEqName = d.eqName || '';

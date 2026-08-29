@@ -100,17 +100,23 @@ class GTAEngine {
             await this.progressTracker.setProgress(76, 'Инициализация автомобильного освещения (Spot Shadows, стоп-сигналы)...');
             this.vehicleManager = new VehicleManager(this.scene, this.world, this.physicsMaterials);
 
-            // Спавн 3-х полноценных управляемых вертолетов:
-            // 1. Вертолет 1: Спавнится на вертодроме Maze Bank (10 этаж, Helipad X = 5.5м, Y = 92.4м, Z = 60.0м — вне зоны шахты лифта)
+            // Спавн 5 полноценных управляемых вертолетов на свободных вертодромах города:
+            // 1. Вертолет 1: Вертодром Maze Bank Tower (10 этаж, Helipad X = 5.5, Y = 92.4, Z = 60.0)
             this.helicopterBank = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 5.5, 92.4, 60.0, 0);
             this.helicopterBank.heliIndex = 0;
-            // 2. Вертолет 2: Спавнится на вертолетной площадке Госпиталя Pillbox Hill (X = 60.0, Y = 7.2м, Z = 60.0)
+            // 2. Вертолет 2: Вертодром Госпиталя Pillbox Hill (X = 60.0, Y = 7.2, Z = 60.0)
             this.helicopterHospital = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 60.0, 7.2, 60.0, Math.PI / 2);
             this.helicopterHospital.heliIndex = 1;
-            // 3. Вертолет 3: Спавнится на вертолетной площадке западного небоскреба Downtown West Tower (X = -112.0, Y = 57.2м, Z = 60.0 — вне зоны лифта)
+            // 3. Вертолет 3: Вертодром западного небоскреба Downtown West Tower (X = -112.0, Y = 57.2, Z = 60.0)
             this.helicopterDowntown = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, -112.0, 57.2, 60.0, 0);
             this.helicopterDowntown.heliIndex = 2;
-            this.helicopters = [this.helicopterBank, this.helicopterHospital, this.helicopterDowntown];
+            // 4. Вертолет 4: Вертодром восточного небоскреба Downtown East Tower 1 (X = 120.0, Y = 59.2, Z = 60.0)
+            this.helicopterEast1 = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 120.0, 59.2, 60.0, Math.PI);
+            this.helicopterEast1.heliIndex = 3;
+            // 5. Вертолет 5: Вертодром южно-восточного небоскреба Downtown East Tower 2 (X = 120.0, Y = 65.2, Z = -60.0)
+            this.helicopterEast2 = new HelicopterVehicle(this.scene, this.world, this.physicsMaterials, 120.0, 65.2, -60.0, -Math.PI / 2);
+            this.helicopterEast2.heliIndex = 4;
+            this.helicopters = [this.helicopterBank, this.helicopterHospital, this.helicopterDowntown, this.helicopterEast1, this.helicopterEast2];
             this.helicopter = this.helicopterBank;
 
             await this.progressTracker.setProgress(80, 'Инициализация AI-системы автономного ambient-трафика (24 авто)...');
@@ -176,6 +182,37 @@ class GTAEngine {
             clearTimeout(timeoutWatchdog);
             console.error('Критическая ошибка сборки движка:', err);
             this.progressTracker.showError(`Произошла ошибка: ${err.message || err}`, 'ERR_INIT_CRASH');
+        }
+    }
+
+    /**
+     * Полная очистка и восстановление карты в исходное состояние при выходе из игры:
+     * - Все вертолеты разъединяются, возвращаются на свои вертодромы и площадки
+     * - Все автомобили автопарка возвращаются на исходные парковки
+     * - Все поваленные деревья поднимаются обратно в землю
+     * - Все сбитые столбы, фонари, гидранты, урны, скамейки и заборы встают на место
+     * - Все гейзеры воды и возгорания прекращаются
+     */
+    resetEntireMap() {
+        if (this.helicopters && this.helicopters.length) {
+            for (let i = 0; i < this.helicopters.length; i++) {
+                const h = this.helicopters[i];
+                if (h && typeof h.resetToDefault === 'function') {
+                    h.resetToDefault();
+                }
+            }
+        }
+        if (this.vehicleManager && typeof this.vehicleManager.resetAllCars === 'function') {
+            this.vehicleManager.resetAllCars();
+        }
+        if (this.vegetationManager && typeof this.vegetationManager.resetAllTrees === 'function') {
+            this.vegetationManager.resetAllTrees();
+        }
+        if (this.streetLampManager && typeof this.streetLampManager.resetAllProps === 'function') {
+            this.streetLampManager.resetAllProps();
+        }
+        if (this.explosionSystem && typeof this.explosionSystem.resetAllVehiclesHealth === 'function') {
+            this.explosionSystem.resetAllVehiclesHealth();
         }
     }
 
@@ -882,15 +919,15 @@ class GTAEngine {
                 if (this.sunLight) this.sunLight.castShadow = false;
                 // Снижаем разрешение рендеринга для ультра-высокого FPS
                 this.renderer.setPixelRatio(isMobileOrTablet ? 0.70 : 0.80);
-                if (this.camera) this.camera.far = 500;
+                if (this.camera) this.camera.far = 480;
                 if (this.scene && this.scene.fog) {
                     this.scene.fog.near = 140;
-                    this.scene.fog.far = 480;
+                    this.scene.fog.far = 460;
                 }
-                // Быстрый солвер физики
+                // Ультра-быстрый солвер физики (минус 70% нагрузки на CPU)
                 if (this.world) {
-                    this.world.solver.iterations = 2;
-                    this.world.solver.tolerance = 0.05;
+                    this.world.solver.iterations = 1;
+                    this.world.solver.tolerance = 0.08;
                 }
             } else {
                 // Возврат к стандартным настройкам
@@ -1097,14 +1134,14 @@ class GTAEngine {
         }
         this.helicopter = activeHeli || (nearestHeli || this.helicopterBank || helis[0]);
 
-        // Проверка дистанции для объединения вертолетов при полете (Уровни 2 и 3)
+        // Проверка дистанции для объединения вертолетов при полете (Уровни 2, 3, 4 и 5)
         let mergeTargetHeli = null;
-        if (activeHeli && activeHeli.isPiloted && !activeHeli.isTitan && activeHeli.mergeState !== 'MERGING') {
+        if (activeHeli && activeHeli.isPiloted && (activeHeli.tier || 1) < 5 && !activeHeli.isSolar && activeHeli.mergeState !== 'MERGING') {
             for (let i = 0; i < helis.length; i++) {
                 const other = helis[i];
                 if (other && other !== activeHeli && !other.isMerged && !other.isBeingMerged) {
                     const dist = activeHeli.group.position.distanceTo(other.group.position);
-                    if (dist < 22.0) {
+                    if (dist < 26.0) {
                         mergeTargetHeli = other;
                         break;
                     }
@@ -1116,24 +1153,47 @@ class GTAEngine {
             const promptElement = document.getElementById('vehicle-prompt');
             const promptActionText = document.getElementById('prompt-action-text');
             const promptCarName = document.getElementById('prompt-car-name');
-            const isLvl3 = activeHeli.isMega;
+            const curTier = activeHeli.tier || (activeHeli.isEmerald ? 4 : (activeHeli.isTitan ? 3 : (activeHeli.isMega ? 2 : 1)));
+            const nextTier = curTier + 1;
+
             if (promptElement) {
                 promptElement.style.display = 'block';
-                if (promptCarName) promptCarName.innerText = isLvl3 ? '🔴 СВЕРХ-СЛИЯНИЕ 3-ГО УРОВНЯ 🔴' : '⚡ СЛИЯНИЕ ВЕРТОЛЕТОВ ⚡';
-                if (promptActionText) {
-                    promptActionText.innerText = isLvl3
-                        ? 'Трансформация в CYBER CRIMSON TITAN X8 (500 км/ч, 3X размер) [F]'
-                        : 'Объединить вертолеты в CYBER GHOST X4 [F]';
+                if (nextTier === 5) {
+                    if (promptCarName) promptCarName.innerText = '👑 ГИПЕР-СЛИЯНИЕ 5-ГО УРОВНЯ 👑';
+                    if (promptActionText) promptActionText.innerText = 'Трансформация в CELESTIAL SOLAR LEVIATHAN X16 (2000 км/ч, 16 лопастей) [F]';
+                } else if (nextTier === 4) {
+                    if (promptCarName) promptCarName.innerText = '🟢 КВАНТОВОЕ СЛИЯНИЕ 4-ГО УРОВНЯ 🟢';
+                    if (promptActionText) promptActionText.innerText = 'Трансформация в QUANTUM EMERALD APEX X12 (1000 км/ч, 12 лопастей) [F]';
+                } else if (nextTier === 3) {
+                    if (promptCarName) promptCarName.innerText = '🔴 СВЕРХ-СЛИЯНИЕ 3-ГО УРОВНЯ 🔴';
+                    if (promptActionText) promptActionText.innerText = 'Трансформация в CYBER CRIMSON TITAN X8 (500 км/ч, 8 лопастей) [F]';
+                } else {
+                    if (promptCarName) promptCarName.innerText = '⚡ СЛИЯНИЕ ВЕРТОЛЕТОВ ⚡';
+                    if (promptActionText) promptActionText.innerText = 'Объединить вертолеты в CYBER GHOST X4 (250 км/ч) [F]';
                 }
             }
             const btnHeliExit = document.getElementById('btn-heli-exit');
             if (btnHeliExit) {
                 const textEl = btnHeliExit.querySelector('.heli-btn-text');
                 const iconEl = btnHeliExit.querySelector('.heli-btn-icon');
-                if (textEl) textEl.innerHTML = isLvl3 ? 'СВЕРХ-СЛИЯНИЕ <kbd>[F]</kbd>' : 'ОБЪЕДИНИТЬ <kbd>[F]</kbd>';
-                if (iconEl) iconEl.innerText = isLvl3 ? '🔴' : '⚡';
-                btnHeliExit.style.background = isLvl3 ? 'linear-gradient(135deg, rgba(255, 0, 51, 0.6), rgba(213, 0, 0, 0.6))' : 'linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(255, 215, 0, 0.4))';
-                btnHeliExit.style.borderColor = isLvl3 ? '#ff0033' : '#00f0ff';
+                if (textEl) textEl.innerHTML = `СЛИЯНИЕ (${nextTier}/5) <kbd>[F]</kbd>`;
+                if (nextTier === 5) {
+                    if (iconEl) iconEl.innerText = '👑';
+                    btnHeliExit.style.background = 'linear-gradient(135deg, rgba(255, 215, 0, 0.7), rgba(255, 109, 0, 0.7))';
+                    btnHeliExit.style.borderColor = '#ffd700';
+                } else if (nextTier === 4) {
+                    if (iconEl) iconEl.innerText = '🟢';
+                    btnHeliExit.style.background = 'linear-gradient(135deg, rgba(0, 255, 136, 0.6), rgba(0, 77, 64, 0.6))';
+                    btnHeliExit.style.borderColor = '#00ff88';
+                } else if (nextTier === 3) {
+                    if (iconEl) iconEl.innerText = '🔴';
+                    btnHeliExit.style.background = 'linear-gradient(135deg, rgba(255, 0, 51, 0.6), rgba(213, 0, 0, 0.6))';
+                    btnHeliExit.style.borderColor = '#ff0033';
+                } else {
+                    if (iconEl) iconEl.innerText = '⚡';
+                    btnHeliExit.style.background = 'linear-gradient(135deg, rgba(0, 240, 255, 0.4), rgba(255, 215, 0, 0.4))';
+                    btnHeliExit.style.borderColor = '#00f0ff';
+                }
             }
         } else if (activeHeli && activeHeli.isPiloted) {
             const btnHeliExit = document.getElementById('btn-heli-exit');
@@ -1158,9 +1218,13 @@ class GTAEngine {
                 const seatIdx = nearestHeli.getFirstAvailableSeat();
                 if (promptActionText) {
                     if (seatIdx === 0) {
-                        promptActionText.innerText = nearestHeli.isTitan
-                            ? 'Сесть за штурвал CYBER CRIMSON TITAN X8 [F]'
-                            : (nearestHeli.isMega ? 'Сесть за штурвал CYBER GHOST X4 [F]' : 'Сесть за штурвал вертолета (Пилот 1/2) [F]');
+                        promptActionText.innerText = (nearestHeli.tier === 5 || nearestHeli.isSolar)
+                            ? 'Сесть за штурвал CELESTIAL SOLAR LEVIATHAN X16 [F]'
+                            : ((nearestHeli.tier === 4 || nearestHeli.isEmerald)
+                                ? 'Сесть за штурвал QUANTUM EMERALD APEX X12 [F]'
+                                : ((nearestHeli.tier === 3 || nearestHeli.isTitan)
+                                    ? 'Сесть за штурвал CYBER CRIMSON TITAN X8 [F]'
+                                    : (nearestHeli.isMega ? 'Сесть за штурвал CYBER GHOST X4 [F]' : 'Сесть за штурвал вертолета (Пилот 1/2) [F]')));
                     } else if (seatIdx === 1) {
                         promptActionText.innerText = 'Сесть пассажиром в вертолет (Пассажир 2/2) [F]';
                     } else {

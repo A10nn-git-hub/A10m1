@@ -45,21 +45,34 @@
         </div>
     </header>
 
-    <!-- Центральное Мультиплеерное Лобби -->
+    <!-- Центральное Мультиплеерное Лобби (3 Глобальных Лобби) -->
     <section class="lobby-hub-panel" id="lobby-panel">
+        <!-- Переключатель 3 глобальных лобби -->
+        <div class="global-lobbies-switch-bar">
+            <button class="global-lobby-tab active" id="tab-lobby-1" onclick="switchGlobalLobby('1')">
+                <span class="lobby-tab-icon">🌐</span>
+                <span class="lobby-tab-title">ЛОББИ #1</span>
+                <span class="lobby-tab-badge" id="badge-lobby-1">0/5</span>
+            </button>
+            <button class="global-lobby-tab" id="tab-lobby-2" onclick="switchGlobalLobby('2')">
+                <span class="lobby-tab-icon">🌐</span>
+                <span class="lobby-tab-title">ЛОББИ #2</span>
+                <span class="lobby-tab-badge" id="badge-lobby-2">0/5</span>
+            </button>
+            <button class="global-lobby-tab" id="tab-lobby-3" onclick="switchGlobalLobby('3')">
+                <span class="lobby-tab-icon">🌐</span>
+                <span class="lobby-tab-title">ЛОББИ #3</span>
+                <span class="lobby-tab-badge" id="badge-lobby-3">0/5</span>
+            </button>
+        </div>
+
         <div class="lobby-header-row">
             <div class="lobby-title-wrap">
-                <span class="lobby-badge-status" id="lobby-badge-status">ОДИНОЧНЫЙ</span>
-                <span class="lobby-title" id="lobby-title-text">ВАШЕ ЛОББИ</span>
+                <span class="lobby-badge-status" id="lobby-badge-status">ГЛОБАЛЬНАЯ КОМНАТА</span>
+                <span class="lobby-title" id="lobby-title-text">ЛОББИ #1 (0/5)</span>
             </div>
             <div class="lobby-header-actions">
-                <button class="lobby-find-btn" id="btn-find-lobby" onclick="promptFindLobby()" title="Найти лобби по номеру хоста">
-                    <span>🔍 НАЙТИ ЛОББИ</span>
-                </button>
-                <button class="lobby-share-btn" id="btn-share-lobby" onclick="copyLobbyInviteLink()" title="Скопировать ссылку на лобби">
-                    <span>🔗 ССЫЛКА</span>
-                </button>
-                <button class="lobby-leave-btn" id="btn-leave-lobby" style="display:none;" onclick="leavePartyLobby()">ВЫЙТИ</button>
+                <span class="lobby-online-indicator"><span class="pulse-green-dot"></span> Firebase Live</span>
             </div>
         </div>
 
@@ -81,7 +94,7 @@
                 <button class="lobby-select-btn" id="btn-select-game" onclick="openGameSelectModal()" title="Выбрать игру и режим">
                     <span>ВЫБРАТЬ 🎮</span>
                 </button>
-                <button class="lobby-ready-btn" id="btn-toggle-ready" onclick="togglePlayerReady()" style="display:none;" title="Изменить статус готовности">
+                <button class="lobby-ready-btn" id="btn-toggle-ready" onclick="togglePlayerReady()" title="Изменить статус готовности">
                     <span id="ready-btn-text">ГОТОВ ✓</span>
                 </button>
                 <button class="lobby-launch-btn" id="btn-launch-game" onclick="launchActiveLobbyGame()">
@@ -277,19 +290,6 @@
     <div id="lobby-toast" class="lobby-toast">
         <span class="toast-icon" id="toast-icon">✨</span>
         <span class="toast-msg" id="toast-msg">Уведомление</span>
-    </div>
-
-    <!-- Полноэкранный неоновый оверлей обратного отсчета (3..2..1..СТАРТ!) -->
-    <div id="lobby-countdown-overlay" class="countdown-overlay">
-        <div class="countdown-card">
-            <div class="countdown-glow-ring"></div>
-            <div class="countdown-badge">МАТЧ НАЧИНАЕТСЯ</div>
-            <div class="countdown-number-box">
-                <span class="countdown-number" id="countdown-timer-num">3</span>
-            </div>
-            <div class="countdown-game-info" id="countdown-game-sub">Приготовьтесь к бою...</div>
-            <button class="countdown-cancel-btn" id="btn-cancel-countdown" onclick="cancelLobbyCountdown()" style="display:none;">Отменить старт</button>
-        </div>
     </div>
 
     <script src="js/main.js?v=20260827_v1"></script>

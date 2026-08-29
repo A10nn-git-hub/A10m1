@@ -238,9 +238,22 @@ class MultiplayerManager {
                             this.localPlayerRef.onDisconnect().remove();
                         } catch (e) {}
                     }
+                    // Автоочистка данных вертолетов, слияния и транспорта при неожиданном закрытии вкладки
+                    if (this.heliRef) {
+                        try { this.heliRef.onDisconnect().remove(); } catch (e) {}
+                    }
+                    if (this.heliMergeRef) {
+                        try { this.heliMergeRef.onDisconnect().remove(); } catch (e) {}
+                    }
+                    if (this.vehiclesRef) {
+                        try { this.vehiclesRef.onDisconnect().remove(); } catch (e) {}
+                    }
                     this.sendLocalStateNow();
                 }
             });
+
+            // Очистка устаревших данных из прошлых сессий при подключении (helicopter/, heli_merge/)
+            this._cleanupStaleGameState(rootPath);
 
             // Слушатель появления новых игроков в комнате
             this.playersRef.on('child_added', (snapshot) => {
@@ -316,12 +329,20 @@ class MultiplayerManager {
             this.heliMergeRef = this.database.ref(`${rootPath}/heli_merge`);
             this.heliMergeRef.on('value', (snapshot) => {
                 const data = snapshot.val();
+                // Игнорируем устаревшие данные (старше 30 секунд) — защита от "призрачного" слияния из прошлой сессии
+                if (data && data.ts && (Date.now() - data.ts > 30000)) return;
                 if (data && data.mergerId !== this.localPlayerId && window.gameEngine && window.gameEngine.helicopters) {
                     const helis = window.gameEngine.helicopters;
                     const masterHeli = helis[data.masterHeliIndex !== undefined ? data.masterHeliIndex : 0];
                     const partnerHeli = helis[data.partnerHeliIndex !== undefined ? data.partnerHeliIndex : 1];
-                    if (masterHeli && partnerHeli && !masterHeli.isMerged && !partnerHeli.isMerged && masterHeli.mergeState !== 'MEGA') {
-                        masterHeli.startMergeWith(partnerHeli, true);
+                    if (masterHeli && partnerHeli && !partnerHeli.isMerged && !partnerHeli.isBeingMerged) {
+                        // Level 3 (Titan): master уже isMega, нужно обойти проверку mergeState !== 'MEGA'
+                        if (data.mergeLevel === 3 && masterHeli.isMega) {
+                            masterHeli.mergeState = 'MEGA'; // разрешить переход MEGA -> TITAN
+                            masterHeli.startMergeWith(partnerHeli, true);
+                        } else if (!masterHeli.isMerged && masterHeli.mergeState !== 'MEGA') {
+                            masterHeli.startMergeWith(partnerHeli, true);
+                        }
                     }
                 }
             }, (err) => {
@@ -342,6 +363,8 @@ class MultiplayerManager {
             // Синхронизация вертолетов Maverick
             const handleHeliSync = (snapshot) => {
                 const data = snapshot.val();
+                // Игнорируем устаревшие данные (старше 30 секунд) — защита от "призрачных" вертолетов из прошлой сессии
+                if (data && data.ts && (Date.now() - data.ts > 30000)) return;
                 if (data && data.pilotId !== this.localPlayerId) {
                     this.updateHeliFromNetwork(data);
                 }
@@ -371,6 +394,57 @@ class MultiplayerManager {
             console.warn('[Multiplayer] Firebase initialization notice:', e);
             this.updateStatus('CONNECTED', `В сети [Комната: ${this.roomId}]`);
         }
+    }
+    /**
+     * Очистка устаревших данных игрового состояния из Firebase при подключении.
+     * Удаляет вертолеты, слияния и транспорт, если их timestamp старше 30 секунд.
+     * Это предотвращает появление "призрачных" вертолетов, зависших в воздухе из прошлых сессий.
+     */
+    _cleanupStaleGameState(rootPath) {
+        if (!this.database) return;
+        const staleThreshold = 30000; // 30 секунд
+        const now = Date.now();
+
+        // Очистка устаревших данных вертолетов
+        const heliCleanRef = this.database.ref(`${rootPath}/helicopter`);
+        heliCleanRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            let allStale = true;
+            Object.keys(data).forEach((key) => {
+                const entry = data[key];
+                if (entry && entry.ts && (now - entry.ts > staleThreshold)) {
+                    heliCleanRef.child(key).remove().catch(() => {});
+                } else if (entry && entry.ts) {
+                    allStale = false;
+                }
+            });
+            if (allStale && Object.keys(data).length > 0) {
+                heliCleanRef.remove().catch(() => {});
+            }
+        }).catch(() => {});
+
+        // Очистка устаревшего слияния
+        const mergeCleanRef = this.database.ref(`${rootPath}/heli_merge`);
+        mergeCleanRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && data.ts && (now - data.ts > staleThreshold)) {
+                mergeCleanRef.remove().catch(() => {});
+            }
+        }).catch(() => {});
+
+        // Очистка устаревших данных транспорта
+        const vehCleanRef = this.database.ref(`${rootPath}/vehicles`);
+        vehCleanRef.once('value', (snapshot) => {
+            const data = snapshot.val();
+            if (!data) return;
+            Object.keys(data).forEach((key) => {
+                const entry = data[key];
+                if (entry && entry.ts && (now - entry.ts > staleThreshold)) {
+                    vehCleanRef.child(key).remove().catch(() => {});
+                }
+            });
+        }).catch(() => {});
     }
 
     broadcastElevatorCall(floorNum) {
@@ -433,10 +507,11 @@ class MultiplayerManager {
         }
     }
 
-    broadcastHeliMerge(masterHeliIndex, partnerHeliIndex) {
+    broadcastHeliMerge(masterHeliIndex, partnerHeliIndex, mergeLevel = 2) {
         const data = {
             masterHeliIndex: masterHeliIndex !== undefined ? masterHeliIndex : 0,
             partnerHeliIndex: partnerHeliIndex !== undefined ? partnerHeliIndex : 1,
+            mergeLevel: mergeLevel,
             mergerId: this.localPlayerId,
             ts: Date.now()
         };
@@ -591,7 +666,7 @@ class MultiplayerManager {
                 const helis = window.gameEngine.helicopters;
                 const masterHeli = helis[data.masterHeliIndex !== undefined ? data.masterHeliIndex : 0];
                 const partnerHeli = helis[data.partnerHeliIndex !== undefined ? data.partnerHeliIndex : 1];
-                if (masterHeli && partnerHeli && !masterHeli.isMerged && !partnerHeli.isMerged && masterHeli.mergeState !== 'MEGA') {
+                if (masterHeli && partnerHeli && !partnerHeli.isMerged && !partnerHeli.isBeingMerged) {
                     masterHeli.startMergeWith(partnerHeli, true);
                 }
             }
@@ -847,20 +922,50 @@ class MultiplayerManager {
             this.elevatorRef = null;
         }
         if (this.propsRef) {
-            try { this.propsRef.off(); } catch (e) {}
+            try {
+                this.propsRef.off();
+                this.propsRef.remove();
+            } catch (e) {}
             this.propsRef = null;
         }
         if (this.vehiclesRef) {
-            try { this.vehiclesRef.off(); } catch (e) {}
+            try {
+                this.vehiclesRef.off();
+                this.vehiclesRef.remove();
+            } catch (e) {}
             this.vehiclesRef = null;
         }
         if (this.heliRef) {
-            try { this.heliRef.off(); } catch (e) {}
+            try {
+                this.heliRef.off();
+                this.heliRef.remove();
+            } catch (e) {}
             this.heliRef = null;
+        }
+        // Очистка данных слияния вертолетов
+        if (this.heliMergeRef) {
+            try {
+                this.heliMergeRef.off();
+                this.heliMergeRef.remove();
+            } catch (e) {}
+            this.heliMergeRef = null;
+        }
+        // Очистка данных поваленных деревьев
+        if (this.treesRef) {
+            try {
+                this.treesRef.off();
+                this.treesRef.remove();
+            } catch (e) {}
+            this.treesRef = null;
         }
         if (this.connectedRef) {
             try { this.connectedRef.off(); } catch (e) {}
             this.connectedRef = null;
+        }
+
+        // Локальный сброс всей карты (все вертолеты, машины, деревья, фонари)
+        if (window.gameEngine && typeof window.gameEngine.resetEntireMap === 'function') {
+            try { window.gameEngine.resetEntireMap(); } catch (e) {}
         }
 
         // Удалить всех сетевых игроков

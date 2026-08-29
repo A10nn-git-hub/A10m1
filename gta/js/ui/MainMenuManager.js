@@ -158,7 +158,11 @@ class MainMenuManager {
 
     exitToMainMenu() {
         try { document.exitPointerLock(); } catch (e) {}
-        window.location.href = '../index.html';
+        if (typeof window.exitToLobby === 'function') {
+            window.exitToLobby();
+        } else {
+            window.location.href = '../index.html';
+        }
     }
 
     toggleMenuFromGame() {

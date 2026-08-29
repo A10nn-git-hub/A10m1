@@ -168,6 +168,8 @@ class VehicleExplosionSystem {
                 }
             }
         }
+    resetAllVehiclesHealth() {
+        this.vehicleHealths.clear();
     }
 }
 window.VehicleExplosionSystem = VehicleExplosionSystem;

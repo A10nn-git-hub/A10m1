@@ -121,19 +121,22 @@ class ThirdPersonCameraController {
             const heliScale = (helicopter.scaleMultiplier) || (helicopter.group ? helicopter.group.scale.x : 1.0) || 1.0;
             const heliPos = (helicopter.group && helicopter.group.position) ? helicopter.group.position : helicopter.body.position;
             
-            targetFocus.set(heliPos.x, heliPos.y + 1.35 * heliScale, heliPos.z);
+            // Плавный фокус с учетом масштаба вертолета (уровни 1, 2, 3, 4, 5)
+            const focusYOffset = 1.35 * Math.min(heliScale, 3.5);
+            targetFocus.set(heliPos.x, heliPos.y + focusYOffset, heliPos.z);
             if (helicopter.body && helicopter.body.velocity) {
                 rawSpeedKmh = Math.hypot(helicopter.body.velocity.x, helicopter.body.velocity.y, helicopter.body.velocity.z) * 3.6;
             }
             
             if (this.smoothSpeedKmh === undefined) this.smoothSpeedKmh = 0;
-            this.smoothSpeedKmh += (rawSpeedKmh - this.smoothSpeedKmh) * (1.0 - Math.exp(-4.0 * dt));
+            this.smoothSpeedKmh += (rawSpeedKmh - this.smoothSpeedKmh) * (1.0 - Math.exp(-3.5 * dt));
 
             const speedMultiplier = helicopter.speedMultiplier || 1.0;
+            const dynamicScaleDist = Math.max(1.0, Math.pow(heliScale, 0.85));
             desiredDistance = THREE.MathUtils.lerp(
-                this.distance * 1.75 * heliScale,
-                this.distance * 2.35 * heliScale,
-                Math.min(this.smoothSpeedKmh / (130.0 * speedMultiplier), 1.0)
+                this.distance * 1.65 * dynamicScaleDist,
+                this.distance * 2.25 * dynamicScaleDist,
+                Math.min(this.smoothSpeedKmh / (180.0 * Math.sqrt(speedMultiplier)), 1.0)
             );
         } else if (drivenCar) {
             const carPos = (drivenCar.carGroup && drivenCar.carGroup.position) ? drivenCar.carGroup.position : drivenCar.chassisBody.position;
@@ -141,7 +144,7 @@ class ThirdPersonCameraController {
             rawSpeedKmh = drivenCar.getSpeedKmh();
 
             if (this.smoothSpeedKmh === undefined) this.smoothSpeedKmh = 0;
-            this.smoothSpeedKmh += (rawSpeedKmh - this.smoothSpeedKmh) * (1.0 - Math.exp(-5.0 * dt));
+            this.smoothSpeedKmh += (rawSpeedKmh - this.smoothSpeedKmh) * (1.0 - Math.exp(-4.5 * dt));
 
             desiredDistance = THREE.MathUtils.lerp(this.distance * 1.05, this.distance * 1.35, Math.min(this.smoothSpeedKmh / 160.0, 1.0));
         } else if (this.targetMesh) {
@@ -170,13 +173,23 @@ class ThirdPersonCameraController {
             const horizFactor = 1.0 - Math.exp(-22.0 * dt);
             this.currentFocusPoint.x += (targetFocus.x - this.currentFocusPoint.x) * horizFactor;
             this.currentFocusPoint.z += (targetFocus.z - this.currentFocusPoint.z) * horizFactor;
+        } else if (drivenCar) {
+            // Двухконтурное сглаживание для автомобиля: глубокий фильтр вибраций подвески и неровностей дороги
+            const carSmoothH = 1.0 - Math.exp(-15.0 * dt);
+            const carSmoothV = 1.0 - Math.exp(-7.5 * dt);
+            this.currentFocusPoint.x += (targetFocus.x - this.currentFocusPoint.x) * carSmoothH;
+            this.currentFocusPoint.y += (targetFocus.y - this.currentFocusPoint.y) * carSmoothV;
+            this.currentFocusPoint.z += (targetFocus.z - this.currentFocusPoint.z) * carSmoothH;
+        } else if (helicopter && (helicopter.isPiloted || helicopter.isPassenger)) {
+            // Гладкое отслеживание полета вертолета без микроколебаний от физических сил
+            const heliSmoothH = 1.0 - Math.exp(-14.0 * dt);
+            const heliSmoothV = 1.0 - Math.exp(-9.0 * dt);
+            this.currentFocusPoint.x += (targetFocus.x - this.currentFocusPoint.x) * heliSmoothH;
+            this.currentFocusPoint.y += (targetFocus.y - this.currentFocusPoint.y) * heliSmoothV;
+            this.currentFocusPoint.z += (targetFocus.z - this.currentFocusPoint.z) * heliSmoothH;
         } else {
-            // Раздельное сглаживание: по горизонтали быстрый отклик, по вертикали глубокий фильтр вибраций
             const horizFactor = 1.0 - Math.exp(-18.0 * dt);
-            const vertFactor = drivenCar
-                ? (1.0 - Math.exp(-10.0 * dt))
-                : (1.0 - Math.exp(-16.0 * dt));
-
+            const vertFactor = 1.0 - Math.exp(-16.0 * dt);
             this.currentFocusPoint.x += (targetFocus.x - this.currentFocusPoint.x) * horizFactor;
             this.currentFocusPoint.y += (targetFocus.y - this.currentFocusPoint.y) * vertFactor;
             this.currentFocusPoint.z += (targetFocus.z - this.currentFocusPoint.z) * horizFactor;
@@ -186,12 +199,12 @@ class ThirdPersonCameraController {
         let targetFov = this.baseFov;
         const currentSmoothSpeed = (this.smoothSpeedKmh !== undefined) ? this.smoothSpeedKmh : rawSpeedKmh;
         if (drivenCar || helicopter) {
-            targetFov = THREE.MathUtils.lerp(65.0, 74.0, Math.min(currentSmoothSpeed / 180.0, 1.0));
+            targetFov = THREE.MathUtils.lerp(65.0, 74.0, Math.min(currentSmoothSpeed / 200.0, 1.0));
         } else if (isSprinting) {
             targetFov = 71.0;
         }
-        if (Math.abs(this.camera.fov - targetFov) > 0.02) {
-            this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFov, 1.0 - Math.exp(-4.5 * dt));
+        if (Math.abs(this.camera.fov - targetFov) > 0.01) {
+            this.camera.fov = THREE.MathUtils.lerp(this.camera.fov, targetFov, 1.0 - Math.exp(-3.5 * dt));
             this.camera.updateProjectionMatrix();
         }
 
@@ -213,6 +226,20 @@ class ThirdPersonCameraController {
             this.camera.position.y = targetCamPos.y;
             const camSmoothingH = 1.0 - Math.exp(-24.0 * dt);
             this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetCamPos.x, camSmoothingH);
+            this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, targetCamPos.z, camSmoothingH);
+        } else if (drivenCar) {
+            // Плавное следование камеры за автомобилем с раздельной фильтрацией
+            const camSmoothingH = 1.0 - Math.exp(-16.0 * dt);
+            const camSmoothingV = 1.0 - Math.exp(-9.0 * dt);
+            this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetCamPos.x, camSmoothingH);
+            this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, targetCamPos.y, camSmoothingV);
+            this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, targetCamPos.z, camSmoothingH);
+        } else if (helicopter && (helicopter.isPiloted || helicopter.isPassenger)) {
+            // Плавное следование камеры за вертолетом
+            const camSmoothingH = 1.0 - Math.exp(-15.0 * dt);
+            const camSmoothingV = 1.0 - Math.exp(-10.0 * dt);
+            this.camera.position.x = THREE.MathUtils.lerp(this.camera.position.x, targetCamPos.x, camSmoothingH);
+            this.camera.position.y = THREE.MathUtils.lerp(this.camera.position.y, targetCamPos.y, camSmoothingV);
             this.camera.position.z = THREE.MathUtils.lerp(this.camera.position.z, targetCamPos.z, camSmoothingH);
         } else {
             const camSmoothing = 1.0 - Math.exp(-20.0 * dt);
