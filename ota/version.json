@@ -1,13 +1,13 @@
 {
-  "versionCode": 8,
-  "versionName": "1.8.0",
+  "versionCode": 9,
+  "versionName": "1.9.0",
   "title": "Большое обновление мегаполиса и вертолетов",
   "description": "• Добавлена новая зона трюков и суперкаров\n• Улучшена физика полетов вертолетов Titan X8\n• Синхронизация мультиплеера и лифты Maze Bank\n• Оптимизация производительности и FPS",
   "apkUrl": "https://raw.githubusercontent.com/A10nn-git-hub/A10m1/main/ota/A10m1_Game.apk",
   "windowsUrl": "https://raw.githubusercontent.com/A10nn-git-hub/A10m1/main/ota/A10m1_Windows.zip",
-  "apkSizeMb": 47.0,
+  "apkSizeMb": 46.0,
   "mandatory": false,
-  "version": 8,
+  "version": 9,
   "updatedFiles": [
     "GTA_OpenWorld_3D",
     "MazeBank_Tower",
