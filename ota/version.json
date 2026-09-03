@@ -1,17 +1,18 @@
 {
-  "versionCode": 18,
-  "versionName": "1.18.0",
-  "title": "Большое обновление мегаполиса и вертолетов",
-  "description": "• Добавлена новая зона трюков и суперкаров\n• Улучшена физика полетов вертолетов Titan X8\n• Синхронизация мультиплеера и лифты Maze Bank\n• Оптимизация производительности и FPS",
+  "versionCode": 19,
+  "versionName": "1.19.0",
+  "title": "Обновление меню: раздел настроек и оптимизация",
+  "description": "• Добавлено окно настроек в меню (стиль iOS Glass)\n• Улучшена стабильность загрузки обновлений\n• Оптимизация интерфейса и производительности",
   "apkUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Game.apk",
   "windowsUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Windows.zip",
   "apkSizeMb": 235.9,
   "mandatory": false,
-  "version": 18,
+  "version": 19,
   "updatedFiles": [
     "GTA_OpenWorld_3D",
     "MazeBank_Tower",
     "Maverick_Helicopters",
-    "HTML_Overlay_HUD"
+    "HTML_Overlay_HUD",
+    "MainMenu_2D"
   ]
 }
