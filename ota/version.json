@@ -1,18 +1,17 @@
 {
-  "versionCode": 23,
-  "versionName": "1.23.0",
-  "title": "Обновление v1.23.0 (Сборка #23): Редизайн Лобби iOS",
-  "description": "• Новый стильный дизайн Главного Лобби в стиле iOS iPhone\n• Компактная кнопка настроек ⚙️ и обновления 🔄 в правом верхнем углу\n• Новый профиль с круглым аватаром\n• Задержка пинга вынесена под карточку игры\n• Название режима: GTA 5 HTML без лишнего текста\n• Поддержка ARMv7 + ARM64 и оптимизация UI",
+  "versionCode": 24,
+  "versionName": "1.24.0",
+  "title": "Обновление v1.24.0 (Сборка #24): Стабильность и фикс автообновления",
+  "description": "• Успешно устранено зацикливание автообновления на ПК\n• Принудительное освобождение файлов при перезапуске\n• Проверка и подтверждение актуальной версии в реальном времени",
   "apkUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Game.apk",
   "windowsUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Windows.zip",
-  "apkSizeMb": 255.8,
+  "apkSizeMb": 238.7,
   "mandatory": false,
-  "version": 23,
+  "version": 24,
   "updatedFiles": [
     "GTA_OpenWorld_3D",
     "MazeBank_Tower",
     "Maverick_Helicopters",
-    "HTML_Overlay_HUD",
-    "MainMenu_2D"
+    "HTML_Overlay_HUD"
   ]
 }
