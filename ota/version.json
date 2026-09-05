@@ -1,13 +1,13 @@
 {
-  "versionCode": 24,
-  "versionName": "1.24.0",
-  "title": "Обновление v1.24.0 (Сборка #24): Стабильность и фикс автообновления",
-  "description": "• Успешно устранено зацикливание автообновления на ПК\n• Принудительное освобождение файлов при перезапуске\n• Проверка и подтверждение актуальной версии в реальном времени",
+  "versionCode": 25,
+  "versionName": "1.25.0",
+  "title": "Обновление v1.25.0 (Сборка 25): Тестовый выпуск",
+  "description": "• Тестовый выпуск версии v1.25.0 (Сборка 25)\n• Проверка сценария обновления манифеста",
   "apkUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Game.apk",
   "windowsUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Windows.zip",
   "apkSizeMb": 238.7,
   "mandatory": false,
-  "version": 24,
+  "version": 25,
   "updatedFiles": [
     "GTA_OpenWorld_3D",
     "MazeBank_Tower",
