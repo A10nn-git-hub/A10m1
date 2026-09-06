@@ -1,17 +1,16 @@
 {
-  "versionCode": 25,
-  "versionName": "1.25.0",
-  "title": "Обновление v1.25.0 (Сборка 25): Тестовый выпуск",
-  "description": "• Тестовый выпуск версии v1.25.0 (Сборка 25)\n• Проверка сценария обновления манифеста",
+  "versionCode": 27,
+  "versionName": "1.27.0",
+  "title": "Обновление v1.27.0 (Сборка 27): Новое меню выбора игр, кастомные карты и полноэкранные настройки",
+  "description": "• Новое меню выбора игр: вертикальные карточки игр (2/3 экрана) и селектор карт (1/3 экрана)\n• Выбор дефолтной карты или созданных пользовательских карт из режима Sandbox\n• Настройки развернуты на полный экран с удобным оверлеем и навигацией",
   "apkUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Game.apk",
   "windowsUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Windows.zip",
-  "apkSizeMb": 238.7,
+  "apkSizeMb": 255.9,
   "mandatory": false,
-  "version": 25,
+  "version": 27,
   "updatedFiles": [
-    "GTA_OpenWorld_3D",
-    "MazeBank_Tower",
-    "Maverick_Helicopters",
-    "HTML_Overlay_HUD"
+    "MainMenu_2D",
+    "Shooter_Tactical_3D",
+    "GTA_OpenWorld_3D"
   ]
 }
