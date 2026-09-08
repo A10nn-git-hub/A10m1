@@ -1,11 +1,15 @@
 {
   "versionCode": 32,
   "versionName": "1.32.0",
+  "windowsVersionCode": 32,
+  "windowsVersionName": "1.32.0",
+  "androidVersionCode": 32,
+  "androidVersionName": "1.32.0",
   "title": "Обновление v1.32.0 (Сборка #32): Устранение розового экрана, публикации Мастерской и мобильные фиксы",
   "description": "• Полное устранение розового экрана URP при паузе, в Los Santos и песочнице\n• Отключение сбойного SSAO Blit и принудительный SolidColor на всех камерах\n• Восстановление URP Lit шейдеров в AlwaysIncludedShaders и безопасные цепочки материалов\n• Публикация и карточки кастомных предметов в Мастерской сообщества (костюмы, суперкары, мантии)\n• Модальное окно настроек и редактирования опубликованных скинов с переходом в 3D-редактор\n• Мобильный файловый менеджер (MobileFilePickerModal) для загрузки .glb моделей на Android\n• Исправление смены аватарок на мобильных устройствах",
   "apkUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Game.apk",
   "windowsUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Windows.zip",
-  "apkSizeMb": 258.4,
+  "apkSizeMb": 235.0,
   "mandatory": false,
   "version": 32,
   "updatedFiles": [
