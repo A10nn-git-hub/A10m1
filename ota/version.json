@@ -1,22 +1,22 @@
 {
-  "versionCode": 37,
-  "versionName": "1.37.0",
+  "versionCode": 38,
+  "versionName": "1.38.0",
   "windowsVersionCode": 37,
   "windowsVersionName": "1.37.0",
-  "androidVersionCode": 36,
-  "androidVersionName": "1.36.0",
-  "title": "Обновление v1.37.0 (Сборка #37): 13 улучшений, Standoff 2 HUD, Королевская мантия, OPEN WORLD 3D",
-  "description": "• Галочка разработчика сразу после ника\n• Чистое имя сервера (без 0 онлайн)\n• Редактор расположения элементов Standoff 2\n• Статичный индикатор ПК/МОБ и векторные иконки\n• Раздел Справки встроен в Настройки\n• Дефолтная иконка для карт Мастерской\n• Полное удаление 3D стрелялки и переименование в OPEN WORLD 3D\n• Синхронизация мобильного HUD в редакторе (удалены HP/Armor)\n• Королевская бархатная мантия с авто-подгонкой под любой скин (вкл. GLB)\n• Реальный счетчик FPS в настройках",
+  "androidVersionCode": 38,
+  "androidVersionName": "1.38.0",
+  "title": "Обновление v1.38.0 (Сборка #38): 19 исправлений, физика авто, лифт Maze Bank, разделение HUD",
+  "description": "• Разделение редактора управления: клавиатура для ПК, Standoff-оверлей для МОБ\n• Исправление лимитов FPS (30/60/120/без лимита) и переключателей\n• Запуск кастомных карт в 3D мире без зависаний\n• Защита от удаления чужих скинов из Мастерской сообщества\n• Плавный заезд транспорта на бордюры без тряски и защита стен от пробивания\n• Установлена посадочная платформа 10 этажа в небоскребе Maze Bank\n• Свободный вертикальный угол обзора камеры вертолета в небо (85°)\n• Очистка HUD от лишних мобильных кнопок на ПК и подсказок управления\n• Процедурные векторные иконки в редакторе карт и монета Battle Pass",
   "apkUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Game.apk",
   "windowsUrl": "https://media.githubusercontent.com/media/A10nn-git-hub/A10m1/main/ota/A10m1_Windows.zip",
   "apkSizeMb": 86.6,
   "windowsSizeMb": 89.9,
   "mandatory": false,
-  "version": 37,
+  "version": 38,
   "updatedFiles": [
     "MainMenu_2D",
+    "Shooter_Tactical_3D",
     "GTA_OpenWorld_3D",
-    "Sandbox_MapEditor",
     "Workshop"
   ]
 }
